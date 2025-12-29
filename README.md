@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🌾 Sahel AgriConnect
 
 Plateforme de digitalisation agricole pour le Mali et le Burkina Faso - Projet PTASS (2026-2030)
@@ -127,3 +128,7 @@ ISC
 
 Pour toute question, consultez la documentation dans les fichiers README de chaque module.
 
+=======
+# sahel-agriconnect
+Plateforme de digitalisation agricole - PTASS
+>>>>>>> 740958b0b06a6f292b472a52266333644ad10940
