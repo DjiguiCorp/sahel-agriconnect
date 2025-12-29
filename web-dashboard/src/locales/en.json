@@ -1,0 +1,294 @@
+{
+  "common": {
+    "appName": "Sahel AgriConnect",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "yes": "Yes",
+    "no": "No",
+    "required": "Required",
+    "optional": "Optional",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "dashboard": "Dashboard",
+    "contact": "Contact",
+    "soilDiagnostic": "Soil Diagnostic",
+    "diseaseDetection": "Disease Detection",
+    "thinkTank": "Think Tank",
+    "downloadApp": "Download App",
+    "admin": "Central Admin",
+    "logout": "Logout"
+  },
+  "home": {
+    "title": "Sahel AgriConnect",
+    "subtitle": "Digitalization of agriculture in Mali and Burkina Faso",
+    "projectTitle": "PTASS Project",
+    "projectDescription": "The Sahel Agricultural Transformation Project (PTASS) aims to digitalize and modernize agriculture in Mali and Burkina Faso to achieve food sovereignty and enhance local production.",
+    "objectives": {
+      "foodSovereignty": {
+        "title": "Food Sovereignty",
+        "description": "Ensure food autonomy for populations in Mali and Burkina Faso through modern and sustainable agriculture."
+      },
+      "valorization": {
+        "title": "Valorization",
+        "description": "Maximize the value of local agricultural production and improve incomes for farmers and cooperatives."
+      },
+      "period": {
+        "title": "Period 2026-2030",
+        "description": "Five-year roadmap to sustainably transform agriculture in the Sahel region."
+      }
+    },
+    "priorityCereals": {
+      "title": "Priority Cereals",
+      "description": "Essential local production for food security"
+    },
+    "cashCrops": {
+      "title": "Cash Crops",
+      "description": "Economic valorization and export"
+    },
+    "qualityLevels": {
+      "title": "Three Quality Levels",
+      "standard": {
+        "title": "Standard Quality",
+        "description": "Production meeting basic standards for local consumption and regional markets."
+      },
+      "premium": {
+        "title": "Premium Quality",
+        "description": "High-quality production for urban markets and regional export with certification."
+      },
+      "excellence": {
+        "title": "Excellence Quality",
+        "description": "Certified excellence production for international export with complete traceability."
+      }
+    },
+    "infrastructure": {
+      "title": "Infrastructure and Logistics",
+      "irrigation": {
+        "title": "Irrigation",
+        "description": "Development of modern and sustainable irrigation systems to improve agricultural productivity and reduce dependence on seasonal rainfall."
+      },
+      "transport": {
+        "title": "Transport",
+        "description": "Optimization of logistics chains to facilitate transport of agricultural products from production areas to local and international markets."
+      }
+    },
+    "growthPotential": {
+      "title": "Growth Potential",
+      "description": "Mali and Burkina Faso have immense untapped agricultural potential. With the right technologies, infrastructure and training, agricultural production can be multiplied by 3 to 5 times, creating major economic opportunities for farmers and communities.",
+      "productionIncrease": "Production increase",
+      "targetFarmers": "Target farmers",
+      "roadmap": "Roadmap"
+    },
+    "cta": {
+      "title": "Join the PTASS Project",
+      "description": "Whether you are a farmer, cooperative, investor or partner, participate in the transformation of agriculture in the Sahel.",
+      "register": "Register now",
+      "downloadApp": "Download App"
+    }
+  },
+  "farmerRegistration": {
+    "title": "Register a New Farmer",
+    "basicInfo": "Basic Information",
+    "fields": {
+      "fullName": "Full name",
+      "phone": "Phone",
+      "gpsLocation": "GPS Location",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "area": "Land area (hectares)",
+      "crops": "Cultivated crops",
+      "region": "Region / Zone",
+      "farmingType": "Type of farming",
+      "family": "Family (family production, subsistence or small trade)",
+      "commercial": "Commercial/independent (large-scale production, market-oriented)",
+      "cooperativeLink": "Link with a cooperative",
+      "cooperativeName": "Cooperative name",
+      "cooperativeRole": "Role in the cooperative",
+      "member": "Member",
+      "leader": "Leader",
+      "cooperativeSupport": "Type of support received",
+      "inputs": "Inputs",
+      "training": "Training",
+      "funding": "Funding",
+      "logistics": "Logistics",
+      "marketing": "Marketing",
+      "other": "Other",
+      "productionObjectives": "Production objective",
+      "localSovereignty": "Local food sovereignty (national market priority)",
+      "regionalExport": "Regional export (Africa)",
+      "internationalExport": "International export (Europe, USA, etc.)",
+      "transformationConnection": "I wish to be connected to a local transformation center or female entrepreneur for valorization",
+      "livestock": "Integrated livestock",
+      "cows": "Cows",
+      "chickens": "Chickens",
+      "goatsSheep": "Goats/Sheep",
+      "livestockOther": "Other (specify)",
+      "manureFertilizer": "Do you use manure for organic fertilizer?",
+      "manureBiogas": "Do you use manure for energy production (biogas)?",
+      "electricityAccess": "Access to electricity",
+      "full": "Yes",
+      "partial": "Partial",
+      "none": "No",
+      "solarNeed": "Need a solar solution?",
+      "storageAccess": "Access to dry/cold storage",
+      "directCollection": "Need direct collection by cooperative?",
+      "cooperativeInvestment": "Do you wish to invest in a cooperative/processor?",
+      "qualityLevel": "Target Quality Level",
+      "local": "Local",
+      "regional": "Regional",
+      "international": "International"
+    },
+    "errors": {
+      "required": "Please fill in all required fields",
+      "fullName": "Full name is required",
+      "phone": "Phone is required",
+      "phoneInvalid": "Invalid phone format",
+      "latitude": "Latitude is required",
+      "latitudeInvalid": "Invalid latitude (between -90 and 90)",
+      "longitude": "Longitude is required",
+      "longitudeInvalid": "Invalid longitude (between -180 and 180)",
+      "area": "Area is required",
+      "areaInvalid": "Invalid area (must be a positive number)",
+      "region": "Select your region/zone",
+      "crops": "Select at least one crop",
+      "farmingType": "Select a type of farming",
+      "cooperativeLink": "Indicate if you are linked to a cooperative",
+      "cooperativeName": "Cooperative name is required",
+      "cooperativeRole": "Indicate your role in the cooperative",
+      "cooperativeSupport": "Select at least one type of support",
+      "productionObjectives": "Select at least one production objective",
+      "livestockOther": "Specify the type of livestock",
+      "electricityAccess": "Indicate your access to electricity",
+      "storageAccess": "Indicate your access to storage"
+    },
+    "success": "Farmer registered successfully!",
+    "submit": "Register farmer",
+    "analyzeLeaf": "Analyze a leaf",
+    "detectLand": "Detect land",
+    "recommendedSolutions": "Recommended Solutions",
+    "noLoan": "All partnerships and support are without loans: use of local resources, free training, shared equipment through cooperatives."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "View of registered farmers on the platform",
+    "stats": {
+      "registered": "Registered farmers",
+      "active": "Active farmers",
+      "totalArea": "Total area"
+    },
+    "registerFarmer": "Register a farmer",
+    "registerProcessor": "Register a processor",
+    "farmersList": "Farmers List",
+    "columns": {
+      "name": "Name",
+      "crops": "Crops",
+      "area": "Area",
+      "region": "Region",
+      "status": "Status"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Pending"
+    },
+    "loading": "Loading farmers...",
+    "error": "Error loading farmers",
+    "empty": "No farmers registered yet.",
+    "note": "This dashboard displays demonstration data. In the final version, data will be synchronized in real time with the platform database."
+  },
+  "admin": {
+    "login": {
+      "title": "Central Admin",
+      "subtitle": "Access restricted to administrators",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "connecting": "Connecting...",
+      "error": "Connection error",
+      "demo": {
+        "title": "Demo access",
+        "email": "Email",
+        "password": "Password"
+      }
+    },
+    "dashboard": {
+      "title": "Administrator Dashboard",
+      "tabs": {
+        "farmers": "Farmers",
+        "cooperatives": "Cooperatives",
+        "seasonal": "Seasonal Planning",
+        "inputs": "Inputs",
+        "certification": "Certification",
+        "partnerships": "Partnerships",
+        "logistics": "Logistics",
+        "reports": "Reports"
+      }
+    }
+  },
+  "soilDiagnostic": {
+    "title": "Soil Diagnostic",
+    "subtitle": "Analyze your soil problems and get recommendations",
+    "soilType": "Soil type",
+    "clay": "Clay",
+    "sandy": "Sandy",
+    "silty": "Silty",
+    "loamy": "Loam",
+    "ph": "Estimated pH",
+    "symptoms": "Observed symptoms",
+    "yellowing": "Leaf yellowing",
+    "lowYield": "Low yield",
+    "poorGrowth": "Poor growth",
+    "nutrientDeficiency": "Nutrient deficiency",
+    "submit": "Analyze",
+    "diagnosis": "Diagnosis",
+    "solutions": "Recommended Solutions"
+  },
+  "diseaseDetection": {
+    "title": "Plant Disease Detection",
+    "subtitle": "Upload a leaf photo to detect diseases",
+    "upload": "Upload an image",
+    "analyze": "Analyze",
+    "reset": "Reset",
+    "loading": "Analysis in progress...",
+    "result": "Result",
+    "disease": "Detected disease",
+    "confidence": "Confidence",
+    "recommendations": "Recommendations"
+  },
+  "thinkTank": {
+    "title": "Think Tank Solutions",
+    "subtitle": "Recommendations and solutions for sustainable agriculture"
+  },
+  "contact": {
+    "title": "Contact",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "farmer": "Farmer",
+    "cooperative": "Cooperative",
+    "investor": "Investor",
+    "message": "Message",
+    "submit": "Send",
+    "success": "Message sent successfully!"
+  },
+  "language": {
+    "select": "Select language",
+    "french": "Français",
+    "english": "English",
+    "bambara": "Bamanankan",
+    "moore": "Mòoré",
+    "fulfulde": "Fulfulde"
+  }
+}
+

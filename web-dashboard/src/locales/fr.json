@@ -1,0 +1,294 @@
+{
+  "common": {
+    "appName": "Sahel AgriConnect",
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "submit": "Soumettre",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "yes": "Oui",
+    "no": "Non",
+    "required": "Requis",
+    "optional": "Optionnel",
+    "success": "Succès",
+    "error": "Erreur",
+    "warning": "Avertissement",
+    "info": "Information"
+  },
+  "nav": {
+    "home": "Accueil",
+    "about": "À propos",
+    "dashboard": "Dashboard",
+    "contact": "Contact",
+    "soilDiagnostic": "Diagnostic Sol",
+    "diseaseDetection": "Détection Maladies",
+    "thinkTank": "Think Tank",
+    "downloadApp": "Télécharger l'app",
+    "admin": "Central Admin",
+    "logout": "Déconnexion"
+  },
+  "home": {
+    "title": "Sahel AgriConnect",
+    "subtitle": "Digitalisation de l'agriculture au Mali et au Burkina Faso",
+    "projectTitle": "Projet PTASS",
+    "projectDescription": "Le Projet de Transformation Agricole du Sahel (PTASS) vise à digitaliser et moderniser l'agriculture au Mali et au Burkina Faso pour atteindre la souveraineté alimentaire et valoriser les productions locales.",
+    "objectives": {
+      "foodSovereignty": {
+        "title": "Souveraineté Alimentaire",
+        "description": "Assurer l'autonomie alimentaire des populations du Mali et du Burkina Faso grâce à une agriculture moderne et durable."
+      },
+      "valorization": {
+        "title": "Valorisation",
+        "description": "Maximiser la valeur des productions agricoles locales et améliorer les revenus des agriculteurs et coopératives."
+      },
+      "period": {
+        "title": "Période 2026-2030",
+        "description": "Feuille de route sur 5 ans pour transformer durablement l'agriculture dans la région du Sahel."
+      }
+    },
+    "priorityCereals": {
+      "title": "Céréales Prioritaires",
+      "description": "Production locale essentielle pour la sécurité alimentaire"
+    },
+    "cashCrops": {
+      "title": "Cultures de Rente",
+      "description": "Valorisation économique et export"
+    },
+    "qualityLevels": {
+      "title": "Trois Niveaux de Qualité",
+      "standard": {
+        "title": "Qualité Standard",
+        "description": "Production répondant aux normes de base pour la consommation locale et les marchés régionaux."
+      },
+      "premium": {
+        "title": "Qualité Premium",
+        "description": "Production de haute qualité pour les marchés urbains et l'exportation régionale avec certification."
+      },
+      "excellence": {
+        "title": "Qualité Excellence",
+        "description": "Production d'excellence certifiée pour l'exportation internationale avec traçabilité complète."
+      }
+    },
+    "infrastructure": {
+      "title": "Infrastructure et Logistique",
+      "irrigation": {
+        "title": "Irrigation",
+        "description": "Développement de systèmes d'irrigation modernes et durables pour améliorer la productivité agricole et réduire la dépendance aux précipitations saisonnières."
+      },
+      "transport": {
+        "title": "Transport",
+        "description": "Optimisation des chaînes logistiques pour faciliter le transport des produits agricoles des zones de production vers les marchés locaux et internationaux."
+      }
+    },
+    "growthPotential": {
+      "title": "Potentiel de Croissance",
+      "description": "Le Mali et le Burkina Faso possèdent un immense potentiel agricole inexploité. Avec les bonnes technologies, infrastructures et formations, la production agricole peut être multipliée par 3 à 5 fois, créant des opportunités économiques majeures pour les agriculteurs et les communautés.",
+      "productionIncrease": "Augmentation de la production",
+      "targetFarmers": "Agriculteurs ciblés",
+      "roadmap": "Feuille de route"
+    },
+    "cta": {
+      "title": "Rejoignez le Projet PTASS",
+      "description": "Que vous soyez agriculteur, coopérative, investisseur ou partenaire, participez à la transformation de l'agriculture au Sahel.",
+      "register": "S'inscrire maintenant",
+      "downloadApp": "Télécharger l'app"
+    }
+  },
+  "farmerRegistration": {
+    "title": "Enregistrer un Nouvel Agriculteur",
+    "basicInfo": "Informations de Base",
+    "fields": {
+      "fullName": "Nom complet",
+      "phone": "Téléphone",
+      "gpsLocation": "Localisation GPS",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "area": "Superficie du terrain (hectares)",
+      "crops": "Cultures cultivées",
+      "region": "Région / Zone",
+      "farmingType": "Type d'exploitation",
+      "family": "Familiale (production familiale, subsistance ou petit commerce)",
+      "commercial": "Commerciale/indépendante (production à grande échelle, orientée marché)",
+      "cooperativeLink": "Lien avec une coopérative",
+      "cooperativeName": "Nom de la coopérative",
+      "cooperativeRole": "Rôle dans la coopérative",
+      "member": "Membre",
+      "leader": "Dirigeant",
+      "cooperativeSupport": "Type de soutien reçu",
+      "inputs": "Intrants",
+      "training": "Formation",
+      "funding": "Financement",
+      "logistics": "Logistique",
+      "marketing": "Commercialisation",
+      "other": "Autres",
+      "productionObjectives": "Objectif de production",
+      "localSovereignty": "Souveraineté alimentaire locale (priorité marché national)",
+      "regionalExport": "Export régional (Afrique)",
+      "internationalExport": "Export international (Europe, USA, etc.)",
+      "transformationConnection": "Je souhaite être connecté à un centre de transformation local ou une entrepreneure féminine pour valorisation",
+      "livestock": "Élevage intégré",
+      "cows": "Vaches",
+      "chickens": "Poulets",
+      "goatsSheep": "Chèvres/moutons",
+      "livestockOther": "Autres (préciser)",
+      "manureFertilizer": "Utilisez-vous les fèces pour fertilisant organique ?",
+      "manureBiogas": "Utilisez-vous les fèces pour production d'énergie (biogaz) ?",
+      "electricityAccess": "Accès à l'électricité",
+      "full": "Oui",
+      "partial": "Partiel",
+      "none": "Non",
+      "solarNeed": "Besoin d'une solution solaire ?",
+      "storageAccess": "Accès au stockage sec/froid",
+      "directCollection": "Besoin de collecte directe par coopérative ?",
+      "cooperativeInvestment": "Souhaitez-vous investir dans une coopérative/processeur ?",
+      "qualityLevel": "Niveau de Qualité Cible",
+      "local": "Local",
+      "regional": "Régional",
+      "international": "International"
+    },
+    "errors": {
+      "required": "Veuillez remplir tous les champs obligatoires",
+      "fullName": "Le nom complet est requis",
+      "phone": "Le téléphone est requis",
+      "phoneInvalid": "Format de téléphone invalide",
+      "latitude": "La latitude est requise",
+      "latitudeInvalid": "Latitude invalide (entre -90 et 90)",
+      "longitude": "La longitude est requise",
+      "longitudeInvalid": "Longitude invalide (entre -180 et 180)",
+      "area": "La superficie est requise",
+      "areaInvalid": "Superficie invalide (doit être un nombre positif)",
+      "region": "Sélectionnez votre région/zone",
+      "crops": "Sélectionnez au moins une culture",
+      "farmingType": "Sélectionnez un type d'exploitation",
+      "cooperativeLink": "Indiquez si vous êtes lié à une coopérative",
+      "cooperativeName": "Le nom de la coopérative est requis",
+      "cooperativeRole": "Indiquez votre rôle dans la coopérative",
+      "cooperativeSupport": "Sélectionnez au moins un type de soutien",
+      "productionObjectives": "Sélectionnez au moins un objectif de production",
+      "livestockOther": "Précisez le type d'élevage",
+      "electricityAccess": "Indiquez votre accès à l'électricité",
+      "storageAccess": "Indiquez votre accès au stockage"
+    },
+    "success": "Agriculteur enregistré avec succès !",
+    "submit": "Enregistrer l'agriculteur",
+    "analyzeLeaf": "Analyser une feuille",
+    "detectLand": "Détecter le terrain",
+    "recommendedSolutions": "Solutions Recommandées",
+    "noLoan": "Tous les partenariats et soutiens sont sans prêt : utilisation des ressources locales, formation gratuite, équipement partagé via coopératives."
+  },
+  "dashboard": {
+    "title": "Tableau de Bord",
+    "subtitle": "Visualisation des agriculteurs enregistrés sur la plateforme",
+    "stats": {
+      "registered": "Agriculteurs enregistrés",
+      "active": "Agriculteurs actifs",
+      "totalArea": "Superficie totale"
+    },
+    "registerFarmer": "Enregistrer un agriculteur",
+    "registerProcessor": "Enregistrer un processeur",
+    "farmersList": "Liste des Agriculteurs",
+    "columns": {
+      "name": "Nom",
+      "crops": "Cultures",
+      "area": "Superficie",
+      "region": "Région",
+      "status": "Statut"
+    },
+    "status": {
+      "active": "Actif",
+      "pending": "En attente"
+    },
+    "loading": "Chargement des agriculteurs...",
+    "error": "Erreur lors du chargement des agriculteurs",
+    "empty": "Aucun agriculteur enregistré pour le moment.",
+    "note": "Ce tableau de bord affiche des données de démonstration. Dans la version finale, les données seront synchronisées en temps réel avec la base de données de la plateforme."
+  },
+  "admin": {
+    "login": {
+      "title": "Central Admin",
+      "subtitle": "Accès réservé aux administrateurs",
+      "email": "Email",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "connecting": "Connexion...",
+      "error": "Erreur de connexion",
+      "demo": {
+        "title": "Accès démo",
+        "email": "Email",
+        "password": "Mot de passe"
+      }
+    },
+    "dashboard": {
+      "title": "Tableau de Bord Administrateur",
+      "tabs": {
+        "farmers": "Agriculteurs",
+        "cooperatives": "Coopératives",
+        "seasonal": "Planification Saisonnière",
+        "inputs": "Intrants",
+        "certification": "Certification",
+        "partnerships": "Partenariats",
+        "logistics": "Logistique",
+        "reports": "Rapports"
+      }
+    }
+  },
+  "soilDiagnostic": {
+    "title": "Diagnostic du Sol",
+    "subtitle": "Analysez les problèmes de votre sol et obtenez des recommandations",
+    "soilType": "Type de sol",
+    "clay": "Argileux",
+    "sandy": "Sableux",
+    "silty": "Limoneux",
+    "loamy": "Limon",
+    "ph": "pH estimé",
+    "symptoms": "Symptômes observés",
+    "yellowing": "Jaunissement des feuilles",
+    "lowYield": "Faible rendement",
+    "poorGrowth": "Croissance médiocre",
+    "nutrientDeficiency": "Carence en nutriments",
+    "submit": "Analyser",
+    "diagnosis": "Diagnostic",
+    "solutions": "Solutions Recommandées"
+  },
+  "diseaseDetection": {
+    "title": "Détection de Maladies des Plantes",
+    "subtitle": "Téléchargez une photo de feuille pour détecter les maladies",
+    "upload": "Télécharger une image",
+    "analyze": "Analyser",
+    "reset": "Réinitialiser",
+    "loading": "Analyse en cours...",
+    "result": "Résultat",
+    "disease": "Maladie détectée",
+    "confidence": "Confiance",
+    "recommendations": "Recommandations"
+  },
+  "thinkTank": {
+    "title": "Think Tank Solutions",
+    "subtitle": "Recommandations et solutions pour l'agriculture durable"
+  },
+  "contact": {
+    "title": "Contact",
+    "name": "Nom",
+    "email": "Email",
+    "role": "Rôle",
+    "farmer": "Agriculteur",
+    "cooperative": "Coopérative",
+    "investor": "Investisseur",
+    "message": "Message",
+    "submit": "Envoyer",
+    "success": "Message envoyé avec succès !"
+  },
+  "language": {
+    "select": "Sélectionner la langue",
+    "french": "Français",
+    "english": "English",
+    "bambara": "Bamanankan",
+    "moore": "Mòoré",
+    "fulfulde": "Fulfulde"
+  }
+}
+

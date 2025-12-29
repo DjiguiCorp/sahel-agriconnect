@@ -1,0 +1,294 @@
+{
+  "common": {
+    "appName": "Sahel AgriConnect",
+    "loading": "Bɛ bɛ se ka kɛ...",
+    "save": "Sɛbɛnni",
+    "cancel": "Bɔ",
+    "delete": "Bɔ",
+    "edit": "Sɛgɛ",
+    "close": "Tugun",
+    "submit": "Kɛ",
+    "search": "Cɛ",
+    "filter": "Filtiri",
+    "yes": "Awɔ",
+    "no": "Ayi",
+    "required": "Ka kan ka kɛ",
+    "optional": "Ka kan ka tɛ",
+    "success": "Nɔgɔman",
+    "error": "Juguman",
+    "warning": "Akaɲɛ",
+    "info": "Kunnafoni"
+  },
+  "nav": {
+    "home": "So",
+    "about": "Kunnafoni",
+    "dashboard": "Dashboard",
+    "contact": "Kuma",
+    "soilDiagnostic": "Dugukolo Sɛgɛsɛgɛ",
+    "diseaseDetection": "Bana Sɔrɔli",
+    "thinkTank": "Think Tank",
+    "downloadApp": "App ka tɔgɔ",
+    "admin": "Admin Jɛkulu",
+    "logout": "Bɔ"
+  },
+  "home": {
+    "title": "Sahel AgriConnect",
+    "subtitle": "Mali ani Burkina Faso dugukolo baarakɛcogo digitizali",
+    "projectTitle": "PTASS Porozɛ",
+    "projectDescription": "Sahel Dugukolo Yiriwaleya Porozɛ (PTASS) bɛ sɛ ka Mali ani Burkina Faso dugukolo baarakɛcogo digitize ani modernize ka sɔrɔ ka dumuni hakɛ sɔrɔ ani ka baara jamanaw ka ɲɛsin.",
+    "objectives": {
+      "foodSovereignty": {
+        "title": "Dumuni Hakɛ",
+        "description": "Ka Mali ani Burkina Faso jama dumuni hakɛ sɔrɔ ka baara kɛ ka dugukolo baarakɛcogo modern ani sustainable ye."
+      },
+      "valorization": {
+        "title": "Jamanaw Ka ɲɛsin",
+        "description": "Ka dugukolo baara jamanaw ka ɲɛsin ka sɔrɔ ka sɛnɛkɛlaw ani kɔrɔkɛlaw wari kura."
+      },
+      "period": {
+        "title": "2026-2030 Waati",
+        "description": "Duuru san 5 ka Sahel jamana dugukolo baarakɛcogo sustainable yiriwaleya."
+      }
+    },
+    "priorityCereals": {
+      "title": "Kɛmɛw Ka Fɔlɔ",
+      "description": "Jamana baara min bɛ kan ka dumuni hakɛ sɔrɔ"
+    },
+    "cashCrops": {
+      "title": "Wari Kɛmɛw",
+      "description": "Jamanaw ka ɲɛsin ani ka bɔ jamana kɔnɔ"
+    },
+    "qualityLevels": {
+      "title": "Kalite Saba",
+      "standard": {
+        "title": "Kalite Standard",
+        "description": "Baara min bɛ kan ka jamana ani jamana kɔnɔ mara kalitew ye."
+      },
+      "premium": {
+        "title": "Kalite Premium",
+        "description": "Kalite ka ɲɛ baara ka jamana kɔnɔ mara ani ka bɔ jamana kɔnɔ ka sɔrɔ ka sɛbɛnni ye."
+      },
+      "excellence": {
+        "title": "Kalite Excellence",
+        "description": "Kalite ka ɲɛ baara ka jamana kɔnɔ bɔ ka sɔrɔ ka sɛbɛnni ani ka sɛgɛsɛgɛ sɔrɔ."
+      }
+    },
+    "infrastructure": {
+      "title": "Infrastructure ani Logistique",
+      "irrigation": {
+        "title": "Ji Kɛli",
+        "description": "Ka ji kɛli sistem modern ani sustainable sɔrɔ ka dugukolo baara ka ɲɛ sɔrɔ ani ka sanji kama kɛnɛya dɔgɔya."
+      },
+      "transport": {
+        "title": "Transport",
+        "description": "Ka logistique cɛmancɛ ka dugukolo baara jamanaw transport ka baara kɛ ka jamana kɔnɔ mara ani ka jamana kɔnɔ bɔ."
+      }
+    },
+    "growthPotential": {
+      "title": "Ka ɲɛ Sɔrɔ Potentiel",
+      "description": "Mali ani Burkina Faso bɛ dugukolo baara potentiel ka ɲɛ bɛ sɔrɔ. Ka teknoloji, infrastructure ani kalanw bɛ sɛ, dugukolo baara bɛ se ka 3 wa 5 ye ka sɔrɔ, ka sɛnɛkɛlaw ani jama jamanaw wari sɔrɔ ka baara kɛ.",
+      "productionIncrease": "Baara ka ɲɛ sɔrɔ",
+      "targetFarmers": "Sɛnɛkɛlaw minnu bɛ kan",
+      "roadmap": "Ka taa ɲɛ"
+    },
+    "cta": {
+      "title": "PTASS Porozɛ ka taa",
+      "description": "I ka kɛ sɛnɛkɛla, kɔrɔkɛla, wari bɔrɔla walima jɛkulu ye, i ka Sahel dugukolo baarakɛcogo yiriwaleya ka taa.",
+      "register": "Sɛbɛnni sisan",
+      "downloadApp": "App ka tɔgɔ"
+    }
+  },
+  "farmerRegistration": {
+    "title": "Sɛnɛkɛla Kura Sɛbɛnni",
+    "basicInfo": "Kunnafoni Fɔlɔ",
+    "fields": {
+      "fullName": "Tɔgɔ fɔlɔ",
+      "phone": "Telefɔni",
+      "gpsLocation": "GPS Jaman",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "area": "Dugukolo ka ba (hectares)",
+      "crops": "Kɛmɛw minnu bɛ kɛ",
+      "region": "Jamana / Jaman",
+      "farmingType": "Baarakɛcogo Kalen",
+      "family": "Sosokɛla (sosokɛla baara, dumuni walima wari dɔgɔ)",
+      "commercial": "Commercial/indépendant (baara ka ɲɛ, mara ɲɛsin)",
+      "cooperativeLink": "Kɔrɔkɛla bɛ kan",
+      "cooperativeName": "Kɔrɔkɛla tɔgɔ",
+      "cooperativeRole": "Kɔrɔkɛla kɔnɔ ka baara",
+      "member": "Jɛkulu",
+      "leader": "Jɛkulu kɛlɛkɛla",
+      "cooperativeSupport": "Dɛmɛ kalen min bɛ sɔrɔ",
+      "inputs": "Intrants",
+      "training": "Kalan",
+      "funding": "Wari",
+      "logistics": "Logistique",
+      "marketing": "Mara",
+      "other": "Wɛrɛw",
+      "productionObjectives": "Baara ka ɲɛ",
+      "localSovereignty": "Jamana dumuni hakɛ (jamana mara fɔlɔ)",
+      "regionalExport": "Jamana kɔnɔ bɔ (Afiriki)",
+      "internationalExport": "Jamana kɔnɔ bɔ (Europa, USA, wɛrɛw)",
+      "transformationConnection": "N b'a fɛ ka jamanaw yiriwaleya cɛmancɛ walima muso jɛkulu bɛ kan ka jamanaw ka ɲɛsin.",
+      "livestock": "Baga minnu bɛ kan",
+      "cows": "Misiw",
+      "chickens": "Sisɛw",
+      "goatsSheep": "Baga/Saga",
+      "livestockOther": "Wɛrɛw (fɔ)",
+      "manureFertilizer": "Yɛrɛ bɛ se ka baga jɔnɔ kɛ ka dugukolo baara kɛ?",
+      "manureBiogas": "Yɛrɛ bɛ se ka baga jɔnɔ kɛ ka ɲɛ (biogas) kɛ?",
+      "electricityAccess": "Ɲɛ sɔrɔ",
+      "full": "Awɔ",
+      "partial": "Dɔgɔ",
+      "none": "Ayi",
+      "solarNeed": "Tile ɲɛ sɔrɔ ka kan?",
+      "storageAccess": "Sɔgɔma/Sumaya sɔrɔ",
+      "directCollection": "Kɔrɔkɛla ka sɔrɔ ka kan?",
+      "cooperativeInvestment": "I b'a fɛ ka kɔrɔkɛla/processeur la wari kɛ?",
+      "qualityLevel": "Kalite Niveau",
+      "local": "Jamana",
+      "regional": "Jamana kɔnɔ",
+      "international": "Jamana kɔnɔ bɔ"
+    },
+    "errors": {
+      "required": "Aw ka kan ka kunnafoni bɛɛ sɛbɛn",
+      "fullName": "Tɔgɔ fɔlɔ ka kan",
+      "phone": "Telefɔni ka kan",
+      "phoneInvalid": "Telefɔni format juguman",
+      "latitude": "Latitude ka kan",
+      "latitudeInvalid": "Latitude juguman (-90 ni 90 cɛma)",
+      "longitude": "Longitude ka kan",
+      "longitudeInvalid": "Longitude juguman (-180 ni 180 cɛma)",
+      "area": "Dugukolo ka ba ka kan",
+      "areaInvalid": "Dugukolo ka ba juguman (ka kan ka nɔmɔri ye)",
+      "region": "I ka jamana/jaman sugandi",
+      "crops": "Kɛmɛ dɔw sugandi",
+      "farmingType": "Baarakɛcogo kalen sugandi",
+      "cooperativeLink": "I ka kɔrɔkɛla bɛ kan fɔ",
+      "cooperativeName": "Kɔrɔkɛla tɔgɔ ka kan",
+      "cooperativeRole": "I ka kɔrɔkɛla kɔnɔ ka baara fɔ",
+      "cooperativeSupport": "Dɛmɛ kalen dɔw sugandi",
+      "productionObjectives": "Baara ka ɲɛ dɔw sugandi",
+      "livestockOther": "Baga kalen fɔ",
+      "electricityAccess": "I ka ɲɛ sɔrɔ fɔ",
+      "storageAccess": "I ka sɔgɔma sɔrɔ fɔ"
+    },
+    "success": "Sɛnɛkɛla sɛbɛnnen don!",
+    "submit": "Sɛnɛkɛla sɛbɛnni",
+    "analyzeLeaf": "Jiri jiri sɛgɛsɛgɛ",
+    "detectLand": "Dugukolo sɔrɔ",
+    "recommendedSolutions": "Sɔrɔliw Ka ɲɛsin",
+    "noLoan": "Jɛkuluw bɛɛ ani dɛmɛw bɛɛ tɛ wari dɔn: jamana jamanaw ka baara, kalan fɔlɔ, baga minnu bɛ kan ka kɔrɔkɛlaw ye."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Sɛnɛkɛlaw minnu sɛbɛnnen don platform kɔnɔ ka ɲɛ",
+    "stats": {
+      "registered": "Sɛnɛkɛlaw minnu sɛbɛnnen don",
+      "active": "Sɛnɛkɛlaw minnu bɛ baara kɛ",
+      "totalArea": "Dugukolo ka ba bɛɛ"
+    },
+    "registerFarmer": "Sɛnɛkɛla sɛbɛnni",
+    "registerProcessor": "Processeur sɛbɛnni",
+    "farmersList": "Sɛnɛkɛlaw Listi",
+    "columns": {
+      "name": "Tɔgɔ",
+      "crops": "Kɛmɛw",
+      "area": "Dugukolo ka ba",
+      "region": "Jamana",
+      "status": "Baara"
+    },
+    "status": {
+      "active": "Bɛ baara kɛ",
+      "pending": "Bɛ sugandi"
+    },
+    "loading": "Sɛnɛkɛlaw bɛ sɔrɔ...",
+    "error": "Sɛnɛkɛlaw sɔrɔli juguman",
+    "empty": "Sɛnɛkɛla tɛ sɛbɛnnen sisan.",
+    "note": "Dashboard ninnu bɛ kunnafoniw jira. Baarakɛcogo laban kɔnɔ, kunnafoniw bɛ se ka kɛ waati kelen na ka platform database ye."
+  },
+  "admin": {
+    "login": {
+      "title": "Admin Jɛkulu",
+      "subtitle": "Sɔrɔli ka kan ka adminw ye",
+      "email": "Email",
+      "password": "Gafɛ",
+      "submit": "Taa",
+      "connecting": "Bɛ taa...",
+      "error": "Taa juguman",
+      "demo": {
+        "title": "Demo sɔrɔli",
+        "email": "Email",
+        "password": "Gafɛ"
+      }
+    },
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "tabs": {
+        "farmers": "Sɛnɛkɛlaw",
+        "cooperatives": "Kɔrɔkɛlaw",
+        "seasonal": "Sanji Waati Plan",
+        "inputs": "Intrants",
+        "certification": "Sɛbɛnni",
+        "partnerships": "Jɛkuluw",
+        "logistics": "Logistique",
+        "reports": "Rapɔrɔw"
+      }
+    }
+  },
+  "soilDiagnostic": {
+    "title": "Dugukolo Sɛgɛsɛgɛ",
+    "subtitle": "I ka dugukolo jugumanw sɛgɛsɛgɛ ani ka sɔrɔliw sɔrɔ",
+    "soilType": "Dugukolo kalen",
+    "clay": "Dugukolo min bɛ kan",
+    "sandy": "Sable",
+    "silty": "Silty",
+    "loamy": "Loam",
+    "ph": "pH min bɛ kan",
+    "symptoms": "Jugumanw minnu bɛ ɲɛ",
+    "yellowing": "Jiri jiri wɔlɔ",
+    "lowYield": "Baara ka ɲɛ dɔgɔ",
+    "poorGrowth": "Ka ɲɛ dɔgɔ",
+    "nutrientDeficiency": "Nutriments dɔgɔ",
+    "submit": "Sɛgɛsɛgɛ",
+    "diagnosis": "Sɛgɛsɛgɛ",
+    "solutions": "Sɔrɔliw Ka ɲɛsin"
+  },
+  "diseaseDetection": {
+    "title": "Jiri Bana Sɔrɔli",
+    "subtitle": "Jiri jiri foto tɔgɔ ka bana sɔrɔ",
+    "upload": "Foto tɔgɔ",
+    "analyze": "Sɛgɛsɛgɛ",
+    "reset": "Labɛn",
+    "loading": "Sɛgɛsɛgɛ bɛ kɛ...",
+    "result": "Jaw",
+    "disease": "Bana min sɔrɔlen",
+    "confidence": "Sigi",
+    "recommendations": "Sɔrɔliw"
+  },
+  "thinkTank": {
+    "title": "Think Tank Sɔrɔliw",
+    "subtitle": "Sɔrɔliw ani sɔrɔliw ka dugukolo baarakɛcogo sustainable ye"
+  },
+  "contact": {
+    "title": "Kuma",
+    "name": "Tɔgɔ",
+    "email": "Email",
+    "role": "Baara",
+    "farmer": "Sɛnɛkɛla",
+    "cooperative": "Kɔrɔkɛla",
+    "investor": "Wari bɔrɔla",
+    "message": "Kuma",
+    "submit": "Kɛ",
+    "success": "Kuma kɛlen don!"
+  },
+  "language": {
+    "select": "Kan sugandi",
+    "french": "Faransikan",
+    "english": "Anglɛkan",
+    "bambara": "Bamanankan",
+    "moore": "Mòoré",
+    "fulfulde": "Fulfulde"
+  }
+}
+

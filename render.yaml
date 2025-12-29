@@ -1,0 +1,29 @@
+# Configuration Render.com pour Sahel AgriConnect Backend
+# Ce fichier permet de déployer automatiquement depuis GitHub
+
+services:
+  - type: web
+    name: sahel-agriconnect-backend
+    env: node
+    region: frankfurt  # Choisissez: frankfurt, oregon, singapore, etc.
+    plan: free  # free ou starter ($7/mois)
+    buildCommand: npm install
+    startCommand: npm start
+    rootDir: backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # ⚠️ IMPORTANT: Remplacez ces valeurs par vos vraies valeurs
+      - key: MONGO_URI
+        sync: false  # Vous devrez le configurer manuellement dans Render
+      - key: JWT_SECRET
+        sync: false  # Vous devrez le configurer manuellement dans Render
+      - key: ADMIN_EMAIL
+        value: admin@sahelagriconnect.org
+      - key: ADMIN_PASSWORD
+        sync: false  # Vous devrez le configurer manuellement dans Render
+      - key: FRONTEND_URL
+        sync: false  # Vous devrez le configurer après le déploiement du frontend
+
