@@ -15,6 +15,7 @@ import CentralAdminDashboard from './pages/CentralAdminDashboard';
 import CooperativeDashboard from './components/CooperativeDashboard';
 import DiasporaPartnership from './components/DiasporaPartnership';
 import TransformationCenters from './components/TransformationCenters';
+import Governance from './pages/Governance';
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
             <Route path="cooperatives" element={<CooperativeDashboard />} />
             <Route path="diaspora" element={<DiasporaPartnership />} />
             <Route path="centres-transformation" element={<TransformationCenters />} />
+            <Route path="governance" element={<Governance />} />
           </Route>
         </Routes>
       </Router>

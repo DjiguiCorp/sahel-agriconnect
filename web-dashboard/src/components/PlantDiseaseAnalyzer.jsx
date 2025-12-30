@@ -128,6 +128,49 @@ const PlantDiseaseAnalyzer = ({ onDiseaseDetected }) => {
           irrigation: 'Irrigation au sol uniquement',
           rotation: 'Rotation avec céréales ou légumineuses (3 ans minimum)'
         }
+      },
+      'Tomato___healthy': {
+        name: 'Tomate saine',
+        description: 'Aucune maladie détectée. La plante semble en bonne santé.',
+        solutions: [
+          'Continuer les bonnes pratiques agricoles',
+          'Maintenir une irrigation régulière',
+          'Surveiller régulièrement les plants',
+          'Appliquer des traitements préventifs si nécessaire'
+        ],
+        thinkTank: {
+          fertilisant: 'Continuer avec compost de fèces de bétail pour maintenir la santé',
+          irrigation: 'Maintenir l\'irrigation optimale',
+          rotation: 'Continuer la rotation des cultures'
+        }
+      },
+      'Corn___healthy': {
+        name: 'Maïs sain',
+        description: 'Aucune maladie détectée. La plante semble en bonne santé.',
+        solutions: [
+          'Continuer les bonnes pratiques agricoles',
+          'Maintenir une nutrition équilibrée',
+          'Surveiller régulièrement les plants'
+        ],
+        thinkTank: {
+          fertilisant: 'Continuer avec compost de fèces de bétail',
+          irrigation: 'Maintenir l\'irrigation modérée',
+          rotation: 'Continuer la rotation des cultures'
+        }
+      },
+      'Potato___healthy': {
+        name: 'Pomme de terre saine',
+        description: 'Aucune maladie détectée. La plante semble en bonne santé.',
+        solutions: [
+          'Continuer les bonnes pratiques agricoles',
+          'Maintenir un sol bien drainé',
+          'Surveiller régulièrement les plants'
+        ],
+        thinkTank: {
+          fertilisant: 'Continuer avec compost de fèces de bétail',
+          irrigation: 'Maintenir un bon drainage',
+          rotation: 'Continuer la rotation des cultures'
+        }
       }
     };
 
@@ -194,17 +237,50 @@ const PlantDiseaseAnalyzer = ({ onDiseaseDetected }) => {
       // Simulation mockée pour la démonstration
       console.warn('API non disponible, simulation du résultat:', err.message);
       
-      setTimeout(() => {
-        const mockResult = {
+      // Générer un résultat varié basé sur les caractéristiques de l'image
+      const generateMockResult = (imageFile) => {
+        // Utiliser le nom, la taille et la date de l'image pour générer un hash simple
+        const hash = (imageFile.name + imageFile.size + imageFile.lastModified).split('').reduce((acc, char) => {
+          return ((acc << 5) - acc) + char.charCodeAt(0);
+        }, 0);
+        
+        // Liste des maladies possibles
+        const diseases = [
+          { class: 'Tomato___Bacterial_spot', confidence: 0.75 + (Math.abs(hash) % 20) / 100 },
+          { class: 'Tomato___Early_blight', confidence: 0.70 + (Math.abs(hash) % 25) / 100 },
+          { class: 'Tomato___Late_blight', confidence: 0.80 + (Math.abs(hash) % 15) / 100 },
+          { class: 'Corn___Common_rust', confidence: 0.65 + (Math.abs(hash) % 30) / 100 },
+          { class: 'Potato___Early_blight', confidence: 0.72 + (Math.abs(hash) % 23) / 100 },
+          { class: 'Tomato___healthy', confidence: 0.90 + (Math.abs(hash) % 10) / 100 },
+          { class: 'Corn___healthy', confidence: 0.88 + (Math.abs(hash) % 12) / 100 },
+          { class: 'Potato___healthy', confidence: 0.85 + (Math.abs(hash) % 15) / 100 }
+        ];
+        
+        // Sélectionner une maladie basée sur le hash (cohérent pour la même image)
+        const selectedDisease = diseases[Math.abs(hash) % diseases.length];
+        
+        // Limiter la confiance entre 0.60 et 0.95
+        const confidence = Math.min(0.95, Math.max(0.60, selectedDisease.confidence));
+        
+        return {
           predictions: [
             {
-              class: 'Tomato___Bacterial_spot',
-              confidence: 0.85,
-              bbox: { x: 100, y: 150, width: 200, height: 200 }
+              class: selectedDisease.class,
+              confidence: confidence,
+              bbox: { 
+                x: Math.abs(hash) % 200, 
+                y: Math.abs(hash) % 200, 
+                width: 150 + (Math.abs(hash) % 100), 
+                height: 150 + (Math.abs(hash) % 100) 
+              }
             }
           ],
           image: { width: 800, height: 600 }
         };
+      };
+      
+      setTimeout(() => {
+        const mockResult = generateMockResult(selectedImage);
         setDetectionResult(mockResult);
         
         const diseaseInfo = getDiseaseInfo(mockResult.predictions[0].class);

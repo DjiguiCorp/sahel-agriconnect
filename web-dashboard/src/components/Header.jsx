@@ -43,6 +43,9 @@ const Header = () => {
             <Link to="/contact" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
               {t('nav.contact')}
             </Link>
+            <Link to="/governance" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+              Gouvernance
+            </Link>
             {/* Lien Admin */}
             <Link 
               to="/admin/login" 
@@ -134,6 +137,13 @@ const Header = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               {t('nav.contact')}
+            </Link>
+            <Link
+              to="/governance"
+              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Gouvernance
             </Link>
             {/* Lien Admin Mobile */}
             <Link
