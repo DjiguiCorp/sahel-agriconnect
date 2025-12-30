@@ -10,7 +10,7 @@ const Hero = () => {
             Digitalisation Souveraine de l'Agriculture
           </p>
           <p className="text-lg mb-8 text-gray-200">
-            Plateforme innovante pour transformer l'agriculture au Mali et au Burkina Faso
+            Plateforme innovante pour transformer l'agriculture au Mali, au Burkina Faso et au Niger
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a

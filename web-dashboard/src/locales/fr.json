@@ -205,7 +205,7 @@
     "loading": "Chargement des agriculteurs...",
     "error": "Erreur lors du chargement des agriculteurs",
     "empty": "Aucun agriculteur enregistré pour le moment.",
-    "note": "Ce tableau de bord affiche des données de démonstration. Dans la version finale, les données seront synchronisées en temps réel avec la base de données de la plateforme."
+    "note": "Ce tableau de bord affiche les données en temps réel synchronisées avec la base de données de la plateforme."
   },
   "admin": {
     "login": {

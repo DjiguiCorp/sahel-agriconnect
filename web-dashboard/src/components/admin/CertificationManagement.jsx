@@ -145,7 +145,7 @@ const CertificationManagement = () => {
             <div className="text-3xl mb-3">⭐</div>
             <h4 className="text-xl font-bold text-green-800 mb-3">Branche Locale</h4>
             <p className="text-sm text-gray-700 mb-4">
-              <strong>Marché :</strong> National (Mali, Burkina Faso)
+              <strong>Marché :</strong> National (Mali, Burkina Faso, Niger)
             </p>
             <div className="space-y-2 text-sm">
               <div>
