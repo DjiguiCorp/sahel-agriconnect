@@ -179,7 +179,7 @@ const Contact = () => {
           {/* Zones d'intervention */}
           <div className="mt-12 card bg-gradient-to-br from-primary-blue to-primary-darkblue text-white">
             <h3 className="text-2xl font-semibold mb-4">Zones d'Intervention</h3>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <h4 className="font-semibold mb-2">🇲🇱 Mali</h4>
                 <ul className="text-gray-100 text-sm space-y-1">
@@ -196,6 +196,14 @@ const Contact = () => {
                   <li>• Bobo-Dioulasso</li>
                   <li>• Koudougou</li>
                   <li>• Fada N'gourma</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">🇳🇪 Niger</h4>
+                <ul className="text-gray-100 text-sm space-y-1">
+                  <li>• Niamey</li>
+                  <li>• Tillabéri</li>
+                  <li>• Dosso</li>
                 </ul>
               </div>
             </div>

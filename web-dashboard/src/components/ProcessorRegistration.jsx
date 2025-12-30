@@ -290,6 +290,11 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
                   <option key={region} value={region}>{region}</option>
                 ))}
               </optgroup>
+              <optgroup label="🇳🇪 Niger">
+                {regions.filter(r => r.includes('Niger')).map(region => (
+                  <option key={region} value={region}>{region}</option>
+                ))}
+              </optgroup>
             </select>
             {errors.region && <p className="mt-1 text-sm text-red-600">{errors.region}</p>}
           </div>

@@ -33,13 +33,13 @@
   },
   "home": {
     "title": "Sahel AgriConnect",
-    "subtitle": "Digitalisation de l'agriculture au Mali et au Burkina Faso",
+    "subtitle": "Digitalisation de l'agriculture au Mali, au Burkina Faso et au Niger",
     "projectTitle": "Projet PTASS",
-    "projectDescription": "Le Projet de Transformation Agricole du Sahel (PTASS) vise à digitaliser et moderniser l'agriculture au Mali et au Burkina Faso pour atteindre la souveraineté alimentaire et valoriser les productions locales.",
+    "projectDescription": "Le Projet de Transformation Agricole du Sahel (PTASS) vise à digitaliser et moderniser l'agriculture au Mali, au Burkina Faso et au Niger pour atteindre la souveraineté alimentaire et valoriser les productions locales.",
     "objectives": {
       "foodSovereignty": {
         "title": "Souveraineté Alimentaire",
-        "description": "Assurer l'autonomie alimentaire des populations du Mali et du Burkina Faso grâce à une agriculture moderne et durable."
+        "description": "Assurer l'autonomie alimentaire des populations du Mali, du Burkina Faso et du Niger grâce à une agriculture moderne et durable."
       },
       "valorization": {
         "title": "Valorisation",
@@ -86,7 +86,7 @@
     },
     "growthPotential": {
       "title": "Potentiel de Croissance",
-      "description": "Le Mali et le Burkina Faso possèdent un immense potentiel agricole inexploité. Avec les bonnes technologies, infrastructures et formations, la production agricole peut être multipliée par 3 à 5 fois, créant des opportunités économiques majeures pour les agriculteurs et les communautés.",
+        "description": "Le Mali, le Burkina Faso et le Niger possèdent un immense potentiel agricole inexploité. Avec les bonnes technologies, infrastructures et formations, la production agricole peut être multipliée par 3 à 5 fois, créant des opportunités économiques majeures pour les agriculteurs et les communautés.",
       "productionIncrease": "Augmentation de la production",
       "targetFarmers": "Agriculteurs ciblés",
       "roadmap": "Feuille de route"

@@ -43,6 +43,17 @@ const Header = () => {
             <Link to="/contact" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
               {t('nav.contact')}
             </Link>
+            {/* Lien Admin */}
+            <Link 
+              to="/admin/login" 
+              className="text-gray-600 hover:text-primary-green transition-colors font-medium flex items-center space-x-1"
+              title="Espace Administrateur"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>{t('nav.admin')}</span>
+            </Link>
             {/* LanguageSelector masqué - détection automatique via géolocalisation */}
             <a
               href="#"
@@ -123,6 +134,17 @@ const Header = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               {t('nav.contact')}
+            </Link>
+            {/* Lien Admin Mobile */}
+            <Link
+              to="/admin/login"
+              className="block text-gray-700 hover:text-primary-green transition-colors font-medium flex items-center space-x-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>{t('nav.admin')}</span>
             </Link>
             {/* LanguageSelector masqué - détection automatique via géolocalisation */}
             <a

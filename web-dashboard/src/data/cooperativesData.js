@@ -117,6 +117,37 @@ export const cooperativesByRegion = {
       capacite: '120 tonnes/mois',
       contact: '+226 70 56 78 90'
     }
+  ],
+  // Niger
+  'Tillabéri, Niger': [
+    {
+      id: 13,
+      nom: 'Coopérative Agricole de Tillabéri',
+      type: 'Coopérative',
+      produits: ['Mil', 'Sorgho', 'Arachide'],
+      capacite: '35 tonnes/mois',
+      contact: '+227 90 12 34 56'
+    }
+  ],
+  'Dosso, Niger': [
+    {
+      id: 14,
+      nom: 'Union des Producteurs de Dosso',
+      type: 'Coopérative',
+      produits: ['Sésame', 'Arachide', 'Coton'],
+      capacite: '40 tonnes/mois',
+      contact: '+227 90 23 45 67'
+    }
+  ],
+  'Niamey, Niger': [
+    {
+      id: 15,
+      nom: 'Coopérative Nationale de Niamey',
+      type: 'Coopérative',
+      produits: ['Tous produits'],
+      capacite: '100 tonnes/mois',
+      contact: '+227 90 34 56 78'
+    }
   ]
 };
 
@@ -273,6 +304,49 @@ export const processorsByRegion = {
       contact: '+226 70 56 78 90',
       localisation: 'Ouagadougou Centre'
     }
+  ],
+  // Niger
+  'Tillabéri, Niger': [
+    {
+      id: 12,
+      nom: 'Centre de Transformation Céréalière - Tillabéri',
+      type: 'Centre de Transformation',
+      proprietaire: 'Aminatou Issoufou',
+      genre: 'Féminine',
+      capacite: '25 tonnes/mois',
+      produits: ['Farine de mil', 'Farine de sorgho'],
+      produitsAcceptes: ['Mil', 'Sorgho'],
+      contact: '+227 90 12 34 56',
+      localisation: 'Tillabéri Centre'
+    }
+  ],
+  'Dosso, Niger': [
+    {
+      id: 13,
+      nom: 'Unité de Transformation de Sésame - Dosso',
+      type: 'Processeur',
+      proprietaire: 'Mariama Moussa',
+      genre: 'Féminine',
+      capacite: '20 tonnes/mois',
+      produits: ['Huile de sésame', 'Tahini'],
+      produitsAcceptes: ['Sésame'],
+      contact: '+227 90 23 45 67',
+      localisation: 'Dosso Centre'
+    }
+  ],
+  'Niamey, Niger': [
+    {
+      id: 14,
+      nom: 'Centre National de Transformation - Niamey',
+      type: 'Centre de Transformation',
+      proprietaire: 'Fatouma Abdou',
+      genre: 'Féminine',
+      capacite: '60 tonnes/mois',
+      produits: ['Tous produits transformés'],
+      produitsAcceptes: ['Karité', 'Sésame', 'Arachide', 'Coton'],
+      contact: '+227 90 34 56 78',
+      localisation: 'Niamey Centre'
+    }
   ]
 };
 
@@ -289,6 +363,10 @@ export const regions = [
   'Bobo-Dioulasso, Burkina Faso',
   'Hauts-Bassins, Burkina Faso',
   'Sahel, Burkina Faso',
-  'Ouagadougou, Burkina Faso'
+  'Ouagadougou, Burkina Faso',
+  // Niger
+  'Tillabéri, Niger',
+  'Dosso, Niger',
+  'Niamey, Niger'
 ];
 

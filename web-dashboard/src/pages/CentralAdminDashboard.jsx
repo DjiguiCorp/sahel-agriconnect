@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CooperativesManagement from '../components/admin/CooperativesManagement';
+import CooperativesDiasporaManagement from '../components/admin/CooperativesDiasporaManagement';
 import SeasonalPlanning from '../components/admin/SeasonalPlanning';
 import InputsManagement from '../components/admin/InputsManagement';
 import CertificationManagement from '../components/admin/CertificationManagement';
@@ -23,6 +24,7 @@ const CentralAdminDashboard = () => {
   const tabs = [
     { id: 'farmers', label: 'Agriculteurs (Temps Réel)', icon: '👨‍🌾' },
     { id: 'cooperatives', label: 'Coopératives', icon: '🤝' },
+    { id: 'cooperatives-diaspora', label: 'Coopératives & Diaspora', icon: '🌍' },
     { id: 'seasonal', label: 'Planification Saisonnière', icon: '📅' },
     { id: 'inputs', label: 'Intrants & Fertilisants', icon: '🌱' },
     { id: 'certification', label: 'Certification', icon: '⭐' },
@@ -110,6 +112,7 @@ const CentralAdminDashboard = () => {
           <div className="max-w-7xl mx-auto">
             {activeTab === 'farmers' && <RealTimeFarmers />}
             {activeTab === 'cooperatives' && <CooperativesManagement />}
+            {activeTab === 'cooperatives-diaspora' && <CooperativesDiasporaManagement />}
             {activeTab === 'seasonal' && <SeasonalPlanning />}
             {activeTab === 'inputs' && <InputsManagement />}
             {activeTab === 'certification' && <CertificationManagement />}
