@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { API_ENDPOINTS } from '../config/api';
 
 const PlantDiseaseAnalyzer = ({ onDiseaseDetected }) => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -208,7 +209,7 @@ const PlantDiseaseAnalyzer = ({ onDiseaseDetected }) => {
       const imageBase64 = await convertToBase64(selectedImage);
 
       // Appel à l'API backend
-      const response = await fetch('http://localhost:3001/api/detect-plant-disease', {
+      const response = await fetch(API_ENDPOINTS.PLANT_DISEASE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

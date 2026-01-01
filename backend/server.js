@@ -17,33 +17,92 @@ const app = express();
 const httpServer = createServer(app);
 
 // Configuration CORS pour production et développement
-const allowedOrigins = process.env.FRONTEND_URL 
-  ? [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:3000']
-  : ['http://localhost:5173', 'http://localhost:3000'];
+// Permettre toutes les origines Vercel (avec et sans www, http et https)
+const getVercelOrigins = () => {
+  if (!process.env.FRONTEND_URL) return [];
+  const baseUrl = process.env.FRONTEND_URL.replace(/\/$/, ''); // Enlever trailing slash
+  const origins = [baseUrl];
+  
+  // Ajouter variantes (avec/sans www, http/https)
+  if (baseUrl.includes('vercel.app')) {
+    origins.push(baseUrl.replace('https://', 'http://'));
+    origins.push(baseUrl.replace(/^https:\/\/([^.]+)/, 'https://www.$1'));
+  }
+  
+  return origins;
+};
 
-// Configuration Socket.io
+const allowedOrigins = [
+  ...getVercelOrigins(),
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000'
+];
+
+// Configuration Socket.io - Permissif pour mobile
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: function (origin, callback) {
+      // Permettre toutes les origines en développement
+      if (process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+      // En production, permettre Vercel et localhost
+      if (!origin || origin.includes('vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      }
+      callback(null, true); // Permettre pour mobile
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
   }
 });
 
-// Middleware
+// Middleware CORS - Configuration permissive pour mobile
 app.use(cors({
   origin: function (origin, callback) {
     // Permettre les requêtes sans origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    if (!origin) {
+      return callback(null, true);
     }
+    
+    // En développement, permettre toutes les origines
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // En production, vérifier si l'origine est autorisée
+    // Permettre toutes les origines Vercel (pour mobile et desktop)
+    if (origin.includes('vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Vérifier la liste des origines autorisées
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    
+    // Log pour debug (à retirer en production si nécessaire)
+    console.log('CORS: Origin non autorisé:', origin);
+    console.log('CORS: Origines autorisées:', allowedOrigins);
+    
+    // En production, être plus permissif pour mobile
+    // Permettre si l'origine contient le domaine Vercel
+    if (process.env.FRONTEND_URL && origin.includes(new URL(process.env.FRONTEND_URL).hostname)) {
+      return callback(null, true);
+    }
+    
+    callback(null, true); // Permettre temporairement pour debug mobile
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 86400 // 24 heures
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
