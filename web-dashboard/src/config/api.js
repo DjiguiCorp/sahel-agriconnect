@@ -1,6 +1,21 @@
 // Configuration de l'API backend
+// En production, VITE_API_BASE_URL doit être défini dans Vercel
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'http://localhost:3001';
+
+// Log pour debug (uniquement en développement)
+if (import.meta.env.DEV) {
+  console.log('🔧 Configuration API:');
+  console.log('  - API_BASE_URL:', API_BASE_URL);
+  console.log('  - WS_BASE_URL:', WS_BASE_URL);
+  console.log('  - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI');
+}
+
+// Avertissement si on utilise localhost en production
+if (import.meta.env.PROD && API_BASE_URL.includes('localhost')) {
+  console.warn('⚠️ ATTENTION: API_BASE_URL pointe vers localhost en production!');
+  console.warn('⚠️ Définissez VITE_API_BASE_URL dans Vercel → Settings → Environment Variables');
+}
 
 export const API_ENDPOINTS = {
   // Authentification

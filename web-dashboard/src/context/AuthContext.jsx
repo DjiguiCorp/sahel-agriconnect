@@ -35,13 +35,21 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
+      const loginUrl = API_ENDPOINTS.AUTH.LOGIN;
+      console.log('🔐 Tentative de connexion à:', loginUrl);
+      
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
+
+      // Vérifier si la réponse est valide (pas d'erreur réseau)
+      if (!response) {
+        throw new Error('Aucune réponse du serveur. Vérifiez que le backend est accessible.');
+      }
 
       const data = await response.json();
 
@@ -64,8 +72,30 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: data.message || 'Email ou mot de passe incorrect' };
       }
     } catch (error) {
-      console.error('Erreur de connexion:', error);
-      return { success: false, error: 'Erreur de connexion au serveur' };
+      console.error('❌ Erreur de connexion:', error);
+      console.error('📍 URL utilisée:', API_ENDPOINTS.AUTH.LOGIN);
+      console.error('📍 API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)');
+      
+      // Message d'erreur plus informatif
+      let errorMessage = 'Erreur de connexion au serveur';
+      
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet et que le backend est accessible.';
+      } else if (error.message.includes('CORS')) {
+        errorMessage = 'Erreur CORS. Le backend doit autoriser les requêtes depuis cette origine.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { 
+        success: false, 
+        error: errorMessage,
+        debug: {
+          url: API_ENDPOINTS.AUTH.LOGIN,
+          apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI',
+          error: error.message
+        }
+      };
     }
   };
 

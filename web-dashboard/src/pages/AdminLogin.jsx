@@ -22,7 +22,16 @@ const AdminLogin = () => {
     if (result.success) {
       navigate('/admin/central');
     } else {
-      setError(result.error || t('admin.login.error'));
+      // Afficher l'erreur avec des informations de debug en développement
+      let errorMessage = result.error || t('admin.login.error');
+      
+      // En développement, ajouter des infos de debug
+      if (import.meta.env.DEV && result.debug) {
+        console.error('🔍 Debug info:', result.debug);
+        errorMessage += ` (URL: ${result.debug.url})`;
+      }
+      
+      setError(errorMessage);
     }
     
     setIsLoading(false);
