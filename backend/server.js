@@ -92,8 +92,16 @@ app.use(cors({
     
     // En production, être plus permissif pour mobile
     // Permettre si l'origine contient le domaine Vercel
-    if (process.env.FRONTEND_URL && origin.includes(new URL(process.env.FRONTEND_URL).hostname)) {
-      return callback(null, true);
+    if (process.env.FRONTEND_URL) {
+      try {
+        const frontendUrl = new URL(process.env.FRONTEND_URL);
+        if (origin.includes(frontendUrl.hostname)) {
+          return callback(null, true);
+        }
+      } catch (err) {
+        // Si FRONTEND_URL n'est pas une URL valide, ignorer cette vérification
+        console.warn('CORS: FRONTEND_URL invalide:', process.env.FRONTEND_URL);
+      }
     }
     
     callback(null, true); // Permettre temporairement pour debug mobile
