@@ -38,17 +38,51 @@ export const AuthProvider = ({ children }) => {
       const loginUrl = API_ENDPOINTS.AUTH.LOGIN;
       console.log('🔐 Tentative de connexion à:', loginUrl);
       
+      // Vérifier si on utilise localhost en production (problème de configuration)
+      if (import.meta.env.PROD && loginUrl.includes('localhost')) {
+        throw new Error('Configuration manquante : VITE_API_BASE_URL n\'est pas défini dans Vercel. Le frontend utilise localhost qui n\'est pas accessible depuis mobile.');
+      }
+      
       const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        // Ajouter un timeout pour mobile
+        signal: AbortSignal.timeout(30000) // 30 secondes
+      }).catch((fetchError) => {
+        // Gérer les erreurs de fetch spécifiquement
+        if (fetchError.name === 'AbortError') {
+          throw new Error('La connexion a pris trop de temps. Vérifiez votre connexion internet.');
+        }
+        if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError')) {
+          throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet et que le backend est accessible.');
+        }
+        throw fetchError;
       });
 
       // Vérifier si la réponse est valide (pas d'erreur réseau)
       if (!response) {
         throw new Error('Aucune réponse du serveur. Vérifiez que le backend est accessible.');
+      }
+
+      // Gérer les erreurs HTTP
+      if (!response.ok) {
+        // Essayer de lire le message d'erreur du serveur
+        let errorMessage = 'Erreur de connexion au serveur';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // Si la réponse n'est pas du JSON, utiliser le statut HTTP
+          if (response.status === 0) {
+            errorMessage = 'Impossible de se connecter au serveur. Vérifiez que le backend est accessible et que VITE_API_BASE_URL est configuré dans Vercel.';
+          } else if (response.status >= 500) {
+            errorMessage = 'Erreur serveur. Le backend peut être en cours de démarrage (attendez 30-60 secondes).';
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
