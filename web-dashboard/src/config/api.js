@@ -24,7 +24,7 @@ if (import.meta.env.PROD && API_BASE_URL.includes('localhost')) {
   console.error('❌ ERREUR CRITIQUE: API_BASE_URL pointe vers localhost en production!');
   console.error('❌ Cela empêche l\'accès depuis mobile.');
   console.error('✅ SOLUTION: Définissez VITE_API_BASE_URL dans Vercel → Settings → Environment Variables');
-  console.error('✅ URL attendue: https://votre-backend.onrender.com (sans trailing slash)');
+  console.error('✅ URL attendue: Votre URL Render (ex: https://sahel-agriconnect-backend-xxxx.onrender.com)');
   console.error('✅ Puis redéployez le frontend dans Vercel → Deployments → Redeploy');
 }
 
