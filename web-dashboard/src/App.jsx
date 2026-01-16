@@ -67,7 +67,11 @@ function App() {
             <Route path="demander-avantage" element={<PerksRequest />} />
             <Route path="irrigation" element={<IrrigationAssessment />} />
             <Route path="optimisation-production" element={<ProductionOptimizer />} />
+            {/* Route catch-all pour les routes non trouvées */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+          {/* Catch-all pour les routes admin non trouvées */}
+          <Route path="/admin/*" element={<Navigate to="/admin/login" replace />} />
         </Routes>
       </Router>
       </WebSocketProvider>

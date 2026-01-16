@@ -124,11 +124,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Gestion des erreurs 404
+// Gestion des erreurs 404 - DOIT être après toutes les routes
 app.use((req, res) => {
+  // Ne pas logger les requêtes OPTIONS (preflight CORS)
+  if (req.method !== 'OPTIONS') {
+    console.log(`❌ Route not found: ${req.method} ${req.path}`);
+  }
+  
   res.status(404).json({ 
     error: 'Route not found',
     message: `La route ${req.method} ${req.path} n'existe pas`,
+    path: req.path,
+    method: req.method,
     availableEndpoints: {
       root: 'GET /',
       health: 'GET /api/health',
@@ -144,7 +151,8 @@ app.use((req, res) => {
       logistics: 'GET /api/logistics, POST /api/logistics/schedule',
       optimize: 'POST /api/optimize/production'
     },
-    frontend: 'Accédez à http://localhost:5173 pour l\'interface utilisateur'
+    frontend: process.env.FRONTEND_URL || 'Accédez à http://localhost:5173 pour l\'interface utilisateur',
+    timestamp: new Date().toISOString()
   });
 });
 
