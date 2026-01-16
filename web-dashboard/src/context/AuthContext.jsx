@@ -37,10 +37,20 @@ export const AuthProvider = ({ children }) => {
     try {
       const loginUrl = API_ENDPOINTS.AUTH.LOGIN;
       console.log('🔐 Tentative de connexion à:', loginUrl);
+      console.log('📍 API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)');
       
       // Vérifier si on utilise localhost en production (problème de configuration)
       if (import.meta.env.PROD && loginUrl.includes('localhost')) {
-        throw new Error('Configuration manquante : VITE_API_BASE_URL n\'est pas défini dans Vercel. Le frontend utilise localhost qui n\'est pas accessible depuis mobile.');
+        const errorMsg = 'Configuration manquante : VITE_API_BASE_URL n\'est pas défini dans Vercel. Le frontend utilise localhost qui n\'est pas accessible depuis mobile. Allez dans Vercel → Settings → Environment Variables et ajoutez VITE_API_BASE_URL avec l\'URL de votre backend Render.';
+        console.error('❌', errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      // Vérifier si l'URL est valide
+      if (!loginUrl || loginUrl === 'undefined/api/auth/login') {
+        const errorMsg = 'Configuration invalide : VITE_API_BASE_URL n\'est pas correctement configuré. Vérifiez les variables d\'environnement dans Vercel.';
+        console.error('❌', errorMsg);
+        throw new Error(errorMsg);
       }
       
       const response = await fetch(loginUrl, {

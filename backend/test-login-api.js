@@ -2,25 +2,8 @@
  * Script de test pour vérifier l'endpoint de login
  * Usage: node test-login-api.js
  * 
- * Note: Nécessite Node.js 18+ pour fetch natif
- * Pour Node.js < 18, installez node-fetch: npm install node-fetch
+ * Nécessite Node.js 18+ (fetch natif)
  */
-
-// Utiliser fetch natif (Node.js 18+) ou node-fetch si disponible
-let fetch;
-try {
-  // Essayer d'utiliser fetch natif (Node.js 18+)
-  if (typeof globalThis.fetch !== 'undefined') {
-    fetch = globalThis.fetch;
-  } else {
-    // Fallback vers node-fetch si disponible
-    const nodeFetch = await import('node-fetch');
-    fetch = nodeFetch.default;
-  }
-} catch (e) {
-  console.error('❌ Erreur: fetch n\'est pas disponible. Installez node-fetch: npm install node-fetch');
-  process.exit(1);
-}
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 const LOGIN_ENDPOINT = `${API_BASE_URL}/api/auth/login`;
@@ -50,7 +33,6 @@ async function testLogin() {
     });
 
     console.log(`📊 Statut HTTP: ${response.status} ${response.statusText}`);
-    console.log(`📋 Headers:`, Object.fromEntries(response.headers.entries()));
     console.log('');
 
     const data = await response.json();
@@ -121,6 +103,10 @@ async function testLogin() {
       console.log('💡 SOLUTION:');
       console.log('   1. Vérifiez que l\'URL du backend est correcte');
       console.log('   2. En production, vérifiez que VITE_API_BASE_URL est configuré dans Vercel');
+    } else if (error.message.includes('fetch is not defined')) {
+      console.log('💡 SOLUTION:');
+      console.log('   Ce script nécessite Node.js 18+ (fetch natif)');
+      console.log('   Ou installez node-fetch: npm install node-fetch');
     }
     
     console.log('\n📝 Pour tester avec une URL différente:');

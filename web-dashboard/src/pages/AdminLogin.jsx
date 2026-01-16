@@ -56,18 +56,32 @@ const AdminLogin = () => {
           {error && (
             <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 rounded text-red-800">
               <p className="font-semibold">{error}</p>
-              {(import.meta.env.DEV || import.meta.env.MODE === 'development') && (
-                <div className="mt-2 text-xs text-red-700 space-y-1">
-                  <p><strong>💡 Debug Info:</strong></p>
-                  <p>Vérifiez que :</p>
-                  <ul className="list-disc list-inside ml-2 space-y-1">
-                    <li>Le backend est démarré (http://localhost:3001)</li>
-                    <li>VITE_API_BASE_URL est configuré (actuel: {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI → utilise localhost'})</li>
-                    <li>L'endpoint est accessible : {import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/auth/login</li>
-                  </ul>
-                  <p className="mt-2 text-xs">Ouvrez la console du navigateur (F12) pour plus de détails.</p>
+              <div className="mt-3 text-sm text-red-700 space-y-2">
+                <p><strong>💡 Solutions :</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  {import.meta.env.PROD && (
+                    <>
+                      <li><strong>Si vous êtes sur mobile :</strong> VITE_API_BASE_URL doit être configuré dans Vercel avec l'URL de votre backend Render (pas localhost)</li>
+                      <li><strong>Vérifiez Vercel :</strong> Settings → Environment Variables → VITE_API_BASE_URL doit être = URL Render (ex: https://backend.onrender.com)</li>
+                      <li><strong>Redéployez :</strong> Deployments → Redeploy (nécessaire après modification des variables)</li>
+                      <li><strong>Videz le cache :</strong> Videz le cache du navigateur mobile</li>
+                    </>
+                  )}
+                  {import.meta.env.DEV && (
+                    <>
+                      <li>Le backend est démarré (http://localhost:3001)</li>
+                      <li>VITE_API_BASE_URL est configuré (actuel: {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI → utilise localhost'})</li>
+                      <li>L'endpoint est accessible : {import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/auth/login</li>
+                    </>
+                  )}
+                </ul>
+                <div className="mt-2 p-2 bg-red-50 rounded text-xs">
+                  <p><strong>🔍 Debug Info :</strong></p>
+                  <p>API URL: {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)'}</p>
+                  <p>Mode: {import.meta.env.MODE}</p>
+                  <p className="mt-1">Ouvrez la console du navigateur pour plus de détails.</p>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
