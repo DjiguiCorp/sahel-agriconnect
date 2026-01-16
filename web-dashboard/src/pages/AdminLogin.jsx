@@ -56,6 +56,18 @@ const AdminLogin = () => {
           {error && (
             <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 rounded text-red-800">
               <p className="font-semibold">{error}</p>
+              {(import.meta.env.DEV || import.meta.env.MODE === 'development') && (
+                <div className="mt-2 text-xs text-red-700 space-y-1">
+                  <p><strong>💡 Debug Info:</strong></p>
+                  <p>Vérifiez que :</p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>Le backend est démarré (http://localhost:3001)</li>
+                    <li>VITE_API_BASE_URL est configuré (actuel: {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI → utilise localhost'})</li>
+                    <li>L'endpoint est accessible : {import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/auth/login</li>
+                  </ul>
+                  <p className="mt-2 text-xs">Ouvrez la console du navigateur (F12) pour plus de détails.</p>
+                </div>
+              )}
             </div>
           )}
 

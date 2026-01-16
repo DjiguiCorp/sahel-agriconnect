@@ -88,10 +88,12 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok && data.token) {
+        // Le backend retourne 'admin' mais on peut aussi avoir 'user' pour compatibilité
+        const adminData = data.admin || data.user;
         const userData = {
           email: email,
-          name: data.user?.name || 'Administrateur Central',
-          role: data.user?.role || 'admin'
+          name: adminData?.name || 'Administrateur Central',
+          role: adminData?.role || 'admin'
         };
         setIsAuthenticated(true);
         setUser(userData);
@@ -103,7 +105,9 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('adminToken', data.token);
         return { success: true };
       } else {
-        return { success: false, error: data.message || 'Email ou mot de passe incorrect' };
+        // Le backend peut retourner 'error' ou 'message'
+        const errorMsg = data.error || data.message || 'Email ou mot de passe incorrect';
+        return { success: false, error: errorMsg };
       }
     } catch (error) {
       console.error('❌ Erreur de connexion:', error);
