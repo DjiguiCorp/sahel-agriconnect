@@ -20,7 +20,7 @@ const Header = () => {
             <span className="text-xl font-bold text-primary-green">{t('common.appName')}</span>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Simplified */}
           <div className="hidden md:flex items-center space-x-4">
             <Link to="/" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
               {t('nav.home')}
@@ -37,23 +37,8 @@ const Header = () => {
             <Link to="/detection-maladies" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
               {t('nav.diseaseDetection')}
             </Link>
-            <Link to="/think-tank" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
-              {t('nav.thinkTank')}
-            </Link>
             <Link to="/contact" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
               {t('nav.contact')}
-            </Link>
-            <Link to="/governance" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
-              Gouvernance
-            </Link>
-            <Link to="/centres-agricoles" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
-              Centres
-            </Link>
-            <Link to="/formations" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
-              Formations
-            </Link>
-            <Link to="/optimisation-production" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
-              Optimisation IA
             </Link>
             {/* Lien Admin */}
             <Link 
@@ -146,34 +131,6 @@ const Header = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               {t('nav.contact')}
-            </Link>
-            <Link
-              to="/governance"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Gouvernance
-            </Link>
-            <Link
-              to="/centres-agricoles"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Centres Agricoles
-            </Link>
-            <Link
-              to="/formations"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Formations
-            </Link>
-            <Link
-              to="/optimisation-production"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Optimisation IA
             </Link>
             {/* Lien Admin Mobile */}
             <Link

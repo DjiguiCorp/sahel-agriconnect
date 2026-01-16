@@ -15,6 +15,7 @@ import PerksManagement from '../components/admin/PerksManagement';
 import TrainingsManagement from '../components/admin/TrainingsManagement';
 import IrrigationManagement from '../components/admin/IrrigationManagement';
 import ProductionOptimizationManagement from '../components/admin/ProductionOptimizationManagement';
+import Governance from '../pages/Governance';
 
 const CentralAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('farmers');
@@ -27,18 +28,16 @@ const CentralAdminDashboard = () => {
   };
 
   const tabs = [
-    { id: 'farmers', label: 'Agriculteurs (Temps Réel)', icon: '👨‍🌾' },
+    { id: 'farmers', label: 'Agriculteurs', icon: '👨‍🌾' },
     { id: 'cooperatives', label: 'Coopératives', icon: '🤝' },
-    { id: 'cooperatives-diaspora', label: 'Coopératives & Diaspora', icon: '🌍' },
     { id: 'centers', label: 'Centres Agricoles', icon: '🏢' },
-    { id: 'perks', label: 'Avantages Coopératifs', icon: '🎁' },
     { id: 'trainings', label: 'Formations', icon: '📚' },
+    { id: 'governance', label: 'Gouvernance', icon: '⚖️' },
+    { id: 'perks', label: 'Avantages', icon: '🎁' },
     { id: 'irrigation', label: 'Irrigation', icon: '💧' },
-    { id: 'optimization', label: 'Optimisation Production', icon: '🤖' },
-    { id: 'seasonal', label: 'Planification Saisonnière', icon: '📅' },
-    { id: 'inputs', label: 'Intrants & Fertilisants', icon: '🌱' },
+    { id: 'optimization', label: 'Optimisation IA', icon: '🤖' },
+    { id: 'seasonal', label: 'Planification', icon: '📅' },
     { id: 'certification', label: 'Certification', icon: '⭐' },
-    { id: 'partnerships', label: 'Partenariats & Usines', icon: '🏭' },
     { id: 'logistics', label: 'Logistique', icon: '🚚' },
     { id: 'reports', label: 'Rapports', icon: '📊' }
   ];
@@ -122,16 +121,14 @@ const CentralAdminDashboard = () => {
           <div className="max-w-7xl mx-auto">
             {activeTab === 'farmers' && <RealTimeFarmers />}
             {activeTab === 'cooperatives' && <CooperativesManagement />}
-            {activeTab === 'cooperatives-diaspora' && <CooperativesDiasporaManagement />}
             {activeTab === 'centers' && <CentersManagement />}
-            {activeTab === 'perks' && <PerksManagement />}
             {activeTab === 'trainings' && <TrainingsManagement />}
+            {activeTab === 'governance' && <Governance />}
+            {activeTab === 'perks' && <PerksManagement />}
             {activeTab === 'irrigation' && <IrrigationManagement />}
             {activeTab === 'optimization' && <ProductionOptimizationManagement />}
             {activeTab === 'seasonal' && <SeasonalPlanning />}
-            {activeTab === 'inputs' && <InputsManagement />}
             {activeTab === 'certification' && <CertificationManagement />}
-            {activeTab === 'partnerships' && <PartnershipsManagement />}
             {activeTab === 'logistics' && <LogisticsManagement />}
             {activeTab === 'reports' && <ReportsManagement />}
           </div>

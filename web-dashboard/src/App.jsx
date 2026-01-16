@@ -64,9 +64,7 @@ function App() {
             <Route path="diaspora" element={<DiasporaPartnership />} />
             <Route path="centres-transformation" element={<TransformationCenters />} />
             <Route path="governance" element={<Governance />} />
-            <Route path="centres-agricoles" element={<CentersMap />} />
             <Route path="demander-avantage" element={<PerksRequest />} />
-            <Route path="formations" element={<TrainingBooking />} />
             <Route path="irrigation" element={<IrrigationAssessment />} />
             <Route path="optimisation-production" element={<ProductionOptimizer />} />
           </Route>

@@ -614,41 +614,61 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
             </div>
           </div>
 
-          {/* Section Coopératives Locales */}
+          {/* Section Coopératives Locales - Enhanced */}
           {formData.region && availableCooperatives.length > 0 && (
             <div className="border-b border-gray-200 pb-6">
-              <h3 className="text-xl font-semibold text-primary-green mb-4">
-                Coopératives Locales Disponibles
-              </h3>
-              <div className="mb-4 p-4 bg-blue-50 border-l-4 border-primary-blue rounded">
-                <p className="text-sm text-gray-700">
-                  <strong>💡 Sans prêt :</strong> Tous les partenariats et soutiens sont sans prêt : 
-                  utilisation des ressources locales, formation gratuite, équipement partagé via coopératives.
-                </p>
+              <div className="mb-6 p-5 bg-gradient-to-r from-primary-orange to-primary-lightorange rounded-lg text-white">
+                <div className="flex items-start space-x-3">
+                  <span className="text-3xl">🤝</span>
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">Coopératives Disponibles dans Votre Région</h3>
+                    <p className="text-sm text-gray-100">
+                      Rejoignez une coopérative locale et bénéficiez d'avantages immédiats sans prêt!
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {availableCooperatives.map((coop) => (
-                  <div key={coop.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-orange transition-colors">
+                  <div key={coop.id} className="p-5 border-2 border-primary-green rounded-lg hover:shadow-lg transition-all bg-white">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-primary-green mb-1">{coop.nom}</h4>
-                        <p className="text-sm text-gray-600 mb-2">
-                          <span className="font-medium">Produits :</span> {coop.produits.join(', ')}
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-bold text-lg text-primary-green">{coop.nom}</h4>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Disponible</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">🌾 Produits :</span> {coop.produits.join(', ')}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">📊 Capacité :</span> {coop.capacite}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-3">
+                          <span className="font-medium">📞 Contact :</span> {coop.contact}
                         </p>
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">Capacité :</span> {coop.capacite}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          <span className="font-medium">Contact :</span> {coop.contact}
-                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">✅ Équipements partagés</span>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">✅ Formations gratuites</span>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">✅ Intrants réduits</span>
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">✅ Sans prêt</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-sm text-gray-600">
-                💡 Votre coopérative locale peut vous accompagner sans prêt. Contactez-les directement via l'app.
-              </p>
+              <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                <p className="text-sm text-green-800">
+                  <strong>💡 Avantage :</strong> En rejoignant une coopérative, vous accédez automatiquement à tous ces avantages. 
+                  Contactez directement la coopérative de votre choix pour vous inscrire!
+                </p>
+              </div>
             </div>
           )}
 
@@ -693,42 +713,95 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
             </div>
           </div>
 
-          {/* Section Coopérative */}
+          {/* Section Coopérative - Enhanced with Incentives */}
           <div className="border-b border-gray-200 pb-6">
-            <h3 className="text-xl font-semibold text-primary-green mb-4">Lien avec une Coopérative</h3>
+            <div className="mb-6 p-6 bg-gradient-to-r from-primary-green to-primary-lightgreen rounded-lg text-white">
+              <div className="flex items-start space-x-4">
+                <div className="text-4xl">🎁</div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-2">Rejoignez une Coopérative et Bénéficiez d'Avantages!</h3>
+                  <p className="text-gray-100 mb-4">
+                    Les membres de coopératives ont accès à des avantages exclusifs sans prêt :
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Équipements partagés (tracteurs, séchoirs)</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Formations gratuites en techniques agricoles</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Intrants et fertilisants à prix réduits</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Accès au financement coopératif</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Commercialisation facilitée</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Support logistique et transport</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Êtes-vous lié à une coopérative ? <span className="text-red-500">*</span>
               </label>
-              <div className="flex space-x-6">
-                <label className="flex items-center space-x-2 cursor-pointer">
+              <div className="grid grid-cols-2 gap-4">
+                <label className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                  formData.lienCooperative === 'oui'
+                    ? 'border-primary-green bg-green-50 shadow-md'
+                    : 'border-gray-300 hover:border-primary-orange hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="lienCooperative"
                     value="oui"
                     checked={formData.lienCooperative === 'oui'}
                     onChange={handleChange}
-                    className="w-4 h-4 text-primary-orange focus:ring-primary-orange"
+                    className="sr-only"
                   />
-                  <span>Oui</span>
+                  <span className="text-4xl mb-2">✅</span>
+                  <span className="font-bold text-lg text-gray-900">Oui</span>
+                  <span className="text-sm text-gray-600 mt-1 text-center">Je suis membre d'une coopérative</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                  formData.lienCooperative === 'non'
+                    ? 'border-gray-400 bg-gray-50'
+                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="lienCooperative"
                     value="non"
                     checked={formData.lienCooperative === 'non'}
                     onChange={handleChange}
-                    className="w-4 h-4 text-primary-orange focus:ring-primary-orange"
+                    className="sr-only"
                   />
-                  <span>Non</span>
+                  <span className="text-4xl mb-2">❌</span>
+                  <span className="font-bold text-lg text-gray-900">Non</span>
+                  <span className="text-sm text-gray-600 mt-1 text-center">Pas encore membre</span>
                 </label>
               </div>
               {errors.lienCooperative && <p className="mt-2 text-sm text-red-600">{errors.lienCooperative}</p>}
             </div>
 
             {formData.lienCooperative === 'oui' && (
-              <div className="space-y-4 mt-4 p-4 bg-blue-50 rounded-lg">
+              <div className="space-y-4 mt-4 p-6 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-primary-green rounded-lg shadow-md">
+                <div className="flex items-center space-x-2 mb-4">
+                  <span className="text-2xl">🎉</span>
+                  <h4 className="text-lg font-bold text-primary-green">Félicitations! Accédez aux Avantages Coopératifs</h4>
+                </div>
                 <div>
                   <label htmlFor="nomCooperative" className="block text-sm font-medium text-gray-700 mb-2">
                     Nom de la coopérative <span className="text-red-500">*</span>
@@ -771,30 +844,64 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type de soutien reçu <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Quels avantages souhaitez-vous recevoir de votre coopérative ? <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {soutiensCooperative.map((soutien) => (
-                      <label
-                        key={soutien}
-                        className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
-                          formData.soutienCooperative.includes(soutien)
-                            ? 'bg-primary-green text-white border-primary-green'
-                            : 'bg-white border-gray-300 hover:border-primary-orange'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.soutienCooperative.includes(soutien)}
-                          onChange={() => handleCheckboxChange('soutienCooperative', soutien)}
-                          className="sr-only"
-                        />
-                        <span className="text-sm font-medium">{soutien}</span>
-                      </label>
-                    ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {soutiensCooperative.map((soutien) => {
+                      const icons = {
+                        'Intrants': '🌱',
+                        'Formation': '📚',
+                        'Financement': '💰',
+                        'Logistique': '🚚',
+                        'Commercialisation': '📦',
+                        'Autres': '➕'
+                      };
+                      return (
+                        <label
+                          key={soutien}
+                          className={`flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            formData.soutienCooperative.includes(soutien)
+                              ? 'bg-primary-green text-white border-primary-green shadow-md transform scale-105'
+                              : 'bg-white border-gray-300 hover:border-primary-orange hover:shadow'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.soutienCooperative.includes(soutien)}
+                            onChange={() => handleCheckboxChange('soutienCooperative', soutien)}
+                            className="sr-only"
+                          />
+                          <span className="text-2xl">{icons[soutien] || '✓'}</span>
+                          <span className="text-sm font-medium">{soutien}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                   {errors.soutienCooperative && <p className="mt-2 text-sm text-red-600">{errors.soutienCooperative}</p>}
+                  <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                    <p className="text-sm text-yellow-800">
+                      <strong>💡 Note :</strong> Tous ces avantages sont disponibles sans prêt. Votre coopérative vous accompagne avec des ressources partagées et des formations gratuites.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {formData.lienCooperative === 'non' && (
+              <div className="mt-4 p-6 bg-blue-50 border-2 border-blue-300 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <span className="text-3xl">💡</span>
+                  <div>
+                    <h4 className="font-bold text-primary-blue mb-2">Rejoignez une Coopérative!</h4>
+                    <p className="text-sm text-gray-700 mb-3">
+                      Les membres de coopératives bénéficient d'avantages exclusifs : équipements partagés, formations gratuites, 
+                      intrants à prix réduits, financement coopératif, et bien plus encore - tout sans prêt!
+                    </p>
+                    <p className="text-sm font-medium text-primary-green">
+                      Contactez une coopérative dans votre région pour en savoir plus.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

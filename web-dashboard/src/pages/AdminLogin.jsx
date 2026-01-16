@@ -88,17 +88,16 @@ const AdminLogin = () => {
                   <p><strong>API URL:</strong> {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)'}</p>
                   <p><strong>Mode:</strong> {import.meta.env.MODE}</p>
                   <p><strong>Build Time:</strong> {new Date().toLocaleString()}</p>
-                  {import.meta.env.VITE_API_BASE_URL && (
-                    <p className="mt-1 text-orange-700">
-                      ⚠️ Si cette URL est "votre-backend.onrender.com" (placeholder), remplacez-la par votre vraie URL Render dans Vercel → Settings → Environment Variables
-                    </p>
-                  )}
-                  {!import.meta.env.VITE_API_BASE_URL && (
-                    <p className="mt-1 text-red-700">
-                      ❌ VITE_API_BASE_URL n'est pas défini ! Configurez-le dans Vercel → Settings → Environment Variables
-                    </p>
-                  )}
-                  <p className="mt-1">Consultez DIAGNOSTIC_MOBILE_URGENT.md pour guide détaillé.</p>
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="font-semibold text-yellow-800 mb-1">📋 Pour trouver votre URL Render :</p>
+                    <ol className="list-decimal list-inside space-y-1 text-yellow-700">
+                      <li>Allez sur <a href="https://dashboard.render.com" target="_blank" rel="noopener noreferrer" className="underline">dashboard.render.com</a></li>
+                      <li>Cliquez sur votre service backend</li>
+                      <li>Copiez l'URL affichée en haut (ex: https://sahel-agriconnect-backend-xxxx.onrender.com)</li>
+                      <li>Dans Vercel → Settings → Environment Variables, ajoutez cette URL comme VITE_API_BASE_URL</li>
+                      <li>Redéployez dans Vercel → Deployments → Redeploy</li>
+                    </ol>
+                  </div>
                 </div>
               </div>
             </div>
