@@ -1,3 +1,5 @@
+// CACHE BUST FORCE - Jan 16 2026 4:45 PM - placeholder fix FINAL
+// This comment and console.log force Vercel to invalidate cache and rebuild with fresh env vars
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -6,8 +8,9 @@ import { API_BASE_URL } from '../config/api';
 
 // CRITICAL DIAGNOSTIC - Jan 16 2026
 // Force rebuild and diagnose environment variable injection
-const ENV_DIAGNOSTIC_TIMESTAMP = '2026-01-16T16:00:00Z';
+const ENV_DIAGNOSTIC_TIMESTAMP = '2026-01-16T16:45:00Z';
 console.log('🔍 AdminLogin - Diagnostic Timestamp:', ENV_DIAGNOSTIC_TIMESTAMP);
+console.log('🔍 AdminLogin - Current API Base URL:', import.meta.env.VITE_API_BASE_URL || 'NOT_INJECTED');
 console.log('🔍 AdminLogin - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'FALLBACK - NOT SET');
 console.log('🔍 AdminLogin - API_BASE_URL from config:', API_BASE_URL);
 console.log('🔍 AdminLogin - Is Placeholder:', import.meta.env.VITE_API_BASE_URL?.includes('votre-backend'));

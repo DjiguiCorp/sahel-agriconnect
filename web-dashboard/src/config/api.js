@@ -1,8 +1,9 @@
+// CACHE BUST FORCE - Jan 16 2026 4:45 PM - placeholder fix FINAL
 // Configuration de l'API backend
 // En production, VITE_API_BASE_URL doit être défini dans Vercel
 // CRITICAL FIX - Jan 16 2026 - Force rebuild to pick up env vars
 // Adding timestamp to force Vite rebuild
-const BUILD_TIMESTAMP = '2026-01-16T16:00:00Z';
+const BUILD_TIMESTAMP = '2026-01-16T16:45:00Z';
 console.log('🔧 Config API - Build Timestamp:', BUILD_TIMESTAMP);
 console.log('🔧 Config API - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NOT SET - using fallback');
 console.log('🔧 Config API - VITE_WS_BASE_URL:', import.meta.env.VITE_WS_BASE_URL || 'NOT SET - using fallback');
