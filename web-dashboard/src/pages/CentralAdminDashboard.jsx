@@ -10,6 +10,11 @@ import PartnershipsManagement from '../components/admin/PartnershipsManagement';
 import ReportsManagement from '../components/admin/ReportsManagement';
 import RealTimeFarmers from '../components/admin/RealTimeFarmers';
 import LogisticsManagement from '../components/admin/LogisticsManagement';
+import CentersManagement from '../components/admin/CentersManagement';
+import PerksManagement from '../components/admin/PerksManagement';
+import TrainingsManagement from '../components/admin/TrainingsManagement';
+import IrrigationManagement from '../components/admin/IrrigationManagement';
+import ProductionOptimizationManagement from '../components/admin/ProductionOptimizationManagement';
 
 const CentralAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('farmers');
@@ -25,6 +30,11 @@ const CentralAdminDashboard = () => {
     { id: 'farmers', label: 'Agriculteurs (Temps Réel)', icon: '👨‍🌾' },
     { id: 'cooperatives', label: 'Coopératives', icon: '🤝' },
     { id: 'cooperatives-diaspora', label: 'Coopératives & Diaspora', icon: '🌍' },
+    { id: 'centers', label: 'Centres Agricoles', icon: '🏢' },
+    { id: 'perks', label: 'Avantages Coopératifs', icon: '🎁' },
+    { id: 'trainings', label: 'Formations', icon: '📚' },
+    { id: 'irrigation', label: 'Irrigation', icon: '💧' },
+    { id: 'optimization', label: 'Optimisation Production', icon: '🤖' },
     { id: 'seasonal', label: 'Planification Saisonnière', icon: '📅' },
     { id: 'inputs', label: 'Intrants & Fertilisants', icon: '🌱' },
     { id: 'certification', label: 'Certification', icon: '⭐' },
@@ -113,6 +123,11 @@ const CentralAdminDashboard = () => {
             {activeTab === 'farmers' && <RealTimeFarmers />}
             {activeTab === 'cooperatives' && <CooperativesManagement />}
             {activeTab === 'cooperatives-diaspora' && <CooperativesDiasporaManagement />}
+            {activeTab === 'centers' && <CentersManagement />}
+            {activeTab === 'perks' && <PerksManagement />}
+            {activeTab === 'trainings' && <TrainingsManagement />}
+            {activeTab === 'irrigation' && <IrrigationManagement />}
+            {activeTab === 'optimization' && <ProductionOptimizationManagement />}
             {activeTab === 'seasonal' && <SeasonalPlanning />}
             {activeTab === 'inputs' && <InputsManagement />}
             {activeTab === 'certification' && <CertificationManagement />}

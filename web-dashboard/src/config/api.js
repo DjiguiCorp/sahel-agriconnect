@@ -59,6 +59,57 @@ export const API_ENDPOINTS = {
   PLANT_DISEASE: `${API_BASE_URL}/api/detect-plant-disease`,
   // Health check
   HEALTH: `${API_BASE_URL}/api/health`,
+  // Centres agricoles
+  CENTERS: {
+    BASE: `${API_BASE_URL}/api/centers`,
+    BY_ID: (id) => `${API_BASE_URL}/api/centers/${id}`,
+    INVENTORY: (id) => `${API_BASE_URL}/api/centers/${id}/inventory`,
+    STATS: (id) => `${API_BASE_URL}/api/centers/${id}/stats`,
+  },
+  // Avantages coopératifs
+  PERKS: {
+    BASE: `${API_BASE_URL}/api/perks`,
+    REQUEST: `${API_BASE_URL}/api/perks/request`,
+    BY_ID: (id) => `${API_BASE_URL}/api/perks/${id}`,
+    APPROVE: (id) => `${API_BASE_URL}/api/perks/${id}/approve`,
+    REJECT: (id) => `${API_BASE_URL}/api/perks/${id}/reject`,
+    FULFILL: (id) => `${API_BASE_URL}/api/perks/${id}/fulfill`,
+    STATS: `${API_BASE_URL}/api/perks/stats/usage`,
+  },
+  // Formations
+  TRAININGS: {
+    BASE: `${API_BASE_URL}/api/trainings`,
+    SCHEDULE: `${API_BASE_URL}/api/trainings/schedule`,
+    BY_ID: (id) => `${API_BASE_URL}/api/trainings/${id}`,
+    BY_USER: (userId) => `${API_BASE_URL}/api/trainings/user/${userId}`,
+    REGISTER: (id) => `${API_BASE_URL}/api/trainings/${id}/register`,
+    ASSIGN_MENTOR: (id, sessionId) => `${API_BASE_URL}/api/trainings/${id}/sessions/${sessionId}/assign-mentor`,
+    MENTORS: `${API_BASE_URL}/api/trainings/mentors/available`,
+  },
+  // Irrigation
+  IRRIGATION: {
+    BASE: `${API_BASE_URL}/api/irrigation`,
+    ASSESS: `${API_BASE_URL}/api/irrigation/assess`,
+    REGIONAL: `${API_BASE_URL}/api/irrigation/regional`,
+    BY_ID: (id) => `${API_BASE_URL}/api/irrigation/${id}`,
+    ASSESS_REQUEST: (id) => `${API_BASE_URL}/api/irrigation/${id}/assess`,
+    UPGRADE_REQUEST: (id) => `${API_BASE_URL}/api/irrigation/${id}/upgrade-request`,
+  },
+  // Logistique
+  LOGISTICS: {
+    BASE: `${API_BASE_URL}/api/logistics`,
+    SCHEDULE: `${API_BASE_URL}/api/logistics/schedule`,
+    STATUS: (id) => `${API_BASE_URL}/api/logistics/status/${id}`,
+    UPDATE_STATUS: (id) => `${API_BASE_URL}/api/logistics/${id}/update-status`,
+    CAPACITY: `${API_BASE_URL}/api/logistics/capacity/planning`,
+  },
+  // Optimisation production
+  OPTIMIZE: {
+    PRODUCTION: `${API_BASE_URL}/api/optimize/production`,
+    BY_ID: (id) => `${API_BASE_URL}/api/optimize/production/${id}`,
+    REGIONAL: `${API_BASE_URL}/api/optimize/regional`,
+    FEEDBACK: (id) => `${API_BASE_URL}/api/optimize/production/${id}/feedback`,
+  },
 };
 
 export { API_BASE_URL, WS_BASE_URL };

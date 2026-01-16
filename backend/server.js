@@ -9,6 +9,12 @@ import processorRoutes from './routes/processors.js';
 import cooperativeRoutes from './routes/cooperatives.js';
 import certificationRoutes from './routes/certifications.js';
 import authRoutes from './routes/auth.js';
+import centerRoutes from './routes/centers.js';
+import perkRoutes from './routes/perks.js';
+import trainingRoutes from './routes/trainings.js';
+import irrigationRoutes from './routes/irrigation.js';
+import logisticsRoutes from './routes/logistics.js';
+import optimizeRoutes from './routes/optimize.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -121,6 +127,12 @@ app.use('/api/farmers', farmerRoutes);
 app.use('/api/processors', processorRoutes);
 app.use('/api/cooperatives', cooperativeRoutes);
 app.use('/api/certifications', certificationRoutes);
+app.use('/api/centers', centerRoutes);
+app.use('/api/perks', perkRoutes);
+app.use('/api/trainings', trainingRoutes);
+app.use('/api/irrigation', irrigationRoutes);
+app.use('/api/logistics', logisticsRoutes);
+app.use('/api/optimize', optimizeRoutes);
 
 // Route de base - Message informatif
 app.get('/', (req, res) => {
@@ -134,7 +146,13 @@ app.get('/', (req, res) => {
       farmers: '/api/farmers',
       processors: '/api/processors',
       cooperatives: '/api/cooperatives',
-      certifications: '/api/certifications'
+      certifications: '/api/certifications',
+      centers: '/api/centers',
+      perks: '/api/perks',
+      trainings: '/api/trainings',
+      irrigation: '/api/irrigation',
+      logistics: '/api/logistics',
+      optimize: '/api/optimize'
     },
     frontend: 'http://localhost:5173',
     documentation: 'Voir README.md pour plus d\'informations',
@@ -163,7 +181,13 @@ app.use((req, res) => {
       farmers: 'GET /api/farmers, POST /api/farmers',
       processors: 'GET /api/processors, POST /api/processors',
       cooperatives: 'GET /api/cooperatives',
-      certifications: 'GET /api/certifications, POST /api/certifications'
+      certifications: 'GET /api/certifications, POST /api/certifications',
+      centers: 'GET /api/centers, POST /api/centers',
+      perks: 'GET /api/perks, POST /api/perks/request',
+      trainings: 'GET /api/trainings, POST /api/trainings/schedule',
+      irrigation: 'GET /api/irrigation, POST /api/irrigation/assess',
+      logistics: 'GET /api/logistics, POST /api/logistics/schedule',
+      optimize: 'POST /api/optimize/production'
     },
     frontend: 'Accédez à http://localhost:5173 pour l\'interface utilisateur'
   });

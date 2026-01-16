@@ -46,6 +46,15 @@ const Header = () => {
             <Link to="/governance" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
               Gouvernance
             </Link>
+            <Link to="/centres-agricoles" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+              Centres
+            </Link>
+            <Link to="/formations" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+              Formations
+            </Link>
+            <Link to="/optimisation-production" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+              Optimisation IA
+            </Link>
             {/* Lien Admin */}
             <Link 
               to="/admin/login" 
@@ -144,6 +153,27 @@ const Header = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Gouvernance
+            </Link>
+            <Link
+              to="/centres-agricoles"
+              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Centres Agricoles
+            </Link>
+            <Link
+              to="/formations"
+              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Formations
+            </Link>
+            <Link
+              to="/optimisation-production"
+              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Optimisation IA
             </Link>
             {/* Lien Admin Mobile */}
             <Link

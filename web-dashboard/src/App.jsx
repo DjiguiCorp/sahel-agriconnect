@@ -16,6 +16,11 @@ import CooperativeDashboard from './components/CooperativeDashboard';
 import DiasporaPartnership from './components/DiasporaPartnership';
 import TransformationCenters from './components/TransformationCenters';
 import Governance from './pages/Governance';
+import CentersMap from './components/farmer/CentersMap';
+import PerksRequest from './components/farmer/PerksRequest';
+import TrainingBooking from './components/farmer/TrainingBooking';
+import IrrigationAssessment from './components/farmer/IrrigationAssessment';
+import ProductionOptimizer from './components/farmer/ProductionOptimizer';
 
 function App() {
   return (
@@ -59,6 +64,11 @@ function App() {
             <Route path="diaspora" element={<DiasporaPartnership />} />
             <Route path="centres-transformation" element={<TransformationCenters />} />
             <Route path="governance" element={<Governance />} />
+            <Route path="centres-agricoles" element={<CentersMap />} />
+            <Route path="demander-avantage" element={<PerksRequest />} />
+            <Route path="formations" element={<TrainingBooking />} />
+            <Route path="irrigation" element={<IrrigationAssessment />} />
+            <Route path="optimisation-production" element={<ProductionOptimizer />} />
           </Route>
         </Routes>
       </Router>
