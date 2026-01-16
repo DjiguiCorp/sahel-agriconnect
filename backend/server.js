@@ -37,7 +37,7 @@ const allowedOrigins = [
   'http://127.0.0.1:3000'
 ];
 
-// Configuration CORS avec fonction dynamique pour permettre toutes origines Vercel
+// Configuration CORS - Permissive pour toutes les origines Vercel
 app.use(cors({
   origin: function (origin, callback) {
     // Permettre les requêtes sans origin (mobile, Postman, etc.)
@@ -56,7 +56,16 @@ app.use(cors({
     callback(null, true);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }));
+
+// Handle preflight requests explicitly (safety net)
+app.options('*', cors());
 
 // Configuration Socket.io - Permissif pour mobile
 const io = new Server(httpServer, {
