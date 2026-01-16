@@ -79,9 +79,20 @@ const AdminLogin = () => {
                 </ul>
                 <div className="mt-2 p-2 bg-red-50 rounded text-xs">
                   <p><strong>🔍 Debug Info :</strong></p>
-                  <p>API URL: {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)'}</p>
-                  <p>Mode: {import.meta.env.MODE}</p>
-                  <p className="mt-1">Ouvrez la console du navigateur pour plus de détails.</p>
+                  <p><strong>API URL:</strong> {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)'}</p>
+                  <p><strong>Mode:</strong> {import.meta.env.MODE}</p>
+                  <p><strong>Build Time:</strong> {new Date().toLocaleString()}</p>
+                  {import.meta.env.VITE_API_BASE_URL && (
+                    <p className="mt-1 text-orange-700">
+                      ⚠️ Si cette URL est "votre-backend.onrender.com" (placeholder), remplacez-la par votre vraie URL Render dans Vercel → Settings → Environment Variables
+                    </p>
+                  )}
+                  {!import.meta.env.VITE_API_BASE_URL && (
+                    <p className="mt-1 text-red-700">
+                      ❌ VITE_API_BASE_URL n'est pas défini ! Configurez-le dans Vercel → Settings → Environment Variables
+                    </p>
+                  )}
+                  <p className="mt-1">Consultez DIAGNOSTIC_MOBILE_URGENT.md pour guide détaillé.</p>
                 </div>
               </div>
             </div>
