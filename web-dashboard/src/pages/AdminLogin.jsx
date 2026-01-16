@@ -63,8 +63,10 @@ const AdminLogin = () => {
                     <>
                       <li><strong>Si vous êtes sur mobile :</strong> VITE_API_BASE_URL doit être configuré dans Vercel avec l'URL de votre backend Render (pas localhost)</li>
                       <li><strong>Vérifiez Vercel :</strong> Settings → Environment Variables → VITE_API_BASE_URL doit être = URL Render (ex: https://backend.onrender.com)</li>
+                      <li><strong>⚠️ IMPORTANT :</strong> Utilisez votre VRAIE URL Render (pas "votre-backend.onrender.com")</li>
                       <li><strong>Redéployez :</strong> Deployments → Redeploy (nécessaire après modification des variables)</li>
                       <li><strong>Videz le cache :</strong> Videz le cache du navigateur mobile</li>
+                      <li><strong>Guide détaillé :</strong> Consultez CONFIGURER_VARIABLES_VERCEL_ETAPE_PAR_ETAPE.md</li>
                     </>
                   )}
                   {import.meta.env.DEV && (
