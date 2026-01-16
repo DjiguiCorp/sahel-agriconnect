@@ -13,8 +13,11 @@ if (import.meta.env.DEV) {
 
 // Avertissement si on utilise localhost en production
 if (import.meta.env.PROD && API_BASE_URL.includes('localhost')) {
-  console.warn('⚠️ ATTENTION: API_BASE_URL pointe vers localhost en production!');
-  console.warn('⚠️ Définissez VITE_API_BASE_URL dans Vercel → Settings → Environment Variables');
+  console.error('❌ ERREUR CRITIQUE: API_BASE_URL pointe vers localhost en production!');
+  console.error('❌ Cela empêche l\'accès depuis mobile.');
+  console.error('✅ SOLUTION: Définissez VITE_API_BASE_URL dans Vercel → Settings → Environment Variables');
+  console.error('✅ URL attendue: https://votre-backend.onrender.com (sans trailing slash)');
+  console.error('✅ Puis redéployez le frontend dans Vercel → Deployments → Redeploy');
 }
 
 export const API_ENDPOINTS = {
