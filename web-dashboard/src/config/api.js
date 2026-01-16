@@ -1,8 +1,15 @@
 // Configuration de l'API backend
 // En production, VITE_API_BASE_URL doit être défini dans Vercel
-// Force env refresh - Jan 2025 - This comment forces Vite to rebuild with fresh env vars
+// FORCE ENV REFRESH - Jan 16 2026 - Djigui
+// This console.log and comment force Vite to rebuild with fresh env vars
+console.log('🔧 Config API - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NOT SET - using fallback');
+console.log('🔧 Config API - VITE_WS_BASE_URL:', import.meta.env.VITE_WS_BASE_URL || 'NOT SET - using fallback');
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'http://localhost:3001';
+
+console.log('🔧 Config API - Final API_BASE_URL:', API_BASE_URL);
+console.log('🔧 Config API - Final WS_BASE_URL:', WS_BASE_URL);
 
 // Log pour debug (uniquement en développement)
 if (import.meta.env.DEV) {

@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../config/api';
+
+// FORCE ENV REFRESH - Jan 16 2026 - Djigui
+// This console.log forces Vite to rebuild with fresh env vars
+console.log('🔍 API Base URL in use:', import.meta.env.VITE_API_BASE_URL || 'FALLBACK - NOT SET');
+console.log('🔍 API_BASE_URL from config:', API_BASE_URL);
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
