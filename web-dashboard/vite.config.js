@@ -4,8 +4,11 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // REMOVED: define block that was blocking environment variables
+  // Force rebuild: Updated to ensure environment variables are properly injected
   // Vite automatically handles import.meta.env.VITE_* variables from Vercel
-  // The define block was preventing Vercel env vars from being injected correctly
+  build: {
+    // Force production build to pick up env vars
+    target: 'esnext',
+  },
 })
 

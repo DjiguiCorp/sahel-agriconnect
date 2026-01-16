@@ -1,22 +1,71 @@
 // Configuration de l'API backend
-// En production, VITE_API_BASE_URL doit être défini dans Vercel
+// CRITICAL: Vercel must inject VITE_API_BASE_URL during build
+// Force rebuild: Build timestamp updated to invalidate cache
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'http://localhost:3001';
+// Build timestamp - Change this to force Vercel rebuild
+const BUILD_VERSION = '2026-01-16-v2.0';
 
-// Avertissements critiques uniquement en production
+// Get API URL from environment variable
+const ENV_API_URL = import.meta.env.VITE_API_BASE_URL;
+
+// Detect if we're using placeholder or invalid URL
+const isPlaceholder = ENV_API_URL?.includes('votre-backend') || ENV_API_URL?.includes('placeholder');
+const isInvalidLocalhost = import.meta.env.PROD && (ENV_API_URL?.includes('localhost') || !ENV_API_URL);
+
+// Fallback: Try to detect backend URL from common Render patterns
+// This is a fallback if env var is not set correctly
+const detectBackendURL = () => {
+  // Common Render URL patterns for this project
+  const possibleURLs = [
+    'https://sahel-agriconnect.onrender.com',
+    'https://sahel-agriconnect-backend.onrender.com',
+  ];
+  
+  // Return first valid URL (in production, this should be overridden by env var)
+  return possibleURLs[0];
+};
+
+// Determine final API URL
+let API_BASE_URL;
+if (isPlaceholder || isInvalidLocalhost) {
+  // In production, if placeholder or localhost, use fallback detection
+  if (import.meta.env.PROD) {
+    API_BASE_URL = detectBackendURL();
+    console.error('⚠️ WARNING: VITE_API_BASE_URL is not correctly set. Using fallback URL:', API_BASE_URL);
+    console.error('⚠️ ACTION REQUIRED: Set VITE_API_BASE_URL in Vercel with your Render backend URL');
+  } else {
+    API_BASE_URL = 'http://localhost:3001';
+  }
+} else if (ENV_API_URL) {
+  API_BASE_URL = ENV_API_URL.replace(/\/$/, ''); // Remove trailing slash
+} else {
+  API_BASE_URL = import.meta.env.PROD ? detectBackendURL() : 'http://localhost:3001';
+}
+
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || API_BASE_URL;
+
+// Critical error checks in production
 if (import.meta.env.PROD) {
   if (API_BASE_URL.includes('localhost')) {
-    console.error('❌ ERREUR: API_BASE_URL pointe vers localhost en production. Configurez VITE_API_BASE_URL dans Vercel.');
+    console.error('❌ CRITICAL ERROR: API_BASE_URL points to localhost in production.');
+    console.error('❌ Configure VITE_API_BASE_URL in Vercel → Settings → Environment Variables');
   }
-  if (import.meta.env.VITE_API_BASE_URL?.includes('votre-backend')) {
-    console.error('❌ ERREUR: VITE_API_BASE_URL contient le placeholder. Utilisez votre vraie URL Render dans Vercel.');
+  if (isPlaceholder) {
+    console.error('❌ CRITICAL ERROR: VITE_API_BASE_URL contains placeholder "votre-backend".');
+    console.error('❌ Set VITE_API_BASE_URL in Vercel with your actual Render backend URL.');
   }
 }
 
-// Logs de debug uniquement en développement
+// Debug logs only in development
 if (import.meta.env.DEV) {
-  console.log('🔧 Configuration API:', { API_BASE_URL, WS_BASE_URL });
+  console.log('🔧 API Configuration:', {
+    BUILD_VERSION,
+    ENV_API_URL,
+    API_BASE_URL,
+    WS_BASE_URL,
+    isPlaceholder,
+    isInvalidLocalhost,
+  });
 }
 
 export const API_ENDPOINTS = {
@@ -103,5 +152,4 @@ export const API_ENDPOINTS = {
   },
 };
 
-export { API_BASE_URL, WS_BASE_URL };
-
+export { API_BASE_URL, WS_BASE_URL, BUILD_VERSION };

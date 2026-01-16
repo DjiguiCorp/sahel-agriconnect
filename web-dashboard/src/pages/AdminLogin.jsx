@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, BUILD_VERSION } from '../config/api';
 import { testBackendConnection } from '../utils/testBackendConnection';
 
 const AdminLogin = () => {
@@ -11,44 +11,65 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [connectionTest, setConnectionTest] = useState(null);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  // Test backend connection on mount
+  // Environment variable diagnostics
+  const envApiUrl = import.meta.env.VITE_API_BASE_URL;
+  const isPlaceholder = envApiUrl?.includes('votre-backend') || envApiUrl?.includes('placeholder');
+  const hasEnvVar = !!envApiUrl && !isPlaceholder;
+  const isProduction = import.meta.env.PROD;
+
+  // Test backend connection on mount (production only)
   useEffect(() => {
-    if (!import.meta.env.PROD || API_BASE_URL.includes('localhost')) return;
+    if (!isProduction || API_BASE_URL.includes('localhost')) return;
     
+    setIsTestingConnection(true);
     const runConnectionTest = async () => {
-      const testResult = await testBackendConnection(API_BASE_URL);
-      setConnectionTest(testResult);
-      
-      if (!testResult.healthCheck?.success) {
-        setError(`Backend inaccessible. Vérifiez que VITE_API_BASE_URL est configuré dans Vercel.`);
+      try {
+        const testResult = await testBackendConnection(API_BASE_URL);
+        setConnectionTest(testResult);
+        
+        if (!testResult.healthCheck?.success) {
+          setError('Backend inaccessible. Vérifiez la configuration de VITE_API_BASE_URL dans Vercel.');
+        } else {
+          // Clear any previous errors if connection is successful
+          setError('');
+        }
+      } catch (err) {
+        console.error('Connection test error:', err);
+        setConnectionTest({
+          healthCheck: { success: false, error: err.message },
+          errors: [err.message]
+        });
+      } finally {
+        setIsTestingConnection(false);
       }
     };
     
     runConnectionTest();
-  }, []);
+  }, [isProduction]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    const result = await login(email, password);
-    
-    if (result.success) {
-      navigate('/admin/central');
-    } else {
-      // Afficher l'erreur avec des informations de debug en développement
-      let errorMessage = result.error || t('admin.login.error');
+    try {
+      const result = await login(email, password);
       
-      
-      setError(errorMessage);
+      if (result.success) {
+        navigate('/admin/central');
+      } else {
+        setError(result.error || t('admin.login.error'));
+      }
+    } catch (err) {
+      setError(err.message || 'Erreur de connexion au serveur');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -67,46 +88,84 @@ const AdminLogin = () => {
             </p>
           </div>
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 rounded text-red-800">
-              <p className="font-semibold">{error}</p>
-              <div className="mt-3 text-sm text-red-700 space-y-2">
-                <p><strong>💡 Solutions :</strong></p>
-                <ul className="list-disc list-inside ml-2 space-y-1">
-                  <li><strong>Vérifiez Vercel :</strong> Settings → Environment Variables → VITE_API_BASE_URL doit être configuré avec votre URL Render</li>
-                  <li><strong>Redéployez :</strong> Deployments → Redeploy après modification des variables</li>
-                  <li><strong>Videz le cache :</strong> Videz le cache du navigateur</li>
-                </ul>
-                <div className="mt-2 p-2 bg-red-50 rounded text-xs">
-                  <p><strong>🔍 Debug Info :</strong></p>
-                  <p><strong>API URL:</strong> {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)'}</p>
-                  <p><strong>API_BASE_URL (config):</strong> {API_BASE_URL}</p>
-                  <p><strong>Mode:</strong> {import.meta.env.MODE}</p>
-                  <p><strong>Build Time:</strong> {new Date().toLocaleString()}</p>
-                  
-                  {connectionTest && (
-                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                      <p><strong>🔍 Connection Test Results:</strong></p>
-                      <p>Health Check: {connectionTest.healthCheck?.success ? '✅ OK' : `❌ Failed (${connectionTest.healthCheck?.error || connectionTest.healthCheck?.status})`}</p>
-                      <p>Login Endpoint: {connectionTest.loginEndpoint?.exists ? '✅ Accessible' : `❌ Not accessible (${connectionTest.loginEndpoint?.error})`}</p>
-                      <p>CORS: {connectionTest.cors?.success ? '✅ OK' : `❌ Failed`}</p>
-                      {connectionTest.errors.length > 0 && (
-                        <div className="mt-1">
-                          <p><strong>Errors:</strong></p>
-                          <ul className="list-disc list-inside">
-                            {connectionTest.errors.map((err, idx) => (
-                              <li key={idx} className="text-xs">{err}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+          {/* Configuration Warning - Only show if there's an issue */}
+          {(isPlaceholder || (!hasEnvVar && isProduction)) && (
+            <div className="mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 rounded text-yellow-800">
+              <p className="font-semibold mb-2">⚠️ Configuration Required</p>
+              <p className="text-sm mb-3">
+                {isPlaceholder 
+                  ? 'VITE_API_BASE_URL contient un placeholder. Configurez votre vraie URL Render dans Vercel.'
+                  : 'VITE_API_BASE_URL n\'est pas défini. Configurez votre URL Render dans Vercel.'}
+              </p>
+              <div className="text-xs space-y-1">
+                <p><strong>Étapes :</strong></p>
+                <ol className="list-decimal list-inside ml-2 space-y-1">
+                  <li>Allez dans Vercel → Settings → Environment Variables</li>
+                  <li>Ajoutez/modifiez <code className="bg-yellow-50 px-1 rounded">VITE_API_BASE_URL</code></li>
+                  <li>Valeur : Votre URL Render (ex: https://sahel-agriconnect.onrender.com)</li>
+                  <li>Redéployez : Deployments → Redeploy</li>
+                </ol>
               </div>
             </div>
           )}
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 rounded text-red-800">
+              <p className="font-semibold">{error}</p>
+            </div>
+          )}
+
+          {/* Connection Test Results */}
+          {connectionTest && (
+            <div className={`mb-6 p-4 border-l-4 rounded text-sm ${
+              connectionTest.healthCheck?.success 
+                ? 'bg-green-50 border-green-500 text-green-800' 
+                : 'bg-red-50 border-red-500 text-red-800'
+            }`}>
+              <p className="font-semibold mb-2">
+                {isTestingConnection ? '🔄 Testing Connection...' : '🔍 Connection Status'}
+              </p>
+              {!isTestingConnection && (
+                <div className="space-y-1 text-xs">
+                  <p>Health Check: {connectionTest.healthCheck?.success ? '✅ OK' : `❌ ${connectionTest.healthCheck?.error || 'Failed'}`}</p>
+                  {connectionTest.loginEndpoint && (
+                    <p>Login Endpoint: {connectionTest.loginEndpoint.exists ? '✅ Accessible' : `❌ ${connectionTest.loginEndpoint.error || 'Not accessible'}`}</p>
+                  )}
+                  {connectionTest.cors && (
+                    <p>CORS: {connectionTest.cors.success ? '✅ OK' : `❌ ${connectionTest.cors.error || 'Failed'}`}</p>
+                  )}
+                  {connectionTest.errors && connectionTest.errors.length > 0 && (
+                    <div className="mt-2">
+                      <p className="font-semibold">Errors:</p>
+                      <ul className="list-disc list-inside ml-2">
+                        {connectionTest.errors.map((err, idx) => (
+                          <li key={idx}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Debug Info - Only in production when there's an issue */}
+          {isProduction && (isPlaceholder || !hasEnvVar || connectionTest?.errors?.length > 0) && (
+            <div className="mb-6 p-3 bg-gray-50 border rounded text-xs">
+              <p className="font-semibold mb-2">🔍 Debug Information</p>
+              <div className="space-y-1 font-mono">
+                <p><strong>Build Version:</strong> {BUILD_VERSION}</p>
+                <p><strong>VITE_API_BASE_URL:</strong> {envApiUrl || '(not set)'}</p>
+                <p><strong>API_BASE_URL (used):</strong> {API_BASE_URL}</p>
+                <p><strong>Mode:</strong> {import.meta.env.MODE}</p>
+                <p><strong>Has Env Var:</strong> {hasEnvVar ? 'Yes' : 'No'}</p>
+                <p><strong>Is Placeholder:</strong> {isPlaceholder ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -140,13 +199,14 @@ const AdminLogin = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isTestingConnection}
               className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? t('admin.login.connecting') : t('admin.login.submit')}
             </button>
           </form>
 
+          {/* Demo Credentials */}
           <div className="mt-6 p-4 bg-blue-50 border-l-4 border-primary-blue rounded">
             <p className="text-sm text-gray-700">
               <strong>💡 {t('admin.login.demo.title')} :</strong><br />
@@ -161,4 +221,3 @@ const AdminLogin = () => {
 };
 
 export default AdminLogin;
-
