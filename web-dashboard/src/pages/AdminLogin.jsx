@@ -4,10 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
 
-// FORCE ENV REFRESH - Jan 16 2026 - Djigui
-// This console.log forces Vite to rebuild with fresh env vars
-console.log('🔍 API Base URL in use:', import.meta.env.VITE_API_BASE_URL || 'FALLBACK - NOT SET');
-console.log('🔍 API_BASE_URL from config:', API_BASE_URL);
+// CRITICAL DIAGNOSTIC - Jan 16 2026
+// Force rebuild and diagnose environment variable injection
+const ENV_DIAGNOSTIC_TIMESTAMP = '2026-01-16T16:00:00Z';
+console.log('🔍 AdminLogin - Diagnostic Timestamp:', ENV_DIAGNOSTIC_TIMESTAMP);
+console.log('🔍 AdminLogin - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'FALLBACK - NOT SET');
+console.log('🔍 AdminLogin - API_BASE_URL from config:', API_BASE_URL);
+console.log('🔍 AdminLogin - Is Placeholder:', import.meta.env.VITE_API_BASE_URL?.includes('votre-backend'));
+console.log('🔍 AdminLogin - Mode:', import.meta.env.MODE);
+console.log('🔍 AdminLogin - Is Production:', import.meta.env.PROD);
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');

@@ -1,9 +1,19 @@
 // Configuration de l'API backend
 // En production, VITE_API_BASE_URL doit être défini dans Vercel
-// FORCE ENV REFRESH - Jan 16 2026 - Djigui
-// This console.log and comment force Vite to rebuild with fresh env vars
+// CRITICAL FIX - Jan 16 2026 - Force rebuild to pick up env vars
+// Adding timestamp to force Vite rebuild
+const BUILD_TIMESTAMP = '2026-01-16T16:00:00Z';
+console.log('🔧 Config API - Build Timestamp:', BUILD_TIMESTAMP);
 console.log('🔧 Config API - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NOT SET - using fallback');
 console.log('🔧 Config API - VITE_WS_BASE_URL:', import.meta.env.VITE_WS_BASE_URL || 'NOT SET - using fallback');
+console.log('🔧 Config API - All VITE_* env vars:', Object.keys(import.meta.env).filter(k => k.startsWith('VITE_')));
+
+// CRITICAL: Check if we're using placeholder
+if (import.meta.env.VITE_API_BASE_URL?.includes('votre-backend')) {
+  console.error('❌ CRITICAL ERROR: VITE_API_BASE_URL contains placeholder "votre-backend"');
+  console.error('❌ This means the environment variable is NOT correctly set in Vercel');
+  console.error('✅ ACTION REQUIRED: Set VITE_API_BASE_URL in Vercel with your REAL Render URL');
+}
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'http://localhost:3001';
