@@ -65,22 +65,46 @@ const io = new Server(httpServer, {
 // Middleware CORS - Configuration permissive pour mobile
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-
-    // Allow all Vercel subdomains and localhost
-    if (
-      origin.includes('vercel.app') ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1') ||
-      origin === process.env.FRONTEND_URL
-    ) {
+    // Permettre les requêtes sans origin (mobile apps, Postman, etc.)
+    if (!origin) {
       return callback(null, true);
     }
-
-    // Log and allow temporarily for mobile debugging
-    console.log('CORS: Origin not explicitly allowed:', origin);
-    return callback(null, true); // fallback for mobile
+    
+    // En développement, permettre toutes les origines
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // En production, vérifier si l'origine est autorisée
+    // Permettre toutes les origines Vercel (pour mobile et desktop)
+    if (origin.includes('vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Vérifier la liste des origines autorisées
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    
+    // Log pour debug (à retirer en production si nécessaire)
+    console.log('CORS: Origin non autorisé:', origin);
+    console.log('CORS: Origines autorisées:', allowedOrigins);
+    
+    // En production, être plus permissif pour mobile
+    // Permettre si l'origine contient le domaine Vercel
+    if (process.env.FRONTEND_URL) {
+      try {
+        const frontendUrl = new URL(process.env.FRONTEND_URL);
+        if (origin.includes(frontendUrl.hostname)) {
+          return callback(null, true);
+        }
+      } catch (err) {
+        // Si FRONTEND_URL n'est pas une URL valide, ignorer cette vérification
+        console.warn('CORS: FRONTEND_URL invalide:', process.env.FRONTEND_URL);
+      }
+    }
+    
+    callback(null, true); // Permettre temporairement pour debug mobile
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

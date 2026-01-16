@@ -1,5 +1,6 @@
 // Configuration de l'API backend
 // En production, VITE_API_BASE_URL doit être défini dans Vercel
+// Force env refresh - Jan 2025 - This comment forces Vite to rebuild with fresh env vars
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'http://localhost:3001';
 
