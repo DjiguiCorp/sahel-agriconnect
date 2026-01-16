@@ -36,21 +36,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const loginUrl = API_ENDPOINTS.AUTH.LOGIN;
-      console.log('🔐 Tentative de connexion à:', loginUrl);
-      console.log('📍 API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)');
       
-      // Vérifier si on utilise localhost en production (problème de configuration)
+      // Vérifier la configuration en production
       if (import.meta.env.PROD && loginUrl.includes('localhost')) {
-        const errorMsg = 'Configuration manquante : VITE_API_BASE_URL n\'est pas défini dans Vercel. Le frontend utilise localhost qui n\'est pas accessible depuis mobile. Allez dans Vercel → Settings → Environment Variables et ajoutez VITE_API_BASE_URL avec l\'URL de votre backend Render.';
-        console.error('❌', errorMsg);
-        throw new Error(errorMsg);
+        throw new Error('Configuration manquante : VITE_API_BASE_URL doit être défini dans Vercel avec votre URL Render.');
       }
       
-      // Vérifier si l'URL est valide
       if (!loginUrl || loginUrl === 'undefined/api/auth/login') {
-        const errorMsg = 'Configuration invalide : VITE_API_BASE_URL n\'est pas correctement configuré. Vérifiez les variables d\'environnement dans Vercel.';
-        console.error('❌', errorMsg);
-        throw new Error(errorMsg);
+        throw new Error('Configuration invalide : VITE_API_BASE_URL n\'est pas correctement configuré dans Vercel.');
       }
       
       const response = await fetch(loginUrl, {
@@ -120,11 +113,11 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: errorMsg };
       }
     } catch (error) {
-      console.error('❌ Erreur de connexion:', error);
-      console.error('📍 URL utilisée:', API_ENDPOINTS.AUTH.LOGIN);
-      console.error('📍 API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)');
+      // Log uniquement en développement
+      if (import.meta.env.DEV) {
+        console.error('Erreur de connexion:', error);
+      }
       
-      // Message d'erreur plus informatif
       let errorMessage = 'Erreur de connexion au serveur';
       
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {

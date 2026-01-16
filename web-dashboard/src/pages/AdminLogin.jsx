@@ -1,22 +1,9 @@
-// CACHE BUST FORCE - Jan 16 2026 4:45 PM - placeholder fix FINAL
-// This comment and console.log force Vercel to invalidate cache and rebuild with fresh env vars
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
 import { testBackendConnection } from '../utils/testBackendConnection';
-
-// CRITICAL DIAGNOSTIC - Jan 16 2026
-// Force rebuild and diagnose environment variable injection
-const ENV_DIAGNOSTIC_TIMESTAMP = '2026-01-16T16:45:00Z';
-console.log('🔍 AdminLogin - Diagnostic Timestamp:', ENV_DIAGNOSTIC_TIMESTAMP);
-console.log('🔍 AdminLogin - Current API Base URL:', import.meta.env.VITE_API_BASE_URL || 'NOT_INJECTED');
-console.log('🔍 AdminLogin - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'FALLBACK - NOT SET');
-console.log('🔍 AdminLogin - API_BASE_URL from config:', API_BASE_URL);
-console.log('🔍 AdminLogin - Is Placeholder:', import.meta.env.VITE_API_BASE_URL?.includes('votre-backend'));
-console.log('🔍 AdminLogin - Mode:', import.meta.env.MODE);
-console.log('🔍 AdminLogin - Is Production:', import.meta.env.PROD);
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -30,22 +17,18 @@ const AdminLogin = () => {
 
   // Test backend connection on mount
   useEffect(() => {
+    if (!import.meta.env.PROD || API_BASE_URL.includes('localhost')) return;
+    
     const runConnectionTest = async () => {
-      console.log('🔍 Running backend connection test...');
       const testResult = await testBackendConnection(API_BASE_URL);
       setConnectionTest(testResult);
-      console.log('🔍 Connection test result:', testResult);
       
-      // If health check fails, show error immediately
       if (!testResult.healthCheck?.success) {
-        setError(`Backend inaccessible. Vérifiez que VITE_API_BASE_URL est configuré dans Vercel avec votre URL Render. URL actuelle: ${API_BASE_URL}`);
+        setError(`Backend inaccessible. Vérifiez que VITE_API_BASE_URL est configuré dans Vercel.`);
       }
     };
-
-    // Only test in production or if API_BASE_URL is not localhost
-    if (import.meta.env.PROD || !API_BASE_URL.includes('localhost')) {
-      runConnectionTest();
-    }
+    
+    runConnectionTest();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -61,11 +44,6 @@ const AdminLogin = () => {
       // Afficher l'erreur avec des informations de debug en développement
       let errorMessage = result.error || t('admin.login.error');
       
-      // En développement, ajouter des infos de debug
-      if (import.meta.env.DEV && result.debug) {
-        console.error('🔍 Debug info:', result.debug);
-        errorMessage += ` (URL: ${result.debug.url})`;
-      }
       
       setError(errorMessage);
     }
@@ -95,23 +73,9 @@ const AdminLogin = () => {
               <div className="mt-3 text-sm text-red-700 space-y-2">
                 <p><strong>💡 Solutions :</strong></p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
-                  {import.meta.env.PROD && (
-                    <>
-                      <li><strong>Si vous êtes sur mobile :</strong> VITE_API_BASE_URL doit être configuré dans Vercel avec l'URL de votre backend Render (pas localhost)</li>
-                      <li><strong>Vérifiez Vercel :</strong> Settings → Environment Variables → VITE_API_BASE_URL doit être = URL Render (ex: https://backend.onrender.com)</li>
-                      <li><strong>⚠️ IMPORTANT :</strong> Utilisez votre VRAIE URL Render (pas "votre-backend.onrender.com")</li>
-                      <li><strong>Redéployez :</strong> Deployments → Redeploy (nécessaire après modification des variables)</li>
-                      <li><strong>Videz le cache :</strong> Videz le cache du navigateur mobile</li>
-                      <li><strong>Guide détaillé :</strong> Consultez CONFIGURER_VARIABLES_VERCEL_ETAPE_PAR_ETAPE.md</li>
-                    </>
-                  )}
-                  {import.meta.env.DEV && (
-                    <>
-                      <li>Le backend est démarré (http://localhost:3001)</li>
-                      <li>VITE_API_BASE_URL est configuré (actuel: {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI → utilise localhost'})</li>
-                      <li>L'endpoint est accessible : {import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/auth/login</li>
-                    </>
-                  )}
+                  <li><strong>Vérifiez Vercel :</strong> Settings → Environment Variables → VITE_API_BASE_URL doit être configuré avec votre URL Render</li>
+                  <li><strong>Redéployez :</strong> Deployments → Redeploy après modification des variables</li>
+                  <li><strong>Videz le cache :</strong> Videz le cache du navigateur</li>
                 </ul>
                 <div className="mt-2 p-2 bg-red-50 rounded text-xs">
                   <p><strong>🔍 Debug Info :</strong></p>
@@ -138,16 +102,6 @@ const AdminLogin = () => {
                       )}
                     </div>
                   )}
-                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="font-semibold text-yellow-800 mb-1">📋 Pour trouver votre URL Render :</p>
-                    <ol className="list-decimal list-inside space-y-1 text-yellow-700">
-                      <li>Allez sur <a href="https://dashboard.render.com" target="_blank" rel="noopener noreferrer" className="underline">dashboard.render.com</a></li>
-                      <li>Cliquez sur votre service backend</li>
-                      <li>Copiez l'URL affichée en haut (ex: https://sahel-agriconnect-backend-xxxx.onrender.com)</li>
-                      <li>Dans Vercel → Settings → Environment Variables, ajoutez cette URL comme VITE_API_BASE_URL</li>
-                      <li>Redéployez dans Vercel → Deployments → Redeploy</li>
-                    </ol>
-                  </div>
                 </div>
               </div>
             </div>

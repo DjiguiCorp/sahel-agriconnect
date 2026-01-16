@@ -28,18 +28,18 @@ export const WebSocketProvider = ({ children }) => {
     });
 
     newSocket.on('connect', () => {
-      console.log('WebSocket connecté');
+      if (import.meta.env.DEV) console.log('WebSocket connecté');
       setIsConnected(true);
     });
 
     newSocket.on('disconnect', () => {
-      console.log('WebSocket déconnecté');
+      if (import.meta.env.DEV) console.log('WebSocket déconnecté');
       setIsConnected(false);
     });
 
     // Écouter les mises à jour d'agriculteurs
     newSocket.on('farmer:registered', (data) => {
-      console.log('Nouvel agriculteur enregistré:', data);
+      if (import.meta.env.DEV) console.log('Nouvel agriculteur enregistré:', data);
       setFarmers(prev => [...prev, data]);
       setRealTimeUpdates(prev => [...prev, {
         type: 'farmer_registered',
@@ -49,7 +49,7 @@ export const WebSocketProvider = ({ children }) => {
     });
 
     newSocket.on('farmer:updated', (data) => {
-      console.log('Agriculteur mis à jour:', data);
+      if (import.meta.env.DEV) console.log('Agriculteur mis à jour:', data);
       setFarmers(prev => prev.map(f => f.id === data.id ? data : f));
       setRealTimeUpdates(prev => [...prev, {
         type: 'farmer_updated',
@@ -58,11 +58,9 @@ export const WebSocketProvider = ({ children }) => {
       }]);
     });
 
-    // Gérer les erreurs de connexion (simulation si serveur non disponible)
+    // Gérer les erreurs de connexion
     newSocket.on('connect_error', (error) => {
-      console.warn('Erreur de connexion WebSocket (mode simulation activé):', error.message);
-      // En mode développement, on simule la connexion si le serveur n'est pas disponible
-      // Les données seront stockées localement
+      if (import.meta.env.DEV) console.warn('Erreur de connexion WebSocket:', error.message);
       setIsConnected(false);
     });
 
@@ -78,7 +76,7 @@ export const WebSocketProvider = ({ children }) => {
       socket.emit('farmer:register', farmerData);
     } else {
       // Mode simulation : ajouter directement à la liste locale
-      console.log('Mode simulation : agriculteur ajouté localement', farmerData);
+      if (import.meta.env.DEV) console.log('Mode simulation : agriculteur ajouté localement');
       setFarmers(prev => [...prev, farmerData]);
     }
   };

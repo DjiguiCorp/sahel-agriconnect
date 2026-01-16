@@ -13,7 +13,6 @@ export const testBackendConnection = async (apiBaseUrl) => {
     // Test 1: Health Check
     try {
       const healthUrl = `${apiBaseUrl}/api/health`;
-      console.log('🔍 Testing health endpoint:', healthUrl);
       
       const healthResponse = await fetch(healthUrl, {
         method: 'GET',
@@ -30,7 +29,6 @@ export const testBackendConnection = async (apiBaseUrl) => {
           data: healthData,
           status: healthResponse.status
         };
-        console.log('✅ Health check successful:', healthData);
       } else {
         results.healthCheck = {
           success: false,
@@ -38,15 +36,13 @@ export const testBackendConnection = async (apiBaseUrl) => {
           statusText: healthResponse.statusText
         };
         results.errors.push(`Health check failed: ${healthResponse.status} ${healthResponse.statusText}`);
-        console.error('❌ Health check failed:', healthResponse.status, healthResponse.statusText);
       }
     } catch (error) {
-      results.healthCheck = {
-        success: false,
-        error: error.message
-      };
-      results.errors.push(`Health check error: ${error.message}`);
-      console.error('❌ Health check error:', error);
+        results.healthCheck = {
+          success: false,
+          error: error.message
+        };
+        results.errors.push(`Health check error: ${error.message}`);
     }
 
     // Test 2: CORS Check
@@ -69,20 +65,17 @@ export const testBackendConnection = async (apiBaseUrl) => {
           'access-control-allow-methods': corsResponse.headers.get('access-control-allow-methods'),
         }
       };
-      console.log('🔍 CORS check:', results.cors);
     } catch (error) {
       results.cors = {
         success: false,
         error: error.message
       };
       results.errors.push(`CORS check error: ${error.message}`);
-      console.error('❌ CORS check error:', error);
     }
 
     // Test 3: Login Endpoint (without credentials)
     try {
       const loginUrl = `${apiBaseUrl}/api/auth/login`;
-      console.log('🔍 Testing login endpoint:', loginUrl);
       
       const loginResponse = await fetch(loginUrl, {
         method: 'POST',
@@ -100,19 +93,16 @@ export const testBackendConnection = async (apiBaseUrl) => {
         statusText: loginResponse.statusText,
         accessible: loginResponse.status !== 0
       };
-      console.log('🔍 Login endpoint test:', results.loginEndpoint);
     } catch (error) {
       results.loginEndpoint = {
         exists: false,
         error: error.message
       };
       results.errors.push(`Login endpoint error: ${error.message}`);
-      console.error('❌ Login endpoint error:', error);
     }
 
   } catch (error) {
     results.errors.push(`General error: ${error.message}`);
-    console.error('❌ General test error:', error);
   }
 
   return results;

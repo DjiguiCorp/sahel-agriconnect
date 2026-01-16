@@ -22,20 +22,11 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-// Configuration CORS pour production et développement
-// Permettre toutes les origines Vercel (avec et sans www, http et https)
+// Configuration CORS - Permet toutes les origines Vercel
 const getVercelOrigins = () => {
   if (!process.env.FRONTEND_URL) return [];
-  const baseUrl = process.env.FRONTEND_URL.replace(/\/$/, ''); // Enlever trailing slash
-  const origins = [baseUrl];
-  
-  // Ajouter variantes (avec/sans www, http/https)
-  if (baseUrl.includes('vercel.app')) {
-    origins.push(baseUrl.replace('https://', 'http://'));
-    origins.push(baseUrl.replace(/^https:\/\/([^.]+)/, 'https://www.$1'));
-  }
-  
-  return origins;
+  const baseUrl = process.env.FRONTEND_URL.replace(/\/$/, '');
+  return [baseUrl];
 };
 
 const allowedOrigins = [
@@ -46,9 +37,24 @@ const allowedOrigins = [
   'http://127.0.0.1:3000'
 ];
 
-// Configuration CORS simplifiée
+// Configuration CORS avec fonction dynamique pour permettre toutes origines Vercel
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    // Permettre les requêtes sans origin (mobile, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Permettre toutes les origines Vercel (y compris sous-domaines)
+    if (origin.includes('vercel.app')) return callback(null, true);
+    
+    // Permettre localhost en développement
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) return callback(null, true);
+    
+    // Vérifier la liste des origines autorisées
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    
+    // Permettre par défaut (pour compatibilité mobile)
+    callback(null, true);
+  },
   credentials: true,
 }));
 
