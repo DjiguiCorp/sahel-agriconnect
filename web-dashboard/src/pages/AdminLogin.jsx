@@ -1,10 +1,11 @@
 // CACHE BUST FORCE - Jan 16 2026 4:45 PM - placeholder fix FINAL
 // This comment and console.log force Vercel to invalidate cache and rebuild with fresh env vars
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
+import { testBackendConnection } from '../utils/testBackendConnection';
 
 // CRITICAL DIAGNOSTIC - Jan 16 2026
 // Force rebuild and diagnose environment variable injection
@@ -22,9 +23,30 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [connectionTest, setConnectionTest] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // Test backend connection on mount
+  useEffect(() => {
+    const runConnectionTest = async () => {
+      console.log('🔍 Running backend connection test...');
+      const testResult = await testBackendConnection(API_BASE_URL);
+      setConnectionTest(testResult);
+      console.log('🔍 Connection test result:', testResult);
+      
+      // If health check fails, show error immediately
+      if (!testResult.healthCheck?.success) {
+        setError(`Backend inaccessible. Vérifiez que VITE_API_BASE_URL est configuré dans Vercel avec votre URL Render. URL actuelle: ${API_BASE_URL}`);
+      }
+    };
+
+    // Only test in production or if API_BASE_URL is not localhost
+    if (import.meta.env.PROD || !API_BASE_URL.includes('localhost')) {
+      runConnectionTest();
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,8 +116,28 @@ const AdminLogin = () => {
                 <div className="mt-2 p-2 bg-red-50 rounded text-xs">
                   <p><strong>🔍 Debug Info :</strong></p>
                   <p><strong>API URL:</strong> {import.meta.env.VITE_API_BASE_URL || 'NON DÉFINI (utilise localhost)'}</p>
+                  <p><strong>API_BASE_URL (config):</strong> {API_BASE_URL}</p>
                   <p><strong>Mode:</strong> {import.meta.env.MODE}</p>
                   <p><strong>Build Time:</strong> {new Date().toLocaleString()}</p>
+                  
+                  {connectionTest && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                      <p><strong>🔍 Connection Test Results:</strong></p>
+                      <p>Health Check: {connectionTest.healthCheck?.success ? '✅ OK' : `❌ Failed (${connectionTest.healthCheck?.error || connectionTest.healthCheck?.status})`}</p>
+                      <p>Login Endpoint: {connectionTest.loginEndpoint?.exists ? '✅ Accessible' : `❌ Not accessible (${connectionTest.loginEndpoint?.error})`}</p>
+                      <p>CORS: {connectionTest.cors?.success ? '✅ OK' : `❌ Failed`}</p>
+                      {connectionTest.errors.length > 0 && (
+                        <div className="mt-1">
+                          <p><strong>Errors:</strong></p>
+                          <ul className="list-disc list-inside">
+                            {connectionTest.errors.map((err, idx) => (
+                              <li key={idx} className="text-xs">{err}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
                     <p className="font-semibold text-yellow-800 mb-1">📋 Pour trouver votre URL Render :</p>
                     <ol className="list-decimal list-inside space-y-1 text-yellow-700">
