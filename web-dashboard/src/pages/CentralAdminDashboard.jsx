@@ -19,7 +19,6 @@ import Governance from '../pages/Governance';
 
 const CentralAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('farmers');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -66,9 +65,9 @@ const CentralAdminDashboard = () => {
             {/* Right: User Info and Logout */}
             <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
               {/* User Info - Hidden on very small screens, shown on larger mobile */}
-              <div className="hidden xs:block text-right max-w-[120px] sm:max-w-none">
+              <div className="hidden sm:block text-right max-w-[120px] lg:max-w-none">
                 <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-                <p className="text-xs text-gray-500 truncate hidden sm:block">{user?.email}</p>
+                <p className="text-xs text-gray-500 truncate hidden lg:block">{user?.email}</p>
               </div>
               
               {/* Logout Button - Mobile optimized */}
@@ -127,7 +126,7 @@ const CentralAdminDashboard = () => {
       </div>
 
       {/* Main Content - Adjusted for mobile */}
-      <main className={`md:ml-64 p-3 sm:p-4 md:p-6 lg:p-8 ${mobileMenuOpen ? 'blur-sm' : ''}`}>
+      <main className="md:ml-64 p-3 sm:p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {activeTab === 'farmers' && <RealTimeFarmers />}
           {activeTab === 'cooperatives' && <CooperativesManagement />}
