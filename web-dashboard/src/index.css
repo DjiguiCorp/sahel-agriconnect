@@ -14,11 +14,6 @@
 }
 
 @layer base {
-  html {
-    /* Sticky header: mt-8 + top-8 + ~5rem bar — anchor jumps land below the nav */
-    scroll-padding-top: 7.5rem;
-  }
-
   body {
     @apply bg-brand-cream text-gray-900;
   }
