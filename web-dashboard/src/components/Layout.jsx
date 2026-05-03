@@ -17,7 +17,7 @@ const Layout = () => {
     <div className="min-h-screen flex flex-col">
       <SEO path={location.pathname} />
       <Header />
-      <main className="flex-grow">
+      <main className="flex-grow pt-8">
         <Outlet />
       </main>
       <Footer />

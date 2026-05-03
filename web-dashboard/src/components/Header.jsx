@@ -8,7 +8,7 @@ const Header = () => {
   const { t } = useTranslation();
 
   const navLinkClass =
-    'text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
+    'text-lg text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
   const closeMenu = () => setIsMenuOpen(false);
 
   const handleDownloadApp = (e) => {
@@ -17,14 +17,14 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-2">
+    <header className="bg-white shadow-md sticky top-8 z-50 mt-8">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex items-center justify-between min-h-[4rem] gap-2">
           <Link to="/" className="flex items-center space-x-2 shrink-0 min-w-0" onClick={closeMenu}>
-            <div className="w-10 h-10 bg-gradient-to-br from-brand-forest to-brand-sage rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">SA</span>
+            <div className="w-12 h-12 bg-gradient-to-br from-brand-forest to-brand-sage rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-2xl">SA</span>
             </div>
-            <span className="text-lg sm:text-xl font-bold text-brand-forest truncate">
+            <span className="text-xl sm:text-2xl font-bold text-brand-forest truncate">
               {t('common.appName')}
             </span>
           </Link>
@@ -57,13 +57,13 @@ const Header = () => {
             </Link>
             <Link
               to="/admin/login"
-              className="text-gray-600 hover:text-brand-forest transition-colors font-medium flex items-center gap-1.5"
+              className="text-lg text-gray-600 hover:text-brand-forest transition-colors font-medium flex items-center gap-1.5"
               title="Espace Administrateur"
             >
-              <Lock className="w-4 h-4 shrink-0" aria-hidden />
+              <Lock className="w-5 h-5 shrink-0" aria-hidden />
               <span>{t('nav.admin')}</span>
             </Link>
-            <a href="#" className="btn-primary text-sm whitespace-nowrap" onClick={handleDownloadApp}>
+            <a href="#" className="btn-primary text-base whitespace-nowrap" onClick={handleDownloadApp}>
               {t('nav.downloadApp')}
             </a>
           </div>
@@ -97,7 +97,7 @@ const Header = () => {
         {isMenuOpen && (
           <div
             id="mobile-navigation"
-            className="md:hidden border-t border-gray-100 py-4 animate-fade-up"
+            className="md:hidden border-t border-gray-100 py-4 pb-6 animate-fade-up bg-white"
             role="navigation"
             aria-label="Navigation principale"
           >
@@ -128,10 +128,10 @@ const Header = () => {
               </Link>
               <Link
                 to="/admin/login"
-                className="flex items-center gap-2 text-gray-700 hover:text-brand-forest font-medium py-2"
+                className="flex items-center gap-2 text-lg text-gray-700 hover:text-brand-forest font-medium py-2"
                 onClick={closeMenu}
               >
-                <Lock className="w-4 h-4" aria-hidden />
+                <Lock className="w-5 h-5" aria-hidden />
                 {t('nav.admin')}
               </Link>
             </div>
