@@ -23,6 +23,10 @@ import IrrigationAssessment from './components/farmer/IrrigationAssessment';
 import ProductionOptimizer from './components/farmer/ProductionOptimizer';
 import FarmerRegistrationPage from './pages/FarmerRegistrationPage';
 import SupabaseDataDashboard from './pages/SupabaseDataDashboard';
+import PlatformLicensing from './pages/PlatformLicensing';
+import CooperativeRegistration from './pages/CooperativeRegistration';
+import FarmerCertificationProgram from './pages/FarmerCertificationProgram';
+import EquipmentFund from './pages/EquipmentFund';
 
 function App() {
   return (
@@ -72,6 +76,10 @@ function App() {
             <Route path="irrigation" element={<IrrigationAssessment />} />
             <Route path="optimisation-production" element={<ProductionOptimizer />} />
             <Route path="enregistrer-agriculteur" element={<FarmerRegistrationPage />} />
+            <Route path="platform-licensing" element={<PlatformLicensing />} />
+            <Route path="cooperative-registration" element={<CooperativeRegistration />} />
+            <Route path="farmer-certification" element={<FarmerCertificationProgram />} />
+            <Route path="equipment-fund" element={<EquipmentFund />} />
             {/* Route catch-all pour les routes non trouvées */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
