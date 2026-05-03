@@ -1,9 +1,10 @@
 import { z } from 'zod';
+import { AFRICAN_COUNTRIES } from '../data/africanCountries.js';
 
 export const cropOptions = ['Mil', 'Sorgho', 'Maïs', 'Arachide', 'Coton', 'Niébé', 'Riz', 'Autre'];
 
-/** +223 76 12 34 56 ou +22376123456 */
-const phoneRegex = /^\+(223|226|227)\s*(\d{2}){4}$/;
+/** E.164 international (Afrique et au-delà) */
+const phoneRegex = /^\+[1-9]\d{7,14}$/;
 
 export const farmerRegistrationSchema = z
   .object({
@@ -11,11 +12,12 @@ export const farmerRegistrationSchema = z
     phone: z
       .string()
       .min(8, 'Téléphone requis')
-      .regex(phoneRegex, 'Format attendu : +223 XX XX XX XX (ou +226 / +227 selon le pays)'),
+      .regex(phoneRegex, 'Format international : + et indicatif pays, puis numéro (ex. +22376123456)'),
     region: z.string().min(1, 'Choisissez une région ou commune'),
-    country: z.enum(['Mali', 'Burkina Faso', 'Niger'], {
-      errorMap: () => ({ message: 'Choisissez un pays' }),
-    }),
+    country: z
+      .string()
+      .min(1, 'Choisissez un pays')
+      .refine((c) => AFRICAN_COUNTRIES.includes(c), { message: 'Choisissez un pays valide' }),
     crops: z.array(z.string()).min(1, 'Sélectionnez au moins une culture principale'),
     area_hectares: z.preprocess(
       (v) => (v === '' || v === undefined ? undefined : Number(v)),

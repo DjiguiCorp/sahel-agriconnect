@@ -34,13 +34,13 @@
   },
   "home": {
     "title": "Sahel AgriConnect",
-    "subtitle": "Mali ani Burkina Faso dugukolo baarakɛcogo digitizali",
+    "subtitle": "Tilebin Afrik ani jamana minnu bɛ taa — dugukolo baarakɛcogo digitizali",
     "projectTitle": "PTASS Porozɛ",
-    "projectDescription": "Sahel Dugukolo Yiriwaleya Porozɛ (PTASS) bɛ sɛ ka Mali ani Burkina Faso dugukolo baarakɛcogo digitize ani modernize ka sɔrɔ ka dumuni hakɛ sɔrɔ ani ka baara jamanaw ka ɲɛsin.",
+    "projectDescription": "Sahel Dugukolo Yiriwaleya Porozɛ (PTASS) bɛ sɛ ka Tilebin Afrik ani jamana minnu bɛ taa dugukolo baarakɛcogo digitize ani modernize ka sɔrɔ ka dumuni hakɛ sɔrɔ ani ka baara jamanaw ka ɲɛsin.",
     "objectives": {
       "foodSovereignty": {
         "title": "Dumuni Hakɛ",
-        "description": "Ka Mali ani Burkina Faso jama dumuni hakɛ sɔrɔ ka baara kɛ ka dugukolo baarakɛcogo modern ani sustainable ye."
+        "description": "Ka Tilebin Afrik ani jamana minnu bɛ taa jama dumuni hakɛ sɔrɔ ka baara kɛ ka dugukolo baarakɛcogo modern ani sustainable ye."
       },
       "valorization": {
         "title": "Jamanaw Ka ɲɛsin",
@@ -48,7 +48,7 @@
       },
       "period": {
         "title": "2026-2030 Waati",
-        "description": "Duuru san 5 ka Sahel jamana dugukolo baarakɛcogo sustainable yiriwaleya."
+        "description": "Duuru san 5 ka Tilebin Afrik dugukolo baarakɛcogo sustainable yiriwaleya."
       }
     },
     "priorityCereals": {
@@ -87,14 +87,14 @@
     },
     "growthPotential": {
       "title": "Ka ɲɛ Sɔrɔ Potentiel",
-      "description": "Mali ani Burkina Faso bɛ dugukolo baara potentiel ka ɲɛ bɛ sɔrɔ. Ka teknoloji, infrastructure ani kalanw bɛ sɛ, dugukolo baara bɛ se ka 3 wa 5 ye ka sɔrɔ, ka sɛnɛkɛlaw ani jama jamanaw wari sɔrɔ ka baara kɛ.",
+      "description": "Tilebin Afrik ani jamana minnu bɛ taa bɛ dugukolo baara potentiel ka ɲɛ bɛ sɔrɔ. Ka teknoloji, infrastructure ani kalanw bɛ sɛ, dugukolo baara bɛ se ka 3 wa 5 ye ka sɔrɔ, ka sɛnɛkɛlaw ani jama jamanaw wari sɔrɔ ka baara kɛ.",
       "productionIncrease": "Baara ka ɲɛ sɔrɔ",
       "targetFarmers": "Sɛnɛkɛlaw minnu bɛ kan",
       "roadmap": "Ka taa ɲɛ"
     },
     "cta": {
       "title": "PTASS Porozɛ ka taa",
-      "description": "I ka kɛ sɛnɛkɛla, kɔrɔkɛla, wari bɔrɔla walima jɛkulu ye, i ka Sahel dugukolo baarakɛcogo yiriwaleya ka taa.",
+      "description": "I ka kɛ sɛnɛkɛla, kɔrɔkɛla, wari bɔrɔla walima jɛkulu ye, i ka Tilebin Afrik dugukolo baarakɛcogo yiriwaleya ka taa.",
       "register": "Sɛbɛnni sisan",
       "downloadApp": "App ka tɔgɔ"
     }

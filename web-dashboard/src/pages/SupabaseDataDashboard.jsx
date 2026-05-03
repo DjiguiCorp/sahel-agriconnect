@@ -23,11 +23,14 @@ async function fetchFarmers() {
 }
 
 function aggregateByCountry(rows) {
-  const map = { Mali: 0, 'Burkina Faso': 0, Niger: 0 };
+  const map = {};
   rows.forEach((r) => {
-    if (map[r.country] !== undefined) map[r.country] += 1;
+    const name = r.country || 'Non renseigné';
+    map[name] = (map[name] || 0) + 1;
   });
-  return Object.entries(map).map(([name, total]) => ({ name, total }));
+  return Object.entries(map)
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total);
 }
 
 function aggregateCrops(rows) {
@@ -162,9 +165,9 @@ function DashboardContent() {
             <p className="text-3xl font-bold text-brand-forest">{total}</p>
           </div>
           <div className="bg-white rounded-xl shadow p-6 border border-gray-100 md:col-span-2">
-            <p className="text-sm text-gray-500 mb-2">Carte (aperçu Sahel)</p>
+            <p className="text-sm text-gray-500 mb-2">Carte (aperçu Afrique de l&apos;Ouest)</p>
             <div className="h-40 rounded-lg bg-gradient-to-br from-brand-forest/90 to-brand-sage/80 flex items-center justify-center text-white text-sm px-4 text-center">
-              Mali · Burkina Faso · Niger — zones couvertes par le projet PTASS (carte interactive à venir)
+              Afrique de l&apos;Ouest et au-delà — zones couvertes par le projet PTASS (carte interactive à venir)
             </div>
           </div>
         </div>

@@ -34,13 +34,13 @@
   },
   "home": {
     "title": "Sahel AgriConnect",
-    "subtitle": "Digitalization of agriculture in Mali and Burkina Faso",
+    "subtitle": "Digitalization of agriculture across West Africa and beyond",
     "projectTitle": "PTASS Project",
-    "projectDescription": "The Sahel Agricultural Transformation Project (PTASS) aims to digitalize and modernize agriculture in Mali and Burkina Faso to achieve food sovereignty and enhance local production.",
+    "projectDescription": "The Sahel Agricultural Transformation Project (PTASS) aims to digitalize and modernize agriculture across West Africa and beyond to achieve food sovereignty and enhance local production.",
     "objectives": {
       "foodSovereignty": {
         "title": "Food Sovereignty",
-        "description": "Ensure food autonomy for populations in Mali and Burkina Faso through modern and sustainable agriculture."
+        "description": "Ensure food autonomy for populations across West Africa and beyond through modern and sustainable agriculture."
       },
       "valorization": {
         "title": "Valorization",
@@ -48,7 +48,7 @@
       },
       "period": {
         "title": "Period 2026-2030",
-        "description": "Five-year roadmap to sustainably transform agriculture in the Sahel region."
+        "description": "Five-year roadmap to sustainably transform agriculture in West Africa and beyond."
       }
     },
     "priorityCereals": {
@@ -87,14 +87,14 @@
     },
     "growthPotential": {
       "title": "Growth Potential",
-      "description": "Mali and Burkina Faso have immense untapped agricultural potential. With the right technologies, infrastructure and training, agricultural production can be multiplied by 3 to 5 times, creating major economic opportunities for farmers and communities.",
+      "description": "West Africa and beyond have immense untapped agricultural potential. With the right technologies, infrastructure and training, agricultural production can be multiplied by 3 to 5 times, creating major economic opportunities for farmers and communities.",
       "productionIncrease": "Production increase",
       "targetFarmers": "Target farmers",
       "roadmap": "Roadmap"
     },
     "cta": {
       "title": "Join the PTASS Project",
-      "description": "Whether you are a farmer, cooperative, investor or partner, participate in the transformation of agriculture in the Sahel.",
+      "description": "Whether you are a farmer, cooperative, investor or partner, participate in the transformation of agriculture across West Africa and beyond.",
       "register": "Register now",
       "downloadApp": "Download App"
     }

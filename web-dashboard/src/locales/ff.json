@@ -34,13 +34,13 @@
   },
   "home": {
     "title": "Sahel AgriConnect",
-    "subtitle": "Digitalisation de l'agriculture au Mali et au Burkina Faso",
+    "subtitle": "Digitalisation de l'agriculture pour l'Afrique de l'Ouest et au-delà",
     "projectTitle": "Projet PTASS",
-    "projectDescription": "Le Projet de Transformation Agricole du Sahel (PTASS) vise à digitaliser et moderniser l'agriculture au Mali et au Burkina Faso pour atteindre la souveraineté alimentaire et valoriser les productions locales.",
+    "projectDescription": "Le Projet de Transformation Agricole du Sahel (PTASS) vise à digitaliser et moderniser l'agriculture en Afrique de l'Ouest et au-delà pour atteindre la souveraineté alimentaire et valoriser les productions locales.",
     "objectives": {
       "foodSovereignty": {
         "title": "Souveraineté Alimentaire",
-        "description": "Assurer l'autonomie alimentaire des populations du Mali et du Burkina Faso grâce à une agriculture moderne et durable."
+        "description": "Assurer l'autonomie alimentaire des populations pour l'Afrique de l'Ouest et au-delà grâce à une agriculture moderne et durable."
       },
       "valorization": {
         "title": "Valorisation",
@@ -48,7 +48,7 @@
       },
       "period": {
         "title": "Période 2026-2030",
-        "description": "Feuille de route sur 5 ans pour transformer durablement l'agriculture dans la région du Sahel."
+        "description": "Feuille de route sur 5 ans pour transformer durablement l'agriculture en Afrique de l'Ouest et au-delà."
       }
     },
     "priorityCereals": {
@@ -87,14 +87,14 @@
     },
     "growthPotential": {
       "title": "Potentiel de Croissance",
-      "description": "Le Mali et le Burkina Faso possèdent un immense potentiel agricole inexploité. Avec les bonnes technologies, infrastructures et formations, la production agricole peut être multipliée par 3 à 5 fois, créant des opportunités économiques majeures pour les agriculteurs et les communautés.",
+      "description": "L'Afrique de l'Ouest et au-delà possède un immense potentiel agricole inexploité. Avec les bonnes technologies, infrastructures et formations, la production agricole peut être multipliée par 3 à 5 fois, créant des opportunités économiques majeures pour les agriculteurs et les communautés.",
       "productionIncrease": "Augmentation de la production",
       "targetFarmers": "Agriculteurs ciblés",
       "roadmap": "Feuille de route"
     },
     "cta": {
       "title": "Rejoignez le Projet PTASS",
-      "description": "Que vous soyez agriculteur, coopérative, investisseur ou partenaire, participez à la transformation de l'agriculture au Sahel.",
+      "description": "Que vous soyez agriculteur, coopérative, investisseur ou partenaire, participez à la transformation de l'agriculture pour l'Afrique de l'Ouest et au-delà.",
       "register": "S'inscrire maintenant",
       "downloadApp": "Télécharger l'app"
     }

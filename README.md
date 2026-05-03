@@ -1,6 +1,6 @@
 # 🌾 Sahel AgriConnect
 
-**Digitalisation Souveraine de l'Agriculture pour le Mali, le Burkina Faso et le Niger**
+**Digitalisation Souveraine de l'Agriculture pour l'Afrique de l'Ouest et au-delà**
 
 [![Deployment](https://img.shields.io/badge/Deployment-Vercel-000000?style=flat&logo=vercel)](https://sahel-agriconnect.vercel.app)
 [![Backend](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat&logo=render)](https://render.com)
@@ -27,9 +27,9 @@
 
 ### Mission
 
-**Sahel AgriConnect** est une plateforme de digitalisation souveraine de l'agriculture conçue pour transformer l'écosystème agricole du Sahel. Notre mission est triple :
+**Sahel AgriConnect** est une plateforme de digitalisation souveraine de l'agriculture conçue pour transformer l'écosystème agricole en Afrique de l'Ouest et au-delà. Notre mission est triple :
 
-1. **Souveraineté Alimentaire** : Assurer l'autonomie alimentaire des populations du Mali, du Burkina Faso et du Niger grâce à une agriculture moderne, durable et résiliente.
+1. **Souveraineté Alimentaire** : Assurer l'autonomie alimentaire des populations pour l'Afrique de l'Ouest et au-delà grâce à une agriculture moderne, durable et résiliente.
 
 2. **Valorisation Économique** : Maximiser la valeur des productions agricoles locales en connectant les agriculteurs aux marchés locaux, régionaux et internationaux, tout en préservant la richesse générationnelle.
 
@@ -37,7 +37,7 @@
 
 ### Vision
 
-D'ici 2030, **Sahel AgriConnect** vise à devenir la plateforme de référence pour la transformation agricole du Sahel, connectant plus d'un million d'agriculteurs, des milliers de coopératives et des centaines de centres de transformation aux marchés locaux et internationaux, tout en préservant la souveraineté des données et l'autonomie décisionnelle.
+D'ici 2030, **Sahel AgriConnect** vise à devenir la plateforme de référence pour la transformation agricole en Afrique de l'Ouest et au-delà, connectant plus d'un million d'agriculteurs, des milliers de coopératives et des centaines de centres de transformation aux marchés locaux et internationaux, tout en préservant la souveraineté des données et l'autonomie décisionnelle.
 
 ---
 
@@ -58,7 +58,7 @@ D'ici 2030, **Sahel AgriConnect** vise à devenir la plateforme de référence p
 - **Besoins** : Certification (Local, Régional, FDA/USDA), connexion aux producteurs, accès aux marchés
 
 ### 4. Diaspora
-- **Restaurants et retailers USA** : Importateurs de produits du Sahel
+- **Restaurants et retailers USA** : Importateurs de produits d'Afrique de l'Ouest et au-delà
 - **Investisseurs diaspora** : Investissement dans les centres de transformation
 - **Besoins** : Connexion aux producteurs locaux, certification qualité, traçabilité
 
@@ -81,7 +81,7 @@ D'ici 2030, **Sahel AgriConnect** vise à devenir la plateforme de référence p
 - Connexion aux coopératives
 
 #### 2. Gestion des Coopératives
-- Liste complète des coopératives (Mali, Burkina Faso, Niger)
+- Liste complète des coopératives (Afrique de l'Ouest et au-delà)
 - Demandes de financement (sans prêt, via diaspora et ressources locales)
 - Types de financement : Équipement, Partenariat diaspora, Expansion transformation
 - Suivi des outils et équipements disponibles
@@ -420,14 +420,14 @@ Ce projet est sous licence [MIT](LICENSE) (à définir selon la gouvernance).
 
 ## 🙏 Remerciements
 
-- **Agriculteurs du Sahel** : Pour leur confiance et leur participation
+- **Agriculteurs d'Afrique de l'Ouest et au-delà** : Pour leur confiance et leur participation
 - **Coopératives** : Pour leur engagement dans la transformation agricole
 - **Partenaires** : AES, Diaspora, Universités US
 - **Communauté Open Source** : Pour les outils et frameworks utilisés
 
 ---
 
-**🌾 Construisons ensemble l'avenir de l'agriculture au Sahel ! 🌾**
+**🌾 Construisons ensemble l'avenir de l'agriculture en Afrique de l'Ouest et au-delà ! 🌾**
 
 ---
 

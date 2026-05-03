@@ -2,7 +2,7 @@ import { Sprout } from 'lucide-react';
 
 const stats = [
   { value: '500+', label: 'Agriculteurs pilotes' },
-  { value: '3', label: 'Pays ciblés' },
+  { value: '54', label: 'Pays (Afrique)' },
   { value: '2026', label: 'Lancement' },
 ];
 
@@ -21,7 +21,7 @@ const Hero = () => {
             Digitalisation souveraine de l&apos;agriculture
           </p>
           <p className="text-lg mb-10 text-white/90 max-w-2xl mx-auto">
-            Plateforme innovante pour les petits producteurs du Mali, du Burkina Faso et du Niger
+            Plateforme innovante pour les petits producteurs en Afrique de l&apos;Ouest et au-delà
           </p>
 
           <div

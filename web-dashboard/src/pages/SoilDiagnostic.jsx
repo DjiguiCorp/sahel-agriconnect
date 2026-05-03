@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { computeSoilResult } from '../lib/soilDecisionEngine';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
-import { regionsByCountry, countries } from '../data/sahelRegions';
+import { regionsByCountry } from '../data/sahelRegions';
+import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 import {
   Sprout,
   Droplets,
@@ -59,7 +60,8 @@ export default function SoilDiagnostic() {
   const [farmerIdInput, setFarmerIdInput] = useState('');
   const [saveState, setSaveState] = useState({ loading: false, msg: '', err: '' });
 
-  const regionOptions = regionsByCountry[country] || [];
+  const regionOptions =
+    regionsByCountry[country]?.length > 0 ? regionsByCountry[country] : ['Autre'];
 
   const runCompute = () => {
     if (!soilColor || !texture || !humidity || !region) return;
@@ -250,7 +252,7 @@ export default function SoilDiagnostic() {
                   }}
                   className="w-full border rounded-lg px-3 py-2"
                 >
-                  {countries.map((c) => (
+                  {AFRICAN_COUNTRIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>

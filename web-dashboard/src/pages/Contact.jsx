@@ -41,7 +41,8 @@ const Contact = () => {
         <div className="section-container text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Contact / Inscription</h1>
           <p className="text-lg text-white/90 max-w-2xl mx-auto">
-            Rejoignez le projet PTASS et participez à la transformation de l&apos;agriculture au Sahel
+            Rejoignez le projet PTASS et participez à la transformation de l&apos;agriculture en Afrique de l&apos;Ouest et
+            au-delà
           </p>
         </div>
       </section>
@@ -175,29 +176,30 @@ const Contact = () => {
             <h3 className="text-2xl font-semibold mb-4">Zones d&apos;intervention</h3>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
-                <h4 className="font-semibold mb-2">Mali</h4>
+                <h4 className="font-semibold mb-2">Sénégal</h4>
                 <ul className="text-white/90 text-sm space-y-1">
-                  <li>• Bamako</li>
-                  <li>• Ségou</li>
-                  <li>• Koutiala</li>
-                  <li>• Sikasso</li>
+                  <li>• Dakar</li>
+                  <li>• Thiès</li>
+                  <li>• Kaolack</li>
+                  <li>• Saint-Louis</li>
+                  <li>• Ziguinchor</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">Burkina Faso</h4>
+                <h4 className="font-semibold mb-2">Côte d&apos;Ivoire</h4>
                 <ul className="text-white/90 text-sm space-y-1">
-                  <li>• Ouagadougou</li>
-                  <li>• Bobo-Dioulasso</li>
-                  <li>• Koudougou</li>
-                  <li>• Fada N&apos;gourma</li>
+                  <li>• Abidjan</li>
+                  <li>• Bouaké</li>
+                  <li>• Korhogo</li>
+                  <li>• San-Pédro</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">Niger</h4>
+                <h4 className="font-semibold mb-2">Ghana</h4>
                 <ul className="text-white/90 text-sm space-y-1">
-                  <li>• Niamey</li>
-                  <li>• Tillabéri</li>
-                  <li>• Dosso</li>
+                  <li>• Accra</li>
+                  <li>• Kumasi</li>
+                  <li>• Tamale</li>
                 </ul>
               </div>
             </div>

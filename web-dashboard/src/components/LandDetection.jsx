@@ -7,7 +7,7 @@ const LandDetection = ({ latitude, longitude, onLandDetected }) => {
 
   // Simulation de détection satellite mockée
   const mockSatelliteDetection = (lat, lon) => {
-    // Simulation basée sur des coordonnées typiques du Mali/Burkina Faso
+    // Simulation basée sur des coordonnées typiques d’Afrique de l’Ouest
     const detections = [
       { culture: 'Riz', superficie: '2.5 ha', confiance: 0.92 },
       { culture: 'Mil', superficie: '1.8 ha', confiance: 0.88 },

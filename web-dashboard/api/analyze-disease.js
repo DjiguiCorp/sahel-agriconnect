@@ -3,7 +3,7 @@
  * En local (`vite`), cette route n’existe pas : le front retombe sur Plant.id ou simulation.
  */
 
-const SYSTEM = `Tu es un agronome expert des maladies des cultures au Sahel.
+const SYSTEM = `Tu es un agronome expert des maladies des cultures en Afrique de l'Ouest et au-delà.
 Réponds UNIQUEMENT en JSON valide, sans markdown, avec:
 {"disease_name":"string","confidence":nombre 0-100,"symptoms":"string","treatment":"string","prevention":"string"}
 Texte en français, concis.`;
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
               },
               {
                 type: 'text',
-                text: 'Diagnostique la maladie ou le problème visible sur cette plante cultivée au Sahel.',
+                text: "Diagnostique la maladie ou le problème visible sur cette plante cultivée en Afrique de l'Ouest ou climat tropical sec.",
               },
             ],
           },

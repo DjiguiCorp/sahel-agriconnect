@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react';
 import { phase2Cooperatives } from '../data/phase2CooperativesSeed';
 import CooperativeInquiryModal from './CooperativeInquiryModal';
 import { Users, MapPin } from 'lucide-react';
+import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 
-const countriesFilter = ['Tous', 'Mali', 'Burkina Faso'];
+const countriesFilter = ['Tous', ...AFRICAN_COUNTRIES];
 
 const CooperativeDashboard = () => {
   const [countryFilter, setCountryFilter] = useState('Tous');
@@ -20,8 +21,8 @@ const CooperativeDashboard = () => {
         <div>
           <h2 className="text-3xl font-bold text-brand-forest mb-2">Coopératives partenaires</h2>
           <p className="text-gray-600 max-w-2xl">
-            Réseau de coopératives au Mali et au Burkina Faso — demandez à rejoindre une structure proche de votre
-            exploitation.
+            Réseau de coopératives en Afrique de l&apos;Ouest et au-delà — demandez à rejoindre une structure proche
+            de votre exploitation.
           </p>
         </div>
         <div>

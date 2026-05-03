@@ -30,7 +30,7 @@ const Home = () => {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">Problèmes résolus</h2>
           <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-            Sahel AgriConnect répond aux défis majeurs de l&apos;agriculture au Sahel
+            Sahel AgriConnect répond aux défis majeurs de l&apos;agriculture en Afrique de l&apos;Ouest et au-delà
           </p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -84,7 +84,7 @@ const Home = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">Fonctionnalités clés</h2>
             <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-              Une plateforme complète pour transformer l&apos;agriculture au Sahel
+              Une plateforme complète pour transformer l&apos;agriculture en Afrique de l&apos;Ouest et au-delà
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
@@ -155,7 +155,8 @@ const Home = () => {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">Partenaires potentiels</h2>
           <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-            Rejoignez un écosystème en croissance pour transformer l&apos;agriculture au Sahel
+            Rejoignez un écosystème en croissance pour transformer l&apos;agriculture en Afrique de l&apos;Ouest et
+            au-delà
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
@@ -168,7 +169,7 @@ const Home = () => {
             {
               Icon: Globe,
               title: 'Diaspora',
-              text: 'Restaurants et détaillants USA connectés aux producteurs du Sahel',
+              text: "Restaurants et détaillants USA connectés aux producteurs d'Afrique de l'Ouest et au-delà",
             },
             {
               Icon: Landmark,
@@ -260,7 +261,7 @@ const Home = () => {
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Rejoignez le projet PTASS</h2>
           <p className="text-lg mb-8 text-brand-forest/90 max-w-2xl mx-auto">
             Que vous soyez agriculteur, coopérative, investisseur ou partenaire, participez à la transformation de
-            l&apos;agriculture au Sahel.
+            l&apos;agriculture en Afrique de l&apos;Ouest et au-delà.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
             <Link

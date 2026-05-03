@@ -45,7 +45,7 @@ router.post('/production', async (req, res) => {
     const { farmerId, region, crop, superficie, saison, currentPractices, soilConditions } = req.body;
 
     // Construire le prompt pour Gemini
-    const prompt = `Tu es un expert agronome spécialisé dans l'agriculture au Sahel (Mali, Burkina Faso, Niger).
+    const prompt = `Tu es un expert agronome spécialisé dans l'agriculture en Afrique de l'Ouest et au-delà.
 
 Contexte:
 - Région: ${region}

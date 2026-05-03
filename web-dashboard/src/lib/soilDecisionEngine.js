@@ -1,5 +1,5 @@
 /**
- * Logique d’aide à la décision — diagnostic sol Sahel (table de règles déterministe).
+ * Logique d’aide à la décision — diagnostic sol (zone sèche / tropicale, table de règles déterministe).
  */
 
 const TEXTURE_BASE = {

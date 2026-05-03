@@ -24,6 +24,8 @@ export const regionsByCountry = {
     'Kaya',
     'Tenkodogo',
     'Fada N\'gourma',
+    'Hauts-Bassins',
+    'Sahel',
     'Autre',
   ],
   Niger: [
@@ -37,6 +39,28 @@ export const regionsByCountry = {
     'Diffa',
     'Autre',
   ],
+  Senegal: [
+    'Dakar',
+    'Thiès',
+    'Kaolack',
+    'Saint-Louis',
+    'Ziguinchor',
+    'Autre',
+  ],
+  'Côte d\'Ivoire': [
+    'Abidjan',
+    'Bouaké',
+    'Korhogo',
+    'San-Pédro',
+    'Autre',
+  ],
+  Ghana: [
+    'Accra',
+    'Kumasi',
+    'Tamale',
+    'Autre',
+  ],
 };
 
-export const countries = ['Mali', 'Burkina Faso', 'Niger'];
+/** Pays pour lesquels une liste de régions est définie (clés de regionsByCountry). */
+export const countries = Object.keys(regionsByCountry);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useWebSocket } from '../context/WebSocketContext';
-import { regions, cooperativesByRegion, processorsByRegion } from '../data/cooperativesData';
+import { cooperativesByRegion, processorsByRegion } from '../data/cooperativesData';
+import { regionsByCountry } from '../data/sahelRegions';
 import PlantDiseaseAnalyzer from './PlantDiseaseAnalyzer';
 import LandDetection from './LandDetection';
 import { API_ENDPOINTS } from '../config/api';
@@ -599,16 +600,18 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
                 }`}
               >
                 <option value="">Sélectionnez votre région/zone</option>
-                <optgroup label="🇲🇱 Mali">
-                  {regions.filter(r => r.includes('Mali')).map(region => (
-                    <option key={region} value={region}>{region}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="🇧🇫 Burkina Faso">
-                  {regions.filter(r => r.includes('Burkina')).map(region => (
-                    <option key={region} value={region}>{region}</option>
-                  ))}
-                </optgroup>
+                {Object.entries(regionsByCountry).map(([cName, cities]) => (
+                  <optgroup key={cName} label={cName}>
+                    {cities.map((city) => {
+                      const full = `${city}, ${cName}`;
+                      return (
+                        <option key={full} value={full}>
+                          {city}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                ))}
               </select>
               {errors.region && <p className="mt-1 text-sm text-red-600">{errors.region}</p>}
             </div>

@@ -1,9 +1,9 @@
 import { Helmet } from 'react-helmet-async';
 
 const SITE_URL = 'https://sahel-agriconnect.vercel.app';
-const DEFAULT_TITLE = "Sahel AgriConnect — Digitalisation de l'Agriculture du Sahel";
+const DEFAULT_TITLE = "Sahel AgriConnect — Digitalisation de l'agriculture en Afrique de l'Ouest et au-delà";
 const DEFAULT_DESCRIPTION =
-  'Plateforme numérique connectant les agriculteurs du Mali, Burkina Faso et Niger aux marchés, coopératives et services agricoles.';
+  "Plateforme numérique connectant les agriculteurs d'Afrique de l'Ouest et au-delà aux marchés, coopératives et services agricoles.";
 
 /**
  * Métadonnées SEO par défaut (SPA Vite — pas de SSR ; balises complètes pour crawlers et partages).

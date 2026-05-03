@@ -9,7 +9,7 @@ const Footer = () => {
           <div>
             <h3 className="text-xl font-bold mb-4">Sahel AgriConnect</h3>
             <p className="text-gray-300 text-sm">
-              Plateforme de digitalisation souveraine de l'agriculture au Mali, au Burkina Faso et au Niger.
+              Plateforme de digitalisation souveraine de l&apos;agriculture en Afrique de l&apos;Ouest et au-delà.
             </p>
           </div>
 
@@ -60,7 +60,7 @@ const Footer = () => {
             <h4 className="font-semibold mb-4">Projet PTASS</h4>
             <ul className="space-y-2 text-sm text-gray-300">
               <li>Période : 2026-2030</li>
-              <li>Zones : Mali, Burkina Faso & Niger</li>
+              <li>Zones : Afrique de l&apos;Ouest et au-delà</li>
               <li>Objectif : Souveraineté alimentaire</li>
             </ul>
           </div>

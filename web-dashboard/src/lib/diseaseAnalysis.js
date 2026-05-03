@@ -76,7 +76,7 @@ function fileToDataUrl(file) {
 }
 
 async function callAnthropicDirect(base64, mediaType, apiKey) {
-  const system = `Tu es un agronome expert des maladies des cultures au Sahel. Réponds UNIQUEMENT en JSON valide: {"disease_name":"","confidence":0-100,"symptoms":"","treatment":"","prevention":""} en français.`;
+  const system = `Tu es un agronome expert des maladies des cultures en Afrique de l'Ouest et au-delà. Réponds UNIQUEMENT en JSON valide: {"disease_name":"","confidence":0-100,"symptoms":"","treatment":"","prevention":""} en français.`;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -102,7 +102,7 @@ async function callAnthropicDirect(base64, mediaType, apiKey) {
             },
             {
               type: 'text',
-              text: 'Diagnostique la maladie visible sur cette image de culture au Sahel.',
+              text: "Diagnostique la maladie visible sur cette image de culture en Afrique de l'Ouest ou contexte tropical sec.",
             },
           ],
         },
@@ -143,7 +143,7 @@ function mapPlantIdIdentification(data) {
       'Analyse fournie par identification automatique ; croiser avec observations au champ (taches, moisissures, insectes).',
     treatment:
       'Si symptômes de maladie : traitement ciblé après diagnostic terrain. Sinon entretenir irrigation et nutrition.',
-    prevention: 'Rotation, variétés adaptées au Sahel, éviter l’excès d’humidité sur le feuillage.',
+    prevention: 'Rotation, variétés adaptées à votre zone climatique, éviter l’excès d’humidité sur le feuillage.',
     source: 'plant.id',
   };
 }

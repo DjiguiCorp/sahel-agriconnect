@@ -8,7 +8,8 @@ import {
   step1Fields,
   step2Fields,
 } from '../schemas/farmerRegistrationSchema';
-import { regionsByCountry, countries } from '../data/sahelRegions';
+import { regionsByCountry } from '../data/sahelRegions';
+import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { CheckCircle, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -48,7 +49,8 @@ export default function FarmerRegistrationPage() {
 
   const country = watch('country');
   const cooperativeMember = watch('cooperative_member');
-  const regionList = regionsByCountry[country] || [];
+  const regionList =
+    regionsByCountry[country]?.length > 0 ? regionsByCountry[country] : ['Autre'];
 
   const nextFromStep1 = async () => {
     const ok = await trigger(step1Fields);
@@ -211,7 +213,7 @@ export default function FarmerRegistrationPage() {
                     onChange: () => setValue('region', ''),
                   })}
                 >
-                  {countries.map((c) => (
+                  {AFRICAN_COUNTRIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>

@@ -1,5 +1,5 @@
 /**
- * Coopératives fictives réalistes (Mali & Burkina Faso) — affichage Phase 2.
+ * Coopératives fictives réalistes (Afrique de l’Ouest — exemples) — affichage Phase 2.
  */
 export const phase2Cooperatives = [
   {

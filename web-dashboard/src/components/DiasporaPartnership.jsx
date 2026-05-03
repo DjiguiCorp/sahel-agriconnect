@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { Globe, Loader2, Mail, Phone, Package, X, Building2, User } from 'lucide-react';
+import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 
 const PRODUCT_OPTIONS = ['Karité', 'Sésame', 'Cajou', 'Mangue', 'Arachide', 'Coton', 'Mil', 'Sorgho', 'Niébé', 'Riz'];
-const COUNTRIES = ['Mali', 'Burkina Faso', 'Niger'];
 const CERTS = ['Aucune', 'Bio local', 'Conventionnel', 'Export / FDA (objectif)'];
 
 export default function DiasporaPartnership() {
@@ -132,7 +132,8 @@ export default function DiasporaPartnership() {
           Partenariat diaspora
         </h2>
         <p className="text-gray-600 max-w-2xl">
-          Producteurs du Sahel et acheteurs aux États-Unis : inscrivez-vous et explorez les profils disponibles.
+          Producteurs d&apos;Afrique de l&apos;Ouest et au-delà et acheteurs aux États-Unis : inscrivez-vous et
+          explorez les profils disponibles.
         </p>
       </div>
 
@@ -205,7 +206,7 @@ export default function DiasporaPartnership() {
               onChange={(e) => setProdForm((p) => ({ ...p, country: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2"
             >
-              {COUNTRIES.map((c) => (
+              {AFRICAN_COUNTRIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>

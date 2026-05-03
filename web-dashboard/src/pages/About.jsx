@@ -8,8 +8,8 @@ const About = () => {
         <div className="section-container text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">À propos du projet PTASS</h1>
           <p className="text-xl max-w-3xl mx-auto text-white/90">
-            Découvrez notre mission, nos objectifs et nos partenaires dans la transformation de l&apos;agriculture au
-            Sahel
+            Découvrez notre mission, nos objectifs et nos partenaires dans la transformation de l&apos;agriculture en
+            Afrique de l&apos;Ouest et au-delà
           </p>
         </div>
       </section>
@@ -20,7 +20,8 @@ const About = () => {
           <div className="space-y-6 text-gray-700 text-lg">
             <p>
               Le <strong>Projet de Transformation Agricole du Sahel (PTASS)</strong> est une initiative ambitieuse
-              visant à digitaliser et moderniser l&apos;agriculture au Mali et au Burkina Faso. Ce projet s&apos;inscrit
+              visant à digitaliser et moderniser l&apos;agriculture en Afrique de l&apos;Ouest et au-delà. Ce projet
+              s&apos;inscrit
               dans une démarche de souveraineté alimentaire et de développement économique durable.
             </p>
             <p>
@@ -45,7 +46,7 @@ const About = () => {
               {
                 Icon: Target,
                 title: 'Souveraineté alimentaire',
-                text: "Assurer l'autonomie alimentaire des populations du Mali et du Burkina Faso en augmentant la production locale de céréales et de cultures de rente, réduisant ainsi la dépendance aux importations.",
+                text: "Assurer l'autonomie alimentaire des populations en Afrique de l'Ouest et au-delà en augmentant la production locale de céréales et de cultures de rente, réduisant ainsi la dépendance aux importations.",
               },
               {
                 Icon: Banknote,
@@ -106,7 +107,7 @@ const About = () => {
                 year: '2030',
                 title: 'Autonomie et durabilité',
                 description:
-                  "Modèle économique autonome, souveraineté alimentaire atteinte, écosystème agricole durable et résilient, réplication du modèle dans d'autres pays du Sahel.",
+                  "Modèle économique autonome, souveraineté alimentaire atteinte, écosystème agricole durable et résilient, réplication du modèle dans d'autres pays d'Afrique subsaharienne.",
               },
             ].map((phase, index) => (
               <div key={index} className="flex flex-col md:flex-row gap-6">
@@ -138,7 +139,7 @@ const About = () => {
               {
                 Icon: Globe,
                 title: 'Djigui',
-                text: "Organisation locale engagée dans le développement agricole et l'autonomisation des communautés rurales au Mali et au Burkina Faso.",
+                text: "Organisation locale engagée dans le développement agricole et l'autonomisation des communautés rurales en Afrique de l'Ouest et au-delà.",
               },
               {
                 Icon: GraduationCap,
@@ -165,7 +166,7 @@ const About = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-6">Déclaration des besoins</h2>
           <div className="card">
             <p className="text-gray-700 text-lg mb-4">
-              Les agriculteurs du Mali et du Burkina Faso font face à de nombreux défis :
+              Les agriculteurs en Afrique de l&apos;Ouest et au-delà font face à de nombreux défis :
             </p>
             <ul className="space-y-3 text-gray-600">
               {[
