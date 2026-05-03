@@ -1,160 +1,140 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-// LanguageSelector masqué - détection automatique via géolocalisation
-// import LanguageSelector from './LanguageSelector';
+import { Menu, X, Lock } from 'lucide-react';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { t } = useTranslation();
 
+  const navLinkClass =
+    'text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
+  const closeMenu = () => setIsMenuOpen(false);
+
+  const handleDownloadApp = (e) => {
+    e.preventDefault();
+    alert(`${t('home.cta.downloadApp')} - ${t('common.loading')}`);
+  };
+
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
-      <nav className="section-container">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-green to-primary-lightgreen rounded-lg flex items-center justify-center">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-2">
+          <Link to="/" className="flex items-center space-x-2 shrink-0 min-w-0" onClick={closeMenu}>
+            <div className="w-10 h-10 bg-gradient-to-br from-brand-forest to-brand-sage rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">SA</span>
             </div>
-            <span className="text-xl font-bold text-primary-green">{t('common.appName')}</span>
+            <span className="text-lg sm:text-xl font-bold text-brand-forest truncate">
+              {t('common.appName')}
+            </span>
           </Link>
 
-          {/* Desktop Navigation - Simplified */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link to="/" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+          {/* Desktop (≥ md, 768px) */}
+          <div className="hidden md:flex items-center flex-wrap justify-end gap-x-3 gap-y-2 lg:gap-x-4">
+            <Link to="/" className={navLinkClass}>
               {t('nav.home')}
             </Link>
-            <Link to="/about" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+            <Link to="/about" className={navLinkClass}>
               {t('nav.about')}
             </Link>
-            <Link to="/dashboard" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+            <Link to="/dashboard" className={navLinkClass}>
               {t('nav.dashboard')}
             </Link>
-            <Link to="/diagnostic-sol" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+            <Link to="/enregistrer-agriculteur" className={navLinkClass}>
+              {t('nav.registerFarmer')}
+            </Link>
+            <Link to="/diagnostic-sol" className={navLinkClass}>
               {t('nav.soilDiagnostic')}
             </Link>
-            <Link to="/detection-maladies" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+            <Link to="/detection-maladies" className={navLinkClass}>
               {t('nav.diseaseDetection')}
             </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-primary-orange transition-colors font-medium">
+            <Link to="/think-tank" className={navLinkClass}>
+              {t('nav.thinkTank')}
+            </Link>
+            <Link to="/contact" className={navLinkClass}>
               {t('nav.contact')}
             </Link>
-            {/* Lien Admin */}
-            <Link 
-              to="/admin/login" 
-              className="text-gray-600 hover:text-primary-green transition-colors font-medium flex items-center space-x-1"
+            <Link
+              to="/admin/login"
+              className="text-gray-600 hover:text-brand-forest transition-colors font-medium flex items-center gap-1.5"
               title="Espace Administrateur"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+              <Lock className="w-4 h-4 shrink-0" aria-hidden />
               <span>{t('nav.admin')}</span>
             </Link>
-            {/* LanguageSelector masqué - détection automatique via géolocalisation */}
-            <a
-              href="#"
-              className="btn-primary"
-              onClick={(e) => {
-                e.preventDefault();
-                alert(t('home.cta.downloadApp') + ' - ' + t('common.loading'));
-              }}
-            >
+            <a href="#" className="btn-primary text-sm whitespace-nowrap" onClick={handleDownloadApp}>
               {t('nav.downloadApp')}
             </a>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
-        </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 space-y-4">
-            <Link
-              to="/"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('nav.home')}
-            </Link>
-            <Link
-              to="/about"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('nav.about')}
-            </Link>
-            <Link
-              to="/dashboard"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('nav.dashboard')}
-            </Link>
-            <Link
-              to="/diagnostic-sol"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('nav.soilDiagnostic')}
-            </Link>
-            <Link
-              to="/detection-maladies"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('nav.diseaseDetection')}
-            </Link>
-            <Link
-              to="/think-tank"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('nav.thinkTank')}
-            </Link>
-            <Link
-              to="/contact"
-              className="block text-gray-700 hover:text-primary-orange transition-colors font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('nav.contact')}
-            </Link>
-            {/* Lien Admin Mobile */}
-            <Link
-              to="/admin/login"
-              className="block text-gray-700 hover:text-primary-green transition-colors font-medium flex items-center space-x-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              <span>{t('nav.admin')}</span>
-            </Link>
-            {/* LanguageSelector masqué - détection automatique via géolocalisation */}
+          {/* Mobile (&lt; md) : CTA toujours visible + menu hamburger */}
+          <div className="flex md:hidden items-center gap-2 shrink-0">
             <a
               href="#"
-              className="block btn-primary text-center"
+              className="btn-primary text-sm py-2.5 px-3 whitespace-nowrap"
               onClick={(e) => {
-                e.preventDefault();
-                setIsMenuOpen(false);
-                alert(t('home.cta.downloadApp') + ' - ' + t('common.loading'));
+                handleDownloadApp(e);
               }}
+              aria-label={t('nav.downloadApp')}
             >
               {t('nav.downloadApp')}
             </a>
+            <button
+              type="button"
+              className="p-2.5 rounded-lg text-brand-forest hover:bg-brand-iconBg border border-transparent hover:border-brand-sage/30"
+              onClick={() => setIsMenuOpen((o) => !o)}
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-navigation"
+              aria-label={isMenuOpen ? 'Fermer le menu de navigation' : 'Ouvrir le menu de navigation'}
+            >
+              {isMenuOpen ? <X className="w-6 h-6" aria-hidden /> : <Menu className="w-6 h-6" aria-hidden />}
+            </button>
+          </div>
+        </div>
+
+        {/* Panneau mobile (< lg) */}
+        {isMenuOpen && (
+          <div
+            id="mobile-navigation"
+            className="md:hidden border-t border-gray-100 py-4 animate-fade-up"
+            role="navigation"
+            aria-label="Navigation principale"
+          >
+            <div className="flex flex-col space-y-1">
+              <Link to="/" className={navLinkClass} onClick={closeMenu}>
+                {t('nav.home')}
+              </Link>
+              <Link to="/about" className={navLinkClass} onClick={closeMenu}>
+                {t('nav.about')}
+              </Link>
+              <Link to="/dashboard" className={navLinkClass} onClick={closeMenu}>
+                {t('nav.dashboard')}
+              </Link>
+              <Link to="/enregistrer-agriculteur" className={navLinkClass} onClick={closeMenu}>
+                {t('nav.registerFarmer')}
+              </Link>
+              <Link to="/diagnostic-sol" className={navLinkClass} onClick={closeMenu}>
+                {t('nav.soilDiagnostic')}
+              </Link>
+              <Link to="/detection-maladies" className={navLinkClass} onClick={closeMenu}>
+                {t('nav.diseaseDetection')}
+              </Link>
+              <Link to="/think-tank" className={navLinkClass} onClick={closeMenu}>
+                {t('nav.thinkTank')}
+              </Link>
+              <Link to="/contact" className={navLinkClass} onClick={closeMenu}>
+                {t('nav.contact')}
+              </Link>
+              <Link
+                to="/admin/login"
+                className="flex items-center gap-2 text-gray-700 hover:text-brand-forest font-medium py-2"
+                onClick={closeMenu}
+              >
+                <Lock className="w-4 h-4" aria-hidden />
+                {t('nav.admin')}
+              </Link>
+            </div>
           </div>
         )}
       </nav>
@@ -163,4 +143,3 @@ const Header = () => {
 };
 
 export default Header;
-

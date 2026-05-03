@@ -1,59 +1,24 @@
 // Configuration de l'API backend
-// CRITICAL: Vercel must inject VITE_API_BASE_URL during build
-// Force rebuild: Build timestamp updated to invalidate cache
-
-// Build timestamp - Change this to force Vercel rebuild
-const BUILD_VERSION = '2026-01-16-v2.0';
-
-// Get API URL from environment variable
+const BUILD_VERSION = '2026-03-27-v3.1';
 const ENV_API_URL = import.meta.env.VITE_API_BASE_URL;
-
-// Detect if we're using placeholder or invalid URL
 const isPlaceholder = ENV_API_URL?.includes('votre-backend') || ENV_API_URL?.includes('placeholder');
-const isInvalidLocalhost = import.meta.env.PROD && (ENV_API_URL?.includes('localhost') || !ENV_API_URL);
+const isMissingProdApiUrl = import.meta.env.PROD && (!ENV_API_URL || isPlaceholder || ENV_API_URL.includes('localhost'));
+/** En dev, sans VITE_API_BASE_URL : URLs relatives /api/* → proxy Vite vers le backend (évite CORS et erreurs de config). */
+const devUseRelativeApi = import.meta.env.DEV && !String(ENV_API_URL ?? '').trim();
+const isInvalidLocalhost = Boolean(ENV_API_URL?.includes('localhost') && import.meta.env.PROD);
 
-// Fallback: Try to detect backend URL from common Render patterns
-// This is a fallback if env var is not set correctly
-const detectBackendURL = () => {
-  // Common Render URL patterns for this project
-  const possibleURLs = [
-    'https://sahel-agriconnect.onrender.com',
-    'https://sahel-agriconnect-backend.onrender.com',
-  ];
-  
-  // Return first valid URL (in production, this should be overridden by env var)
-  return possibleURLs[0];
-};
+const API_BASE_URL = isMissingProdApiUrl
+  ? ''
+  : devUseRelativeApi
+    ? ''
+    : (ENV_API_URL?.replace(/\/$/, '') || 'http://localhost:3001');
 
-// Determine final API URL
-let API_BASE_URL;
-if (isPlaceholder || isInvalidLocalhost) {
-  // In production, if placeholder or localhost, use fallback detection
-  if (import.meta.env.PROD) {
-    API_BASE_URL = detectBackendURL();
-    console.error('⚠️ WARNING: VITE_API_BASE_URL is not correctly set. Using fallback URL:', API_BASE_URL);
-    console.error('⚠️ ACTION REQUIRED: Set VITE_API_BASE_URL in Vercel with your Render backend URL');
-  } else {
-    API_BASE_URL = 'http://localhost:3001';
-  }
-} else if (ENV_API_URL) {
-  API_BASE_URL = ENV_API_URL.replace(/\/$/, ''); // Remove trailing slash
-} else {
-  API_BASE_URL = import.meta.env.PROD ? detectBackendURL() : 'http://localhost:3001';
-}
-
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || API_BASE_URL;
+const WS_BASE_URL = (import.meta.env.VITE_WS_BASE_URL || API_BASE_URL || '').replace(/\/$/, '');
 
 // Critical error checks in production
-if (import.meta.env.PROD) {
-  if (API_BASE_URL.includes('localhost')) {
-    console.error('❌ CRITICAL ERROR: API_BASE_URL points to localhost in production.');
-    console.error('❌ Configure VITE_API_BASE_URL in Vercel → Settings → Environment Variables');
-  }
-  if (isPlaceholder) {
-    console.error('❌ CRITICAL ERROR: VITE_API_BASE_URL contains placeholder "votre-backend".');
-    console.error('❌ Set VITE_API_BASE_URL in Vercel with your actual Render backend URL.');
-  }
+if (import.meta.env.PROD && isMissingProdApiUrl) {
+  console.error('❌ CRITICAL ERROR: VITE_API_BASE_URL is missing or invalid in production.');
+  console.error('❌ Set VITE_API_BASE_URL in Vercel with your actual Render backend URL and redeploy.');
 }
 
 // Debug logs only in development

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import CooperativesManagement from '../components/admin/CooperativesManagement';
 import CooperativesDiasporaManagement from '../components/admin/CooperativesDiasporaManagement';
 import SeasonalPlanning from '../components/admin/SeasonalPlanning';
@@ -16,6 +16,36 @@ import TrainingsManagement from '../components/admin/TrainingsManagement';
 import IrrigationManagement from '../components/admin/IrrigationManagement';
 import ProductionOptimizationManagement from '../components/admin/ProductionOptimizationManagement';
 import Governance from '../pages/Governance';
+import {
+  Sprout,
+  Handshake,
+  Building2,
+  BookOpen,
+  Scale,
+  Gift,
+  Droplets,
+  Bot,
+  Calendar,
+  Star,
+  Truck,
+  BarChart3,
+  Database,
+} from 'lucide-react';
+
+const tabs = [
+  { id: 'farmers', label: 'Agriculteurs', Icon: Sprout, shortLabel: 'Agric.' },
+  { id: 'cooperatives', label: 'Coopératives', Icon: Handshake, shortLabel: 'Coop.' },
+  { id: 'centers', label: 'Centres', Icon: Building2, shortLabel: 'Centres' },
+  { id: 'trainings', label: 'Formations', Icon: BookOpen, shortLabel: 'Form.' },
+  { id: 'governance', label: 'Gouvernance', Icon: Scale, shortLabel: 'Gouv.' },
+  { id: 'perks', label: 'Avantages', Icon: Gift, shortLabel: 'Avant.' },
+  { id: 'irrigation', label: 'Irrigation', Icon: Droplets, shortLabel: 'Irr.' },
+  { id: 'optimization', label: 'Optimisation', Icon: Bot, shortLabel: 'Opt.' },
+  { id: 'seasonal', label: 'Planification', Icon: Calendar, shortLabel: 'Plan.' },
+  { id: 'certification', label: 'Certification', Icon: Star, shortLabel: 'Cert.' },
+  { id: 'logistics', label: 'Logistique', Icon: Truck, shortLabel: 'Log.' },
+  { id: 'reports', label: 'Rapports', Icon: BarChart3, shortLabel: 'Rapp.' },
+];
 
 const CentralAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('farmers');
@@ -26,21 +56,6 @@ const CentralAdminDashboard = () => {
     logout();
     navigate('/admin/login');
   };
-
-  const tabs = [
-    { id: 'farmers', label: 'Agriculteurs', icon: '👨‍🌾', shortLabel: 'Agric.' },
-    { id: 'cooperatives', label: 'Coopératives', icon: '🤝', shortLabel: 'Coop.' },
-    { id: 'centers', label: 'Centres', icon: '🏢', shortLabel: 'Centres' },
-    { id: 'trainings', label: 'Formations', icon: '📚', shortLabel: 'Form.' },
-    { id: 'governance', label: 'Gouvernance', icon: '⚖️', shortLabel: 'Gouv.' },
-    { id: 'perks', label: 'Avantages', icon: '🎁', shortLabel: 'Avant.' },
-    { id: 'irrigation', label: 'Irrigation', icon: '💧', shortLabel: 'Irr.' },
-    { id: 'optimization', label: 'Optimisation', icon: '🤖', shortLabel: 'Opt.' },
-    { id: 'seasonal', label: 'Planification', icon: '📅', shortLabel: 'Plan.' },
-    { id: 'certification', label: 'Certification', icon: '⭐', shortLabel: 'Cert.' },
-    { id: 'logistics', label: 'Logistique', icon: '🚚', shortLabel: 'Log.' },
-    { id: 'reports', label: 'Rapports', icon: '📊', shortLabel: 'Rapp.' }
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -71,6 +86,13 @@ const CentralAdminDashboard = () => {
               </div>
               
               {/* Logout Button - Mobile optimized */}
+              <Link
+                to="/admin/donnees"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-forest bg-brand-iconBg rounded-lg hover:bg-brand-cream border border-brand-sage/30"
+              >
+                <Database className="w-4 h-4" aria-hidden />
+                Données Supabase
+              </Link>
               <button
                 onClick={handleLogout}
                 className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap"
@@ -89,6 +111,7 @@ const CentralAdminDashboard = () => {
           {tabs.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === tab.id
@@ -96,7 +119,10 @@ const CentralAdminDashboard = () => {
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <span className="text-xl">{tab.icon}</span>
+              <tab.Icon
+                className={`h-5 w-5 shrink-0 ${activeTab === tab.id ? 'text-white' : 'text-brand-forest'}`}
+                aria-hidden
+              />
               <span className="font-medium">{tab.label}</span>
             </button>
           ))}
@@ -110,6 +136,7 @@ const CentralAdminDashboard = () => {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg whitespace-nowrap transition-colors flex-shrink-0 ${
                   activeTab === tab.id
@@ -117,7 +144,10 @@ const CentralAdminDashboard = () => {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <span className="text-base">{tab.icon}</span>
+                <tab.Icon
+                  className={`h-4 w-4 shrink-0 ${activeTab === tab.id ? 'text-white' : 'text-brand-forest'}`}
+                  aria-hidden
+                />
                 <span className="text-xs font-medium">{tab.shortLabel}</span>
               </button>
             ))}

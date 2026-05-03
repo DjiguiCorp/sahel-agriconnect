@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { Mail, Smartphone, CheckCircle } from 'lucide-react';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
     nom: '',
     email: '',
     role: 'agriculteur',
-    message: ''
+    message: '',
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -13,13 +14,12 @@ const Contact = () => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Simulation d'envoi
     console.log('Données soumises:', formData);
     setSubmitted(true);
     setTimeout(() => {
@@ -28,37 +28,36 @@ const Contact = () => {
         nom: '',
         email: '',
         role: 'agriculteur',
-        message: ''
+        message: '',
       });
     }, 3000);
   };
 
+  const inputFocus = 'focus:ring-2 focus:ring-brand-sage focus:border-transparent';
+
   return (
     <div>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-green to-primary-lightgreen text-white py-12">
+      <section className="bg-gradient-to-br from-brand-forest to-brand-sage text-white py-12">
         <div className="section-container text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Contact / Inscription</h1>
-          <p className="text-lg text-gray-100 max-w-2xl mx-auto">
-            Rejoignez le projet PTASS et participez à la transformation de l'agriculture au Sahel
+          <p className="text-lg text-white/90 max-w-2xl mx-auto">
+            Rejoignez le projet PTASS et participez à la transformation de l&apos;agriculture au Sahel
           </p>
         </div>
       </section>
 
-      {/* Formulaire */}
       <section className="section-container py-16">
         <div className="max-w-2xl mx-auto">
           <div className="card">
-            <h2 className="text-2xl font-bold text-primary-green mb-6">
-              Formulaire d'inscription
-            </h2>
+            <h2 className="text-2xl font-bold text-brand-forest mb-6">Formulaire d&apos;inscription</h2>
 
             {submitted && (
-              <div className="mb-6 p-4 bg-green-100 border-l-4 border-green-500 rounded text-green-800">
-                <p className="font-semibold">✅ Inscription réussie !</p>
-                <p className="text-sm mt-1">
-                  Merci pour votre intérêt. Nous vous contacterons sous peu.
+              <div className="mb-6 p-4 bg-green-50 border-l-4 border-brand-sage rounded text-brand-forest">
+                <p className="font-semibold flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 shrink-0 text-brand-sage" aria-hidden />
+                  Inscription réussie !
                 </p>
+                <p className="text-sm mt-1">Merci pour votre intérêt. Nous vous contacterons sous peu.</p>
               </div>
             )}
 
@@ -74,7 +73,7 @@ const Contact = () => {
                   required
                   value={formData.nom}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${inputFocus}`}
                   placeholder="Votre nom complet"
                 />
               </div>
@@ -90,7 +89,7 @@ const Contact = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${inputFocus}`}
                   placeholder="votre.email@example.com"
                 />
               </div>
@@ -105,7 +104,7 @@ const Contact = () => {
                   required
                   value={formData.role}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${inputFocus}`}
                 >
                   <option value="agriculteur">Agriculteur</option>
                   <option value="cooperative">Coopérative</option>
@@ -125,40 +124,36 @@ const Contact = () => {
                   rows="4"
                   value={formData.message}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${inputFocus}`}
                   placeholder="Dites-nous en plus sur votre projet ou vos besoins..."
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full btn-primary"
-              >
-                Envoyer l'inscription
+              <button type="submit" className="w-full btn-primary">
+                Envoyer l&apos;inscription
               </button>
             </form>
           </div>
 
-          {/* Informations de contact */}
           <div className="mt-12 grid md:grid-cols-2 gap-6">
             <div className="card">
-              <h3 className="text-xl font-semibold text-primary-green mb-4">
-                📧 Contact Email
+              <h3 className="text-xl font-semibold text-brand-forest mb-4 flex items-center gap-2">
+                <Mail className="w-6 h-6 text-brand-sage shrink-0" aria-hidden />
+                Contact email
               </h3>
-              <p className="text-gray-600">
-                Pour toute question, contactez-nous à :
-              </p>
+              <p className="text-gray-600">Pour toute question, contactez-nous à :</p>
               <a
                 href="mailto:contact@sahelagriconnect.org"
-                className="text-primary-blue hover:underline mt-2 inline-block"
+                className="text-brand-sage hover:text-brand-forest font-medium mt-2 inline-block"
               >
                 contact@sahelagriconnect.org
               </a>
             </div>
 
             <div className="card">
-              <h3 className="text-xl font-semibold text-primary-orange mb-4">
-                📱 Application Mobile
+              <h3 className="text-xl font-semibold text-brand-forest mb-4 flex items-center gap-2">
+                <Smartphone className="w-6 h-6 text-brand-sage shrink-0" aria-hidden />
+                Application mobile
               </h3>
               <p className="text-gray-600 mb-4">
                 Téléchargez notre application pour accéder à toutes les fonctionnalités :
@@ -171,18 +166,17 @@ const Contact = () => {
                   alert('Application mobile bientôt disponible !');
                 }}
               >
-                Télécharger l'app
+                Télécharger l&apos;app
               </a>
             </div>
           </div>
 
-          {/* Zones d'intervention */}
-          <div className="mt-12 card bg-gradient-to-br from-primary-blue to-primary-darkblue text-white">
-            <h3 className="text-2xl font-semibold mb-4">Zones d'Intervention</h3>
+          <div className="mt-12 card bg-gradient-to-br from-brand-forest to-brand-sage text-white">
+            <h3 className="text-2xl font-semibold mb-4">Zones d&apos;intervention</h3>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
-                <h4 className="font-semibold mb-2">🇲🇱 Mali</h4>
-                <ul className="text-gray-100 text-sm space-y-1">
+                <h4 className="font-semibold mb-2">Mali</h4>
+                <ul className="text-white/90 text-sm space-y-1">
                   <li>• Bamako</li>
                   <li>• Ségou</li>
                   <li>• Koutiala</li>
@@ -190,17 +184,17 @@ const Contact = () => {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">🇧🇫 Burkina Faso</h4>
-                <ul className="text-gray-100 text-sm space-y-1">
+                <h4 className="font-semibold mb-2">Burkina Faso</h4>
+                <ul className="text-white/90 text-sm space-y-1">
                   <li>• Ouagadougou</li>
                   <li>• Bobo-Dioulasso</li>
                   <li>• Koudougou</li>
-                  <li>• Fada N'gourma</li>
+                  <li>• Fada N&apos;gourma</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">🇳🇪 Niger</h4>
-                <ul className="text-gray-100 text-sm space-y-1">
+                <h4 className="font-semibold mb-2">Niger</h4>
+                <ul className="text-white/90 text-sm space-y-1">
                   <li>• Niamey</li>
                   <li>• Tillabéri</li>
                   <li>• Dosso</li>
@@ -215,4 +209,3 @@ const Contact = () => {
 };
 
 export default Contact;
-

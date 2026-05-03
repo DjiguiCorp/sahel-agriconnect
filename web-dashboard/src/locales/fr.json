@@ -29,7 +29,8 @@
     "thinkTank": "Think Tank",
     "downloadApp": "Télécharger l'app",
     "admin": "Central Admin",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "registerFarmer": "Enregistrement agriculteur"
   },
   "home": {
     "title": "Sahel AgriConnect",

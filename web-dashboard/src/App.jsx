@@ -21,6 +21,8 @@ import PerksRequest from './components/farmer/PerksRequest';
 import TrainingBooking from './components/farmer/TrainingBooking';
 import IrrigationAssessment from './components/farmer/IrrigationAssessment';
 import ProductionOptimizer from './components/farmer/ProductionOptimizer';
+import FarmerRegistrationPage from './pages/FarmerRegistrationPage';
+import SupabaseDataDashboard from './pages/SupabaseDataDashboard';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
         <Routes>
           {/* Route admin login (sans header/footer) */}
           <Route path="/admin/login" element={<AdminLogin />} />
+
+          <Route path="/admin/donnees" element={<SupabaseDataDashboard />} />
           
           {/* Routes admin protégées (sans header/footer) */}
           {/* Route principale du dashboard admin */}
@@ -67,6 +71,7 @@ function App() {
             <Route path="demander-avantage" element={<PerksRequest />} />
             <Route path="irrigation" element={<IrrigationAssessment />} />
             <Route path="optimisation-production" element={<ProductionOptimizer />} />
+            <Route path="enregistrer-agriculteur" element={<FarmerRegistrationPage />} />
             {/* Route catch-all pour les routes non trouvées */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

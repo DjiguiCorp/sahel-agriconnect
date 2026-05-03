@@ -29,7 +29,8 @@
     "thinkTank": "Think Tank",
     "downloadApp": "Download App",
     "admin": "Central Admin",
-    "logout": "Logout"
+    "logout": "Logout",
+    "registerFarmer": "Farmer registration"
   },
   "home": {
     "title": "Sahel AgriConnect",

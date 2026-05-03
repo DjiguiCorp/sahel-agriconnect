@@ -2,16 +2,17 @@ import { useState } from 'react';
 import CooperativeDashboard from '../CooperativeDashboard';
 import DiasporaPartnership from '../DiasporaPartnership';
 import TransformationCenters from '../TransformationCenters';
+import { Handshake, Globe, Factory, ClipboardList } from 'lucide-react';
+
+const views = [
+  { id: 'cooperatives', label: 'Coopératives', Icon: Handshake },
+  { id: 'diaspora', label: 'Partenariat Diaspora', Icon: Globe },
+  { id: 'centers', label: 'Centres Transformation', Icon: Factory },
+  { id: 'requests', label: 'Demandes & Matching', Icon: ClipboardList },
+];
 
 const CooperativesDiasporaManagement = () => {
-  const [activeView, setActiveView] = useState('cooperatives'); // 'cooperatives', 'diaspora', 'centers', 'requests'
-
-  const views = [
-    { id: 'cooperatives', label: 'Coopératives', icon: '🤝' },
-    { id: 'diaspora', label: 'Partenariat Diaspora', icon: '🌍' },
-    { id: 'centers', label: 'Centres Transformation', icon: '🏭' },
-    { id: 'requests', label: 'Demandes & Matching', icon: '📋' }
-  ];
+  const [activeView, setActiveView] = useState('cooperatives');
 
   return (
     <div className="space-y-6">
@@ -32,14 +33,15 @@ const CooperativesDiasporaManagement = () => {
           {views.map((view) => (
             <button
               key={view.id}
+              type="button"
               onClick={() => setActiveView(view.id)}
-              className={`py-4 px-6 border-b-2 font-medium transition-colors whitespace-nowrap ${
+              className={`py-4 px-6 border-b-2 font-medium transition-colors whitespace-nowrap inline-flex items-center gap-2 ${
                 activeView === view.id
                   ? 'border-primary-green text-primary-green'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <span className="mr-2">{view.icon}</span>
+              <view.Icon className="w-4 h-4 shrink-0" aria-hidden />
               {view.label}
             </button>
           ))}

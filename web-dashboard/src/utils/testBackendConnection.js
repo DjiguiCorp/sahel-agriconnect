@@ -1,5 +1,6 @@
 // Utility to test backend connection
 // This helps diagnose connection issues
+import { fetchWithTimeout } from './fetchWithTimeout';
 
 export const testBackendConnection = async (apiBaseUrl) => {
   const results = {
@@ -14,13 +15,12 @@ export const testBackendConnection = async (apiBaseUrl) => {
     try {
       const healthUrl = `${apiBaseUrl}/api/health`;
       
-      const healthResponse = await fetch(healthUrl, {
+      const healthResponse = await fetchWithTimeout(healthUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      });
+        }
+      }, 10000);
 
       if (healthResponse.ok) {
         const healthData = await healthResponse.json();
@@ -48,14 +48,13 @@ export const testBackendConnection = async (apiBaseUrl) => {
     // Test 2: CORS Check
     try {
       const corsUrl = `${apiBaseUrl}/api/health`;
-      const corsResponse = await fetch(corsUrl, {
+      const corsResponse = await fetchWithTimeout(corsUrl, {
         method: 'OPTIONS',
         headers: {
           'Origin': window.location.origin,
           'Access-Control-Request-Method': 'GET',
-        },
-        signal: AbortSignal.timeout(10000)
-      });
+        }
+      }, 10000);
 
       results.cors = {
         success: corsResponse.ok || corsResponse.status === 204,
@@ -77,14 +76,13 @@ export const testBackendConnection = async (apiBaseUrl) => {
     try {
       const loginUrl = `${apiBaseUrl}/api/auth/login`;
       
-      const loginResponse = await fetch(loginUrl, {
+      const loginResponse = await fetchWithTimeout(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: 'test@test.com', password: 'test' }),
-        signal: AbortSignal.timeout(10000)
-      });
+        body: JSON.stringify({ email: 'test@test.com', password: 'test' })
+      }, 10000);
 
       // We expect 401 (unauthorized) which means the endpoint exists
       results.loginEndpoint = {

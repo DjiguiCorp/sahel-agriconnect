@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../config/api';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 const AuthContext = createContext();
 
@@ -38,22 +39,27 @@ export const AuthProvider = ({ children }) => {
       const loginUrl = API_ENDPOINTS.AUTH.LOGIN;
       
       // Vérifier la configuration en production
-      if (import.meta.env.PROD && loginUrl.includes('localhost')) {
+      if (import.meta.env.PROD && (!loginUrl || loginUrl.includes('localhost'))) {
         throw new Error('Configuration manquante : VITE_API_BASE_URL doit être défini dans Vercel avec votre URL Render.');
       }
-      
-      if (!loginUrl || loginUrl === 'undefined/api/auth/login') {
+
+      // En dev, /api/auth/login est valide (proxy Vite). En prod, une URL relative signifie build sans API.
+      if (import.meta.env.PROD && loginUrl === '/api/auth/login') {
+        throw new Error('Configuration invalide : VITE_API_BASE_URL n\'est pas correctement configuré dans Vercel.');
+      }
+
+      if (!loginUrl || loginUrl.includes('undefined')) {
         throw new Error('Configuration invalide : VITE_API_BASE_URL n\'est pas correctement configuré dans Vercel.');
       }
       
-      const response = await fetch(loginUrl, {
+      const response = await fetchWithTimeout(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
-        // Ajouter un timeout pour mobile
-        signal: AbortSignal.timeout(30000) // 30 secondes
+        // Inclure les credentials pour compatibilité cross-origin
+        credentials: 'include'
       }).catch((fetchError) => {
         // Gérer les erreurs de fetch spécifiquement
         if (fetchError.name === 'AbortError') {

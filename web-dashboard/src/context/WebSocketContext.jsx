@@ -20,7 +20,8 @@ export const WebSocketProvider = ({ children }) => {
 
   useEffect(() => {
     // Connexion WebSocket au backend
-    const newSocket = io(WS_BASE_URL, {
+    // Même origine en dev (proxy /socket.io) ; sinon URL explicite du backend
+    const newSocket = io(WS_BASE_URL || undefined, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
