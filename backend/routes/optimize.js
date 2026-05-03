@@ -7,11 +7,8 @@ const router = express.Router();
 // Helper function to call Gemini API
 async function callGeminiAPI(prompt) {
   try {
-    // Use environment variable or fallback to provided key
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyCUuvVQzgwUD3CRCQ7yyGsO0Mh7UyxlXwc';
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
-    }
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured in environment variables');
 
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
 
