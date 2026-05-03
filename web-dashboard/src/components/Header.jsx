@@ -1,15 +1,44 @@
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Menu, X, Lock } from 'lucide-react';
+import { Menu, X, Lock, ChevronDown } from 'lucide-react';
+
+const OUTILS_ITEMS = [
+  { to: '/diagnostic-sol', labelKey: 'nav.soilDiagnostic' },
+  { to: '/detection-maladies', labelKey: 'nav.diseaseDetection' },
+  { to: '/think-tank', labelKey: 'nav.thinkTank' },
+];
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [desktopOutilsOpen, setDesktopOutilsOpen] = useState(false);
+  const [mobileOutilsOpen, setMobileOutilsOpen] = useState(false);
+  const desktopOutilsRef = useRef(null);
   const { t } = useTranslation();
+  const location = useLocation();
 
   const navLinkClass =
     'text-lg text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
-  const closeMenu = () => setIsMenuOpen(false);
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+    setMobileOutilsOpen(false);
+  };
+
+  useEffect(() => {
+    setDesktopOutilsOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!desktopOutilsOpen) return;
+    const handleMouseDown = (e) => {
+      if (desktopOutilsRef.current && !desktopOutilsRef.current.contains(e.target)) {
+        setDesktopOutilsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [desktopOutilsOpen]);
 
   const handleDownloadApp = (e) => {
     e.preventDefault();
@@ -17,7 +46,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-md sticky top-8 z-50 mt-8">
+    <header className="bg-white shadow-md">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between min-h-[4rem] gap-2">
           <Link to="/" className="flex items-center space-x-2 shrink-0 min-w-0" onClick={closeMenu}>
@@ -43,15 +72,46 @@ const Header = () => {
             <Link to="/enregistrer-agriculteur" className={navLinkClass}>
               {t('nav.registerFarmer')}
             </Link>
-            <Link to="/diagnostic-sol" className={navLinkClass}>
-              {t('nav.soilDiagnostic')}
-            </Link>
-            <Link to="/detection-maladies" className={navLinkClass}>
-              {t('nav.diseaseDetection')}
-            </Link>
-            <Link to="/think-tank" className={navLinkClass}>
-              {t('nav.thinkTank')}
-            </Link>
+
+            <div
+              ref={desktopOutilsRef}
+              className="relative"
+              onMouseEnter={() => setDesktopOutilsOpen(true)}
+              onMouseLeave={() => setDesktopOutilsOpen(false)}
+            >
+              <button
+                type="button"
+                className={`${navLinkClass} inline-flex items-center gap-1 rounded-md md:py-0`}
+                aria-expanded={desktopOutilsOpen}
+                aria-haspopup="true"
+                onClick={() => setDesktopOutilsOpen((o) => !o)}
+              >
+                Outils Agricoles
+                <ChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+              </button>
+              {desktopOutilsOpen && (
+                <div
+                  className="absolute left-0 top-full z-20 min-w-[14rem] pt-1"
+                  role="menu"
+                  aria-label="Outils agricoles"
+                >
+                  <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
+                    {OUTILS_ITEMS.map(({ to, labelKey }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        role="menuitem"
+                        className="block px-4 py-2.5 text-lg text-gray-700 hover:bg-brand-iconBg hover:text-brand-forest"
+                        onClick={() => setDesktopOutilsOpen(false)}
+                      >
+                        {t(labelKey)}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Link to="/contact" className={navLinkClass}>
               {t('nav.contact')}
             </Link>
@@ -93,7 +153,7 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Panneau mobile (< lg) */}
+        {/* Panneau mobile */}
         {isMenuOpen && (
           <div
             id="mobile-navigation"
@@ -114,15 +174,36 @@ const Header = () => {
               <Link to="/enregistrer-agriculteur" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.registerFarmer')}
               </Link>
-              <Link to="/diagnostic-sol" className={navLinkClass} onClick={closeMenu}>
-                {t('nav.soilDiagnostic')}
-              </Link>
-              <Link to="/detection-maladies" className={navLinkClass} onClick={closeMenu}>
-                {t('nav.diseaseDetection')}
-              </Link>
-              <Link to="/think-tank" className={navLinkClass} onClick={closeMenu}>
-                {t('nav.thinkTank')}
-              </Link>
+
+              <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-1">
+                <button
+                  type="button"
+                  className={`${navLinkClass} flex w-full items-center justify-between text-left`}
+                  aria-expanded={mobileOutilsOpen}
+                  onClick={() => setMobileOutilsOpen((o) => !o)}
+                >
+                  <span>Outils Agricoles</span>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 transition-transform ${mobileOutilsOpen ? 'rotate-180' : ''}`}
+                    aria-hidden
+                  />
+                </button>
+                {mobileOutilsOpen && (
+                  <div className="mt-2 flex flex-col space-y-1 border-l border-gray-200 pl-3 ml-1">
+                    {OUTILS_ITEMS.map(({ to, labelKey }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        className="py-2 text-lg text-gray-700 hover:text-brand-forest"
+                        onClick={closeMenu}
+                      >
+                        {t(labelKey)}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <Link to="/contact" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.contact')}
               </Link>
