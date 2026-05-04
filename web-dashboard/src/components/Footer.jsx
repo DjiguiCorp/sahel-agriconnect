@@ -55,11 +55,14 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Project Info */}
+          {/* AfriYield Exchange */}
           <div>
-            <h4 className="font-semibold mb-4">Projet PTASS</h4>
+            <h4 className="font-semibold mb-4">
+              <Link to="/afri-yield" className="hover:text-white transition-colors">
+                AfriYield Exchange
+              </Link>
+            </h4>
             <ul className="space-y-2 text-sm text-gray-300">
-              <li>Période : 2026-2030</li>
               <li>Zones : Afrique de l&apos;Ouest et au-delà</li>
               <li>Objectif : Souveraineté alimentaire</li>
             </ul>
@@ -69,7 +72,7 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Partenaires</h4>
             <ul className="space-y-2 text-sm text-gray-300">
-              <li>AES</li>
+              <li>Diaspora Investors Network</li>
               <li>Djigui</li>
               <li>Universités US</li>
             </ul>
