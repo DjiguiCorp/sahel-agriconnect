@@ -81,39 +81,39 @@ const About = () => {
       </section>
 
       <section className="section-container py-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-brand-forest text-center mb-12">Feuille de route 2026-2030</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-brand-forest text-center mb-12">Feuille de route</h2>
         <div className="max-w-4xl mx-auto">
           <div className="space-y-8">
             {[
               {
-                year: '2026',
-                title: 'Lancement et infrastructure',
+                step: '1',
+                title: 'Phase 1 — Lancement & Infrastructure',
                 description:
-                  "Mise en place de la plateforme, déploiement de l'application mobile, formation des premiers agriculteurs pilotes, installation des systèmes d'irrigation dans les zones prioritaires.",
+                  'Déploiement de la plateforme, onboarding des premiers agriculteurs pilotes, mise en place des coopératives fondatrices, lancement des outils de détection de maladies et de diagnostic',
               },
               {
-                year: '2027-2028',
-                title: 'Expansion et formation',
+                step: '2',
+                title: 'Phase 2 — Expansion & Formation',
                 description:
-                  'Élargissement à 50 000+ agriculteurs, développement des coopératives, mise en place des certifications de qualité, optimisation des chaînes logistiques.',
+                  "Élargissement à travers l'Afrique de l'Ouest, développement des coopératives, certifications de qualité, optimisation des chaînes logistiques",
               },
               {
-                year: '2029',
-                title: 'Consolidation et marchés',
+                step: '3',
+                title: 'Phase 3 — Marchés & Export',
                 description:
-                  "Atteinte de 100 000+ agriculteurs actifs, développement des marchés d'exportation, valorisation des produits certifiés, création d'emplois dans le secteur agricole.",
+                  "Connexion aux marchés internationaux via AfriYield Exchange, certifications USDA/UE, partenariats diaspora, fonds d'équipement coopératif",
               },
               {
-                year: '2030',
-                title: 'Autonomie et durabilité',
+                step: '4',
+                title: 'Phase 4 — Autonomie & Durabilité',
                 description:
-                  "Modèle économique autonome, souveraineté alimentaire atteinte, écosystème agricole durable et résilient, réplication du modèle dans d'autres pays d'Afrique subsaharienne.",
+                  "Modèle économique autonome, souveraineté alimentaire, réplication dans toute l'Afrique subsaharienne",
               },
             ].map((phase, index) => (
               <div key={index} className="flex flex-col md:flex-row gap-6">
                 <div className="flex-shrink-0">
                   <div className="w-24 h-24 bg-brand-amber rounded-full flex items-center justify-center text-brand-forest font-bold text-xl shadow-md">
-                    {phase.year}
+                    {phase.step}
                   </div>
                 </div>
                 <div className="flex-1 card">

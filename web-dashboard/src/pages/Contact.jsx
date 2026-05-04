@@ -171,39 +171,6 @@ const Contact = () => {
               </a>
             </div>
           </div>
-
-          <div className="mt-12 card bg-gradient-to-br from-brand-forest to-brand-sage text-white">
-            <h3 className="text-2xl font-semibold mb-4">Zones d&apos;intervention</h3>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <h4 className="font-semibold mb-2">Sénégal</h4>
-                <ul className="text-white/90 text-sm space-y-1">
-                  <li>• Dakar</li>
-                  <li>• Thiès</li>
-                  <li>• Kaolack</li>
-                  <li>• Saint-Louis</li>
-                  <li>• Ziguinchor</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Côte d&apos;Ivoire</h4>
-                <ul className="text-white/90 text-sm space-y-1">
-                  <li>• Abidjan</li>
-                  <li>• Bouaké</li>
-                  <li>• Korhogo</li>
-                  <li>• San-Pédro</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Ghana</h4>
-                <ul className="text-white/90 text-sm space-y-1">
-                  <li>• Accra</li>
-                  <li>• Kumasi</li>
-                  <li>• Tamale</li>
-                </ul>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
     </div>
