@@ -116,6 +116,15 @@ const Header = () => {
               {t('nav.contact')}
             </Link>
             <Link
+              to="/afri-yield"
+              className="text-lg font-medium py-2 md:py-0 text-[#B5850A] hover:text-[#9a7109] transition-colors inline-flex items-center gap-2"
+            >
+              <span>AfriYield Exchange</span>
+              <span className="text-[10px] font-bold tracking-wide text-white bg-[#B5850A] px-1.5 py-0.5 rounded leading-none">
+                NEW
+              </span>
+            </Link>
+            <Link
               to="/admin/login"
               className="text-lg text-gray-600 hover:text-brand-forest transition-colors font-medium flex items-center gap-1.5"
               title="Espace Administrateur"
@@ -206,6 +215,16 @@ const Header = () => {
 
               <Link to="/contact" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.contact')}
+              </Link>
+              <Link
+                to="/afri-yield"
+                className="text-lg font-medium py-2 text-[#B5850A] hover:text-[#9a7109] transition-colors inline-flex items-center gap-2"
+                onClick={closeMenu}
+              >
+                <span>AfriYield Exchange</span>
+                <span className="text-[10px] font-bold tracking-wide text-white bg-[#B5850A] px-1.5 py-0.5 rounded leading-none">
+                  NEW
+                </span>
               </Link>
               <Link
                 to="/admin/login"
