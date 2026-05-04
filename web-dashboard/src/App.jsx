@@ -27,6 +27,7 @@ import PlatformLicensing from './pages/PlatformLicensing';
 import CooperativeRegistration from './pages/CooperativeRegistration';
 import FarmerCertificationProgram from './pages/FarmerCertificationProgram';
 import EquipmentFund from './pages/EquipmentFund';
+import AfriYieldExchange from './pages/AfriYieldExchange';
 
 function App() {
   return (
@@ -80,6 +81,7 @@ function App() {
             <Route path="cooperative-registration" element={<CooperativeRegistration />} />
             <Route path="farmer-certification" element={<FarmerCertificationProgram />} />
             <Route path="equipment-fund" element={<EquipmentFund />} />
+            <Route path="afri-yield" element={<AfriYieldExchange />} />
             {/* Route catch-all pour les routes non trouvées */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
