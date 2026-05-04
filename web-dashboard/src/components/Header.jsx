@@ -115,6 +115,9 @@ const Header = () => {
             <Link to="/contact" className={navLinkClass}>
               {t('nav.contact')}
             </Link>
+            <Link to="/pricing" className={navLinkClass}>
+              Tarifs
+            </Link>
             <Link
               to="/afri-yield"
               className="text-lg font-medium py-2 md:py-0 text-[#B5850A] hover:text-[#9a7109] transition-colors inline-flex items-center gap-2"
@@ -215,6 +218,9 @@ const Header = () => {
 
               <Link to="/contact" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.contact')}
+              </Link>
+              <Link to="/pricing" className={navLinkClass} onClick={closeMenu}>
+                Tarifs
               </Link>
               <Link
                 to="/afri-yield"

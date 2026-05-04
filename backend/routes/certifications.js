@@ -1,10 +1,49 @@
 import express from 'express';
 import Certification from '../models/Certification.js';
+import CertificationProgramApplication from '../models/CertificationProgramApplication.js';
 import Farmer from '../models/Farmer.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateCertification } from '../middleware/validation.js';
 
 const router = express.Router();
+
+router.post('/apply', async (req, res) => {
+  try {
+    const rawType = String(req.body.applicantType || '');
+    const applicantType =
+      rawType.includes('Cooperative') && !rawType.includes('Individual')
+        ? 'Cooperative'
+        : 'Individual';
+    const transformationCenterName =
+      req.body.transformationCenterName ||
+      req.body.transformationCenterPartnerName ||
+      '';
+    if (applicantType === 'Individual' && !transformationCenterName.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Transformation center name is required for individual applicants.',
+      });
+    }
+    await CertificationProgramApplication.create({
+      applicantType,
+      name: req.body.name,
+      country: req.body.country,
+      region: req.body.region,
+      crop: req.body.crop || req.body.cropType,
+      farmerOrCooperativeId: req.body.farmerOrCooperativeId || req.body.applicantId,
+      transformationCenterName: transformationCenterName.trim(),
+      email: req.body.email,
+      phone: req.body.phone || '',
+    });
+    res.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Erreur candidature certification export:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message || 'Erreur lors de l’enregistrement',
+    });
+  }
+});
 
 // POST /api/certifications - Demande de certification (protégée admin)
 router.post('/', authenticateToken, validateCertification, async (req, res) => {

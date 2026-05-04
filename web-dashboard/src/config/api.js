@@ -54,11 +54,19 @@ export const API_ENDPOINTS = {
   COOPERATIVES: {
     BASE: `${API_BASE_URL}/api/cooperatives`,
     BY_REGION: (region) => `${API_BASE_URL}/api/cooperatives?region=${region}`,
+    REGISTER_PLATFORM: `${API_BASE_URL}/api/cooperatives/register-platform`,
   },
   // Certifications
   CERTIFICATIONS: {
     BASE: `${API_BASE_URL}/api/certifications`,
     BY_ID: (id) => `${API_BASE_URL}/api/certifications/${id}`,
+    APPLY: `${API_BASE_URL}/api/certifications/apply`,
+  },
+  LICENSING: {
+    INQUIRE: `${API_BASE_URL}/api/licensing/inquire`,
+  },
+  EQUIPMENT_FUND: {
+    APPLY: `${API_BASE_URL}/api/equipment-fund/apply`,
   },
   // Détection de maladies
   PLANT_DISEASE: `${API_BASE_URL}/api/detect-plant-disease`,

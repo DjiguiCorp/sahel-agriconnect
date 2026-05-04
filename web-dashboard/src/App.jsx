@@ -30,6 +30,7 @@ import EquipmentFund from './pages/EquipmentFund';
 import AfriYieldExchange from './pages/AfriYieldExchange';
 import InvestorRegistration from './pages/InvestorRegistration';
 import InvestmentOpportunities from './pages/InvestmentOpportunities';
+import Pricing from './pages/Pricing';
 
 function App() {
   return (
@@ -68,6 +69,7 @@ function App() {
             <Route path="about" element={<About />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="contact" element={<Contact />} />
+            <Route path="pricing" element={<Pricing />} />
             <Route path="diagnostic-sol" element={<SoilDiagnostic />} />
             <Route path="think-tank" element={<ThinkTank />} />
             <Route path="detection-maladies" element={<PlantDiseaseDetection />} />

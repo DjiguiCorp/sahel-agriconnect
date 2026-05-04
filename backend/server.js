@@ -17,6 +17,8 @@ import logisticsRoutes from './routes/logistics.js';
 import optimizeRoutes from './routes/optimize.js';
 import investorsRouter from './routes/investors.js';
 import opportunitiesRouter from './routes/opportunities.js';
+import licensingRouter from './routes/licensing.js';
+import equipmentFundRouter from './routes/equipmentFund.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -107,6 +109,8 @@ app.use('/api/logistics', logisticsRoutes);
 app.use('/api/optimize', optimizeRoutes);
 app.use('/api/investors', investorsRouter);
 app.use('/api/opportunities', opportunitiesRouter);
+app.use('/api/licensing', licensingRouter);
+app.use('/api/equipment-fund', equipmentFundRouter);
 
 // Route de base - Message informatif
 app.get('/', (req, res) => {
