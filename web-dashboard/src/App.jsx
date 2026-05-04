@@ -21,7 +21,6 @@ import PerksRequest from './components/farmer/PerksRequest';
 import TrainingBooking from './components/farmer/TrainingBooking';
 import IrrigationAssessment from './components/farmer/IrrigationAssessment';
 import ProductionOptimizer from './components/farmer/ProductionOptimizer';
-import FarmerRegistrationPage from './pages/FarmerRegistrationPage';
 import SupabaseDataDashboard from './pages/SupabaseDataDashboard';
 import PlatformLicensing from './pages/PlatformLicensing';
 import CooperativeRegistration from './pages/CooperativeRegistration';
@@ -80,7 +79,6 @@ function App() {
             <Route path="demander-avantage" element={<PerksRequest />} />
             <Route path="irrigation" element={<IrrigationAssessment />} />
             <Route path="optimisation-production" element={<ProductionOptimizer />} />
-            <Route path="enregistrer-agriculteur" element={<FarmerRegistrationPage />} />
             <Route path="platform-licensing" element={<PlatformLicensing />} />
             <Route path="cooperative-registration" element={<CooperativeRegistration />} />
             <Route path="farmer-certification" element={<FarmerCertificationProgram />} />

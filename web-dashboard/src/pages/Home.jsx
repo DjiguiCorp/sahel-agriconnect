@@ -93,8 +93,8 @@ const Home = () => {
                 Icon: Users,
                 title: 'Enregistrement agriculteurs',
                 text: 'Formulaire complet avec géolocalisation GPS, détection satellite des terres, et analyse de maladies des plantes.',
-                to: '/enregistrer-agriculteur',
-                link: 'Enregistrer un agriculteur →',
+                to: '/dashboard',
+                link: 'Accéder au Dashboard →',
               },
               {
                 Icon: Handshake,
