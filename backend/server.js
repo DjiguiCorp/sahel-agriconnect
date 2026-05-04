@@ -15,6 +15,8 @@ import trainingRoutes from './routes/trainings.js';
 import irrigationRoutes from './routes/irrigation.js';
 import logisticsRoutes from './routes/logistics.js';
 import optimizeRoutes from './routes/optimize.js';
+import investorsRouter from './routes/investors.js';
+import opportunitiesRouter from './routes/opportunities.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -103,6 +105,8 @@ app.use('/api/trainings', trainingRoutes);
 app.use('/api/irrigation', irrigationRoutes);
 app.use('/api/logistics', logisticsRoutes);
 app.use('/api/optimize', optimizeRoutes);
+app.use('/api/investors', investorsRouter);
+app.use('/api/opportunities', opportunitiesRouter);
 
 // Route de base - Message informatif
 app.get('/', (req, res) => {

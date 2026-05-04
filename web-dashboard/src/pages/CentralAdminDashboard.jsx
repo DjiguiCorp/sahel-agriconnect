@@ -15,6 +15,7 @@ import PerksManagement from '../components/admin/PerksManagement';
 import TrainingsManagement from '../components/admin/TrainingsManagement';
 import IrrigationManagement from '../components/admin/IrrigationManagement';
 import ProductionOptimizationManagement from '../components/admin/ProductionOptimizationManagement';
+import AfriYieldManagement from '../components/admin/AfriYieldManagement';
 import Governance from '../pages/Governance';
 import {
   Sprout,
@@ -30,6 +31,7 @@ import {
   Truck,
   BarChart3,
   Database,
+  Coins,
 } from 'lucide-react';
 
 const tabs = [
@@ -45,6 +47,7 @@ const tabs = [
   { id: 'certification', label: 'Certification', Icon: Star, shortLabel: 'Cert.' },
   { id: 'logistics', label: 'Logistique', Icon: Truck, shortLabel: 'Log.' },
   { id: 'reports', label: 'Rapports', Icon: BarChart3, shortLabel: 'Rapp.' },
+  { id: 'afriyield', label: 'AfriYield Exchange', Icon: Coins, shortLabel: 'AfriY.', accent: 'gold' },
 ];
 
 const CentralAdminDashboard = () => {
@@ -115,12 +118,16 @@ const CentralAdminDashboard = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-primary-green text-white'
+                  ? tab.accent === 'gold'
+                    ? 'bg-[#B5850A] text-white shadow-md'
+                    : 'bg-primary-green text-white'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
               <tab.Icon
-                className={`h-5 w-5 shrink-0 ${activeTab === tab.id ? 'text-white' : 'text-brand-forest'}`}
+                className={`h-5 w-5 shrink-0 ${
+                  activeTab === tab.id ? 'text-white' : 'text-brand-forest'
+                }`}
                 aria-hidden
               />
               <span className="font-medium">{tab.label}</span>
@@ -140,7 +147,9 @@ const CentralAdminDashboard = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg whitespace-nowrap transition-colors flex-shrink-0 ${
                   activeTab === tab.id
-                    ? 'bg-primary-green text-white shadow-md'
+                    ? tab.accent === 'gold'
+                      ? 'bg-[#B5850A] text-white shadow-md'
+                      : 'bg-primary-green text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -170,6 +179,7 @@ const CentralAdminDashboard = () => {
           {activeTab === 'certification' && <CertificationManagement />}
           {activeTab === 'logistics' && <LogisticsManagement />}
           {activeTab === 'reports' && <ReportsManagement />}
+          {activeTab === 'afriyield' && <AfriYieldManagement />}
         </div>
       </main>
     </div>

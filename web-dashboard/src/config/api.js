@@ -115,6 +115,18 @@ export const API_ENDPOINTS = {
     REGIONAL: `${API_BASE_URL}/api/optimize/regional`,
     FEEDBACK: (id) => `${API_BASE_URL}/api/optimize/production/${id}/feedback`,
   },
+  INVESTORS: {
+    REGISTER: `${API_BASE_URL}/api/investors/register`,
+    BASE: `${API_BASE_URL}/api/investors`,
+    STATUS: (id) => `${API_BASE_URL}/api/investors/${id}/status`,
+  },
+  OPPORTUNITIES: {
+    BASE: `${API_BASE_URL}/api/opportunities`,
+    ALL: `${API_BASE_URL}/api/opportunities/all`,
+    BY_ID: (id) => `${API_BASE_URL}/api/opportunities/${id}`,
+    MEETING_REQUEST: (id) => `${API_BASE_URL}/api/opportunities/${id}/meeting-request`,
+    MEETING_REQUESTS: `${API_BASE_URL}/api/opportunities/meeting-requests`,
+  },
 };
 
 export { API_BASE_URL, WS_BASE_URL, BUILD_VERSION };

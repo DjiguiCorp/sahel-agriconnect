@@ -1,13 +1,12 @@
-import { useMemo, useState } from 'react';
-import { API_BASE_URL } from '../config/api';
-import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { API_ENDPOINTS } from '../config/api';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 
 const RESIDENCE = ['USA', 'France', 'UK', 'Canada', 'UAE', 'Sénégal', "Côte d'Ivoire", 'Ghana', 'Nigeria', 'Other'];
 const RANGES = ['$1,000–$5,000', '$5,000–$25,000', '$25,000–$100,000', '$100,000+'];
 const HEARD = ['Diaspora community', 'Social media', 'Friend or family', 'Event or conference', 'Other'];
 
 export default function InvestorRegistration() {
-  const endpoint = useMemo(() => `${API_BASE_URL}/api/investors/register`, []);
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -23,6 +22,7 @@ export default function InvestorRegistration() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -51,6 +51,7 @@ export default function InvestorRegistration() {
 
   const submit = async (e) => {
     e.preventDefault();
+    setError(null);
     setSubmitting(true);
     const payload = {
       fullName: form.fullName,
@@ -65,19 +66,21 @@ export default function InvestorRegistration() {
     };
 
     try {
-      const r = await fetch(endpoint, {
+      const r = await fetch(API_ENDPOINTS.INVESTORS.REGISTER, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      const data = await r.json().catch(() => ({}));
       if (!r.ok) {
-        console.error('Investor registration API error:', r.status, await r.text());
+        setError(data.error || data.message || 'Registration could not be completed. Please try again.');
+        return;
       }
+      setSuccess(true);
     } catch (err) {
-      console.error('Investor registration request failed:', err);
+      setError(err.message || 'Network error. Please check your connection and try again.');
     } finally {
       setSubmitting(false);
-      setSuccess(true);
     }
   };
 
@@ -95,15 +98,20 @@ export default function InvestorRegistration() {
       <section className="section-container pb-20">
         <div className="max-w-2xl mx-auto rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
           {success ? (
-            <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-green-900">
-              <p className="font-semibold">Thank you!</p>
-              <p className="mt-2 text-sm">
-                Your investor profile has been received. Our team will contact you within 48 hours to discuss
-                opportunities.
-              </p>
+            <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-green-900 flex gap-3">
+              <CheckCircle2 className="h-8 w-8 shrink-0 text-green-600" aria-hidden />
+              <div>
+                <p className="font-semibold">Registration received! Our team will reach out within 48 hours.</p>
+              </div>
             </div>
           ) : (
             <form onSubmit={submit} className="space-y-6">
+              {error ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                  {error}
+                </div>
+              ) : null}
+
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-gray-700">Full Name *</span>
                 <input
