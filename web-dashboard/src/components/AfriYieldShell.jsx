@@ -5,40 +5,56 @@ import { X, ChevronDown, ChevronRight } from 'lucide-react';
 
 const OBJECT_ID_RE = /^[a-fA-F0-9]{24}$/;
 
+/** Breadcrumb uses shorter nav labels; page titles use afriYield.opportunities, etc. */
+function crumb(segment, href, overrides = {}) {
+  return { segment, href, ...overrides };
+}
+
 function buildBreadcrumbItems(pathname) {
   const clean = pathname.replace(/\/$/, '') || '/';
   const segs = clean.split('/').filter(Boolean);
   if (segs[0] !== 'afri-yield') return [];
 
   if (segs.length === 1) {
-    return [{ key: 'home', href: null }];
+    return [crumb('home', null, { i18n: 'home', i18nShort: 'homeShort' })];
   }
 
   const rest = segs.slice(1);
   if (rest[0] === 'opportunities' && rest[1] && OBJECT_ID_RE.test(rest[1])) {
     return [
-      { key: 'home', href: '/afri-yield' },
-      { key: 'opportunities', href: '/afri-yield/opportunities' },
-      { key: 'detail', href: null },
+      crumb('home', '/afri-yield', { i18n: 'home', i18nShort: 'homeShort' }),
+      crumb('opportunities', '/afri-yield/opportunities', {
+        i18n: 'breadcrumbOpportunities',
+        i18nShort: 'opportunitiesShort',
+      }),
+      crumb('detail', null, { i18n: 'detail', i18nShort: 'detailShort' }),
     ];
   }
 
   if (rest[0] === 'opportunities') {
     return [
-      { key: 'home', href: '/afri-yield' },
-      { key: 'opportunities', href: null },
+      crumb('home', '/afri-yield', { i18n: 'home', i18nShort: 'homeShort' }),
+      crumb('opportunities', null, {
+        i18n: 'breadcrumbOpportunities',
+        i18nShort: 'opportunitiesShort',
+      }),
     ];
   }
 
   const section = rest[0];
   const allowed = ['register', 'dashboard'];
   if (!allowed.includes(section)) {
-    return [{ key: 'home', href: null }];
+    return [crumb('home', null, { i18n: 'home', i18nShort: 'homeShort' })];
   }
 
+  const navMap = {
+    register: { i18n: 'breadcrumbRegister', i18nShort: 'registerShort' },
+    dashboard: { i18n: 'breadcrumbDashboard', i18nShort: 'dashboardShort' },
+  };
+
   return [
-    { key: 'home', href: '/afri-yield' },
-    { key: section, href: null },
+    crumb('home', '/afri-yield', { i18n: 'home', i18nShort: 'homeShort' }),
+    crumb(section, null, navMap[section]),
   ];
 }
 
@@ -66,15 +82,18 @@ export default function AfriYieldShell() {
               to="/afri-yield"
               className="text-lg font-extrabold text-[#B5850A] tracking-tight pr-10 md:pr-0 shrink-0"
             >
-              {t('afriYield.brandTitle')}
+              {t('afriYield.title')}
             </Link>
 
             <nav
               className="flex flex-col items-center justify-center gap-0.5 text-center text-sm text-white/90 md:flex-1 md:flex-row md:flex-wrap md:gap-1 min-w-0"
               aria-label="Breadcrumb"
             >
-              {crumbs.map((c, i) => (
-                <span key={`${c.key}-${i}`} className="inline-flex flex-col items-center md:inline-flex md:flex-row md:items-center">
+              {crumbs.map((c, i) => {
+                const full = c.i18n ? `afriYield.${c.i18n}` : `afriYield.${c.segment}`;
+                const shortKey = c.i18nShort ? `afriYield.${c.i18nShort}` : `afriYield.${c.segment}Short`;
+                return (
+                <span key={`${c.segment}-${i}`} className="inline-flex flex-col items-center md:inline-flex md:flex-row md:items-center">
                   {i > 0 ? (
                     <>
                       <ChevronDown className="h-4 w-4 shrink-0 text-[#B5850A]/80 md:hidden" aria-hidden />
@@ -83,19 +102,20 @@ export default function AfriYieldShell() {
                   ) : null}
                   {c.href ? (
                     <Link to={c.href} className="hover:text-[#B5850A] transition-colors underline-offset-2 hover:underline px-1">
-                      <span className="hidden md:inline">{t(`afriYield.${c.key}`)}</span>
-                      <span className="md:hidden">{t(`afriYield.${c.key}Short`, { defaultValue: t(`afriYield.${c.key}`) })}</span>
+                      <span className="hidden md:inline">{t(full)}</span>
+                      <span className="md:hidden">{t(shortKey, { defaultValue: t(full) })}</span>
                     </Link>
                   ) : (
                     <>
-                      <span className="hidden font-medium text-white md:inline px-1">{t(`afriYield.${c.key}`)}</span>
+                      <span className="hidden font-medium text-white md:inline px-1">{t(full)}</span>
                       <span className="font-medium text-white md:hidden px-1">
-                        {t(`afriYield.${c.key}Short`, { defaultValue: t(`afriYield.${c.key}`) })}
+                        {t(shortKey, { defaultValue: t(full) })}
                       </span>
                     </>
                   )}
                 </span>
-              ))}
+              );
+              })}
             </nav>
 
             <Link

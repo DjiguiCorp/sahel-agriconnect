@@ -252,13 +252,13 @@ export default function OpportunityDetail() {
               onClick={openModal}
               className="rounded-lg bg-[#B5850A] px-6 py-3 text-center text-sm font-bold text-white hover:bg-[#9a7109] transition"
             >
-              {t('opportunityDetail.scheduleMeeting')}
+              {t('afriYield.scheduleMeeting')}
             </button>
             <Link
               to="/afri-yield/register"
               className="rounded-lg border-2 border-[#1a3c2e] px-6 py-3 text-center text-sm font-bold text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition"
             >
-              {t('opportunityDetail.expressInterest')}
+              {t('afriYield.expressInterest')}
             </Link>
           </div>
         </div>
@@ -281,7 +281,7 @@ export default function OpportunityDetail() {
               <X className="h-5 w-5" />
             </button>
             <h2 id="opp-meeting-title" className="text-xl font-bold text-brand-forest pr-8">
-              {t('opportunityDetail.scheduleMeeting')}
+              {t('afriYield.scheduleMeeting')}
             </h2>
             <p className="text-sm text-gray-600 mt-1">{opportunity.centerName}</p>
 

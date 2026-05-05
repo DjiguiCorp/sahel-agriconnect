@@ -4,15 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Loader2, X } from 'lucide-react';
 
-const FILTERS = [
-  { id: 'all', label: 'All' },
-  { id: 'shea', label: 'Shea Butter' },
-  { id: 'sesame', label: 'Sesame' },
-  { id: 'trackA', label: 'Track A' },
-  { id: 'trackB', label: 'Track B' },
-  { id: 'certified', label: 'Certified' },
-];
-
 const FALLBACK_OPPORTUNITIES = [
   {
     id: '1',
@@ -153,19 +144,30 @@ function matchesFilter(filterId, opp) {
   return true;
 }
 
-function commodityBadge(opp) {
-  if (opp.commodities.length > 1) return 'Shea + Sesame';
-  return opp.commodities.includes('shea') ? 'Shea Butter' : 'Sesame';
+function commodityBadge(opp, t) {
+  if (opp.commodities.length > 1) return t('afriYield.commodityBoth');
+  return opp.commodities.includes('shea') ? t('afriYield.sheaButter') : t('afriYield.sesame');
 }
 
-function trackBadge(opp) {
-  if (opp.tracks.includes('A') && opp.tracks.includes('B')) return 'Track A + B';
-  return opp.tracks.includes('A') ? 'Track A' : 'Track B';
+function trackBadge(opp, t) {
+  if (opp.tracks.includes('A') && opp.tracks.includes('B')) return t('afriYield.trackBoth');
+  return opp.tracks.includes('A') ? t('afriYield.trackAOnly') : t('afriYield.trackBOnly');
 }
 
 export default function InvestmentOpportunities() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const filters = useMemo(
+    () => [
+      { id: 'all', label: t('afriYield.filterAll') },
+      { id: 'shea', label: t('afriYield.sheaButter') },
+      { id: 'sesame', label: t('afriYield.sesame') },
+      { id: 'trackA', label: t('afriYield.filterTrackA') },
+      { id: 'trackB', label: t('afriYield.filterTrackB') },
+      { id: 'certified', label: t('afriYield.filterCertified') },
+    ],
+    [t]
+  );
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [apiRows, setApiRows] = useState([]);
@@ -241,10 +243,10 @@ export default function InvestmentOpportunities() {
         const t = await r.text();
         throw new Error(t || 'Request failed');
       }
-      setMeetingBanner('Meeting request sent! We\'ll confirm within 24 hours.');
+      setMeetingBanner(t('afriYield.meetingSuccess'));
       setMeetingForm({ investorName: '', investorEmail: '', preferredDate: '', message: '' });
     } catch (err) {
-      setMeetingError(err.message || 'Could not send request. Please try again.');
+      setMeetingError(err.message || t('afriYield.meetingErrorGeneric'));
     } finally {
       setMeetingSubmitting(false);
     }
@@ -254,10 +256,8 @@ export default function InvestmentOpportunities() {
     <div className="bg-brand-cream min-h-[60vh]">
       <section className="bg-[#1a3c2e] py-14">
         <div className="section-container text-center">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white">Investment Opportunities</h1>
-          <p className="mt-3 text-lg text-white/85 max-w-2xl mx-auto">
-            Browse verified transformation centers and cooperatives open for investment
-          </p>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white">{t('afriYield.opportunities')}</h1>
+          <p className="mt-3 text-lg text-white/85 max-w-2xl mx-auto">{t('afriYield.browseOpportunities')}</p>
         </div>
       </section>
 
@@ -270,7 +270,7 @@ export default function InvestmentOpportunities() {
         ) : (
           <>
             <div className="flex flex-wrap gap-2 justify-center mb-10">
-              {FILTERS.map((f) => (
+              {filters.map((f) => (
                 <button
                   key={f.id}
                   type="button"
@@ -311,10 +311,10 @@ export default function InvestmentOpportunities() {
                 >
                   <div className="flex flex-wrap gap-2 mb-3">
                     <span className="rounded-full bg-[#1a3c2e]/10 px-3 py-0.5 text-xs font-bold text-[#1a3c2e]">
-                      {commodityBadge(opp)}
+                      {commodityBadge(opp, t)}
                     </span>
                     <span className="rounded-full bg-[#B5850A]/15 px-3 py-0.5 text-xs font-bold text-[#9a7109]">
-                      {trackBadge(opp)}
+                      {trackBadge(opp, t)}
                     </span>
                     <span
                       className={`rounded-full border px-3 py-0.5 text-xs font-bold ${certStyles[opp.certTone]}`}
@@ -336,14 +336,14 @@ export default function InvestmentOpportunities() {
                       onClick={() => openMeeting(opp)}
                       className="flex-1 rounded-lg bg-[#B5850A] px-4 py-3 text-sm font-bold text-white hover:bg-[#9a7109] transition"
                     >
-                      Schedule Meeting
+                      {t('afriYield.scheduleMeeting')}
                     </button>
                     <button
                       type="button"
                       onClick={() => navigate('/afri-yield/register')}
                       className="flex-1 rounded-lg border-2 border-[#1a3c2e] px-4 py-3 text-sm font-bold text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition text-center"
                     >
-                      Express Interest
+                      {t('afriYield.expressInterest')}
                     </button>
                   </div>
                 </article>
@@ -352,7 +352,7 @@ export default function InvestmentOpportunities() {
             </div>
 
             {visible.length === 0 ? (
-              <p className="text-center text-gray-600 py-12">No opportunities match this filter.</p>
+              <p className="text-center text-gray-600 py-12">{t('afriYield.noMatchFilter')}</p>
             ) : null}
           </>
         )}
@@ -370,24 +370,21 @@ export default function InvestmentOpportunities() {
               type="button"
               className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100"
               onClick={() => setMeetingOpp(null)}
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <X className="h-5 w-5" />
             </button>
             <h2 id="meeting-modal-title" className="text-xl font-bold text-brand-forest pr-8">
-              Schedule a meeting
+              {t('afriYield.meetingModalTitle')}
             </h2>
             <p className="text-sm text-gray-600 mt-1">{meetingOpp.name}</p>
 
             {meetingOpp.isFallback ? (
-              <p className="mt-4 text-sm text-gray-700">
-                This is a sample listing. To connect with a real center, register your interest or wait until
-                live opportunities are available from the database.
-              </p>
+              <p className="mt-4 text-sm text-gray-700">{t('afriYield.meetingFallbackHint')}</p>
             ) : (
               <form onSubmit={submitMeeting} className="mt-6 space-y-4">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">Investor Name *</span>
+                  <span className="text-sm font-medium text-gray-700">{t('afriYield.investorName')} *</span>
                   <input
                     required
                     value={meetingForm.investorName}
@@ -396,7 +393,7 @@ export default function InvestmentOpportunities() {
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">Email *</span>
+                  <span className="text-sm font-medium text-gray-700">{t('contact.email')} *</span>
                   <input
                     type="email"
                     required
@@ -406,7 +403,7 @@ export default function InvestmentOpportunities() {
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">Preferred Date</span>
+                  <span className="text-sm font-medium text-gray-700">{t('afriYield.preferredDate')}</span>
                   <input
                     type="date"
                     value={meetingForm.preferredDate}
@@ -415,7 +412,7 @@ export default function InvestmentOpportunities() {
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">Message</span>
+                  <span className="text-sm font-medium text-gray-700">{t('contact.message')}</span>
                   <textarea
                     rows={3}
                     value={meetingForm.message}
@@ -435,7 +432,7 @@ export default function InvestmentOpportunities() {
                   className="w-full rounded-lg bg-[#B5850A] py-3 font-bold text-white hover:bg-[#9a7109] disabled:opacity-60 inline-flex items-center justify-center gap-2"
                 >
                   {meetingSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                  Submit
+                  {t('common.submit')}
                 </button>
               </form>
             )}

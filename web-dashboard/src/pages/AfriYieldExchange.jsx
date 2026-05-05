@@ -1,48 +1,71 @@
+import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Shield, TrendingUp, Globe } from 'lucide-react';
 
 export default function AfriYieldExchange() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const stats = useMemo(
+    () => [
+      { title: t('afriYield.statsLabel1'), sub: t('afriYield.statsSub1') },
+      { title: t('afriYield.statsLabel2'), sub: t('afriYield.statsSub2') },
+      { title: t('afriYield.statsLabel3'), sub: t('afriYield.statsSub3') },
+      { title: t('afriYield.statsLabel4'), sub: t('afriYield.statsSub4') },
+    ],
+    [t]
+  );
+
+  const steps = useMemo(
+    () => [
+      { step: 1, title: t('afriYield.step1Title'), text: t('afriYield.step1Text') },
+      { step: 2, title: t('afriYield.step2Title'), text: t('afriYield.step2Text') },
+      { step: 3, title: t('afriYield.step3Title'), text: t('afriYield.step3Text') },
+      { step: 4, title: t('afriYield.step4Title'), text: t('afriYield.step4Text') },
+    ],
+    [t]
+  );
+
+  const testimonials = useMemo(
+    () => [
+      { quote: t('afriYield.quote1'), name: 'Aminata D.', place: 'Paris, France' },
+      { quote: t('afriYield.quote2'), name: 'Kwame A.', place: 'London, UK' },
+      { quote: t('afriYield.quote3'), name: 'Ibrahim C.', place: 'Atlanta, USA' },
+    ],
+    [t]
+  );
 
   return (
     <div className="bg-brand-cream">
-      {/* Hero */}
       <section className="bg-[#1a3c2e]">
         <div className="section-container py-16 md:py-24 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white">AfriYield Exchange</h1>
-          <p className="mt-5 text-xl md:text-2xl font-semibold text-[#B5850A]">
-            Africa&apos;s Premier Agricultural Investment Platform
-          </p>
-          <p className="mt-4 text-sm text-gray-400">Powered by Sahel AgriConnect</p>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white">{t('afriYield.title')}</h1>
+          <p className="mt-5 text-xl md:text-2xl font-semibold text-[#B5850A]">{t('afriYield.subtitle')}</p>
+          <p className="mt-4 text-sm text-gray-400">{t('afriYield.tagline')}</p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               type="button"
               onClick={() => navigate('/afri-yield/register')}
               className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-[#B5850A] px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-[#9a7109]"
             >
-              Register as Investor
+              {t('afriYield.registerAsInvestor')}
             </button>
             <button
               type="button"
               onClick={() => navigate('/afri-yield/opportunities')}
               className="inline-flex w-full sm:w-auto justify-center rounded-lg border-2 border-white px-8 py-4 text-lg font-bold text-white transition hover:bg-white/10"
             >
-              View Opportunities
+              {t('afriYield.viewOpportunities')}
             </button>
           </div>
         </div>
       </section>
 
-      {/* Stats bar */}
       <section className="bg-[#152e24] border-y border-[#1a3c2e]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 text-center">
-            {[
-              { title: '2 Focus Commodities', sub: 'Shea Butter & Sesame' },
-              { title: 'Bi-Annual Payouts', sub: 'Every 6 Months' },
-              { title: 'USDA/EU Certified', sub: 'Supply Chain Verified' },
-              { title: 'Pan-African', sub: 'Open to All African Markets' },
-            ].map(({ title, sub }) => (
+            {stats.map(({ title, sub }) => (
               <div key={title} className="px-2">
                 <p className="text-white font-bold text-base md:text-lg">{title}</p>
                 <p className="mt-1 text-sm text-white/80">{sub}</p>
@@ -52,32 +75,10 @@ export default function AfriYieldExchange() {
         </div>
       </section>
 
-      {/* How It Works */}
       <section className="section-container">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">How It Works</h2>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">{t('afriYield.howItWorksTitle')}</h2>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              step: 1,
-              title: 'Register as Investor',
-              text: 'Create your free investor profile',
-            },
-            {
-              step: 2,
-              title: 'Browse Opportunities',
-              text: 'Filter by commodity, track, and region',
-            },
-            {
-              step: 3,
-              title: 'Schedule a Meeting',
-              text: 'One-on-one with transformation center operators',
-            },
-            {
-              step: 4,
-              title: 'Invest & Earn',
-              text: 'Deploy capital, receive bi-annual ROI payouts',
-            },
-          ].map(({ step, title, text }) => (
+          {steps.map(({ step, title, text }) => (
             <div key={step} className="text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#B5850A] text-brand-forest font-extrabold text-xl shadow-md">
                 {step}
@@ -89,225 +90,170 @@ export default function AfriYieldExchange() {
         </div>
       </section>
 
-      {/* Investment Tracks */}
       <section className="section-container pt-0">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">Investment Tracks</h2>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">{t('afriYield.investmentTracksTitle')}</h2>
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
             <div className="bg-[#1a3c2e] px-6 py-4">
-              <h3 className="text-xl font-extrabold text-white">Track A — Operations Investment</h3>
+              <h3 className="text-xl font-extrabold text-white">{t('afriYield.trackA')}</h3>
             </div>
             <div className="p-6 space-y-4 text-gray-700">
-              <p>
-                Fund the purchase of agro-processing equipment, packaging lines, cold storage, and irrigation
-                infrastructure for verified transformation centers
-              </p>
+              <p>{t('afriYield.trackABody')}</p>
               <div>
-                <p className="font-semibold text-brand-forest mb-2">Key features</p>
+                <p className="font-semibold text-brand-forest mb-2">{t('afriYield.keyFeatures')}</p>
                 <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Asset-backed investment</li>
-                  <li>Tied to physical equipment</li>
-                  <li>Rental income from farmer usage</li>
-                  <li>Bi-annual ROI payouts</li>
-                  <li>Milestone-based disbursements</li>
+                  <li>{t('afriYield.trackAFeature1')}</li>
+                  <li>{t('afriYield.trackAFeature2')}</li>
+                  <li>{t('afriYield.trackAFeature3')}</li>
+                  <li>{t('afriYield.trackAFeature4')}</li>
+                  <li>{t('afriYield.trackAFeature5')}</li>
                 </ul>
               </div>
               <div>
-                <p className="font-semibold text-brand-forest mb-1">Ideal for</p>
-                <p className="text-sm">
-                  First-time African agri-investors, diaspora members, risk-conscious investors
-                </p>
+                <p className="font-semibold text-brand-forest mb-1">{t('afriYield.idealFor')}</p>
+                <p className="text-sm">{t('afriYield.trackAIdeal')}</p>
               </div>
               <button
                 type="button"
                 onClick={() => navigate('/afri-yield/register')}
                 className="inline-flex w-full justify-center rounded-lg bg-[#1a3c2e] px-5 py-3 font-bold text-white transition hover:bg-[#152e24]"
               >
-                Invest in Track A
+                {t('afriYield.investTrackA')}
               </button>
             </div>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
             <div className="bg-[#B5850A] px-6 py-4">
-              <h3 className="text-xl font-extrabold text-white">Track B — Brand &amp; Market Investment</h3>
+              <h3 className="text-xl font-extrabold text-white">{t('afriYield.trackB')}</h3>
             </div>
             <div className="p-6 space-y-4 text-gray-700">
-              <p>
-                Fund the export branding, packaging design, international distribution, and market entry for certified
-                African agricultural products
-              </p>
+              <p>{t('afriYield.trackBBody')}</p>
               <div>
-                <p className="font-semibold text-brand-forest mb-2">Key features</p>
+                <p className="font-semibold text-brand-forest mb-2">{t('afriYield.keyFeatures')}</p>
                 <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Long-term brand equity</li>
-                  <li>Revenue-sharing on product sales</li>
-                  <li>AfriYield Exchange marketplace listing</li>
-                  <li>Buyer introductions included</li>
+                  <li>{t('afriYield.trackBFeature1')}</li>
+                  <li>{t('afriYield.trackBFeature2')}</li>
+                  <li>{t('afriYield.trackBFeature3')}</li>
+                  <li>{t('afriYield.trackBFeature4')}</li>
                 </ul>
               </div>
               <div>
-                <p className="font-semibold text-brand-forest mb-1">Ideal for</p>
-                <p className="text-sm">Experienced investors, brand builders, consumer goods professionals</p>
+                <p className="font-semibold text-brand-forest mb-1">{t('afriYield.idealFor')}</p>
+                <p className="text-sm">{t('afriYield.trackBIdeal')}</p>
               </div>
               <button
                 type="button"
                 onClick={() => navigate('/afri-yield/register')}
                 className="inline-flex w-full justify-center rounded-lg bg-[#B5850A] px-5 py-3 font-bold text-white transition hover:bg-[#9a7109]"
               >
-                Invest in Track B
+                {t('afriYield.investTrackB')}
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Commodities */}
       <section className="section-container pt-0">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">Featured Commodities</h2>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">{t('afriYield.featuredCommoditiesTitle')}</h2>
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="rounded-2xl border-2 border-[#1a3c2e]/20 bg-white p-8 shadow-lg">
             <span className="inline-block rounded-full bg-[#B5850A]/15 px-3 py-1 text-xs font-bold text-[#9a7109]">
-              High Demand Export Crop
+              {t('afriYield.sheaBadge')}
             </span>
-            <h3 className="mt-4 text-2xl font-extrabold text-brand-forest">Shea Butter</h3>
-            <p className="mt-3 text-gray-700">
-              West African shea butter is one of the most sought-after natural fats globally, used in cosmetics, food
-              manufacturing, and pharmaceuticals. AfriYield Exchange connects investors directly to certified shea
-              cooperatives and transformation centers.
-            </p>
+            <h3 className="mt-4 text-2xl font-extrabold text-brand-forest">{t('afriYield.sheaButter')}</h3>
+            <p className="mt-3 text-gray-700">{t('afriYield.sheaBody')}</p>
             <div className="mt-4 rounded-xl bg-brand-cream/80 p-4 text-sm text-gray-700">
-              <p>
-                <span className="font-semibold text-brand-forest">Key stats:</span> Global market size $2.7B+, Primary
-                buyers: EU, USA, Japan, Certification: USDA/EU Organic available
-              </p>
+              <p>{t('afriYield.sheaStats')}</p>
             </div>
             <button
               type="button"
               onClick={() => navigate('/afri-yield/opportunities')}
               className="mt-6 inline-flex rounded-lg bg-[#1a3c2e] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#152e24]"
             >
-              View Shea Opportunities
+              {t('afriYield.viewSheaOpportunities')}
             </button>
           </div>
 
           <div className="rounded-2xl border-2 border-[#1a3c2e]/20 bg-white p-8 shadow-lg">
             <span className="inline-block rounded-full bg-[#B5850A]/15 px-3 py-1 text-xs font-bold text-[#9a7109]">
-              Premium Oilseed
+              {t('afriYield.sesameBadge')}
             </span>
-            <h3 className="mt-4 text-2xl font-extrabold text-brand-forest">Sesame</h3>
-            <p className="mt-3 text-gray-700">
-              African sesame is prized for its high oil content and clean flavor profile. Major importers include Japan,
-              China, and the EU. AfriYield Exchange provides a certified, traceable supply chain from West African
-              producers to global buyers.
-            </p>
+            <h3 className="mt-4 text-2xl font-extrabold text-brand-forest">{t('afriYield.sesame')}</h3>
+            <p className="mt-3 text-gray-700">{t('afriYield.sesameBody')}</p>
             <div className="mt-4 rounded-xl bg-brand-cream/80 p-4 text-sm text-gray-700">
-              <p>
-                <span className="font-semibold text-brand-forest">Key stats:</span> Global market size $7B+, Primary
-                buyers: Japan, China, EU, Certification: USDA/EU standards available
-              </p>
+              <p>{t('afriYield.sesameStats')}</p>
             </div>
             <button
               type="button"
               onClick={() => navigate('/afri-yield/opportunities')}
               className="mt-6 inline-flex rounded-lg bg-[#1a3c2e] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#152e24]"
             >
-              View Sesame Opportunities
+              {t('afriYield.viewSesameOpportunities')}
             </button>
           </div>
         </div>
       </section>
 
-      {/* Why AfriYield Exchange */}
       <section className="section-container pt-0">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">Why AfriYield Exchange</h2>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">{t('afriYield.whyTitle')}</h2>
         <div className="grid gap-8 md:grid-cols-3">
           <div className="card border border-gray-100">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-iconBg">
               <Shield className="h-7 w-7 text-brand-forest" aria-hidden />
             </div>
-            <h3 className="text-lg font-bold text-brand-forest">Verified Supply Chain</h3>
-            <p className="mt-2 text-gray-600">
-              Every transformation center and cooperative is registered and verified through Sahel AgriConnect before
-              appearing on AfriYield Exchange
-            </p>
+            <h3 className="text-lg font-bold text-brand-forest">{t('afriYield.whyVerifiedTitle')}</h3>
+            <p className="mt-2 text-gray-600">{t('afriYield.whyVerifiedBody')}</p>
           </div>
           <div className="card border border-gray-100">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-iconBg">
               <TrendingUp className="h-7 w-7 text-brand-forest" aria-hidden />
             </div>
-            <h3 className="text-lg font-bold text-brand-forest">Structured Returns</h3>
-            <p className="mt-2 text-gray-600">
-              Bi-annual ROI payouts with transparent reporting. Track A is asset-backed. Track B is revenue-share.
-            </p>
+            <h3 className="text-lg font-bold text-brand-forest">{t('afriYield.whyReturnsTitle')}</h3>
+            <p className="mt-2 text-gray-600">{t('afriYield.whyReturnsBody')}</p>
           </div>
           <div className="card border border-gray-100">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-iconBg">
               <Globe className="h-7 w-7 text-brand-forest" aria-hidden />
             </div>
-            <h3 className="text-lg font-bold text-brand-forest">Pan-African Reach</h3>
-            <p className="mt-2 text-gray-600">
-              Producers from across West Africa and beyond. One platform, one investment process, continental scale.
-            </p>
+            <h3 className="text-lg font-bold text-brand-forest">{t('afriYield.whyReachTitle')}</h3>
+            <p className="mt-2 text-gray-600">{t('afriYield.whyReachBody')}</p>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="section-container pt-0">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">Investor Stories</h2>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">{t('afriYield.storiesTitle')}</h2>
         <div className="grid gap-6 md:grid-cols-3">
-          {[
-            {
-              quote:
-                "Investing in Track A gave me direct connection to the shea supply chain I'd been looking for. The verification process gave me confidence.",
-              name: 'Aminata D.',
-              place: 'Paris, France',
-            },
-            {
-              quote:
-                'AfriYield Exchange is the bridge I needed between my capital and African agriculture. Simple, transparent, impactful.',
-              name: 'Kwame A.',
-              place: 'London, UK',
-            },
-            {
-              quote:
-                'As a second-generation Malian in the US, this platform lets me invest in the communities my family came from.',
-              name: 'Ibrahim C.',
-              place: 'Atlanta, USA',
-            },
-          ].map((t) => (
-            <blockquote key={t.name} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md">
-              <p className="text-gray-700 italic">&ldquo;{t.quote}&rdquo;</p>
+          {testimonials.map((story) => (
+            <blockquote key={story.name} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md">
+              <p className="text-gray-700 italic">&ldquo;{story.quote}&rdquo;</p>
               <footer className="mt-4 text-sm font-semibold text-brand-forest">
-                — {t.name}
-                <span className="block font-normal text-gray-500">{t.place}</span>
+                — {story.name}
+                <span className="block font-normal text-gray-500">{story.place}</span>
               </footer>
             </blockquote>
           ))}
         </div>
       </section>
 
-      {/* Bottom CTA */}
       <section className="bg-[#1a3c2e] py-16">
         <div className="section-container text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-white">Ready to Invest in Africa&apos;s Agricultural Future?</h2>
-          <p className="mt-4 max-w-2xl mx-auto text-lg text-white/85">
-            Join hundreds of diaspora investors building generational wealth through African agriculture.
-          </p>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-white">{t('afriYield.ctaTitle')}</h2>
+          <p className="mt-4 max-w-2xl mx-auto text-lg text-white/85">{t('afriYield.ctaSubtitle')}</p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               type="button"
               onClick={() => navigate('/afri-yield/register')}
               className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-[#B5850A] px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-[#9a7109]"
             >
-              Register as Investor
+              {t('afriYield.registerAsInvestor')}
             </button>
             <Link
               to="/contact"
               className="inline-flex w-full sm:w-auto justify-center rounded-lg border-2 border-white px-8 py-4 text-lg font-bold text-white transition hover:bg-white/10"
             >
-              Schedule a Demo
+              {t('afriYield.scheduleDemo')}
             </Link>
           </div>
         </div>

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -7,6 +8,7 @@ const RANGES = ['$1,000–$5,000', '$5,000–$25,000', '$25,000–$100,000', '$1
 const HEARD = ['Diaspora community', 'Social media', 'Friend or family', 'Event or conference', 'Other'];
 
 export default function InvestorRegistration() {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -23,6 +25,27 @@ export default function InvestorRegistration() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+
+  const trackOptions = useMemo(
+    () => [
+      {
+        value: 'Track A — Operations',
+        label: t('afriYield.registration.trackAOption'),
+        hint: t('afriYield.registration.trackAHint'),
+      },
+      {
+        value: 'Track B — Brand & Market',
+        label: t('afriYield.registration.trackBOption'),
+        hint: t('afriYield.registration.trackBHint'),
+      },
+      {
+        value: 'Both Tracks',
+        label: t('afriYield.registration.bothTracksOption'),
+        hint: t('afriYield.registration.bothTracksHint'),
+      },
+    ],
+    [t]
+  );
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -73,25 +96,36 @@ export default function InvestorRegistration() {
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) {
-        setError(data.error || data.message || 'Registration could not be completed. Please try again.');
+        setError(data.error || data.message || t('afriYield.registration.errorGeneric'));
         return;
       }
       setSuccess(true);
     } catch (err) {
-      setError(err.message || 'Network error. Please check your connection and try again.');
+      setError(err.message || t('afriYield.registration.networkError'));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const residenceLabel = (c) => (c === 'Other' ? t('afriYield.registration.otherRegion') : c);
+  const heardLabel = (h) => {
+    const map = {
+      'Diaspora community': 'heardDiaspora',
+      'Social media': 'heardSocial',
+      'Friend or family': 'heardFriend',
+      'Event or conference': 'heardEvent',
+      Other: 'heardOther',
+    };
+    const k = map[h];
+    return k ? t(`afriYield.registration.${k}`) : h;
   };
 
   return (
     <div className="min-h-[70vh] bg-gradient-to-b from-brand-cream to-white">
       <section className="bg-[#1a3c2e] py-14">
         <div className="section-container text-center">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white">Register as an AfriYield Exchange Investor</h1>
-          <p className="mt-3 text-lg text-[#B5850A] font-medium">
-            Join our network of diaspora and international investors
-          </p>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white">{t('afriYield.registration.pageTitle')}</h1>
+          <p className="mt-3 text-lg text-[#B5850A] font-medium">{t('afriYield.registration.subtitle')}</p>
         </div>
       </section>
 
@@ -101,7 +135,7 @@ export default function InvestorRegistration() {
             <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-green-900 flex gap-3">
               <CheckCircle2 className="h-8 w-8 shrink-0 text-green-600" aria-hidden />
               <div>
-                <p className="font-semibold">Registration received! Our team will reach out within 48 hours.</p>
+                <p className="font-semibold">{t('afriYield.registration.successMessage')}</p>
               </div>
             </div>
           ) : (
@@ -113,7 +147,7 @@ export default function InvestorRegistration() {
               ) : null}
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">Full Name *</span>
+                <span className="text-sm font-medium text-gray-700">{t('afriYield.registration.fullName')} *</span>
                 <input
                   name="fullName"
                   value={form.fullName}
@@ -124,7 +158,7 @@ export default function InvestorRegistration() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">Email *</span>
+                <span className="text-sm font-medium text-gray-700">{t('afriYield.registration.email')} *</span>
                 <input
                   type="email"
                   name="email"
@@ -136,18 +170,18 @@ export default function InvestorRegistration() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">Phone (with country code)</span>
+                <span className="text-sm font-medium text-gray-700">{t('afriYield.registration.phone')}</span>
                 <input
                   name="phone"
                   value={form.phone}
                   onChange={onChange}
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] focus:border-transparent outline-none"
-                  placeholder="+1 ..."
+                  placeholder={t('afriYield.registration.phonePlaceholder')}
                 />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">Country of Residence</span>
+                <span className="text-sm font-medium text-gray-700">{t('afriYield.registration.countryOfResidence')}</span>
                 <select
                   name="countryOfResidence"
                   value={form.countryOfResidence}
@@ -156,31 +190,15 @@ export default function InvestorRegistration() {
                 >
                   {RESIDENCE.map((c) => (
                     <option key={c} value={c}>
-                      {c}
+                      {residenceLabel(c)}
                     </option>
                   ))}
                 </select>
               </label>
 
               <fieldset className="space-y-3">
-                <legend className="text-sm font-medium text-gray-700">Investment Track</legend>
-                {[
-                  {
-                    value: 'Track A — Operations',
-                    label: 'Track A — Operations',
-                    hint: 'Equipment, infrastructure, asset-backed payouts.',
-                  },
-                  {
-                    value: 'Track B — Brand & Market',
-                    label: 'Track B — Brand & Market',
-                    hint: 'Branding, distribution, revenue-share and marketplace acceleration.',
-                  },
-                  {
-                    value: 'Both Tracks',
-                    label: 'Both Tracks',
-                    hint: 'Explore both pathways with our team.',
-                  },
-                ].map((opt) => (
+                <legend className="text-sm font-medium text-gray-700">{t('afriYield.registration.investmentTrack')}</legend>
+                {trackOptions.map((opt) => (
                   <label
                     key={opt.value}
                     className={`flex gap-3 rounded-lg border p-4 cursor-pointer ${
@@ -204,7 +222,7 @@ export default function InvestorRegistration() {
               </fieldset>
 
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Commodity Interest</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">{t('afriYield.registration.commodityInterest')}</p>
                 <div className="flex flex-wrap gap-4">
                   <label className="inline-flex items-center gap-2">
                     <input
@@ -214,7 +232,7 @@ export default function InvestorRegistration() {
                       onChange={onChange}
                       className="rounded border-gray-300 text-[#B5850A] focus:ring-[#B5850A]"
                     />
-                    <span className="text-gray-800">Shea Butter</span>
+                    <span className="text-gray-800">{t('afriYield.sheaButter')}</span>
                   </label>
                   <label className="inline-flex items-center gap-2">
                     <input
@@ -224,7 +242,7 @@ export default function InvestorRegistration() {
                       onChange={onChange}
                       className="rounded border-gray-300 text-[#B5850A] focus:ring-[#B5850A]"
                     />
-                    <span className="text-gray-800">Sesame</span>
+                    <span className="text-gray-800">{t('afriYield.sesame')}</span>
                   </label>
                   <label className="inline-flex items-center gap-2">
                     <input
@@ -234,13 +252,13 @@ export default function InvestorRegistration() {
                       onChange={onChange}
                       className="rounded border-gray-300 text-[#B5850A] focus:ring-[#B5850A]"
                     />
-                    <span className="text-gray-800">Both</span>
+                    <span className="text-gray-800">{t('afriYield.registration.bothCommodities')}</span>
                   </label>
                 </div>
               </div>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">Investment Range</span>
+                <span className="text-sm font-medium text-gray-700">{t('afriYield.registration.investmentRange')}</span>
                 <select
                   name="investmentRange"
                   value={form.investmentRange}
@@ -256,7 +274,7 @@ export default function InvestorRegistration() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">How did you hear about us?</span>
+                <span className="text-sm font-medium text-gray-700">{t('afriYield.registration.heardAbout')}</span>
                 <select
                   name="heardAbout"
                   value={form.heardAbout}
@@ -265,14 +283,14 @@ export default function InvestorRegistration() {
                 >
                   {HEARD.map((h) => (
                     <option key={h} value={h}>
-                      {h}
+                      {heardLabel(h)}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">Message or questions (optional)</span>
+                <span className="text-sm font-medium text-gray-700">{t('afriYield.registration.messageOptional')}</span>
                 <textarea
                   name="message"
                   rows={4}
@@ -288,7 +306,7 @@ export default function InvestorRegistration() {
                 className="w-full rounded-lg bg-[#B5850A] py-4 font-bold text-white hover:bg-[#9a7109] transition disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : null}
-                Submit registration
+                {t('afriYield.registration.submit')}
               </button>
             </form>
           )}
