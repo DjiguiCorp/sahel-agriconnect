@@ -283,6 +283,38 @@
     "submit": "Envoyer",
     "success": "Message envoyé avec succès !"
   },
+  "afriYield": {
+    "brandTitle": "AfriYield Exchange",
+    "closeAria": "Fermer AfriYield et revenir à l'accueil",
+    "home": "Accueil",
+    "homeShort": "Acc.",
+    "opportunities": "Opportunités",
+    "opportunitiesShort": "Opp.",
+    "register": "Inscription",
+    "registerShort": "Inscr.",
+    "dashboard": "Tableau de bord",
+    "dashboardShort": "Tab. bord",
+    "detail": "Détails",
+    "detailShort": "Info"
+  },
+  "opportunityDetail": {
+    "backToList": "Retour aux opportunités",
+    "notFound": "Cette opportunité est introuvable.",
+    "overview": "Présentation",
+    "amountSought": "Montant recherché",
+    "memberFarmers": "Agriculteurs membres",
+    "contact": "Contact",
+    "name": "Nom",
+    "phone": "Téléphone",
+    "contactPending": "Les coordonnées seront communiquées après la planification d'un rendez-vous.",
+    "buyers": "Acheteurs existants",
+    "noBuyersListed": "Aucun acheteur listé pour cette annonce.",
+    "scheduleMeeting": "Planifier un rendez-vous",
+    "expressInterest": "Manifester son intérêt",
+    "investorName": "Nom de l'investisseur",
+    "preferredDate": "Date préférée",
+    "meetingSent": "Demande envoyée. Confirmation sous 24 h."
+  },
   "language": {
     "select": "Sélectionner la langue",
     "french": "Français",

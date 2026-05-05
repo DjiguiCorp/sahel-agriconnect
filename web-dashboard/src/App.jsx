@@ -26,9 +26,7 @@ import PlatformLicensing from './pages/PlatformLicensing';
 import CooperativeRegistration from './pages/CooperativeRegistration';
 import FarmerCertificationProgram from './pages/FarmerCertificationProgram';
 import EquipmentFund from './pages/EquipmentFund';
-import AfriYieldExchange from './pages/AfriYieldExchange';
-import InvestorRegistration from './pages/InvestorRegistration';
-import InvestmentOpportunities from './pages/InvestmentOpportunities';
+import AfriYieldLayout from './pages/AfriYieldLayout';
 import Pricing from './pages/Pricing';
 
 function App() {
@@ -83,9 +81,7 @@ function App() {
             <Route path="cooperative-registration" element={<CooperativeRegistration />} />
             <Route path="farmer-certification" element={<FarmerCertificationProgram />} />
             <Route path="equipment-fund" element={<EquipmentFund />} />
-            <Route path="afri-yield" element={<AfriYieldExchange />} />
-            <Route path="afri-yield/register" element={<InvestorRegistration />} />
-            <Route path="afri-yield/opportunities" element={<InvestmentOpportunities />} />
+            <Route path="afri-yield/*" element={<AfriYieldLayout />} />
             {/* Route catch-all pour les routes non trouvées */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

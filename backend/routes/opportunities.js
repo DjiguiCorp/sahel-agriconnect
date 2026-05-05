@@ -47,6 +47,21 @@ router.get('/meeting-requests', authenticateToken, async (req, res) => {
   }
 });
 
+router.get('/:id', async (req, res) => {
+  try {
+    if (!req.params.id.match(/^[a-fA-F0-9]{24}$/)) {
+      return res.status(400).json({ success: false, error: 'Invalid opportunity id' });
+    }
+    const opportunity = await Opportunity.findById(req.params.id).lean();
+    if (!opportunity) {
+      return res.status(404).json({ success: false, error: 'Opportunity not found' });
+    }
+    res.json({ success: true, opportunity });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 router.put('/meeting-requests/:requestId', authenticateToken, async (req, res) => {
   try {
     const { status } = req.body;

@@ -1,7 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Shield, TrendingUp, Globe } from 'lucide-react';
 
 export default function AfriYieldExchange() {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-brand-cream">
       {/* Hero */}
@@ -13,18 +15,20 @@ export default function AfriYieldExchange() {
           </p>
           <p className="mt-4 text-sm text-gray-400">Powered by Sahel AgriConnect</p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/afri-yield/register"
+            <button
+              type="button"
+              onClick={() => navigate('/afri-yield/register')}
               className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-[#B5850A] px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-[#9a7109]"
             >
               Register as Investor
-            </Link>
-            <Link
-              to="/afri-yield/opportunities"
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/afri-yield/opportunities')}
               className="inline-flex w-full sm:w-auto justify-center rounded-lg border-2 border-white px-8 py-4 text-lg font-bold text-white transition hover:bg-white/10"
             >
               View Opportunities
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -114,12 +118,13 @@ export default function AfriYieldExchange() {
                   First-time African agri-investors, diaspora members, risk-conscious investors
                 </p>
               </div>
-              <Link
-                to="/afri-yield/register"
+              <button
+                type="button"
+                onClick={() => navigate('/afri-yield/register')}
                 className="inline-flex w-full justify-center rounded-lg bg-[#1a3c2e] px-5 py-3 font-bold text-white transition hover:bg-[#152e24]"
               >
                 Invest in Track A
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -145,12 +150,13 @@ export default function AfriYieldExchange() {
                 <p className="font-semibold text-brand-forest mb-1">Ideal for</p>
                 <p className="text-sm">Experienced investors, brand builders, consumer goods professionals</p>
               </div>
-              <Link
-                to="/afri-yield/register"
+              <button
+                type="button"
+                onClick={() => navigate('/afri-yield/register')}
                 className="inline-flex w-full justify-center rounded-lg bg-[#B5850A] px-5 py-3 font-bold text-white transition hover:bg-[#9a7109]"
               >
                 Invest in Track B
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -176,12 +182,13 @@ export default function AfriYieldExchange() {
                 buyers: EU, USA, Japan, Certification: USDA/EU Organic available
               </p>
             </div>
-            <Link
-              to="/afri-yield/opportunities"
+            <button
+              type="button"
+              onClick={() => navigate('/afri-yield/opportunities')}
               className="mt-6 inline-flex rounded-lg bg-[#1a3c2e] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#152e24]"
             >
               View Shea Opportunities
-            </Link>
+            </button>
           </div>
 
           <div className="rounded-2xl border-2 border-[#1a3c2e]/20 bg-white p-8 shadow-lg">
@@ -200,12 +207,13 @@ export default function AfriYieldExchange() {
                 buyers: Japan, China, EU, Certification: USDA/EU standards available
               </p>
             </div>
-            <Link
-              to="/afri-yield/opportunities"
+            <button
+              type="button"
+              onClick={() => navigate('/afri-yield/opportunities')}
               className="mt-6 inline-flex rounded-lg bg-[#1a3c2e] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#152e24]"
             >
               View Sesame Opportunities
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -288,12 +296,13 @@ export default function AfriYieldExchange() {
             Join hundreds of diaspora investors building generational wealth through African agriculture.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/afri-yield/register"
+            <button
+              type="button"
+              onClick={() => navigate('/afri-yield/register')}
               className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-[#B5850A] px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-[#9a7109]"
             >
               Register as Investor
-            </Link>
+            </button>
             <Link
               to="/contact"
               className="inline-flex w-full sm:w-auto justify-center rounded-lg border-2 border-white px-8 py-4 text-lg font-bold text-white transition hover:bg-white/10"

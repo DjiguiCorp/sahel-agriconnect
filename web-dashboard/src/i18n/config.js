@@ -5,17 +5,21 @@ import { detectLanguage } from '../services/geolocationService';
 
 import fr from '../locales/fr.json';
 import en from '../locales/en.json';
+import bm from '../locales/bm.json';
+import ff from '../locales/ff.json';
 
 const resources = {
   fr: { translation: fr },
-  en: { translation: en }
+  en: { translation: en },
+  bm: { translation: bm },
+  ff: { translation: ff },
 };
 
 // Détecter la langue depuis la géolocalisation
 const getInitialLanguage = async () => {
   // Vérifier d'abord si l'utilisateur a déjà choisi une langue
   const savedLanguage = localStorage.getItem('i18nextLng');
-  if (savedLanguage && (savedLanguage === 'fr' || savedLanguage === 'en')) {
+  if (savedLanguage && ['fr', 'en', 'bm', 'ff'].includes(savedLanguage)) {
     return savedLanguage;
   }
 
@@ -35,6 +39,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
+    supportedLngs: ['fr', 'en', 'bm', 'ff'],
+    nonExplicitSupportedLngs: true,
     fallbackLng: {
       'default': ['fr'], // Fallback par défaut sur français
       'en': ['fr']  // Si clé manquante en anglais, utiliser français

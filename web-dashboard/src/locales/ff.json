@@ -283,6 +283,38 @@
     "submit": "Envoyer",
     "success": "Message envoyé avec succès !"
   },
+  "afriYield": {
+    "brandTitle": "AfriYield Exchange",
+    "closeAria": "Uddude AfriYield e ngartaande jaɓɓorgo",
+    "home": "Jaɓɓorgo",
+    "homeShort": "Jaɓ.",
+    "opportunities": "Fursaaji",
+    "opportunitiesShort": "Furs.",
+    "register": "Winndito",
+    "registerShort": "Win.",
+    "dashboard": "Dashboard",
+    "dashboardShort": "Dash.",
+    "detail": "Ɗumɗi",
+    "detailShort": "Info"
+  },
+  "opportunityDetail": {
+    "backToList": "Artogol e fursaaji",
+    "notFound": "Fursa oo woodaa.",
+    "overview": "Ɗumɗal",
+    "amountSought": "Nguuɗe",
+    "memberFarmers": "Beɓɓe beeyi",
+    "contact": "Jokkondir",
+    "name": "Innde",
+    "phone": "Ender",
+    "contactPending": "Jokkondirɗe artogol cakkitol ngartol ma.",
+    "buyers": "Jeyɓeɓe goɗɗe",
+    "noBuyersListed": "Jeyɓeɓe alaa tafon.",
+    "scheduleMeeting": "Cakkitol ngoɓɓindam",
+    "expressInterest": "Holluɗo heɓɓere",
+    "investorName": "Innde woniɓe",
+    "preferredDate": "Ñalɗi aɓɓaɓɓo",
+    "meetingSent": "Ɗaɓɓitital ngoɓɓindam njehi. Tawtugol 24h."
+  },
   "language": {
     "select": "Sélectionner la langue",
     "french": "Français",

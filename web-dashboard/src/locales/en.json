@@ -283,6 +283,38 @@
     "submit": "Send",
     "success": "Message sent successfully!"
   },
+  "afriYield": {
+    "brandTitle": "AfriYield Exchange",
+    "closeAria": "Close AfriYield and return home",
+    "home": "Home",
+    "homeShort": "Home",
+    "opportunities": "Opportunities",
+    "opportunitiesShort": "Opp.",
+    "register": "Register",
+    "registerShort": "Reg.",
+    "dashboard": "Dashboard",
+    "dashboardShort": "Dash.",
+    "detail": "Details",
+    "detailShort": "Info"
+  },
+  "opportunityDetail": {
+    "backToList": "Back to Opportunities",
+    "notFound": "This opportunity could not be loaded.",
+    "overview": "Overview",
+    "amountSought": "Amount sought",
+    "memberFarmers": "Member farmers",
+    "contact": "Contact",
+    "name": "Name",
+    "phone": "Phone",
+    "contactPending": "Contact details will be shared after you schedule a meeting.",
+    "buyers": "Existing buyers",
+    "noBuyersListed": "No buyers listed yet for this listing.",
+    "scheduleMeeting": "Schedule Meeting",
+    "expressInterest": "Express interest",
+    "investorName": "Investor name",
+    "preferredDate": "Preferred date",
+    "meetingSent": "Meeting request sent. We will confirm within 24 hours."
+  },
   "language": {
     "select": "Select language",
     "french": "Français",

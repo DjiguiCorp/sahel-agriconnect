@@ -283,6 +283,38 @@
     "submit": "Kɛ",
     "success": "Kuma kɛlen don!"
   },
+  "afriYield": {
+    "brandTitle": "AfriYield Exchange",
+    "closeAria": "AfriYield datugu ka so sɔrɔ",
+    "home": "So",
+    "homeShort": "So",
+    "opportunities": "Fursuw",
+    "opportunitiesShort": "Fur.",
+    "register": "Dɛsɛ",
+    "registerShort": "Dɛs.",
+    "dashboard": "Dashboard",
+    "dashboardShort": "Dash.",
+    "detail": "Bɛyɛlɛma",
+    "detailShort": "Info"
+  },
+  "opportunityDetail": {
+    "backToList": "Kɛ fursu la",
+    "notFound": "Fur in sɔrɔla.",
+    "overview": "Jukɔrɔ",
+    "amountSought": "Wari min bɛ wuli",
+    "memberFarmers": "Sɛnɛkɛlaw",
+    "contact": "Jɛgɛ",
+    "name": "Tɔgɔ",
+    "phone": "Tɛlɛfɔni",
+    "contactPending": "Jɛgɛw bɛ di meeting kɔfɛ.",
+    "buyers": "Jɛnɲɛbagaw bɛɛn",
+    "noBuyersListed": "Jɛnɲɛbaga si ma sɛbɛn.",
+    "scheduleMeeting": "Meeting labɛn",
+    "expressInterest": "Kɛlɛn b'a la",
+    "investorName": "Wari bɔrɔla tɔgɔ",
+    "preferredDate": "Don min fɛ",
+    "meetingSent": "Bɔrɛsɛri kɛra. 24h kɔnɔ an bɛ sɛmɛntiyɛn."
+  },
   "language": {
     "select": "Kan sugandi",
     "french": "Faransikan",

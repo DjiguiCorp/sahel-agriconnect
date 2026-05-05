@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Loader2, X } from 'lucide-react';
 
@@ -163,6 +164,8 @@ function trackBadge(opp) {
 }
 
 export default function InvestmentOpportunities() {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [apiRows, setApiRows] = useState([]);
@@ -260,8 +263,9 @@ export default function InvestmentOpportunities() {
 
       <section className="section-container pb-20">
         {loading ? (
-          <div className="flex justify-center py-24">
-            <Loader2 className="h-10 w-10 animate-spin text-[#1a3c2e]" aria-label="Loading" />
+          <div className="flex flex-col items-center justify-center gap-3 py-24">
+            <Loader2 className="h-10 w-10 animate-spin text-[#1a3c2e]" aria-hidden />
+            <p className="text-sm font-medium text-gray-600">{t('common.loading')}</p>
           </div>
         ) : (
           <>
@@ -283,10 +287,27 @@ export default function InvestmentOpportunities() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-              {visible.map((opp) => (
+              {visible.map((opp) => {
+                const canOpenDetail = !opp.isFallback && Boolean(opp._id);
+                return (
                 <article
                   key={opp.id}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md flex flex-col"
+                  className={`rounded-2xl border border-gray-200 bg-white p-6 shadow-md flex flex-col ${
+                    canOpenDetail ? 'cursor-pointer transition hover:border-[#B5850A]/40 hover:shadow-lg' : ''
+                  }`}
+                  onClick={canOpenDetail ? () => navigate(`/afri-yield/opportunities/${opp._id}`) : undefined}
+                  onKeyDown={
+                    canOpenDetail
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            navigate(`/afri-yield/opportunities/${opp._id}`);
+                          }
+                        }
+                      : undefined
+                  }
+                  role={canOpenDetail ? 'link' : undefined}
+                  tabIndex={canOpenDetail ? 0 : undefined}
                 >
                   <div className="flex flex-wrap gap-2 mb-3">
                     <span className="rounded-full bg-[#1a3c2e]/10 px-3 py-0.5 text-xs font-bold text-[#1a3c2e]">
@@ -305,7 +326,11 @@ export default function InvestmentOpportunities() {
                   <p className="text-sm text-gray-500 mt-1">{opp.location}</p>
                   <p className="mt-4 font-semibold text-gray-900">{opp.amount}</p>
                   <p className="mt-2 text-gray-600 text-sm flex-1">{opp.description}</p>
-                  <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                  <div
+                    className="mt-6 flex flex-col sm:flex-row gap-3"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
                     <button
                       type="button"
                       onClick={() => openMeeting(opp)}
@@ -313,15 +338,17 @@ export default function InvestmentOpportunities() {
                     >
                       Schedule Meeting
                     </button>
-                    <Link
-                      to="/afri-yield/register"
+                    <button
+                      type="button"
+                      onClick={() => navigate('/afri-yield/register')}
                       className="flex-1 rounded-lg border-2 border-[#1a3c2e] px-4 py-3 text-sm font-bold text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition text-center"
                     >
                       Express Interest
-                    </Link>
+                    </button>
                   </div>
                 </article>
-              ))}
+              );
+              })}
             </div>
 
             {visible.length === 0 ? (
