@@ -5,22 +5,23 @@ import { detectLanguage } from '../services/geolocationService';
 
 import fr from '../locales/fr.json';
 import en from '../locales/en.json';
-import bm from '../locales/bm.json';
-import ff from '../locales/ff.json';
 
+/** Same as header LanguageSelector: French + English only. */
 const resources = {
   fr: { translation: fr },
   en: { translation: en },
-  bm: { translation: bm },
-  ff: { translation: ff },
 };
 
 // Détecter la langue depuis la géolocalisation
 const getInitialLanguage = async () => {
-  // Vérifier d'abord si l'utilisateur a déjà choisi une langue
-  const savedLanguage = localStorage.getItem('i18nextLng');
-  if (savedLanguage && ['fr', 'en', 'bm', 'ff'].includes(savedLanguage)) {
+  const raw = localStorage.getItem('i18nextLng');
+  const savedLanguage = raw ? String(raw).split('-')[0] : null;
+  if (savedLanguage === 'fr' || savedLanguage === 'en') {
     return savedLanguage;
+  }
+  if (savedLanguage) {
+    localStorage.setItem('i18nextLng', 'fr');
+    return 'fr';
   }
 
   // Sinon, détecter depuis la géolocalisation
@@ -39,7 +40,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    supportedLngs: ['fr', 'en', 'bm', 'ff'],
+    supportedLngs: ['fr', 'en'],
     nonExplicitSupportedLngs: true,
     fallbackLng: {
       'default': ['fr'], // Fallback par défaut sur français

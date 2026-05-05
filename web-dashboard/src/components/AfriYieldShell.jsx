@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { X, ChevronDown, ChevronRight } from 'lucide-react';
@@ -59,17 +59,8 @@ function buildBreadcrumbItems(pathname) {
 }
 
 export default function AfriYieldShell() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const location = useLocation();
-
-  useEffect(() => {
-    const browserLang = navigator.language.split('-')[0];
-    const supportedLangs = ['en', 'fr', 'am', 'bm', 'ff'];
-    const detectedLang = supportedLangs.includes(browserLang) ? browserLang : 'en';
-    if (i18n.language !== detectedLang) {
-      i18n.changeLanguage(detectedLang);
-    }
-  }, [i18n]);
 
   const crumbs = useMemo(() => buildBreadcrumbItems(location.pathname), [location.pathname]);
 
