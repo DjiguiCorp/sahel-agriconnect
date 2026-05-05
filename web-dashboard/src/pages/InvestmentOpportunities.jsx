@@ -4,84 +4,102 @@ import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Loader2, X } from 'lucide-react';
 
-const FALLBACK_OPPORTUNITIES = [
+const getSampleOpportunities = (t) => [
   {
-    id: '1',
+    id: 'sample-1',
     isFallback: true,
     name: 'Centre Karité Premium',
-    location: 'Sikasso, Mali',
+    location: t('afriYield.locations.sikasso'),
     commodities: ['shea'],
     tracks: ['A'],
-    certLabel: 'Regional Certified',
+    certLabel: t('afriYield.certified.regional'),
     certTone: 'blue',
     certTier: 'regional',
-    amount: 'Seeking $25,000 for cold storage equipment',
-    description: '3 farmers cooperatives connected',
+    amount: t('afriYield.seeking', {
+      amount: (25000).toLocaleString(),
+      purpose: t('afriYield.equipment.coldStorage'),
+    }),
+    description: t('afriYield.sampleDesc.coldStorage'),
   },
   {
-    id: '2',
+    id: 'sample-2',
     isFallback: true,
     name: 'Coopérative Sésame Excellence',
-    location: 'Kayes, Mali',
+    location: t('afriYield.locations.kayes'),
     commodities: ['sesame'],
     tracks: ['A'],
-    certLabel: 'Local Certified',
+    certLabel: t('afriYield.certified.local'),
     certTone: 'gray',
     certTier: 'local',
-    amount: 'Seeking $15,000 for drying equipment',
-    description: '47 member farmers',
+    amount: t('afriYield.seeking', {
+      amount: (15000).toLocaleString(),
+      purpose: t('afriYield.equipment.drying'),
+    }),
+    description: t('afriYield.sampleDesc.memberFarmers', { count: 47 }),
   },
   {
-    id: '3',
+    id: 'sample-3',
     isFallback: true,
     name: 'AfriProcess Hub',
-    location: 'Dakar, Senegal',
+    location: t('afriYield.locations.dakar'),
     commodities: ['shea', 'sesame'],
     tracks: ['B'],
-    certLabel: 'USDA Certified',
+    certLabel: t('afriYield.certified.usda'),
     certTone: 'emerald',
     certTier: 'usda',
-    amount: 'Seeking $50,000 for export branding',
-    description: 'Export pipeline to France and USA',
+    amount: t('afriYield.seeking', {
+      amount: (50000).toLocaleString(),
+      purpose: t('afriYield.equipment.branding'),
+    }),
+    description: t('afriYield.sampleDesc.exportPipeline'),
   },
   {
-    id: '4',
+    id: 'sample-4',
     isFallback: true,
     name: 'Golden Shea Cooperative',
-    location: "Korhogo, Côte d'Ivoire",
+    location: t('afriYield.locations.korhogo'),
     commodities: ['shea'],
     tracks: ['A'],
-    certLabel: 'Local Certified',
+    certLabel: t('afriYield.certified.local'),
     certTone: 'gray',
     certTier: 'local',
-    amount: 'Seeking $20,000 for processing machinery',
-    description: '28 member farmers',
+    amount: t('afriYield.seeking', {
+      amount: (20000).toLocaleString(),
+      purpose: t('afriYield.equipment.processing'),
+    }),
+    description: t('afriYield.sampleDesc.memberFarmers', { count: 28 }),
   },
   {
-    id: '5',
+    id: 'sample-5',
     isFallback: true,
     name: 'Sesame Valley Processors',
-    location: 'Tamale, Ghana',
+    location: t('afriYield.locations.tamale'),
     commodities: ['sesame'],
     tracks: ['B'],
-    certLabel: 'Regional Certified',
+    certLabel: t('afriYield.certified.regional'),
     certTone: 'blue',
     certTier: 'regional',
-    amount: 'Seeking $35,000 for market development',
-    description: 'Existing buyer in Japan',
+    amount: t('afriYield.seeking', {
+      amount: (35000).toLocaleString(),
+      purpose: t('afriYield.equipment.marketDev'),
+    }),
+    description: t('afriYield.sampleDesc.buyerJapan'),
   },
   {
-    id: '6',
+    id: 'sample-6',
     isFallback: true,
     name: 'West Africa Shea Alliance',
-    location: 'Thiès, Senegal',
+    location: t('afriYield.locations.thies'),
     commodities: ['shea'],
     tracks: ['A', 'B'],
-    certLabel: 'International (USDA)',
+    certLabel: t('afriYield.certified.usda'),
     certTone: 'amber',
     certTier: 'international',
-    amount: 'Seeking $75,000 for full supply chain upgrade',
-    description: '120 member farmers',
+    amount: t('afriYield.seeking', {
+      amount: (75000).toLocaleString(),
+      purpose: t('afriYield.equipment.supplyChain'),
+    }),
+    description: t('afriYield.sampleDesc.memberFarmers', { count: 120 }),
   },
 ];
 
@@ -208,7 +226,8 @@ export default function InvestmentOpportunities() {
     };
   }, []);
 
-  const sourceList = useApi && apiRows.length > 0 ? apiRows : FALLBACK_OPPORTUNITIES;
+  const sampleOpportunities = useMemo(() => getSampleOpportunities(t), [t]);
+  const sourceList = useApi && apiRows.length > 0 ? apiRows : sampleOpportunities;
 
   const visible = useMemo(
     () => sourceList.filter((o) => matchesFilter(activeFilter, o)),

@@ -302,6 +302,34 @@
     "trackBoth": "Piste A + B",
     "trackAOnly": "Piste A",
     "trackBOnly": "Piste B",
+    "seeking": "Recherche ${{amount}} pour {{purpose}}",
+    "locations": {
+      "sikasso": "Sikasso, Mali",
+      "kayes": "Kayes, Mali",
+      "dakar": "Dakar, Sénégal",
+      "korhogo": "Korhogo, Côte d'Ivoire",
+      "tamale": "Tamale, Ghana",
+      "thies": "Thiès, Sénégal"
+    },
+    "certified": {
+      "local": "Certifié local",
+      "regional": "Certifié régional",
+      "usda": "Certifié USDA"
+    },
+    "equipment": {
+      "coldStorage": "équipement de stockage à froid",
+      "drying": "équipement de séchage",
+      "branding": "branding export",
+      "processing": "machines de transformation",
+      "marketDev": "développement de marché",
+      "supplyChain": "mise à niveau complète de la chaîne d'approvisionnement"
+    },
+    "sampleDesc": {
+      "coldStorage": "3 coopératives d'agriculteurs connectées",
+      "exportPipeline": "Pipeline d'exportation vers la France et les États-Unis",
+      "buyerJapan": "Acheteur existant au Japon",
+      "memberFarmers": "{{count}} agriculteurs membres"
+    },
     "viewOpportunities": "Voir les opportunités",
     "registerAsInvestor": "S'inscrire comme investisseur",
     "scheduleMeeting": "Planifier une réunion",

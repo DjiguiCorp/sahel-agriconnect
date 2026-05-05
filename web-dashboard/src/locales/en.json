@@ -302,6 +302,34 @@
     "trackBoth": "Track A + B",
     "trackAOnly": "Track A",
     "trackBOnly": "Track B",
+    "seeking": "Seeking ${{amount}} for {{purpose}}",
+    "locations": {
+      "sikasso": "Sikasso, Mali",
+      "kayes": "Kayes, Mali",
+      "dakar": "Dakar, Senegal",
+      "korhogo": "Korhogo, Côte d'Ivoire",
+      "tamale": "Tamale, Ghana",
+      "thies": "Thiès, Senegal"
+    },
+    "certified": {
+      "local": "Local Certified",
+      "regional": "Regional Certified",
+      "usda": "USDA Certified"
+    },
+    "equipment": {
+      "coldStorage": "cold storage equipment",
+      "drying": "drying equipment",
+      "branding": "export branding",
+      "processing": "processing machinery",
+      "marketDev": "market development",
+      "supplyChain": "full supply chain upgrade"
+    },
+    "sampleDesc": {
+      "coldStorage": "3 farmers cooperatives connected",
+      "exportPipeline": "Export pipeline to France and USA",
+      "buyerJapan": "Existing buyer in Japan",
+      "memberFarmers": "{{count}} member farmers"
+    },
     "viewOpportunities": "View Opportunities",
     "registerAsInvestor": "Register as Investor",
     "scheduleMeeting": "Schedule Meeting",
