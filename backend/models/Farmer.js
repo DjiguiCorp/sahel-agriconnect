@@ -38,6 +38,14 @@ const farmerSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  country: {
+    type: String,
+    default: 'Mali' // default for existing records
+  },
+  countryCode: {
+    type: String,
+    default: 'ML'
+  },
   typeExploitation: {
     type: String,
     enum: ['Familiale', 'Commerciale/Indépendante'],
@@ -152,6 +160,7 @@ const farmerSchema = new mongoose.Schema({
 
 // Index pour recherche rapide
 farmerSchema.index({ region: 1 });
+farmerSchema.index({ country: 1 });
 farmerSchema.index({ statut: 1 });
 farmerSchema.index({ investissementCooperative: 1 });
 farmerSchema.index({ createdAt: -1 });

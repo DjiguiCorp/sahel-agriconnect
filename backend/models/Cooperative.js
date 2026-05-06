@@ -14,6 +14,14 @@ const cooperativeSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  country: {
+    type: String,
+    default: 'Mali'
+  },
+  countryCode: {
+    type: String,
+    default: 'ML'
+  },
   responsable: {
     type: String,
     required: true
@@ -69,6 +77,7 @@ const cooperativeSchema = new mongoose.Schema({
 });
 
 cooperativeSchema.index({ region: 1 });
+cooperativeSchema.index({ country: 1 });
 cooperativeSchema.index({ statut: 1 });
 
 const Cooperative = mongoose.model('Cooperative', cooperativeSchema);

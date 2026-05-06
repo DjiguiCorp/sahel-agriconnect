@@ -20,8 +20,16 @@ const adminSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'super-admin'],
+    enum: ['super-admin', 'admin', 'country-admin'],
     default: 'admin'
+  },
+  country: {
+    type: String,
+    default: null // null means access to all countries (super-admin)
+  },
+  countryCode: {
+    type: String,
+    default: null // ISO code e.g. 'SN', 'CI', 'GH', 'ML'
   }
 }, {
   timestamps: true

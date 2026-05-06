@@ -2,6 +2,7 @@ import express from 'express';
 import Processor from '../models/Processor.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateProcessor } from '../middleware/validation.js';
+import { countryFilter } from '../middleware/countryFilter.js';
 
 const router = express.Router();
 
@@ -31,10 +32,10 @@ router.post('/', validateProcessor, async (req, res) => {
 });
 
 // GET /api/processors - Liste des processeurs (protégée admin)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, countryFilter, async (req, res) => {
   try {
     const { region, statut } = req.query;
-    const query = {};
+    const query = { ...(req.countryFilter || {}) };
     
     if (region) query.region = region;
     if (statut) query.statut = statut;

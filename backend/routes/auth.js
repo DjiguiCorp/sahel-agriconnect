@@ -40,7 +40,9 @@ router.post('/login', async (req, res) => {
         id: admin._id,
         email: admin.email,
         name: admin.name,
-        role: admin.role
+        role: admin.role,
+        country: admin.country ?? null,
+        countryCode: admin.countryCode ?? null
       }
     });
   } catch (error) {
@@ -57,7 +59,9 @@ router.get('/verify', authenticateToken, (req, res) => {
       id: req.admin._id,
       email: req.admin.email,
       name: req.admin.name,
-      role: req.admin.role
+      role: req.admin.role,
+      country: req.admin.country ?? null,
+      countryCode: req.admin.countryCode ?? null
     }
   });
 });

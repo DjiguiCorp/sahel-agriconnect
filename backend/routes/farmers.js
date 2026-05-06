@@ -2,6 +2,7 @@ import express from 'express';
 import Farmer from '../models/Farmer.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateFarmer, validateFarmerUpdate } from '../middleware/validation.js';
+import { countryFilter } from '../middleware/countryFilter.js';
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ router.post('/', validateFarmer, async (req, res) => {
 });
 
 // GET /api/farmers - Liste des agriculteurs (protégée admin)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, countryFilter, async (req, res) => {
   try {
     const { 
       region, 
@@ -48,7 +49,7 @@ router.get('/', authenticateToken, async (req, res) => {
       search 
     } = req.query;
 
-    const query = {};
+    const query = { ...(req.countryFilter || {}) };
     
     if (region) query.region = region;
     if (statut) query.statut = statut;
@@ -157,14 +158,16 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // GET /api/farmers/stats/summary - Statistiques (protégée admin)
-router.get('/stats/summary', authenticateToken, async (req, res) => {
+router.get('/stats/summary', authenticateToken, countryFilter, async (req, res) => {
   try {
-    const total = await Farmer.countDocuments();
-    const actifs = await Farmer.countDocuments({ statut: 'Actif' });
-    const enAttente = await Farmer.countDocuments({ statut: 'En attente' });
-    const avecInvestissement = await Farmer.countDocuments({ investissementCooperative: 'Oui' });
+    const f = req.countryFilter || {};
+    const total = await Farmer.countDocuments(f);
+    const actifs = await Farmer.countDocuments({ ...f, statut: 'Actif' });
+    const enAttente = await Farmer.countDocuments({ ...f, statut: 'En attente' });
+    const avecInvestissement = await Farmer.countDocuments({ ...f, investissementCooperative: 'Oui' });
     
     const totalSuperficie = await Farmer.aggregate([
+      { $match: f },
       { $group: { _id: null, total: { $sum: '$superficie' } } }
     ]);
 

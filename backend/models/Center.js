@@ -10,6 +10,14 @@ const centerSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  country: {
+    type: String,
+    default: 'Mali'
+  },
+  countryCode: {
+    type: String,
+    default: 'ML'
+  },
   localisation: {
     type: String,
     required: true
@@ -111,6 +119,7 @@ const centerSchema = new mongoose.Schema({
 });
 
 centerSchema.index({ region: 1 });
+centerSchema.index({ country: 1 });
 centerSchema.index({ latitude: 1, longitude: 1 });
 centerSchema.index({ statut: 1 });
 

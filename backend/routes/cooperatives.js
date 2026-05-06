@@ -2,6 +2,7 @@ import express from 'express';
 import Cooperative from '../models/Cooperative.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { countryFilter } from '../middleware/countryFilter.js';
 
 const router = express.Router();
 
@@ -47,6 +48,21 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur récupération coopératives:', error);
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération' });
+  }
+});
+
+// GET /api/cooperatives/admin - Liste complète (protégée admin, filtrée par pays si country-admin)
+router.get('/admin', authenticateToken, countryFilter, async (req, res) => {
+  try {
+    const { region } = req.query;
+    const query = { ...(req.countryFilter || {}) };
+    if (region) query.region = region;
+
+    const cooperatives = await Cooperative.find(query).sort({ nom: 1 }).lean();
+    res.json({ success: true, cooperatives });
+  } catch (error) {
+    console.error('Erreur récupération coopératives (admin):', error);
     res.status(500).json({ error: 'Erreur serveur lors de la récupération' });
   }
 });

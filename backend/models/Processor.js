@@ -20,6 +20,14 @@ const processorSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  country: {
+    type: String,
+    default: 'Mali'
+  },
+  countryCode: {
+    type: String,
+    default: 'ML'
+  },
   latitude: {
     type: String,
     required: true
@@ -74,6 +82,7 @@ const processorSchema = new mongoose.Schema({
 });
 
 processorSchema.index({ region: 1 });
+processorSchema.index({ country: 1 });
 processorSchema.index({ statut: 1 });
 
 const Processor = mongoose.model('Processor', processorSchema);
