@@ -1,499 +1,364 @@
-import { useState } from 'react';
-import ThinkTankSolutions from '../components/ThinkTankSolutions';
+import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Droplet,
+  Bug,
+  Layers,
+  Package,
+  TrendingUp,
+  Wrench,
+  Loader2,
+  ShoppingBag,
+  Lock,
+} from 'lucide-react';
+import { API_ENDPOINTS } from '../config/api';
 
-const ThinkTank = () => {
-  const [selectedProblem, setSelectedProblem] = useState(null);
-  const [showFientesSolutions, setShowFientesSolutions] = useState(false);
+const CATEGORIES = [
+  { id: 'irrigation', title: 'Irrigation & eau', apiValue: 'Irrigation & Water', Icon: Droplet },
+  { id: 'pests', title: 'Ravageurs & maladies', apiValue: 'Pests & Diseases', Icon: Bug },
+  { id: 'soil', title: 'Sol & fertilité', apiValue: 'Soil & Fertility', Icon: Layers },
+  { id: 'harvest', title: 'Récolte & stockage', apiValue: 'Harvest & Storage', Icon: Package },
+  { id: 'market', title: 'Marché & prix', apiValue: 'Market & Pricing', Icon: TrendingUp },
+  { id: 'equipment', title: 'Équipement & machinerie', apiValue: 'Equipment & Machinery', Icon: Wrench },
+];
 
-  const solutions = {
-    irrigation: {
-      title: 'Gestion de l\'Irrigation',
-      description: 'Solutions pour optimiser l\'utilisation de l\'eau et améliorer l\'irrigation des cultures',
-      problemes: [
-        'Manque d\'eau pendant la saison sèche',
-        'Gaspillage d\'eau par irrigation inefficace',
-        'Coûts élevés de l\'irrigation',
-        'Sécheresse récurrente'
-      ],
-      etapes: [
-        {
-          numero: 1,
-          titre: 'Évaluation des besoins en eau',
-          description: 'Calculer les besoins en eau de vos cultures selon le stade de croissance et les conditions climatiques'
-        },
-        {
-          numero: 2,
-          titre: 'Choix du système d\'irrigation',
-          description: 'Sélectionner entre irrigation goutte à goutte, aspersion ou gravitaire selon vos ressources'
-        },
-        {
-          numero: 3,
-          titre: 'Installation et maintenance',
-          description: 'Installer le système et assurer une maintenance régulière pour éviter les fuites'
-        },
-        {
-          numero: 4,
-          titre: 'Suivi et optimisation',
-          description: 'Surveiller l\'humidité du sol et ajuster l\'irrigation selon les besoins réels'
-        }
-      ],
-      intrants: [
-        'Système d\'irrigation goutte à goutte (tuyaux, goutteurs)',
-        'Pompe à eau (électrique ou solaire)',
-        'Réservoir de stockage d\'eau',
-        'Compteur d\'eau ou système de mesure',
-        'Matériel de maintenance (filtres, réparations)'
-      ],
-      ressources: [
-        {
-          type: 'PDF',
-          titre: 'Guide d\'irrigation pour le Sahel',
-          lien: '#'
-        },
-        {
-          type: 'Vidéo',
-          titre: 'Installation d\'un système goutte à goutte',
-          lien: '#'
-        },
-        {
-          type: 'PDF',
-          titre: 'Calcul des besoins en eau des cultures',
-          lien: '#'
-        }
-      ]
-    },
-    ravageurs: {
-      title: 'Gestion des Ravageurs et Maladies',
-      description: 'Méthodes de lutte intégrée contre les ravageurs et maladies des cultures',
-      problemes: [
-        'Infestation de ravageurs (criquets, chenilles, etc.)',
-        'Maladies fongiques et bactériennes',
-        'Perte de rendement due aux attaques',
-        'Résistance aux pesticides'
-      ],
-      etapes: [
-        {
-          numero: 1,
-          titre: 'Identification du ravageur/maladie',
-          description: 'Observer et identifier précisément le type de ravageur ou de maladie affectant vos cultures'
-        },
-        {
-          numero: 2,
-          titre: 'Prévention',
-          description: 'Mettre en place des mesures préventives : rotation des cultures, variétés résistantes, bonnes pratiques culturales'
-        },
-        {
-          numero: 3,
-          titre: 'Lutte biologique',
-          description: 'Utiliser des méthodes naturelles : prédateurs naturels, pièges, plantes répulsives'
-        },
-        {
-          numero: 4,
-          titre: 'Traitement si nécessaire',
-          description: 'Appliquer des traitements biologiques ou chimiques uniquement si nécessaire et selon les recommandations'
-        }
-      ],
-      intrants: [
-        'Pesticides biologiques (néem, pyrèthre)',
-        'Pièges à phéromones',
-        'Filets de protection',
-        'Variétés de semences résistantes',
-        'Équipement de pulvérisation'
-      ],
-      ressources: [
-        {
-          type: 'PDF',
-          titre: 'Guide de lutte intégrée contre les ravageurs',
-          lien: '#'
-        },
-        {
-          type: 'Vidéo',
-          titre: 'Préparation de pesticides biologiques',
-          lien: '#'
-        },
-        {
-          type: 'PDF',
-          titre: 'Identification des ravageurs courants',
-          lien: '#'
-        }
-      ]
-    },
-    sol: {
-      title: 'Amélioration des Sols Dégradés',
-      description: 'Techniques pour restaurer et améliorer la fertilité des sols dégradés',
-      problemes: [
-        'Sol appauvri en nutriments',
-        'Érosion et perte de matière organique',
-        'Compaction du sol',
-        'Acidification ou alcalinisation excessive'
-      ],
-      etapes: [
-        {
-          numero: 1,
-          titre: 'Analyse du sol',
-          description: 'Effectuer une analyse de sol pour identifier les carences et problèmes spécifiques'
-        },
-        {
-          numero: 2,
-          titre: 'Apport de matière organique',
-          description: 'Incorporer du compost, fumier ou engrais verts pour améliorer la structure et la fertilité'
-        },
-        {
-          numero: 3,
-          titre: 'Correction du pH',
-          description: 'Appliquer de la chaux (si acide) ou du soufre (si alcalin) selon les besoins'
-        },
-        {
-          numero: 4,
-          titre: 'Rotation et couverture',
-          description: 'Pratiquer la rotation des cultures et utiliser des cultures de couverture pour protéger le sol'
-        }
-      ],
-      intrants: [
-        'Compost ou fumier organique (5-10 tonnes/ha)',
-        'Chaux agricole (si pH bas)',
-        'Engrais verts (légumineuses)',
-        'Paillis (paille, feuilles)',
-        'Engrais minéraux équilibrés (NPK)'
-      ],
-      ressources: [
-        {
-          type: 'PDF',
-          titre: 'Guide de restauration des sols',
-          lien: '#'
-        },
-        {
-          type: 'Vidéo',
-          titre: 'Fabrication de compost',
-          lien: '#'
-        },
-        {
-          type: 'PDF',
-          titre: 'Techniques de rotation des cultures',
-          lien: '#'
-        }
-      ]
-    },
-    semences: {
-      title: 'Amélioration des Semences',
-      description: 'Sélection et gestion de semences de qualité pour améliorer les rendements',
-      problemes: [
-        'Semences de mauvaise qualité',
-        'Faible taux de germination',
-        'Variétés non adaptées au climat',
-        'Manque de variétés résistantes'
-      ],
-      etapes: [
-        {
-          numero: 1,
-          titre: 'Sélection de variétés adaptées',
-          description: 'Choisir des variétés résistantes à la sécheresse et adaptées à votre région'
-        },
-        {
-          numero: 2,
-          titre: 'Test de germination',
-          description: 'Tester la qualité des semences avant la plantation'
-        },
-        {
-          numero: 3,
-          titre: 'Conservation appropriée',
-          description: 'Stocker les semences dans un endroit sec, frais et protégé des ravageurs'
-        },
-        {
-          numero: 4,
-          titre: 'Renouvellement régulier',
-          description: 'Renouveler les semences tous les 2-3 ans pour maintenir la vigueur'
-        }
-      ],
-      intrants: [
-        'Semences certifiées de qualité',
-        'Conteneurs de stockage hermétiques',
-        'Désinfectants pour semences',
-        'Matériel de test de germination',
-        'Étiquettes pour identification'
-      ],
-      ressources: [
-        {
-          type: 'PDF',
-          titre: 'Guide de sélection des semences',
-          lien: '#'
-        },
-        {
-          type: 'Vidéo',
-          titre: 'Test de germination des semences',
-          lien: '#'
-        },
-        {
-          type: 'PDF',
-          titre: 'Conservation des semences',
-          lien: '#'
-        }
-      ]
-    },
-    fertilisation: {
-      title: 'Fertilisation Optimale',
-      description: 'Stratégies de fertilisation pour maximiser les rendements de manière durable',
-      problemes: [
-        'Carences en nutriments',
-        'Surdosage d\'engrais',
-        'Coûts élevés des intrants',
-        'Impact environnemental'
-      ],
-      etapes: [
-        {
-          numero: 1,
-          titre: 'Analyse des besoins',
-          description: 'Déterminer les besoins en nutriments selon le type de culture et le stade de croissance'
-        },
-        {
-          numero: 2,
-          titre: 'Choix des engrais',
-          description: 'Sélectionner entre engrais organiques, minéraux ou combinés selon disponibilité et coût'
-        },
-        {
-          numero: 3,
-          titre: 'Application au bon moment',
-          description: 'Appliquer les engrais au moment optimal du cycle de croissance'
-        },
-        {
-          numero: 4,
-          titre: 'Suivi et ajustement',
-          description: 'Surveiller la réponse des cultures et ajuster la fertilisation si nécessaire'
-        }
-      ],
-      intrants: [
-        'Engrais organiques (compost, fumier)',
-        'Engrais minéraux (NPK, urée)',
-        'Engrais foliaires',
-        'Mycorhizes (champignons bénéfiques)',
-        'Équipement d\'épandage'
-      ],
-      ressources: [
-        {
-          type: 'PDF',
-          titre: 'Guide de fertilisation des cultures',
-          lien: '#'
-        },
-        {
-          type: 'Vidéo',
-          titre: 'Application d\'engrais organiques',
-          lien: '#'
-        },
-        {
-          type: 'PDF',
-          titre: 'Calcul des doses d\'engrais',
-          lien: '#'
-        }
-      ]
+const CROP_OPTIONS = [
+  'Karité (shea)',
+  'Sésame',
+  'Mil',
+  'Sorgho',
+  'Maïs',
+  'Riz',
+  'Niébé',
+  'Arachide',
+  'Coton',
+  'Tomate',
+  'Autre culture',
+];
+
+const URGENCY = {
+  immediate: { badge: 'bg-red-600 text-white', label: 'Action immédiate' },
+  within_week: { badge: 'bg-orange-500 text-white', label: 'Sous une semaine' },
+  seasonal: { badge: 'bg-emerald-600 text-white', label: 'Calendrier agricole' },
+};
+
+export default function ThinkTank() {
+  const [selectedId, setSelectedId] = useState(null);
+  const [problem, setProblem] = useState('');
+  const [cropType, setCropType] = useState(CROP_OPTIONS[0]);
+  const [region, setRegion] = useState('');
+  const [cooperativeMember, setCooperativeMember] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState(null);
+  const resultsRef = useRef(null);
+
+  const selected = CATEGORIES.find((c) => c.id === selectedId);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    setResult(null);
+    if (!selected) {
+      setError('Veuillez choisir une catégorie de problème.');
+      return;
     }
-  };
+    const trimmed = problem.trim();
+    if (!trimmed) {
+      setError('Décrivez votre problème pour obtenir une solution.');
+      return;
+    }
 
-  const problemKeys = Object.keys(solutions);
+    setLoading(true);
+    try {
+      const res = await fetch(API_ENDPOINTS.THINKTANK.SOLVE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          problem: trimmed,
+          category: selected.apiValue,
+          cropType: cropType || 'Non précisé',
+          region: region.trim() || 'Non précisée',
+          cooperativeMember,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `Erreur ${res.status}`);
+      }
+      setResult(data);
+      requestAnimationFrame(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    } catch (err) {
+      setError(err.message || 'Impossible de contacter le service.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const urgencyKey = result?.urgency && URGENCY[result.urgency] ? result.urgency : 'seasonal';
+  const urgencyStyle = URGENCY[urgencyKey];
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-blue to-primary-darkblue text-white py-12">
-        <div className="section-container text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Think Tank Solutions</h1>
-          <p className="text-lg text-gray-100 max-w-2xl mx-auto">
-            Solutions pratiques et recommandations pour résoudre les problèmes agricoles courants
+    <div className="min-h-screen bg-stone-50">
+      <section className="relative overflow-hidden border-b border-amber-200/60 bg-gradient-to-br from-amber-50 via-white to-emerald-50">
+        <div className="mx-auto max-w-4xl px-4 py-14 text-center sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">
+            Think Tank Agricole — Solutions IA pour vos défis
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-stone-600">
+            Des réponses expertes, instantanées, adaptées à votre réalité
           </p>
         </div>
       </section>
 
-      <section className="section-container py-16">
-        {/* Section spéciale : Valorisation des Fientes */}
-        <div className="mb-12">
-          <div className="card bg-gradient-to-br from-primary-orange to-primary-lightorange text-white">
-            <h2 className="text-2xl font-bold mb-3">
-              🌱⚡ Valorisation des Fientes d'Élevage
-            </h2>
-            <p className="text-gray-100 mb-4">
-              Solutions complètes pour transformer les fientes en fertilisant organique ou en biogaz
-            </p>
-            <button
-              onClick={() => setShowFientesSolutions(!showFientesSolutions)}
-              className="btn-secondary bg-white text-primary-orange hover:bg-gray-100"
-            >
-              {showFientesSolutions ? 'Masquer les solutions' : 'Voir les solutions détaillées'}
-            </button>
-          </div>
-          
-          {showFientesSolutions && (
-            <div className="mt-6">
-              <ThinkTankSolutions />
-            </div>
-          )}
-        </div>
-
-        {/* Liste des problèmes */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {problemKeys.map((key) => {
-            const solution = solutions[key];
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+        <h2 className="mb-4 text-lg font-semibold text-stone-800">Catégorie du problème</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {CATEGORIES.map(({ id, title, Icon }) => {
+            const active = selectedId === id;
             return (
               <button
-                key={key}
-                onClick={() => setSelectedProblem(selectedProblem === key ? null : key)}
-                className={`card text-left transition-all ${
-                  selectedProblem === key
-                    ? 'ring-4 ring-primary-orange bg-primary-orange/5'
-                    : 'hover:shadow-lg'
+                key={id}
+                type="button"
+                onClick={() => {
+                  setSelectedId(id);
+                  setError('');
+                }}
+                className={`flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                  active
+                    ? 'border-amber-500 bg-amber-50 shadow-sm'
+                    : 'border-stone-200 bg-white hover:border-amber-300 hover:bg-amber-50/40'
                 }`}
               >
-                <h3 className="text-xl font-bold text-primary-green mb-2">
-                  {solution.title}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4">{solution.description}</p>
-                <div className="flex items-center text-primary-orange font-medium">
-                  <span>Voir les solutions</span>
-                  <svg
-                    className={`w-5 h-5 ml-2 transition-transform ${
-                      selectedProblem === key ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
+                <span
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                    active ? 'bg-amber-500 text-white' : 'bg-stone-100 text-stone-700'
+                  }`}
+                >
+                  <Icon className="h-6 w-6" aria-hidden />
+                </span>
+                <span className="font-medium text-stone-900">{title}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Détails de la solution sélectionnée */}
-        {selectedProblem && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            {(() => {
-              const solution = solutions[selectedProblem];
-              return (
-                <>
-                  {/* En-tête */}
-                  <div className="card bg-gradient-to-br from-primary-green to-primary-lightgreen text-white">
-                    <h2 className="text-3xl font-bold mb-2">{solution.title}</h2>
-                    <p className="text-gray-100">{solution.description}</p>
-                  </div>
+        {selectedId && (
+          <form onSubmit={handleSubmit} className="mt-10 space-y-6">
+            <div>
+              <label htmlFor="thinktank-problem" className="mb-2 block text-sm font-medium text-stone-700">
+                Votre situation
+              </label>
+              <textarea
+                id="thinktank-problem"
+                rows={5}
+                value={problem}
+                onChange={(e) => setProblem(e.target.value)}
+                placeholder="Décrivez votre problème en détail..."
+                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 shadow-sm placeholder:text-stone-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
 
-                  {/* Problèmes courants */}
-                  <div className="card">
-                    <h3 className="text-2xl font-bold text-primary-green mb-4">
-                      🔍 Problèmes Courants
-                    </h3>
-                    <ul className="space-y-2">
-                      {solution.problemes.map((probleme, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-primary-orange mr-2">•</span>
-                          <span className="text-gray-700">{probleme}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <label htmlFor="thinktank-crop" className="mb-2 block text-sm font-medium text-stone-700">
+                  Type de culture
+                </label>
+                <select
+                  id="thinktank-crop"
+                  value={cropType}
+                  onChange={(e) => setCropType(e.target.value)}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                >
+                  {CROP_OPTIONS.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="thinktank-region" className="mb-2 block text-sm font-medium text-stone-700">
+                  Région / pays
+                </label>
+                <input
+                  id="thinktank-region"
+                  type="text"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  placeholder="Ex. : Kaffrine, Sénégal"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+            </div>
 
-                  {/* Étapes */}
-                  <div className="card">
-                    <h3 className="text-2xl font-bold text-primary-green mb-6">
-                      📋 Étapes de Mise en Œuvre
-                    </h3>
-                    <div className="space-y-6">
-                      {solution.etapes.map((etape) => (
-                        <div key={etape.numero} className="flex gap-4">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-primary-orange rounded-full flex items-center justify-center text-white font-bold text-lg">
-                              {etape.numero}
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="text-xl font-semibold text-gray-900 mb-2">
-                              {etape.titre}
-                            </h4>
-                            <p className="text-gray-600">{etape.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-stone-200 bg-white p-4">
+              <input
+                type="checkbox"
+                checked={cooperativeMember}
+                onChange={(e) => setCooperativeMember(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500"
+              />
+              <span className="text-sm text-stone-700">Je suis membre d&apos;une coopérative</span>
+            </label>
 
-                  {/* Intrants recommandés */}
-                  <div className="card bg-blue-50">
-                    <h3 className="text-2xl font-bold text-primary-blue mb-4">
-                      🛠️ Intrants Recommandés
-                    </h3>
-                    <ul className="grid md:grid-cols-2 gap-2">
-                      {solution.intrants.map((intrant, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-primary-blue mr-2">→</span>
-                          <span className="text-gray-700">{intrant}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+            {error && (
+              <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                {error}
+              </p>
+            )}
 
-                  {/* Ressources */}
-                  <div className="card bg-orange-50">
-                    <h3 className="text-2xl font-bold text-primary-orange mb-4">
-                      📚 Ressources Complémentaires
-                    </h3>
-                    <div className="space-y-3">
-                      {solution.ressources.map((ressource, index) => (
-                        <a
-                          key={index}
-                          href={ressource.lien}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            alert(`Ressource "${ressource.titre}" - Lien à implémenter avec le backend`);
-                          }}
-                          className="flex items-center space-x-3 p-3 bg-white rounded-lg hover:shadow-md transition-shadow"
-                        >
-                          <div className={`px-3 py-1 rounded text-sm font-medium ${
-                            ressource.type === 'PDF'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {ressource.type}
-                          </div>
-                          <span className="text-gray-700 flex-1">{ressource.titre}</span>
-                          <svg
-                            className="w-5 h-5 text-primary-orange"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                            />
-                          </svg>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-3.5 text-base font-semibold text-white shadow transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            >
+              {loading ? 'Envoi…' : 'Obtenir une solution IA'}
+            </button>
+          </form>
+        )}
+
+        {loading && (
+          <div className="mt-12 flex flex-col items-center justify-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/50 py-12">
+            <Loader2 className="h-10 w-10 animate-spin text-amber-600" aria-hidden />
+            <p className="text-center text-stone-700">Analyse en cours par notre expert IA…</p>
           </div>
         )}
 
-        {/* Message si aucune solution sélectionnée */}
-        {!selectedProblem && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">
-              Sélectionnez un problème ci-dessus pour voir les solutions détaillées
-            </p>
+        {result?.success && !loading && (
+          <div ref={resultsRef} className="mt-12 space-y-8 scroll-mt-8">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium text-stone-600">Niveau d&apos;urgence</span>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${urgencyStyle.badge}`}>
+                {urgencyStyle.label}
+              </span>
+            </div>
+
+            {result.summary && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-100/80 p-6 shadow-sm">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-900/80">Synthèse</h3>
+                <p className="mt-2 text-lg text-amber-950">{result.summary}</p>
+              </div>
+            )}
+
+            {result.solution && (
+              <section>
+                <h3 className="text-xl font-semibold text-stone-900">Solution</h3>
+                <p className="mt-3 whitespace-pre-wrap text-stone-700 leading-relaxed">{result.solution}</p>
+              </section>
+            )}
+
+            {Array.isArray(result.steps) && result.steps.length > 0 && (
+              <section>
+                <h3 className="text-xl font-semibold text-stone-900">Étapes à suivre</h3>
+                <ol className="mt-4 list-decimal space-y-3 pl-5 text-stone-700">
+                  {result.steps.map((step, i) => (
+                    <li key={i} className="pl-1">
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            {Array.isArray(result.inputs) && result.inputs.length > 0 && (
+              <section>
+                <h3 className="mb-3 flex items-center gap-2 text-xl font-semibold text-stone-900">
+                  <ShoppingBag className="h-5 w-5 text-amber-700" aria-hidden />
+                  Intrants nécessaires
+                </h3>
+                <ul className="space-y-2 text-stone-700">
+                  {result.inputs.map((item, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-amber-600">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <section className="relative overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50">
+              {!cooperativeMember ? (
+                <div className="relative p-6">
+                  <div className="blur-sm select-none opacity-60" aria-hidden>
+                    <h3 className="text-xl font-semibold text-emerald-900">Avantage coopératif</h3>
+                    <p className="mt-2 text-stone-700">
+                      {typeof result.cooperativeBenefit === 'string' ? result.cooperativeBenefit : ''}
+                    </p>
+                  </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-emerald-50/85 p-4 text-center backdrop-blur-[2px]">
+                    <Lock className="h-8 w-8 text-emerald-700" aria-hidden />
+                    <p className="max-w-md text-sm text-stone-800">
+                      Adhérez à une coopérative pour voir les avantages collectifs détaillés pour ce type de
+                      problème.
+                    </p>
+                    <Link
+                      to="/cooperative-registration"
+                      className="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700"
+                    >
+                      Rejoindre une coopérative
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-emerald-900">Avantage coopératif</h3>
+                  <p className="mt-2 whitespace-pre-wrap text-stone-800 leading-relaxed">
+                    {result.cooperativeBenefit}
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <section className="relative rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-semibold text-stone-900">Support additionnel</h3>
+              {!cooperativeMember ? (
+                <div className="relative mt-4 min-h-[140px]">
+                  <div className="blur-sm select-none opacity-50" aria-hidden>
+                    <p className="text-stone-600">
+                      Demandes prioritaires aux techniciens et experts via la plateforme.
+                    </p>
+                  </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-white/85 p-4 text-center">
+                    <Lock className="h-8 w-8 text-stone-500" aria-hidden />
+                    <p className="max-w-md text-sm text-stone-700">
+                      Ce canal est réservé aux coopératives adhérentes. Rejoignez une coopérative pour demander une
+                      visite ou parler à un expert.
+                    </p>
+                    <Link
+                      to="/cooperative-registration"
+                      className="text-sm font-semibold text-amber-700 underline hover:text-amber-900"
+                    >
+                      Rejoindre une coopérative
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <Link
+                    to="/contact?topic=technician-visit"
+                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-emerald-700"
+                  >
+                    Demander une visite de technicien
+                  </Link>
+                  <Link
+                    to="/contact?topic=expert"
+                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-stone-300 bg-white px-4 py-3 text-center text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                  >
+                    Contacter un expert
+                  </Link>
+                </div>
+              )}
+              {cooperativeMember && result.additionalSupport?.description && (
+                <p className="mt-4 text-sm text-stone-600">{result.additionalSupport.description}</p>
+              )}
+            </section>
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
-};
-
-export default ThinkTank;
-
+}

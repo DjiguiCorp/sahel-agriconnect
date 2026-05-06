@@ -123,6 +123,9 @@ export const API_ENDPOINTS = {
     REGIONAL: `${API_BASE_URL}/api/optimize/regional`,
     FEEDBACK: (id) => `${API_BASE_URL}/api/optimize/production/${id}/feedback`,
   },
+  THINKTANK: {
+    SOLVE: `${API_BASE_URL}/api/thinktank/solve`,
+  },
   INVESTORS: {
     REGISTER: `${API_BASE_URL}/api/investors/register`,
     BASE: `${API_BASE_URL}/api/investors`,
