@@ -1,9 +1,13 @@
+import { Helmet } from 'react-helmet-async';
 import IconCircle from '../components/IconCircle';
 import { Target, Banknote, Smartphone, Sprout, Handshake, Globe, GraduationCap } from 'lucide-react';
 
 const About = () => {
   return (
     <div>
+      <Helmet>
+        <title>À propos de Sahel AgriConnect</title>
+      </Helmet>
       <section className="bg-gradient-to-br from-brand-forest to-brand-sage text-white py-20">
         <div className="section-container text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">À propos de Sahel AgriConnect</h1>
@@ -111,7 +115,11 @@ const About = () => {
               <div key={index} className="flex flex-col md:flex-row gap-6">
                 <div className="flex-shrink-0">
                   <div className="w-24 h-24 bg-brand-amber rounded-full flex items-center justify-center text-brand-forest font-bold text-xl shadow-md">
-                    {phase.step}
+                    {phase.title === 'Impact Continental' ? (
+                      <Globe className="w-11 h-11" strokeWidth={1.75} aria-hidden />
+                    ) : (
+                      phase.step
+                    )}
                   </div>
                 </div>
                 <div className="flex-1 card">
@@ -127,17 +135,12 @@ const About = () => {
       <section className="bg-brand-forest text-white py-16">
         <div className="section-container">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Nos partenaires</h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {[
               {
                 Icon: Handshake,
                 title: 'Djigui Corporation',
                 text: 'Organisation fondatrice de Sahel AgriConnect, engagée dans la transformation agricole et le développement économique durable en Afrique.',
-              },
-              {
-                Icon: Globe,
-                title: 'Djigui',
-                text: "Organisation locale engagée dans le développement agricole et l'autonomisation des communautés rurales en Afrique de l'Ouest et au-delà.",
               },
               {
                 Icon: GraduationCap,

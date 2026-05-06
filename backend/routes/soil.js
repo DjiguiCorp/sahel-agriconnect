@@ -2,7 +2,7 @@ import express from 'express';
 
 const router = express.Router();
 
-const GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro'];
+const GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-flash'];
 
 function stripJsonFences(text) {
   if (!text || typeof text !== 'string') return '';
