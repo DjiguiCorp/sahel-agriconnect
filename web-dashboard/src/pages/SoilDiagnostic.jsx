@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { computeSoilResult } from '../lib/soilDecisionEngine';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { regionsByCountry } from '../data/sahelRegions';
 import { AFRICAN_COUNTRIES } from '../data/africanCountries';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import {
   Sprout,
   Droplets,
@@ -58,77 +57,68 @@ export default function SoilDiagnostic() {
   const [lastCrop, setLastCrop] = useState('Mil');
   const [result, setResult] = useState(null);
   const [farmerIdInput, setFarmerIdInput] = useState('');
+  const [aiState, setAiState] = useState({ loading: false, err: '' });
   const [saveState, setSaveState] = useState({ loading: false, msg: '', err: '' });
 
-  const regionOptions =
-    regionsByCountry[country]?.length > 0 ? regionsByCountry[country] : ['Autre'];
+  const regionOptions = useMemo(
+    () => (regionsByCountry[country]?.length > 0 ? regionsByCountry[country] : ['Autre']),
+    [country]
+  );
 
-  const runCompute = () => {
+  const runDiagnose = async () => {
     if (!soilColor || !texture || !humidity || !region) return;
-    const r = computeSoilResult({
-      soilColor,
-      texture,
-      humidity,
-      country,
-      region,
-      season,
-      lastCrop,
-    });
-    setResult(r);
-    captureEvent(AnalyticsEvents.DIAGNOSTIC_SOL_USED, {
-      country,
-      texture,
-      season,
-    });
-    setStep(3);
+    setAiState({ loading: true, err: '' });
+    setResult(null);
+    try {
+      const res = await fetch(API_ENDPOINTS.SOIL.DIAGNOSE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          soilColor,
+          texture,
+          humidity,
+          country,
+          region,
+          season,
+          lastCrop,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
+      setResult(data);
+      captureEvent(AnalyticsEvents.DIAGNOSTIC_SOL_USED, { country, texture, season });
+      setStep(3);
+    } catch (e) {
+      setAiState({ loading: false, err: e.message || 'Diagnostic impossible.' });
+      return;
+    } finally {
+      setAiState((p) => ({ ...p, loading: false }));
+    }
   };
 
-  const saveToSupabase = async () => {
-    if (!result || !isSupabaseConfigured() || !supabase) {
-      setSaveState({
-        loading: false,
-        msg: '',
-        err: 'Supabase non configuré. Les données restent locales.',
-      });
-      return;
-    }
-
+  const saveDiagnostic = async () => {
+    if (!result) return;
     setSaveState({ loading: true, msg: '', err: '' });
     const raw = farmerIdInput.trim();
-    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const farmerId = raw && uuidRe.test(raw) ? raw : null;
-    if (raw && !farmerId) {
-      setSaveState({ loading: false, msg: '', err: 'Identifiant invalide : utilisez l’UUID complet ou laissez vide.' });
+    if (!raw) {
+      setSaveState({ loading: false, msg: '', err: 'Ajoutez un identifiant agriculteur pour sauvegarder.' });
       return;
     }
 
     try {
-      const { error } = await supabase.from('soil_diagnostics').insert({
-        farmer_id: farmerId,
-        soil_color: soilColor,
-        texture,
-        humidity,
-        region,
-        country,
-        season,
-        last_crop: lastCrop,
-        fertility_score: result.fertilityScore,
-        recommended_crops: result.recommendedCrops,
-        amendments: result.amendments,
-        practices: result.practices,
+      const r = await fetch(`${API_BASE_URL}/api/farmers/${encodeURIComponent(raw)}/soil-diagnostic`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: { soilColor, texture, humidity, country, region, season, lastCrop },
+          result,
+        }),
       });
-      if (error) throw error;
-      setSaveState({
-        loading: false,
-        msg: 'Diagnostic enregistré.',
-        err: '',
-      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || `Erreur ${r.status}`);
+      setSaveState({ loading: false, msg: 'Diagnostic sauvegardé.', err: '' });
     } catch (e) {
-      setSaveState({
-        loading: false,
-        msg: '',
-        err: e.message || 'Erreur lors de l’enregistrement.',
-      });
+      setSaveState({ loading: false, msg: '', err: e.message || 'Erreur lors de la sauvegarde.' });
     }
   };
 
@@ -318,13 +308,23 @@ export default function SoilDiagnostic() {
               <button
                 type="button"
                 disabled={!region}
-                onClick={runCompute}
+                onClick={runDiagnose}
                 className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Voir les résultats
-                <ChevronRight className="w-5 h-5" aria-hidden />
+                {aiState.loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" aria-hidden />
+                    Analyse IA…
+                  </>
+                ) : (
+                  <>
+                    Voir les résultats
+                    <ChevronRight className="w-5 h-5" aria-hidden />
+                  </>
+                )}
               </button>
             </div>
+            {aiState.err && <p className="text-sm text-red-700">{aiState.err}</p>}
           </div>
         )}
 
@@ -338,53 +338,82 @@ export default function SoilDiagnostic() {
 
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Score de fertilité (indicatif)</span>
-                  <span className="text-2xl font-bold text-brand-forest">{result.fertilityScore} / 100</span>
+                  <span className="text-sm font-medium text-gray-700">Score (IA)</span>
+                  <span className="text-2xl font-bold text-brand-forest">{result.score} / 100</span>
                 </div>
-                <div className="h-4 bg-gray-200 rounded-full overflow-hidden" role="progressbar" aria-valuenow={result.fertilityScore} aria-valuemin={0} aria-valuemax={100}>
+                <div className="h-4 bg-gray-200 rounded-full overflow-hidden" role="progressbar" aria-valuenow={result.score} aria-valuemin={0} aria-valuemax={100}>
                   <div
                     className="h-full bg-gradient-to-r from-brand-sage to-brand-forest transition-all duration-700"
-                    style={{ width: `${result.fertilityScore}%` }}
+                    style={{ width: `${result.score}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-600 mt-3">
-                  Pour une fertilisation précise, faites analyser votre sol en laboratoire.
-                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-gray-700">
+                    <strong>Classement :</strong> {result.rating}
+                  </span>
+                  {result.sheaCompatible && (
+                    <span className="text-xs font-semibold rounded-full bg-amber-100 text-amber-900 px-3 py-1">
+                      Compatible karité
+                    </span>
+                  )}
+                  {result.sesameCompatible && (
+                    <span className="text-xs font-semibold rounded-full bg-emerald-100 text-emerald-900 px-3 py-1">
+                      Compatible sésame
+                    </span>
+                  )}
+                </div>
+                {result.summary && <p className="text-sm text-gray-600 mt-3">{result.summary}</p>}
               </div>
 
-              <div className="mb-6 p-4 bg-brand-cream/60 rounded-lg text-sm text-gray-700">
-                <strong>Dernière culture :</strong> {result.lastCropHint}
-              </div>
+              <h3 className="font-semibold text-brand-forest mb-2">Cultures recommandées</h3>
+              {Array.isArray(result.recommendedCrops) && result.recommendedCrops.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
+                  {result.recommendedCrops.map((c) => (
+                    <li key={c}>{c}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-600 mb-6">—</p>
+              )}
 
-              <h3 className="font-semibold text-brand-forest mb-3">Cultures recommandées (top 3)</h3>
-              <div className="grid gap-3 mb-8">
-                {result.recommendedCrops.map((c) => (
-                  <div key={c.name} className="border border-brand-sage/30 rounded-lg p-4 bg-white">
-                    <p className="font-bold text-brand-forest">{c.name}</p>
-                    <p className="text-sm text-gray-600">{c.reason}</p>
-                  </div>
-                ))}
-              </div>
+              <h3 className="font-semibold text-brand-forest mb-2">Engrais recommandés</h3>
+              {Array.isArray(result.fertilizers) && result.fertilizers.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
+                  {result.fertilizers.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-600 mb-6">—</p>
+              )}
 
-              <h3 className="font-semibold text-brand-forest mb-2">Amendements conseillés</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
-                {result.amendments.map((a) => (
-                  <li key={a}>{a}</li>
-                ))}
-              </ul>
+              <h3 className="font-semibold text-brand-forest mb-2">Amendements</h3>
+              {Array.isArray(result.amendments) && result.amendments.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
+                  {result.amendments.map((a) => (
+                    <li key={a}>{a}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-600 mb-6">—</p>
+              )}
 
-              <h3 className="font-semibold text-brand-forest mb-2">Pratiques suggérées</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700">
-                {result.practices.map((p) => (
-                  <li key={p}>{p}</li>
-                ))}
-              </ul>
+              {Array.isArray(result.warnings) && result.warnings.length > 0 && (
+                <>
+                  <h3 className="font-semibold text-brand-forest mb-2">Alertes</h3>
+                  <ul className="list-disc list-inside space-y-1 text-red-800">
+                    {result.warnings.map((w) => (
+                      <li key={w}>{w}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
 
             <div className="card space-y-4">
               <h3 className="font-semibold text-brand-forest flex items-center gap-2">
                 <Save className="w-5 h-5 text-brand-sage" aria-hidden />
-                Enregistrer ce diagnostic
+                Sauvegarder ce diagnostic
               </h3>
               <p className="text-sm text-gray-600">
                 Si vous avez déjà un identifiant agriculteur (inscription), collez-le ci-dessous. Sinon{' '}
@@ -404,15 +433,22 @@ export default function SoilDiagnostic() {
               <button
                 type="button"
                 disabled={saveState.loading}
-                onClick={saveToSupabase}
+                onClick={saveDiagnostic}
                 className="btn-primary inline-flex items-center gap-2"
               >
                 {saveState.loading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden /> : <Save className="w-5 h-5" aria-hidden />}
-                Enregistrer dans Supabase
+                Sauvegarder ce diagnostic
               </button>
               {saveState.msg && <p className="text-green-700 text-sm">{saveState.msg}</p>}
               {saveState.err && <p className="text-red-700 text-sm">{saveState.err}</p>}
             </div>
+
+            {result.cooperativeBenefit && (
+              <div className="card">
+                <h3 className="font-semibold text-brand-forest mb-2">Avantage coopératif</h3>
+                <p className="text-sm text-gray-700">{result.cooperativeBenefit}</p>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-3">
               <button type="button" onClick={() => setStep(2)} className="border border-gray-300 rounded-lg px-4 py-2">

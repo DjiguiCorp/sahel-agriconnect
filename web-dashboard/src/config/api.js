@@ -126,6 +126,9 @@ export const API_ENDPOINTS = {
   THINKTANK: {
     SOLVE: `${API_BASE_URL}/api/thinktank/solve`,
   },
+  SOIL: {
+    DIAGNOSE: `${API_BASE_URL}/api/soil/diagnose`,
+  },
   INVESTORS: {
     REGISTER: `${API_BASE_URL}/api/investors/register`,
     BASE: `${API_BASE_URL}/api/investors`,

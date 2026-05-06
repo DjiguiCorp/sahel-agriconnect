@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { analyzeDiseaseImage } from '../lib/diseaseAnalysis';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import {
   Camera,
   Upload,
@@ -12,6 +12,7 @@ import {
   Shield,
   Stethoscope,
   ImageIcon,
+  Lock,
 } from 'lucide-react';
 
 export default function PlantDiseaseDetection() {
@@ -21,7 +22,9 @@ export default function PlantDiseaseDetection() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [farmerId, setFarmerId] = useState('');
-  const [saveMsg, setSaveMsg] = useState('');
+  const [saveState, setSaveState] = useState({ loading: false, msg: '', err: '' });
+  const [cooperativeMember, setCooperativeMember] = useState(false);
+  const [aiSolution, setAiSolution] = useState({ loading: false, err: '', data: null });
   const fileRef = useRef(null);
   const camRef = useRef(null);
 
@@ -39,7 +42,8 @@ export default function PlantDiseaseDetection() {
     setError('');
     setFile(f);
     setResult(null);
-    setSaveMsg('');
+    setSaveState({ loading: false, msg: '', err: '' });
+    setAiSolution({ loading: false, err: '', data: null });
     const r = new FileReader();
     r.onload = () => setPreview(r.result);
     r.readAsDataURL(f);
@@ -57,7 +61,8 @@ export default function PlantDiseaseDetection() {
     setLoading(true);
     setError('');
     setResult(null);
-    setSaveMsg('');
+    setSaveState({ loading: false, msg: '', err: '' });
+    setAiSolution({ loading: false, err: '', data: null });
     try {
       const data = await analyzeDiseaseImage(file);
       setResult(data);
@@ -73,32 +78,55 @@ export default function PlantDiseaseDetection() {
     }
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (!result?.disease_name) return;
+      setAiSolution({ loading: true, err: '', data: null });
+      try {
+        const r = await fetch(API_ENDPOINTS.THINKTANK.SOLVE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            problem: result.disease_name,
+            category: 'Pests & Diseases',
+            cropType: 'Non précisé',
+            region: 'Non précisée',
+            cooperativeMember,
+          }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error || `Erreur ${r.status}`);
+        if (!cancelled) setAiSolution({ loading: false, err: '', data: j });
+      } catch (e) {
+        if (!cancelled) setAiSolution({ loading: false, err: e.message || 'Solutions IA indisponibles.', data: null });
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.disease_name, cooperativeMember]);
+
   const saveResult = async () => {
-    if (!result || !isSupabaseConfigured() || !supabase) {
-      setSaveMsg('Supabase non configuré.');
-      return;
-    }
+    if (!result) return;
     const raw = farmerId.trim();
-    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const fid = raw && uuidRe.test(raw) ? raw : null;
-    if (raw && !fid) {
-      setSaveMsg('UUID agriculteur invalide ou laissez vide.');
+    if (!raw) {
+      setSaveState({ loading: false, msg: '', err: 'Ajoutez un identifiant agriculteur pour sauvegarder.' });
       return;
     }
+    setSaveState({ loading: true, msg: '', err: '' });
     try {
-      const { error: err } = await supabase.from('disease_detections').insert({
-        farmer_id: fid,
-        disease_name: result.disease_name,
-        confidence: result.confidence,
-        symptoms: result.symptoms,
-        treatment: result.treatment,
-        prevention: result.prevention,
-        source: result.source || 'unknown',
+      const r = await fetch(`${API_BASE_URL}/api/farmers/${encodeURIComponent(raw)}/disease-detection`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ result }),
       });
-      if (err) throw err;
-      setSaveMsg('Analyse enregistrée.');
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || `Erreur ${r.status}`);
+      setSaveState({ loading: false, msg: 'Analyse sauvegardée.', err: '' });
     } catch (e) {
-      setSaveMsg(e.message || 'Erreur enregistrement.');
+      setSaveState({ loading: false, msg: '', err: e.message || 'Erreur sauvegarde.' });
     }
   };
 
@@ -107,7 +135,8 @@ export default function PlantDiseaseDetection() {
     setPreview(null);
     setResult(null);
     setError('');
-    setSaveMsg('');
+    setSaveState({ loading: false, msg: '', err: '' });
+    setAiSolution({ loading: false, err: '', data: null });
     if (fileRef.current) fileRef.current.value = '';
     if (camRef.current) camRef.current.value = '';
   };
@@ -235,9 +264,7 @@ export default function PlantDiseaseDetection() {
             </div>
 
             <div className="card space-y-3">
-              <p className="text-sm text-gray-600">
-                Enregistrer dans Supabase (optionnel) — identifiant agriculteur si disponible :
-              </p>
+              <p className="text-sm text-gray-600">Identifiant agriculteur (optionnel) — pour sauvegarder le résultat :</p>
               <input
                 type="text"
                 value={farmerId}
@@ -246,11 +273,78 @@ export default function PlantDiseaseDetection() {
                 className="w-full border rounded-lg px-3 py-2 font-mono text-sm"
                 aria-label="UUID agriculteur"
               />
-              <button type="button" onClick={saveResult} className="btn-secondary">
-                Enregistrer l’analyse
+              <button type="button" onClick={saveResult} disabled={saveState.loading} className="btn-secondary inline-flex items-center gap-2">
+                {saveState.loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
+                Sauvegarder l’analyse
               </button>
-              {saveMsg && <p className="text-sm text-gray-700">{saveMsg}</p>}
+              {saveState.msg && <p className="text-sm text-green-700">{saveState.msg}</p>}
+              {saveState.err && <p className="text-sm text-red-700">{saveState.err}</p>}
             </div>
+
+            <div className="card space-y-3">
+              <h3 className="font-semibold text-brand-forest">Solutions IA recommandées</h3>
+              {aiSolution.loading && (
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                  Génération des solutions…
+                </div>
+              )}
+              {aiSolution.err && <p className="text-sm text-red-700">{aiSolution.err}</p>}
+              {aiSolution.data?.success && (
+                <div className="space-y-3 text-sm text-gray-700">
+                  {aiSolution.data.summary && (
+                    <p className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900">
+                      <strong>Synthèse :</strong> {aiSolution.data.summary}
+                    </p>
+                  )}
+                  {aiSolution.data.solution && (
+                    <div>
+                      <p className="font-semibold text-brand-forest mb-1">Solution</p>
+                      <p className="whitespace-pre-wrap">{aiSolution.data.solution}</p>
+                    </div>
+                  )}
+                  {Array.isArray(aiSolution.data.steps) && aiSolution.data.steps.length > 0 && (
+                    <div>
+                      <p className="font-semibold text-brand-forest mb-1">Étapes</p>
+                      <ol className="list-decimal list-inside space-y-1">
+                        {aiSolution.data.steps.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {typeof result.confidence === 'number' && result.confidence > 70 && (
+              <div className="card">
+                <h3 className="font-semibold text-brand-forest mb-2">Avantage coopératif</h3>
+                {cooperativeMember ? (
+                  <p className="text-sm text-gray-700">Votre coopérative peut vous connecter à un technicien spécialisé.</p>
+                ) : (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex gap-3">
+                    <Lock className="w-5 h-5 text-emerald-700 shrink-0" aria-hidden />
+                    <p className="text-sm text-emerald-900">
+                      Votre coopérative peut vous connecter à un technicien spécialisé.{' '}
+                      <Link to="/cooperative-registration" className="underline font-semibold">
+                        Rejoindre une coopérative
+                      </Link>
+                    </p>
+                  </div>
+                )}
+
+                <label className="mt-3 flex items-start gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={cooperativeMember}
+                    onChange={(e) => setCooperativeMember(e.target.checked)}
+                    className="mt-1"
+                  />
+                  Je suis membre d&apos;une coopérative
+                </label>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-3">
               <Link to="/contact" className="btn-primary inline-block text-center">

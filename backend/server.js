@@ -21,6 +21,7 @@ import licensingRouter from './routes/licensing.js';
 import equipmentFundRouter from './routes/equipmentFund.js';
 import licensesRouter from './routes/licenses.js';
 import thinktankRouter from './routes/thinktank.js';
+import soilRouter from './routes/soil.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -115,6 +116,7 @@ app.use('/api/licensing', licensingRouter);
 app.use('/api/equipment-fund', equipmentFundRouter);
 app.use('/api/licenses', licensesRouter);
 app.use('/api/thinktank', thinktankRouter);
+app.use('/api/soil', soilRouter);
 
 // Route de base - Message informatif
 app.get('/', (req, res) => {
