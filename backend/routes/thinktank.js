@@ -12,35 +12,28 @@ function parseGeminiJson(text) {
   return obj;
 }
 
-async function callGeminiForThinkTank(prompt) {
+async function callGeminiAPI(prompt) {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    const err = new Error('GEMINI_API_KEY not configured');
-    err.status = 503;
-    throw err;
-  }
+  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
 
-  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    }
+  );
 
-  const response = await fetch(GEMINI_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }]
-    })
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-  }
   const data = await response.json();
-  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!raw) throw new Error('No text in Gemini response');
-  return parseGeminiJson(raw);
+
+  if (!response.ok) {
+    throw new Error(`Gemini API error: ${response.status} - ${JSON.stringify(data)}`);
+  }
+
+  return data.candidates[0].content.parts[0].text;
 }
 
 // POST /api/thinktank/solve
@@ -83,7 +76,7 @@ Respond ONLY with JSON.
 
 If cooperativeMember is false, always include a note in cooperativeBenefit explaining that joining a cooperative gives faster access to solutions`;
 
-    const parsed = await callGeminiForThinkTank(prompt);
+    const parsed = parseGeminiJson(await callGeminiAPI(prompt));
 
     let cooperativeBenefit = String(parsed.cooperativeBenefit || '').trim();
     if (!cooperativeMemberBool) {
