@@ -2,8 +2,6 @@ import express from 'express';
 
 const router = express.Router();
 
-const GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-flash'];
-
 function stripJsonFences(text) {
   if (!text || typeof text !== 'string') return '';
   let t = text.trim();
@@ -26,40 +24,30 @@ async function callGeminiJson(prompt) {
     throw err;
   }
 
-  let lastErr;
-  for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.35, maxOutputTokens: 2048 },
-        }),
-      });
+  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        lastErr = new Error(`Gemini ${model}: ${response.status} - ${errorText}`);
-        continue;
-      }
+  const response = await fetch(GEMINI_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    })
+  });
 
-      const data = await response.json();
-      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!raw) {
-        lastErr = new Error('No text in Gemini response');
-        continue;
-      }
-
-      const parsed = JSON.parse(stripJsonFences(raw));
-      return parsed;
-    } catch (e) {
-      lastErr = e;
-    }
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
   }
 
-  throw lastErr || new Error('Gemini request failed');
+  const data = await response.json();
+  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error('No text in Gemini response');
+
+  return JSON.parse(stripJsonFences(raw));
 }
 
 // POST /api/soil/diagnose

@@ -10,7 +10,7 @@ async function callGeminiAPI(prompt) {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured in environment variables');
 
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
     const response = await fetch(GEMINI_API_URL, {
       method: 'POST',
@@ -141,7 +141,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte supplémentaire.`;
         recommendations: recommendationsData.recommendations,
         forecast: recommendationsData.forecast,
         budget: recommendationsData.budget,
-        geminiModel: 'gemini-1.5-flash',
+        geminiModel: 'gemini-1.5-flash-latest',
         geminiPrompt: prompt,
         geminiResponse: geminiResponse || 'Utilisation de recommandations par défaut'
       },
