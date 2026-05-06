@@ -6,26 +6,24 @@ const About = () => {
     <div>
       <section className="bg-gradient-to-br from-brand-forest to-brand-sage text-white py-20">
         <div className="section-container text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">À propos du projet PTASS</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">À propos de Sahel AgriConnect</h1>
           <p className="text-xl max-w-3xl mx-auto text-white/90">
-            Découvrez notre mission, nos objectifs et nos partenaires dans la transformation de l&apos;agriculture en
-            Afrique de l&apos;Ouest et au-delà
+            Plateforme africaine de digitalisation agricole, connectant les producteurs aux marchés locaux et internationaux.
           </p>
         </div>
       </section>
 
       <section className="section-container py-16">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-6">Présentation du projet PTASS</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-6">Présentation de Sahel AgriConnect</h2>
           <div className="space-y-6 text-gray-700 text-lg">
             <p>
-              Le <strong>Projet de Transformation Agricole du Sahel (PTASS)</strong> est une initiative ambitieuse
-              visant à digitaliser et moderniser l&apos;agriculture en Afrique de l&apos;Ouest et au-delà. Ce projet
-              s&apos;inscrit
-              dans une démarche de souveraineté alimentaire et de développement économique durable.
+              <strong>Sahel AgriConnect</strong> est une initiative ambitieuse visant à digitaliser et moderniser
+              l&apos;agriculture en Afrique de l&apos;Ouest et au-delà, dans une démarche de souveraineté alimentaire et
+              de développement économique durable.
             </p>
             <p>
-              Face aux défis climatiques, économiques et sécuritaires de la région, le PTASS propose une approche
+              Face aux défis climatiques, économiques et sécuritaires de la région, Sahel AgriConnect propose une approche
               innovante combinant technologies numériques, formation des agriculteurs, amélioration des infrastructures et
               valorisation des productions locales.
             </p>
@@ -105,9 +103,9 @@ const About = () => {
               },
               {
                 step: '4',
-                title: 'Phase 4 — Autonomie & Durabilité',
+                title: 'Impact Continental',
                 description:
-                  "Modèle économique autonome, souveraineté alimentaire, réplication dans toute l'Afrique subsaharienne",
+                  "Une plateforme ouverte à toute l'Afrique — connectant producteurs, investisseurs et acheteurs internationaux sans frontières.",
               },
             ].map((phase, index) => (
               <div key={index} className="flex flex-col md:flex-row gap-6">
@@ -133,8 +131,8 @@ const About = () => {
             {[
               {
                 Icon: Handshake,
-                title: 'AES',
-                text: 'Partenaire technique et financier majeur du projet, apportant expertise et ressources pour la digitalisation agricole.',
+                title: 'Djigui Corporation',
+                text: 'Organisation fondatrice de Sahel AgriConnect, engagée dans la transformation agricole et le développement économique durable en Afrique.',
               },
               {
                 Icon: Globe,
@@ -184,7 +182,7 @@ const About = () => {
               ))}
             </ul>
             <p className="text-gray-700 text-lg mt-6">
-              Le projet PTASS répond directement à ces besoins en proposant des solutions intégrées et durables.
+              Sahel AgriConnect répond directement à ces besoins en proposant des solutions intégrées et durables.
             </p>
           </div>
         </div>

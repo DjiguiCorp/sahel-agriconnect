@@ -3,7 +3,7 @@ import { Sprout } from 'lucide-react';
 const stats = [
   { value: '500+', label: 'Agriculteurs pilotes' },
   { value: '54', label: 'Pays (Afrique)' },
-  { value: '2026', label: 'Lancement' },
+  { value: 'En cours', label: 'Déploiement' },
 ];
 
 const Hero = () => {
