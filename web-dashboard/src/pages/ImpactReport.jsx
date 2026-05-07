@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { ArrowRight, Download, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function apiUrl(path) {
   const base = String(API_BASE_URL || '').replace(/\/$/, '');
@@ -36,11 +37,12 @@ function StatCard({ title, color, value, loading }) {
 }
 
 export default function ImpactReport() {
+  const { t } = useTranslation();
   const [metrics, setMetrics] = useState({
-    farmers: { loading: true, value: '—' },
-    cooperatives: { loading: true, value: '—' },
+    farmers: { loading: true, value: t('impact.metrics.unavailable') },
+    cooperatives: { loading: true, value: t('impact.metrics.unavailable') },
     investors: { loading: true, value: '0' },
-    opportunities: { loading: true, value: '—' },
+    opportunities: { loading: true, value: t('impact.metrics.unavailable') },
   });
 
   useEffect(() => {
@@ -72,12 +74,15 @@ export default function ImpactReport() {
         if (r && r.ok) {
           const j = await r.json().catch(() => ({}));
           const total = j?.pagination?.total;
-          next.farmers = { loading: false, value: Number.isFinite(Number(total)) ? String(total) : '—' };
+          next.farmers = {
+            loading: false,
+            value: Number.isFinite(Number(total)) ? String(total) : t('impact.metrics.unavailable'),
+          };
         } else {
-          next.farmers = { loading: false, value: '—' };
+          next.farmers = { loading: false, value: t('impact.metrics.unavailable') };
         }
       } catch {
-        next.farmers = { loading: false, value: '—' };
+        next.farmers = { loading: false, value: t('impact.metrics.unavailable') };
       }
 
       // Cooperatives
@@ -88,10 +93,10 @@ export default function ImpactReport() {
           const arr = Array.isArray(j?.cooperatives) ? j.cooperatives : [];
           next.cooperatives = { loading: false, value: String(arr.length) };
         } else {
-          next.cooperatives = { loading: false, value: '—' };
+          next.cooperatives = { loading: false, value: t('impact.metrics.unavailable') };
         }
       } catch {
-        next.cooperatives = { loading: false, value: '—' };
+        next.cooperatives = { loading: false, value: t('impact.metrics.unavailable') };
       }
 
       // Investors (spec: use token if available, else show 0)
@@ -105,10 +110,10 @@ export default function ImpactReport() {
             const arr = Array.isArray(j?.investors) ? j.investors : [];
             next.investors = { loading: false, value: String(arr.length) };
           } else {
-            next.investors = { loading: false, value: '—' };
+            next.investors = { loading: false, value: t('impact.metrics.unavailable') };
           }
         } catch {
-          next.investors = { loading: false, value: '—' };
+          next.investors = { loading: false, value: t('impact.metrics.unavailable') };
         }
       }
 
@@ -120,10 +125,10 @@ export default function ImpactReport() {
           const arr = Array.isArray(j?.opportunities) ? j.opportunities : [];
           next.opportunities = { loading: false, value: String(arr.length) };
         } else {
-          next.opportunities = { loading: false, value: '—' };
+          next.opportunities = { loading: false, value: t('impact.metrics.unavailable') };
         }
       } catch {
-        next.opportunities = { loading: false, value: '—' };
+        next.opportunities = { loading: false, value: t('impact.metrics.unavailable') };
       }
 
       if (!cancelled) setMetrics(next);
@@ -138,76 +143,36 @@ export default function ImpactReport() {
 
   const sdgCards = useMemo(
     () => [
-      {
-        n: 1,
-        name: 'No Poverty',
-        text:
-          'Connecting smallholder farmers to international markets increases household income and reduces dependency on subsistence agriculture.',
-        color: 'bg-red-600',
-      },
-      {
-        n: 2,
-        name: 'Zero Hunger',
-        text:
-          'Soil diagnosis, disease detection, and production optimization tools help farmers increase yields and food security.',
-        color: 'bg-yellow-500',
-      },
-      {
-        n: 8,
-        name: 'Decent Work',
-        text:
-          'Cooperative membership, certification, and export access create formal economic opportunities for rural producers.',
-        color: 'bg-purple-600',
-      },
-      {
-        n: 17,
-        name: 'Partnerships',
-        text:
-          'Multi-stakeholder platform connecting governments, NGOs, diaspora investors, and international buyers.',
-        color: 'bg-blue-600',
-      },
+      { n: 1, name: t('impact.sdg.sdg1.label'), text: t('impact.sdg.sdg1.text'), color: 'bg-red-600' },
+      { n: 2, name: t('impact.sdg.sdg2.label'), text: t('impact.sdg.sdg2.text'), color: 'bg-yellow-500' },
+      { n: 8, name: t('impact.sdg.sdg8.label'), text: t('impact.sdg.sdg8.text'), color: 'bg-purple-600' },
+      { n: 17, name: t('impact.sdg.sdg17.label'), text: t('impact.sdg.sdg17.text'), color: 'bg-blue-600' },
     ],
-    []
+    [t]
   );
 
   const tocStages = useMemo(
     () => [
-      { title: 'INPUTS', text: 'Farmer registration, AI tools, cooperative membership', border: 'border-t-green-600' },
-      {
-        title: 'ACTIVITIES',
-        text: 'Certification, training, equipment funding, transformation center matching',
-        border: 'border-t-[#B5850A]',
-      },
-      {
-        title: 'OUTPUTS',
-        text: 'Certified producers, active cooperatives, funded opportunities, export transactions',
-        border: 'border-t-purple-600',
-      },
-      {
-        title: 'OUTCOMES',
-        text: 'Increased farm income, reduced post-harvest loss, export market access',
-        border: 'border-t-blue-600',
-      },
-      {
-        title: 'IMPACT',
-        text: 'Food sovereignty, economic empowerment, generational wealth',
-        border: 'border-t-[#1a3c2e]',
-      },
+      { title: t('impact.theoryOfChange.inputs.label'), text: t('impact.theoryOfChange.inputs.text'), border: 'border-t-green-600' },
+      { title: t('impact.theoryOfChange.activities.label'), text: t('impact.theoryOfChange.activities.text'), border: 'border-t-[#B5850A]' },
+      { title: t('impact.theoryOfChange.outputs.label'), text: t('impact.theoryOfChange.outputs.text'), border: 'border-t-purple-600' },
+      { title: t('impact.theoryOfChange.outcomes.label'), text: t('impact.theoryOfChange.outcomes.text'), border: 'border-t-blue-600' },
+      { title: t('impact.theoryOfChange.impact.label'), text: t('impact.theoryOfChange.impact.text'), border: 'border-t-[#1a3c2e]' },
     ],
-    []
+    [t]
   );
 
   const progress = useMemo(
     () => [
-      { state: 'done', label: 'Platform launched' },
-      { state: 'done', label: 'First producers registered' },
-      { state: 'done', label: 'AfriYield Exchange live' },
-      { state: 'doing', label: 'First opportunity verified (in progress)' },
-      { state: 'todo', label: 'First investor matched' },
-      { state: 'todo', label: 'First deal closed' },
-      { state: 'todo', label: 'First ROI distributed' },
+      { state: 'done', label: t('impact.firstDeal.steps.launched') },
+      { state: 'done', label: t('impact.firstDeal.steps.producers') },
+      { state: 'done', label: t('impact.firstDeal.steps.exchange') },
+      { state: 'doing', label: t('impact.firstDeal.steps.verified') },
+      { state: 'todo', label: t('impact.firstDeal.steps.matched') },
+      { state: 'todo', label: t('impact.firstDeal.steps.closed') },
+      { state: 'todo', label: t('impact.firstDeal.steps.roi') },
     ],
-    []
+    [t]
   );
 
   return (
@@ -215,53 +180,51 @@ export default function ImpactReport() {
       {/* Hero */}
       <section className="bg-[#1a3c2e] text-white py-16">
         <div className="section-container text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Notre Impact — Données Réelles</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">{t('impact.title')}</h1>
           <p className="mt-4 text-lg md:text-xl text-white/90 max-w-4xl mx-auto">
-            Transparence totale sur la croissance de la plateforme et l'impact sur les communautés agricoles africaines
+            {t('impact.subtitle')}
           </p>
           <div className="mt-8 max-w-3xl mx-auto rounded-xl border border-[#B5850A]/40 bg-[#B5850A]/10 px-4 py-3 text-[#fff7df]">
-            <p className="text-sm font-semibold">Ces données sont mises à jour en temps réel depuis notre base de données.</p>
+            <p className="text-sm font-semibold">{t('impact.liveNotice')}</p>
           </div>
         </div>
       </section>
 
       {/* Section 1 — Live Platform Metrics */}
       <section className="section-container py-14">
-        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-10">Live Platform Metrics</h2>
+        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-10">{t('impact.metrics.title')}</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="Agriculteurs enregistrés"
+            title={t('impact.metrics.farmers')}
             color="green"
             loading={metrics.farmers.loading}
             value={metrics.farmers.value}
           />
           <StatCard
-            title="Coopératives actives"
+            title={t('impact.metrics.cooperatives')}
             color="gold"
             loading={metrics.cooperatives.loading}
             value={metrics.cooperatives.value}
           />
           <StatCard
-            title="Investisseurs inscrits"
+            title={t('impact.metrics.investors')}
             color="purple"
             loading={metrics.investors.loading}
             value={metrics.investors.value}
           />
           <StatCard
-            title="Opportunités AfriYield actives"
+            title={t('impact.metrics.opportunities')}
             color="forest"
             loading={metrics.opportunities.loading}
             value={metrics.opportunities.value}
           />
         </div>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Note: certains métriques nécessitent un accès admin (token) et peuvent afficher "—" si indisponibles.
-        </p>
       </section>
 
       {/* Section 2 — SDG Alignment */}
       <section className="section-container py-14 pt-0">
-        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-10">SDG Alignment</h2>
+        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-2">{t('impact.sdg.title')}</h2>
+        <p className="text-center text-gray-700 mb-10">{t('impact.sdg.subtitle')}</p>
         <div className="grid md:grid-cols-2 gap-6">
           {sdgCards.map((c) => (
             <div key={c.n} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -281,7 +244,8 @@ export default function ImpactReport() {
 
       {/* Section 3 — Theory of Change */}
       <section className="section-container py-14 pt-0">
-        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-10">Theory of Change</h2>
+        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-2">{t('impact.theoryOfChange.title')}</h2>
+        <p className="text-center text-gray-700 mb-10">{t('impact.theoryOfChange.subtitle')}</p>
         <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] md:items-stretch">
           {tocStages.map((s, i) => (
             <div key={s.title} className="contents md:block">
@@ -301,7 +265,8 @@ export default function ImpactReport() {
 
       {/* Section 4 — First Transaction Progress */}
       <section className="section-container py-14 pt-0">
-        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-10">First Transaction Progress</h2>
+        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-2">{t('impact.firstDeal.title')}</h2>
+        <p className="text-center text-gray-700 mb-10">{t('impact.firstDeal.subtitle')}</p>
         <div className="max-w-3xl mx-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="space-y-4">
             {progress.map((p) => (
@@ -328,46 +293,40 @@ export default function ImpactReport() {
 
       {/* Section 5 — Download Resources */}
       <section className="section-container py-14 pt-0 pb-20">
-        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-10">Ressources</h2>
+        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-10">{t('impact.resources.title')}</h2>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-extrabold text-[#1a3c2e]">Platform Overview</h3>
-            <p className="mt-2 text-gray-700 text-sm">
-              One-page summary of Sahel AgriConnect and AfriYield Exchange
-            </p>
+            <h3 className="text-xl font-extrabold text-[#1a3c2e]">{t('impact.resources.overview.title')}</h3>
+            <p className="mt-2 text-gray-700 text-sm">{t('impact.resources.overview.desc')}</p>
             <Link
               to="/contact"
               state={{ subject: 'Platform Overview PDF' }}
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1a3c2e] text-white font-extrabold py-2.5 hover:bg-[#143326]"
             >
               <Download className="w-4 h-4" aria-hidden />
-              Télécharger (PDF)
+              {t('impact.resources.overview.cta')}
             </Link>
           </div>
 
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-extrabold text-[#1a3c2e]">Investment Prospectus</h3>
-            <p className="mt-2 text-gray-700 text-sm">
-              AfriYield Exchange investment framework and ROI structure
-            </p>
+            <h3 className="text-xl font-extrabold text-[#1a3c2e]">{t('impact.resources.prospectus.title')}</h3>
+            <p className="mt-2 text-gray-700 text-sm">{t('impact.resources.prospectus.desc')}</p>
             <Link
               to="/afri-yield/register"
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#B5850A] text-white font-extrabold py-2.5 hover:bg-[#9a7109]"
             >
-              Demander le prospectus
+              {t('impact.resources.prospectus.cta')}
             </Link>
           </div>
 
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-extrabold text-[#1a3c2e]">Data Governance Policy</h3>
-            <p className="mt-2 text-gray-700 text-sm">
-              Our data sovereignty and privacy framework
-            </p>
+            <h3 className="text-xl font-extrabold text-[#1a3c2e]">{t('impact.resources.governance.title')}</h3>
+            <p className="mt-2 text-gray-700 text-sm">{t('impact.resources.governance.desc')}</p>
             <Link
               to="/governance"
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#1a3c2e] text-[#1a3c2e] font-extrabold py-2.5 hover:bg-[#1a3c2e] hover:text-white transition"
             >
-              Voir la politique
+              {t('impact.resources.governance.cta')}
             </Link>
           </div>
         </div>

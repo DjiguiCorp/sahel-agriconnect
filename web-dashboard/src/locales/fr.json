@@ -871,5 +871,95 @@
       "empty": "Aucune notification en attente."
     }
   }
+  ,
+  "impact": {
+    "title": "Notre Impact — Données Réelles",
+    "subtitle": "Transparence totale sur la croissance de la plateforme et l'impact sur les communautés agricoles africaines",
+    "liveNotice": "Ces données sont mises à jour en temps réel depuis notre base de données.",
+    "metrics": {
+      "title": "Métriques en Temps Réel",
+      "farmers": "Agriculteurs enregistrés",
+      "cooperatives": "Coopératives actives",
+      "investors": "Investisseurs inscrits",
+      "opportunities": "Opportunités AfriYield actives",
+      "loading": "Chargement...",
+      "unavailable": "—"
+    },
+    "sdg": {
+      "title": "Alignement avec les ODD",
+      "subtitle": "Comment Sahel AgriConnect contribue aux Objectifs de Développement Durable de l'ONU",
+      "sdg1": {
+        "label": "Pas de pauvreté",
+        "text": "Connecter les petits producteurs aux marchés internationaux augmente les revenus des ménages et réduit la dépendance à l'agriculture de subsistance."
+      },
+      "sdg2": {
+        "label": "Faim zéro",
+        "text": "Le diagnostic sol, la détection de maladies et les outils d'optimisation de la production aident les agriculteurs à augmenter leurs rendements et la sécurité alimentaire."
+      },
+      "sdg8": {
+        "label": "Travail décent",
+        "text": "L'adhésion aux coopératives, la certification et l'accès à l'export créent des opportunités économiques formelles pour les producteurs ruraux."
+      },
+      "sdg17": {
+        "label": "Partenariats",
+        "text": "Plateforme multi-acteurs connectant gouvernements, ONG, investisseurs diaspora et acheteurs internationaux."
+      }
+    },
+    "theoryOfChange": {
+      "title": "Théorie du Changement",
+      "subtitle": "Comment les intrants de la plateforme mènent à un impact agricole durable",
+      "inputs": {
+        "label": "Intrants",
+        "text": "Inscription des agriculteurs, outils IA, adhésion aux coopératives"
+      },
+      "activities": {
+        "label": "Activités",
+        "text": "Certification, formation, fonds d'équipement, mise en relation avec les centres de transformation"
+      },
+      "outputs": {
+        "label": "Extrants",
+        "text": "Producteurs certifiés, coopératives actives, opportunités financées, transactions export"
+      },
+      "outcomes": {
+        "label": "Résultats",
+        "text": "Augmentation des revenus agricoles, réduction des pertes post-récolte, accès aux marchés d'exportation"
+      },
+      "impact": {
+        "label": "Impact",
+        "text": "Souveraineté alimentaire, autonomisation économique, richesse générationnelle"
+      }
+    },
+    "firstDeal": {
+      "title": "Progression vers la Première Transaction",
+      "subtitle": "Notre engagement à clôturer le premier vrai accord — suivi publiquement",
+      "steps": {
+        "launched": "Plateforme lancée",
+        "producers": "Premiers producteurs enregistrés",
+        "exchange": "AfriYield Exchange en ligne",
+        "verified": "Première opportunité vérifiée",
+        "matched": "Premier investisseur mis en relation",
+        "closed": "Premier accord conclu",
+        "roi": "Premier ROI distribué"
+      }
+    },
+    "resources": {
+      "title": "Télécharger les Ressources",
+      "overview": {
+        "title": "Présentation de la Plateforme",
+        "desc": "Résumé d'une page de Sahel AgriConnect et AfriYield Exchange",
+        "cta": "Télécharger (PDF)"
+      },
+      "prospectus": {
+        "title": "Prospectus d'Investissement",
+        "desc": "Cadre d'investissement et structure ROI d'AfriYield Exchange",
+        "cta": "Demander le prospectus"
+      },
+      "governance": {
+        "title": "Politique de Gouvernance des Données",
+        "desc": "Notre cadre de souveraineté des données et de confidentialité",
+        "cta": "Voir la politique"
+      }
+    }
+  }
 }
 
