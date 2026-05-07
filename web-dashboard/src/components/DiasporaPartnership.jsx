@@ -125,19 +125,20 @@ export default function DiasporaPartnership() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
-      <div>
-        <h2 className="text-3xl font-bold text-brand-forest mb-2 flex items-center gap-2">
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-brand-forest mb-2 flex items-center justify-center gap-2 flex-wrap">
           <Globe className="w-8 h-8 text-brand-sage" aria-hidden />
           Partenariat diaspora
         </h2>
-        <p className="text-gray-600 max-w-2xl">
+        <p className="text-gray-600 max-w-2xl mx-auto">
           Producteurs d&apos;Afrique de l&apos;Ouest et au-delà et acheteurs aux États-Unis : inscrivez-vous et
           explorez les profils disponibles.
         </p>
       </div>
 
-      <div className="border-b border-gray-200 flex flex-wrap gap-2">
+      <div className="flex justify-center border-b mb-6">
+        <div className="flex flex-wrap gap-2 justify-center">
         <button
           type="button"
           onClick={() => {
@@ -165,6 +166,7 @@ export default function DiasporaPartnership() {
         >
           Producteurs disponibles ({producers.length})
         </button>
+        </div>
       </div>
 
       {formMsg && (
