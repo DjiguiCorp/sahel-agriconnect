@@ -24,6 +24,7 @@ import thinktankRouter from './routes/thinktank.js';
 import soilRouter from './routes/soil.js';
 import expertsRouter from './routes/experts.js';
 import diasporaRouter from './routes/diaspora.js';
+import Admin from './models/Admin.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -198,11 +199,57 @@ app.use((err, req, res, next) => {
   });
 });
 
+async function ensureAdminAccount() {
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    
+    if (!adminEmail || !adminPassword) {
+      console.log('⚠️ ADMIN_EMAIL or ADMIN_PASSWORD not set in environment');
+      return;
+    }
+
+    // Check if admin with this email already exists
+    const existing = await Admin.findOne({ email: adminEmail.toLowerCase() });
+    
+    if (existing) {
+      console.log('✅ Admin account exists:', adminEmail);
+      return;
+    }
+
+    // Check if any admin exists with old email — update it
+    const anyAdmin = await Admin.findOne({ role: { $in: ['super-admin', 'admin'] } });
+    
+    if (anyAdmin) {
+      // Update existing admin to use new email and password
+      anyAdmin.email = adminEmail.toLowerCase();
+      anyAdmin.password = adminPassword;
+      anyAdmin.role = 'super-admin';
+      await anyAdmin.save();
+      console.log('✅ Admin account updated to:', adminEmail);
+      return;
+    }
+
+    // No admin exists — create one
+    await Admin.create({
+      name: 'Super Admin',
+      email: adminEmail.toLowerCase(),
+      password: adminPassword,
+      role: 'super-admin'
+    });
+    console.log('✅ Admin account created:', adminEmail);
+
+  } catch (error) {
+    console.error('❌ Error ensuring admin account:', error.message);
+  }
+}
+
 // Connexion MongoDB
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sahel-agriconnect');
     console.log('✅ MongoDB connecté avec succès');
+    await ensureAdminAccount();
   } catch (error) {
     console.error('❌ Erreur de connexion MongoDB:', error.message);
     process.exit(1);
