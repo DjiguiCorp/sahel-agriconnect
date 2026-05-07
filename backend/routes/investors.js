@@ -1,5 +1,6 @@
 import express from 'express';
 import Investor from '../models/Investor.js';
+import InvestorNotification from '../models/InvestorNotification.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { confirmInvestorRegistration, notifyAdminNewInvestor } from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
@@ -59,6 +60,15 @@ router.post('/register', async (req, res) => {
       source: 'investor_registration',
     }).catch(console.error);
 
+    InvestorNotification.create({
+      investorEmail: investor.email,
+      type: 'welcome',
+      title: 'Welcome to AfriYield Exchange',
+      message:
+        'Your investor account is active. Browse opportunities and build your African agricultural portfolio.',
+      link: '/afri-yield/portal',
+    }).catch(console.error);
+
     res.status(201).json({ success: true, message: 'Registration received' });
   } catch (err) {
     if (err.code === 11000) {
@@ -70,6 +80,23 @@ router.post('/register', async (req, res) => {
     console.error(err);
     res.status(400).json({ success: false, error: err.message || 'Registration failed' });
   }
+});
+
+router.get('/', async (req, res, next) => {
+  const q = req.query.email;
+  if (q != null && String(q).trim() !== '') {
+    try {
+      const email = String(q).trim().toLowerCase();
+      const investor = await Investor.findOne({ email }).lean();
+      if (!investor) {
+        return res.json({ success: true, investors: [], investor: null });
+      }
+      return res.json({ success: true, investors: [investor], investor });
+    } catch (e) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  }
+  next();
 });
 
 router.get('/', authenticateToken, async (req, res) => {

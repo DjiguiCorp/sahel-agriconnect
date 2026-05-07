@@ -263,13 +263,23 @@ export default function AfriYieldExchange() {
           <h2 className="text-3xl md:text-4xl font-extrabold text-white">{t('afriYield.ctaTitle')}</h2>
           <p className="mt-4 max-w-2xl mx-auto text-lg text-white/85">{t('afriYield.ctaSubtitle')}</p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={() => navigate('/afri-yield/register')}
-              className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-[#B5850A] px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-[#9a7109]"
-            >
-              {t('afriYield.registerAsInvestor')}
-            </button>
+            {localStorage.getItem('afriyield_investor_email') ? (
+              <Link
+                to="/afri-yield/portal"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl px-8 py-4 font-bold text-[#0d1f17] text-lg shadow-lg"
+                style={{ background: '#B5850A' }}
+              >
+                🌾 Access My Portfolio →
+              </Link>
+            ) : (
+              <Link
+                to="/afri-yield/register"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl px-8 py-4 font-bold text-[#0d1f17] text-lg shadow-lg"
+                style={{ background: '#B5850A' }}
+              >
+                Register as Investor →
+              </Link>
+            )}
             <Link
               to="/contact"
               className="inline-flex w-full sm:w-auto justify-center rounded-lg border-2 border-white px-8 py-4 text-lg font-bold text-white transition hover:bg-white/10"

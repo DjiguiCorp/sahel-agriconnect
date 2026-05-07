@@ -960,6 +960,194 @@
         "cta": "Voir la politique"
       }
     }
+  },
+  "investorPortal": {
+    "tabs": {
+      "home": "Accueil",
+      "myFarm": "Ma Ferme",
+      "prices": "Prix",
+      "news": "Actualités",
+      "help": "Aide"
+    },
+    "access": {
+      "title": "Votre investissement grandit en Afrique",
+      "subtitle": "Entrez votre email pour voir comment votre argent travaille pour les agriculteurs africains",
+      "placeholder": "votre@email.com",
+      "submit": "Voir mon investissement",
+      "loading": "Récupération de vos informations...",
+      "newHere": "Nouveau ici?",
+      "register": "S'inscrire comme investisseur — c'est gratuit",
+      "notFound": "Nous n'avons pas trouvé votre compte — essayez un autre email",
+      "notFoundSub": "Pas encore inscrit? Cela prend seulement 2 minutes.",
+      "startJourney": "Commencer mon parcours",
+      "tryAgain": "Essayer un autre email"
+    },
+    "trust": {
+      "secure": "Sécurisé",
+      "panAfrican": "Panafricain",
+      "realReturns": "Vrais retours"
+    },
+    "onboarding": {
+      "title": "Votre premier investissement dans l'agriculture africaine",
+      "step1": "Inscrivez votre profil investisseur",
+      "step2": "Choisissez une coopérative de karité ou de sésame",
+      "step3": "Regardez votre investissement grandir — payé deux fois par an",
+      "body": "Vous êtes inscrit. Choisissez maintenant une coopérative à soutenir. Votre argent finance des équipements que les agriculteurs utilisent pour produire le karité ou le sésame. Deux fois par an, vous recevez une part de ce qu'ils gagnent.",
+      "cta": "Voir les opportunités disponibles"
+    },
+    "home": {
+      "greeting": "Bonjour",
+      "subtitle": "Voici comment votre investissement africain se porte aujourd'hui",
+      "contribution": "Votre contribution",
+      "growingIn": "qui grandit en",
+      "nextHarvest": "Prochain versement récolte",
+      "journeyProgress": "Progression du parcours",
+      "step1": "Investissement reçu",
+      "step2": "Équipement acheté",
+      "step3": "Agriculteurs au travail",
+      "step4": "Votre versement récolte",
+      "seeDetails": "Voir tous les détails",
+      "activity": "Ce qui se passe avec votre investissement",
+      "profileVerified": "Votre profil a été vérifié",
+      "harvestSeason": "La saison de récolte du karité commence dans votre région",
+      "payoutComing": "Votre prochain versement arrive",
+      "today": "Aujourd'hui",
+      "comingUp": "Bientôt"
+    },
+    "hot": {
+      "title": "Le beurre de karité est très demandé en ce moment",
+      "body": "Les acheteurs européens recherchent du karité africain certifié. 3 coopératives sont ouvertes à l'investissement.",
+      "cta": "Voir les opportunités"
+    },
+    "portfolio": {
+      "title": "Vos graines dans la terre",
+      "subtitle": "Chaque investissement que vous faites soutient de vrais agriculteurs africains et leurs familles",
+      "empty": "Vous n'avez pas encore planté",
+      "emptySub": "Choisissez une coopérative et faites votre première contribution. Même 1 000$ fait une vraie différence.",
+      "chooseCta": "Choisir mon premier investissement",
+      "yourContribution": "Votre contribution",
+      "expectedReturn": "Retour attendu",
+      "payoutDate": "Date de versement",
+      "perYear": "par an",
+      "addMore": "Ajouter à cet investissement",
+      "addInvestment": "Choisir une autre coopérative",
+      "seeFarmers": "Voir les agriculteurs",
+      "steps": {
+        "received": "Investissement reçu",
+        "purchased": "Équipement acheté",
+        "working": "Agriculteurs au travail",
+        "payout": "Votre versement récolte"
+      },
+      "status": { "active": "Actif", "completed": "Complété", "paused": "En pause" },
+      "payout": { "scheduled": "Prévu", "paid": "Versé", "delayed": "Retardé" },
+      "approximate": "env."
+    },
+    "prices": {
+      "title": "Ce que valent les cultures africaines aujourd'hui",
+      "subtitle": "Ce sont les prix que les acheteurs internationaux paient pour les produits africains certifiés",
+      "perKg": "par kilogramme",
+      "names": {
+        "shea": "Beurre de karité",
+        "sesame": "Sésame",
+        "cashew": "Noix de cajou",
+        "mango": "Mangue séchée"
+      },
+      "demand": {
+        "high": "Les acheteurs veulent ça MAINTENANT",
+        "medium": "Bonne demande",
+        "low": "Lent pour l'instant"
+      },
+      "trend": { "up": "En hausse", "stable": "Stable", "down": "En baisse" },
+      "context": {
+        "shea": "Les marques cosmétiques européennes achètent activement du beurre de karité certifié",
+        "sesame": "Le Japon et la Chine sont les plus grands acheteurs de sésame africain en ce moment",
+        "cashew": "La demande mondiale de cajou augmente régulièrement des États-Unis et de l'UE",
+        "mango": "La mangue séchée d'Afrique de l'Ouest gagne en popularité sur les marchés européens"
+      },
+      "alertOn": "Nous vous préviendrons quand les prix changeront significativement",
+      "alertOff": "Recevoir des alertes",
+      "premiumTitle": "Vous voulez savoir avant tout le monde?",
+      "premiumBody": "Les membres Premium reçoivent des alertes de prix sur leur téléphone quand les prix des commodités africaines bougent. Ils reçoivent aussi des rapports mensuels écrits en langage simple — sans jargon financier.",
+      "premiumPrice": "49$ par mois — annulez à tout moment",
+      "premiumCta": "En savoir plus sur Premium"
+    },
+    "news": {
+      "title": "Ce qui se passe dans l'agriculture africaine",
+      "subtitle": "Des nouvelles qui comptent pour votre investissement — en langage simple",
+      "readMore": "Lire la suite",
+      "readingTime": "min de lecture",
+      "premiumLabel": "Membres Premium uniquement",
+      "premiumUnlock": "Ceci est pour les membres Premium. Rejoignez pour 49$/mois pour lire l'histoire complète.",
+      "unlock": "Débloquer",
+      "tags": {
+        "market": "Actualité marché",
+        "price": "Changement de prix",
+        "goodToKnow": "Bon à savoir",
+        "action": "Action requise",
+        "opportunity": "Nouvelle opportunité"
+      },
+      "items": {
+        "n1title": "Les prix du karité augmentent — bonne nouvelle pour les investisseurs",
+        "n1body": "Les volumes d'exportation du beurre de karité d'Afrique de l'Ouest ont augmenté de 23% cette année alors que les marques cosmétiques européennes cherchent des sources africaines certifiées.",
+        "n2title": "Les prix du sésame se stabilisent après un début d'année difficile",
+        "n2body": "Les prix mondiaux du sésame sont revenus dans une plage stable après des perturbations d'approvisionnement plus tôt dans l'année. Bon moment pour envisager d'investir.",
+        "n3title": "Le Sénégal annonce de nouvelles incitations pour les exportateurs de karité certifiés",
+        "n4title": "West Africa Shea Alliance ouvre un nouveau tour d'investissement",
+        "n5title": "Comment la saison sèche affecte les rendements du sésame cette année"
+      }
+    },
+    "help": {
+      "title": "Comment pouvons-nous vous aider?",
+      "subtitle": "Appuyez sur une question ci-dessous ou envoyez-nous un message",
+      "questions": {
+        "q1": "Quand suis-je payé?",
+        "q2": "Mon argent est-il en sécurité?",
+        "q3": "Comment ajouter plus?",
+        "q4": "C'est quoi Piste A ou B?",
+        "q5": "Comment voir mes agriculteurs?"
+      },
+      "answers": {
+        "a1": "Vous êtes payé deux fois par an — en juin et en décembre. Nous vous envoyons un message WhatsApp et un email 7 jours avant que votre argent arrive.",
+        "a2": "L'argent Piste A achète de vrais équipements — comme un tracteur ou une machine de séchage — qui appartient à la coopérative. L'équipement est toujours là comme garantie. La Piste B est un accord de partage de revenus avec un contrat signé.",
+        "a3": "Allez dans l'onglet 'Ma Ferme' et appuyez sur 'Ajouter à cet investissement'. Ou parcourez les nouvelles opportunités et choisissez une autre coopérative.",
+        "a4": "La Piste A signifie que votre argent achète de vrais équipements pour les agriculteurs. C'est l'option la plus sûre. La Piste B signifie que votre argent aide à développer et vendre la marque d'un produit. Cela peut rapporter plus mais prend plus de temps.",
+        "a5": "Dans 'Ma Ferme', appuyez sur 'Voir les agriculteurs'. Vous verrez la chaîne d'approvisionnement — du paysan qui a cultivé la récolte à la coopérative qui l'a transformée."
+      },
+      "stillNeedHelp": "Vous avez encore une question?",
+      "questionPlaceholder": "Demandez des informations sur votre portefeuille, quand vous êtes payé, comment investir plus...",
+      "send": "Envoyer ma question",
+      "responseTime": "Nous répondons dans les 24 heures — souvent bien plus vite",
+      "sent": "Question reçue — nous vous répondrons dans les 24 heures.",
+      "contactTitle": "Autres façons de nous contacter",
+      "whatsapp": "Discuter sur WhatsApp",
+      "email": "Envoyer un email",
+      "call": "Réserver un appel de 30 min — 99$",
+      "callInclude": "Inclut un résumé écrit et des recommandations personnalisées"
+    },
+    "premium": {
+      "badge": "PREMIUM",
+      "title": "Rejoindre AfriYield Premium",
+      "body": "Premium vous donne les outils qu'utilisent les investisseurs sérieux dans l'agriculture africaine. Pas de graphiques compliqués — juste des informations claires sur où mettre votre argent et quand agir.",
+      "features": [
+        "Soyez notifié quand les prix du karité ou du sésame bougent",
+        "Accès WhatsApp direct à notre équipe",
+        "Rapport mensuel en langage simple — sans jargon",
+        "Voir les nouvelles opportunités 24 heures avant tout le monde",
+        "Savoir ce qui se passe pays par pays"
+      ],
+      "price": "49$ par mois",
+      "nofees": "Annulez à tout moment. Pas de frais cachés.",
+      "cta": "Rejoindre Premium",
+      "later": "Peut-être plus tard",
+      "currentFree": "Plan actuel: Gratuit",
+      "currentPremium": "Plan actuel: Premium"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "Aucune notification pour l'instant",
+      "markRead": "Tout marquer comme lu"
+    },
+    "signOut": "Se déconnecter"
   }
 }
 

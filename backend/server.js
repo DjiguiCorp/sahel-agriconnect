@@ -30,6 +30,7 @@ import waitlistRouter from './routes/waitlist.js';
 import investmentsRouter from './routes/investments.js';
 import supplychainRouter from './routes/supplychain.js';
 import notificationsRouter from './routes/notifications.js';
+import investorNotificationsRouter from './routes/investorNotifications.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -132,6 +133,7 @@ app.use('/api/waitlist', waitlistRouter);
 app.use('/api/investments', investmentsRouter);
 app.use('/api/supplychain', supplychainRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/investor-notifications', investorNotificationsRouter);
 
 // Route de base - Message informatif
 app.get('/', (req, res) => {

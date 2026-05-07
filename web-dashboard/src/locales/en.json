@@ -960,6 +960,206 @@
         "cta": "View Policy"
       }
     }
+  },
+  "investorPortal": {
+    "tabs": {
+      "home": "Home",
+      "myFarm": "My Farm",
+      "prices": "Prices",
+      "news": "News",
+      "help": "Help"
+    },
+    "access": {
+      "title": "Your investment is growing in Africa",
+      "subtitle": "Enter your email to see how your money is working for African farmers",
+      "placeholder": "your@email.com",
+      "submit": "See my investment",
+      "loading": "Getting your investment info...",
+      "newHere": "New here?",
+      "register": "Register as an investor — it's free",
+      "notFound": "We couldn't find your account — try a different email",
+      "notFoundSub": "Not registered yet? It only takes 2 minutes.",
+      "startJourney": "Start my journey",
+      "tryAgain": "Try a different email"
+    },
+    "trust": {
+      "secure": "Secure",
+      "panAfrican": "Pan-African",
+      "realReturns": "Real returns"
+    },
+    "onboarding": {
+      "title": "Your first investment in African agriculture",
+      "step1": "Register your investor profile",
+      "step2": "Choose a shea butter or sesame cooperative",
+      "step3": "Watch your investment grow — get paid twice a year",
+      "body": "You've registered. Now choose a cooperative to support. Your money funds equipment that farmers use to grow and process shea butter or sesame. Twice a year, you receive a share of what they earn.",
+      "cta": "See available opportunities"
+    },
+    "home": {
+      "greeting": "Hello",
+      "subtitle": "Here is how your African investment is doing today",
+      "contribution": "Your contribution",
+      "growingIn": "growing in",
+      "nextHarvest": "Next harvest payout",
+      "journeyProgress": "Journey progress",
+      "step1": "Investment received",
+      "step2": "Equipment purchased",
+      "step3": "Farmers at work",
+      "step4": "Your harvest payout",
+      "seeDetails": "See full details",
+      "activity": "What is happening with your investment",
+      "profileVerified": "Your profile was verified",
+      "harvestSeason": "Shea butter harvest season starts in your region",
+      "payoutComing": "Your next payout is coming",
+      "today": "Today",
+      "comingUp": "Coming up"
+    },
+    "hot": {
+      "title": "Shea Butter is in high demand right now",
+      "body": "European buyers are looking for certified African shea. 3 cooperatives are open for investment.",
+      "cta": "See opportunities"
+    },
+    "portfolio": {
+      "title": "Your seeds in the ground",
+      "subtitle": "Every investment you make supports real African farmers and their families",
+      "empty": "You haven't planted anything yet",
+      "emptySub": "Choose a cooperative below and make your first contribution. As little as $1,000 makes a real difference.",
+      "chooseCta": "Choose my first investment",
+      "yourContribution": "Your contribution",
+      "expectedReturn": "Expected return",
+      "payoutDate": "Payout date",
+      "perYear": "per year",
+      "addMore": "Add more to this investment",
+      "addInvestment": "Choose another cooperative",
+      "seeFarmers": "See the farmers",
+      "steps": {
+        "received": "Investment received",
+        "purchased": "Equipment purchased",
+        "working": "Farmers at work",
+        "payout": "Your harvest payout"
+      },
+      "status": {
+        "active": "Active",
+        "completed": "Completed",
+        "paused": "Paused"
+      },
+      "payout": {
+        "scheduled": "Scheduled",
+        "paid": "Paid",
+        "delayed": "Delayed"
+      },
+      "approximate": "approx."
+    },
+    "prices": {
+      "title": "What African crops are worth today",
+      "subtitle": "These are the prices international buyers pay for certified African products",
+      "perKg": "per kilogram",
+      "names": {
+        "shea": "Shea butter",
+        "sesame": "Sesame",
+        "cashew": "Cashew",
+        "mango": "Dried mango"
+      },
+      "demand": {
+        "high": "Buyers want this NOW",
+        "medium": "Good demand",
+        "low": "Slow right now"
+      },
+      "trend": {
+        "up": "Going up",
+        "stable": "Steady",
+        "down": "Going down"
+      },
+      "context": {
+        "shea": "European cosmetics brands are actively buying certified shea butter",
+        "sesame": "Japan and China are the biggest buyers of African sesame right now",
+        "cashew": "Global cashew demand is growing steadily from the US and EU",
+        "mango": "Dried mango from West Africa is gaining popularity in European markets"
+      },
+      "alertOn": "We will let you know when prices change significantly",
+      "alertOff": "Get alerts for this",
+      "premiumTitle": "Want to know before everyone else?",
+      "premiumBody": "Premium members get price alerts on their phone when African commodity prices move. They also get monthly reports written in plain language — no financial jargon.",
+      "premiumPrice": "$49 per month — cancel any time",
+      "premiumCta": "Learn more about Premium"
+    },
+    "news": {
+      "title": "What is happening in African agriculture",
+      "subtitle": "News that matters for your investment — written in plain language",
+      "readMore": "Read more",
+      "readingTime": "min read",
+      "premiumLabel": "Premium members only",
+      "premiumUnlock": "This is for Premium members. Join for $49/month to read the full story.",
+      "unlock": "Unlock",
+      "tags": {
+        "market": "Market news",
+        "price": "Price change",
+        "goodToKnow": "Good to know",
+        "action": "Action needed",
+        "opportunity": "New opportunity"
+      },
+      "items": {
+        "n1title": "Shea butter prices are going up — good news for investors",
+        "n1body": "West African shea butter export volumes are up 23% this year as European cosmetics brands look for certified African sources.",
+        "n2title": "Sesame prices settle after a bumpy start to the year",
+        "n2body": "Global sesame prices are back to a stable range after supply disruptions earlier in the year. Good time to consider investing.",
+        "n3title": "Senegal announces new incentives for certified shea exporters",
+        "n4title": "West Africa Shea Alliance opens new investment round",
+        "n5title": "How the dry season is affecting sesame yields this year"
+      }
+    },
+    "help": {
+      "title": "How can we help you?",
+      "subtitle": "Tap a question below or send us a message",
+      "questions": {
+        "q1": "When do I get paid?",
+        "q2": "Is my money safe?",
+        "q3": "How do I add more?",
+        "q4": "What is Track A or B?",
+        "q5": "How do I see my farmers?"
+      },
+      "answers": {
+        "a1": "You get paid twice a year — in June and December. We send you a message on WhatsApp and email 7 days before your money arrives.",
+        "a2": "Track A money buys real equipment — like a tractor or drying machine — that belongs to the cooperative. The equipment is always there as security. Track B is a revenue-share deal with a signed agreement.",
+        "a3": "Go to 'My Farm' tab and tap 'Add more to this investment'. Or browse new opportunities and choose a different cooperative.",
+        "a4": "Track A means your money buys real equipment for farmers. It is the safer option. Track B means your money goes into growing and selling the brand of a product. It can earn more but takes longer.",
+        "a5": "In 'My Farm', tap 'See the farmers'. You will see the supply chain — from the farmer who grew the crop to the cooperative that processed it."
+      },
+      "stillNeedHelp": "Still have a question?",
+      "questionPlaceholder": "Ask about your portfolio, when you get paid, how to invest more...",
+      "send": "Send my question",
+      "responseTime": "We reply within 24 hours — usually much faster",
+      "sent": "Question received — we will get back to you within 24 hours.",
+      "contactTitle": "Other ways to reach us",
+      "whatsapp": "Chat on WhatsApp",
+      "email": "Send an email",
+      "call": "Book a 30-min call — $99",
+      "callInclude": "Includes a written summary and personalized recommendations"
+    },
+    "premium": {
+      "badge": "PREMIUM",
+      "title": "Join AfriYield Premium",
+      "body": "Premium gives you the tools serious African agriculture investors use. No complicated charts — just clear information about where to put your money and when to act.",
+      "features": [
+        "Get notified when shea or sesame prices move",
+        "WhatsApp access directly to our team",
+        "Monthly report in plain language — no jargon",
+        "See new opportunities 24 hours before everyone else",
+        "Know what is happening country by country"
+      ],
+      "price": "$49 per month",
+      "nofees": "Cancel any time. No hidden fees.",
+      "cta": "Join Premium",
+      "later": "Maybe later",
+      "currentFree": "Current plan: Free",
+      "currentPremium": "Current plan: Premium"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "No notifications yet",
+      "markRead": "Mark all as read"
+    },
+    "signOut": "Sign out"
   }
 }
 

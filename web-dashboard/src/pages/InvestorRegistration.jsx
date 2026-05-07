@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { CheckCircle2, Loader2 } from 'lucide-react';
@@ -10,6 +11,7 @@ const HEARD = ['Diaspora community', 'Social media', 'Friend or family', 'Event 
 
 export default function InvestorRegistration() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { registerUser } = useRegisteredUser();
   const [form, setForm] = useState({
     fullName: '',
@@ -101,8 +103,11 @@ export default function InvestorRegistration() {
         setError(data.error || data.message || t('afriYield.registration.errorGeneric'));
         return;
       }
+      localStorage.setItem('afriyield_investor_email', form.email);
+      localStorage.setItem('afriyield_investor_name', form.fullName);
       setSuccess(true);
       registerUser(form.email, form.fullName);
+      setTimeout(() => navigate('/afri-yield/portal'), 2000);
     } catch (err) {
       setError(err.message || t('afriYield.registration.networkError'));
     } finally {
