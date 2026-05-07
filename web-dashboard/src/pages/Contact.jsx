@@ -41,8 +41,8 @@ const Contact = () => {
         <div className="section-container text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Contact / Inscription</h1>
           <p className="text-lg text-white/90 max-w-2xl mx-auto">
-            Rejoignez le projet PTASS et participez à la transformation de l&apos;agriculture en Afrique de l&apos;Ouest et
-            au-delà
+            Rejoignez Sahel AgriConnect et participez à la transformation de l&apos;agriculture en Afrique de l&apos;Ouest
+            et au-delà
           </p>
         </div>
       </section>

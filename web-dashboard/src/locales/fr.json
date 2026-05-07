@@ -35,8 +35,8 @@
   "home": {
     "title": "Sahel AgriConnect",
     "subtitle": "Digitalisation de l'agriculture pour l'Afrique de l'Ouest et au-delà",
-    "projectTitle": "Projet PTASS",
-    "projectDescription": "Le Projet de Transformation Agricole du Sahel (PTASS) vise à digitaliser et moderniser l'agriculture en Afrique de l'Ouest et au-delà pour atteindre la souveraineté alimentaire et valoriser les productions locales.",
+    "projectTitle": "Sahel AgriConnect",
+    "projectDescription": "Sahel AgriConnect est une plateforme africaine de digitalisation agricole, connectant les producteurs aux marchés locaux et internationaux, et permettant la souveraineté alimentaire à travers le continent.",
     "objectives": {
       "foodSovereignty": {
         "title": "Souveraineté Alimentaire",
@@ -47,8 +47,8 @@
         "description": "Maximiser la valeur des productions agricoles locales et améliorer les revenus des agriculteurs et coopératives."
       },
       "period": {
-        "title": "Période 2026-2030",
-        "description": "Feuille de route sur 5 ans pour transformer durablement l'agriculture en Afrique de l'Ouest et au-delà."
+        "title": "Impact Continental",
+        "description": "Vision continentale pour transformer durablement l'agriculture en Afrique de l'Ouest et au-delà."
       }
     },
     "priorityCereals": {
@@ -93,7 +93,7 @@
       "roadmap": "Feuille de route"
     },
     "cta": {
-      "title": "Rejoignez le Projet PTASS",
+      "title": "Rejoignez Sahel AgriConnect",
       "description": "Que vous soyez agriculteur, coopérative, investisseur ou partenaire, participez à la transformation de l'agriculture pour l'Afrique de l'Ouest et au-delà.",
       "register": "S'inscrire maintenant",
       "downloadApp": "Télécharger l'app"

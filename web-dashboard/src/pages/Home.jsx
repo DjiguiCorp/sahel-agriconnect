@@ -258,7 +258,7 @@ const Home = () => {
 
       <section id="rejoindre" className="section-container py-16">
         <div className="rounded-2xl bg-gradient-to-br from-brand-amber to-brand-amberDeep p-10 md:p-12 text-center text-brand-forest shadow-xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Rejoignez le projet PTASS</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('home.cta.title')}</h2>
           <p className="text-lg mb-8 text-brand-forest/90 max-w-2xl mx-auto">
             Que vous soyez agriculteur, coopérative, investisseur ou partenaire, participez à la transformation de
             l&apos;agriculture en Afrique de l&apos;Ouest et au-delà.
