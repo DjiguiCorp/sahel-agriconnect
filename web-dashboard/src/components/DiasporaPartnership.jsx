@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Globe, Leaf, Loader2, Mail, Phone, Package, Users, X } from 'lucide-react';
 import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 import { API_BASE_URL } from '../config/api';
+import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
 const PRODUCT_OPTIONS = ['Karité', 'Sésame', 'Cajou', 'Mangue', 'Arachide', 'Coton', 'Mil', 'Sorgho', 'Niébé', 'Riz'];
 const PRODUCER_CERTS = ['Aucune', 'Bio local', 'Conventionnel', 'Export/FDA en cours'];
@@ -24,6 +25,7 @@ function apiUrl(path) {
 export default function DiasporaPartnership() {
   const [tab, setTab] = useState('producer'); // producer | buyer | matching
   const tabsRef = useRef(null);
+  const { registerUser } = useRegisteredUser();
 
   const [activeProducers, setActiveProducers] = useState([]);
   const [loadingActive, setLoadingActive] = useState(true);
@@ -163,6 +165,7 @@ export default function DiasporaPartnership() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || 'Erreur lors de l\'envoi');
       setProducerSubmitted(true);
+      registerUser(prodForm.email || prodForm.phone, prodForm.fullName);
     } catch (err) {
       setProducerError(err?.message || 'Erreur');
     } finally {

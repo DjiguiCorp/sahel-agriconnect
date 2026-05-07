@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe, Loader2, Check } from 'lucide-react';
+import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
 const COUNTRIES = [
   'Sénégal','Mali',"Côte d'Ivoire",'Ghana','Nigeria',
@@ -20,6 +21,7 @@ const INTEREST_VALUES = ['Equipment Fund','Certification','Diaspora Investment',
 
 export default function CooperativeRegistration() {
   const { t } = useTranslation();
+  const { registerUser } = useRegisteredUser();
   const [form, setForm] = useState({
     cooperativeName: '', country: 'Sénégal', regionCity: '',
     memberCount: '', primaryCrops: [], certificationStatus: 'None',
@@ -54,6 +56,7 @@ export default function CooperativeRegistration() {
         throw new Error(j?.error || 'Request failed');
       }
       setState({ loading: false, ok: true, err: '' });
+      registerUser(form.email, form.leaderName);
     } catch (err) {
       setState({ loading: false, ok: false, err: err.message || 'Error' });
     }

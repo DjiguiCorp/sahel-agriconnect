@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { CheckCircle2, Loader2 } from 'lucide-react';
+import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
 const RESIDENCE = ['USA', 'France', 'UK', 'Canada', 'UAE', 'Sénégal', "Côte d'Ivoire", 'Ghana', 'Nigeria', 'Other'];
 const RANGES = ['$1,000–$5,000', '$5,000–$25,000', '$25,000–$100,000', '$100,000+'];
@@ -9,6 +10,7 @@ const HEARD = ['Diaspora community', 'Social media', 'Friend or family', 'Event 
 
 export default function InvestorRegistration() {
   const { t } = useTranslation();
+  const { registerUser } = useRegisteredUser();
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -100,6 +102,7 @@ export default function InvestorRegistration() {
         return;
       }
       setSuccess(true);
+      registerUser(form.email, form.fullName);
     } catch (err) {
       setError(err.message || t('afriYield.registration.networkError'));
     } finally {

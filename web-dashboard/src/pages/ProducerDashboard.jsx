@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
 import { CheckCircle2, Clock, Package, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
 function apiUrl(path) {
   const base = String(API_BASE_URL || '').replace(/\/$/, '');
@@ -50,6 +51,7 @@ function normalizeListings(profile) {
 
 export default function ProducerDashboard() {
   const { t } = useTranslation();
+  const { registerUser } = useRegisteredUser();
   const [params, setParams] = useSearchParams();
   const initial = params.get('q') || '';
   const [identifier, setIdentifier] = useState(initial);
@@ -80,6 +82,7 @@ export default function ProducerDashboard() {
           setProfile(jf.farmer);
           setProfileType('farmer');
           setMode('ready');
+          registerUser(q, jf.farmer?.nomComplet || jf.farmer?.fullName || jf.farmer?.nom || '');
           topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           return;
         }
@@ -93,6 +96,7 @@ export default function ProducerDashboard() {
           setProfile(jc.cooperative);
           setProfileType('cooperative');
           setMode('ready');
+          registerUser(q, jc.cooperative?.leaderName || jc.cooperative?.fullName || jc.cooperative?.cooperativeName || '');
           topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           return;
         }

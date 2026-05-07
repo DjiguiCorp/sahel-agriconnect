@@ -5,13 +5,16 @@ import { regionsByCountry } from '../data/sahelRegions';
 import PlantDiseaseAnalyzer from './PlantDiseaseAnalyzer';
 import LandDetection from './LandDetection';
 import { API_ENDPOINTS } from '../config/api';
+import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
 const FarmerRegistrationForm = ({ onFarmerAdded }) => {
   const { emitFarmerRegistration } = useWebSocket();
+  const { registerUser } = useRegisteredUser();
   const [formData, setFormData] = useState({
     // Champs de base
     nom: '',
     telephone: '',
+    email: '',
     latitude: '',
     longitude: '',
     superficie: '',
@@ -212,6 +215,10 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
       newErrors.telephone = 'Format de téléphone invalide';
     }
 
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(formData.email).trim())) {
+      newErrors.email = 'Format d’email invalide';
+    }
+
     if (!formData.latitude.trim()) {
       newErrors.latitude = 'La latitude est requise';
     } else if (isNaN(formData.latitude) || formData.latitude < -90 || formData.latitude > 90) {
@@ -297,6 +304,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
       id: Date.now(),
       nom: formData.nom,
       telephone: formData.telephone,
+      email: formData.email,
       localisation: `${formData.latitude}, ${formData.longitude}`,
       superficie: `${formData.superficie} ha`,
       cultures: formData.cultures.join(', '),
@@ -329,6 +337,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
     const apiData = {
       nom: formData.nom,
       telephone: formData.telephone,
+      email: formData.email || undefined,
       localisation: {
         latitude: parseFloat(formData.latitude),
         longitude: parseFloat(formData.longitude),
@@ -386,6 +395,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
 
       // Message de succès
       setSuccess(true);
+      registerUser(formData.email || formData.courriel || formData.telephone, formData.nom);
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement:', error);
       setErrors({ submit: error.message || 'Erreur lors de l\'enregistrement. Veuillez réessayer.' });
@@ -395,6 +405,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
         onFarmerAdded(newFarmer);
       }
       setSuccess(true); // Afficher le succès même en cas d'erreur réseau (mode dégradé)
+      registerUser(formData.email || formData.courriel || formData.telephone, formData.nom);
     }
 
     // Réinitialiser le formulaire après 3 secondes (garder les solutions visibles)
@@ -402,6 +413,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
       setFormData({
         nom: '',
         telephone: '',
+        email: '',
         latitude: '',
         longitude: '',
         superficie: '',
@@ -504,6 +516,25 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
                 placeholder="Ex: +223 76 12 34 56"
               />
               {errors.telephone && <p className="mt-1 text-sm text-red-600">{errors.telephone}</p>}
+            </div>
+
+            {/* Email (optionnel) */}
+            <div className="mb-4">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email <span className="text-gray-400">(optionnel)</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Ex: amadou@example.com"
+              />
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
 
             {/* Localisation GPS */}

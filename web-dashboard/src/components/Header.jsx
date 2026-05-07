@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Menu, X, Lock, ChevronDown } from 'lucide-react';
+import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
 const OUTILS_ITEMS = [
   { to: '/diagnostic-sol', labelKey: 'nav.soilDiagnostic' },
@@ -16,6 +17,7 @@ const Header = () => {
   const desktopOutilsRef = useRef(null);
   const { t } = useTranslation();
   const location = useLocation();
+  const { isRegistered, userName, clearUser } = useRegisteredUser();
 
   const navLinkClass =
     'text-lg text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
@@ -72,9 +74,21 @@ const Header = () => {
             <Link to="/dashboard" className={navLinkClass}>
               {t('nav.dashboard')}
             </Link>
-            <Link to="/my-dashboard" className={navLinkClass}>
-              Mon tableau de bord
-            </Link>
+            {isRegistered && (
+              <div className="flex items-center gap-3">
+                <Link to="/my-dashboard" className={navLinkClass}>
+                  {userName ? `Bonjour, ${userName.split(' ')[0]}` : 'Mon tableau de bord'}
+                </Link>
+                <button
+                  type="button"
+                  onClick={clearUser}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition"
+                  title="Se déconnecter"
+                >
+                  ×
+                </button>
+              </div>
+            )}
 
             <div
               ref={desktopOutilsRef}
@@ -189,9 +203,11 @@ const Header = () => {
               <Link to="/dashboard" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.dashboard')}
               </Link>
-              <Link to="/my-dashboard" className={navLinkClass} onClick={closeMenu}>
-                Mon tableau de bord
-              </Link>
+              {isRegistered && (
+                <Link to="/my-dashboard" className={navLinkClass} onClick={closeMenu}>
+                  {userName ? `Bonjour, ${userName.split(' ')[0]}` : 'Mon tableau de bord'}
+                </Link>
+              )}
 
               <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-1">
                 <button
@@ -246,6 +262,19 @@ const Header = () => {
                 <Lock className="w-5 h-5" aria-hidden />
                 {t('nav.admin')}
               </Link>
+
+              {isRegistered ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearUser();
+                    closeMenu();
+                  }}
+                  className="text-left text-sm text-gray-500 hover:text-gray-700 transition pt-3"
+                >
+                  Se déconnecter
+                </button>
+              ) : null}
             </div>
           </div>
         )}
