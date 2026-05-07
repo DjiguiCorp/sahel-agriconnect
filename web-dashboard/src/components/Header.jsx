@@ -69,6 +69,9 @@ const Header = () => {
             <Link to="/dashboard" className={navLinkClass}>
               {t('nav.dashboard')}
             </Link>
+            <Link to="/my-dashboard" className={navLinkClass}>
+              Mon tableau de bord
+            </Link>
 
             <div
               ref={desktopOutilsRef}
@@ -179,6 +182,9 @@ const Header = () => {
               </Link>
               <Link to="/dashboard" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.dashboard')}
+              </Link>
+              <Link to="/my-dashboard" className={navLinkClass} onClick={closeMenu}>
+                Mon tableau de bord
               </Link>
 
               <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-1">

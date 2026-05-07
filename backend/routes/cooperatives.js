@@ -39,6 +39,21 @@ router.post('/register-platform', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { region } = req.query;
+    const email = String(req.query.email || '').trim().toLowerCase();
+    const phone = String(req.query.phone || '').trim();
+
+    // Public lookup for cooperative platform registration (no admin token required)
+    if (email || phone) {
+      const q = {};
+      if (email) q.email = email;
+      if (phone) q.phone = phone;
+      const registration = await CooperativePlatformRegistration.findOne(q)
+        .sort({ createdAt: -1 })
+        .lean();
+      if (!registration) return res.status(404).json({ success: false, error: 'Not found' });
+      return res.json({ success: true, cooperative: registration });
+    }
+
     const query = {};
     
     if (region) {
@@ -54,6 +69,18 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Erreur récupération coopératives:', error);
     res.status(500).json({ error: 'Erreur serveur lors de la récupération' });
+  }
+});
+
+// GET /api/cooperatives/platform-registrations — protected admin list (supports ?status=...)
+router.get('/platform-registrations', authenticateToken, async (req, res) => {
+  try {
+    const q = {};
+    if (req.query.status) q.status = req.query.status;
+    const registrations = await CooperativePlatformRegistration.find(q).sort({ createdAt: -1 }).lean();
+    return res.json({ success: true, registrations });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
   }
 });
 

@@ -37,49 +37,73 @@ router.post('/', validateFarmer, async (req, res) => {
   }
 });
 
-// GET /api/farmers - Liste des agriculteurs (protégée admin)
-router.get('/', authenticateToken, countryFilter, async (req, res) => {
+// GET /api/farmers - Public lookup (email/phone) OR admin list
+router.get('/', async (req, res) => {
   try {
-    const { 
-      region, 
-      statut, 
-      investissement, 
-      page = 1, 
-      limit = 50,
-      search 
-    } = req.query;
+    const email = String(req.query.email || '').trim().toLowerCase();
+    const phone = String(req.query.phone || '').trim();
 
-    const query = { ...(req.countryFilter || {}) };
-    
-    if (region) query.region = region;
-    if (statut) query.statut = statut;
-    if (investissement) query.investissementCooperative = investissement;
-    if (search) {
-      query.$or = [
-        { nom: { $regex: search, $options: 'i' } },
-        { telephone: { $regex: search, $options: 'i' } }
-      ];
+    // Public self-lookup by email or phone (no admin token required)
+    if (email || phone) {
+      const q = {};
+      if (email) q.email = email;
+      if (phone) q.telephone = phone;
+
+      const farmer = await Farmer.findOne(q)
+        .sort({ createdAt: -1 })
+        .select('nom telephone email country region statut createdAt qualityLevel nomCooperative lienCooperative investissementCooperative diseaseDetection')
+        .lean();
+
+      if (!farmer) return res.status(404).json({ success: false, error: 'Not found' });
+      return res.json({ success: true, farmer });
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const farmers = await Farmer.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+    // Otherwise: protected admin listing
+    await authenticateToken(req, res, async () => {
+      await countryFilter(req, res, async () => {
+        const { 
+          region, 
+          statut, 
+          investissement, 
+          page = 1, 
+          limit = 50,
+          search 
+        } = req.query;
 
-    const total = await Farmer.countDocuments(query);
+        const query = { ...(req.countryFilter || {}) };
+        
+        if (region) query.region = region;
+        if (statut) query.statut = statut;
+        if (investissement) query.investissementCooperative = investissement;
+        if (search) {
+          query.$or = [
+            { nom: { $regex: search, $options: 'i' } },
+            { telephone: { $regex: search, $options: 'i' } }
+          ];
+        }
 
-    res.json({
-      success: true,
-      farmers,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        const farmers = await Farmer.find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit));
+
+        const total = await Farmer.countDocuments(query);
+
+        return res.json({
+          success: true,
+          farmers,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            pages: Math.ceil(total / parseInt(limit))
+          }
+        });
+      });
     });
+    return;
   } catch (error) {
     console.error('Erreur récupération agriculteurs:', error);
     res.status(500).json({ error: 'Erreur serveur lors de la récupération' });

@@ -42,7 +42,7 @@ function buildBreadcrumbItems(pathname) {
   }
 
   const section = rest[0];
-  const allowed = ['register', 'dashboard'];
+  const allowed = ['register', 'dashboard', 'marketplace'];
   if (!allowed.includes(section)) {
     return [crumb('home', null, { i18n: 'home', i18nShort: 'homeShort' })];
   }
@@ -50,6 +50,7 @@ function buildBreadcrumbItems(pathname) {
   const navMap = {
     register: { i18n: 'breadcrumbRegister', i18nShort: 'registerShort' },
     dashboard: { i18n: 'breadcrumbDashboard', i18nShort: 'dashboardShort' },
+    marketplace: { i18n: 'breadcrumbMarketplace', i18nShort: 'marketplaceShort' },
   };
 
   return [

@@ -293,6 +293,8 @@
     "breadcrumbRegister": "Inscription",
     "dashboard": "Mon tableau de bord",
     "breadcrumbDashboard": "Tableau de bord",
+    "marketplace": "Marketplace",
+    "breadcrumbMarketplace": "Marketplace",
     "browseOpportunities": "Parcourez les centres de transformation et les coopératives vérifiés ouverts aux investissements",
     "trackA": "Piste A — Investissement opérationnel",
     "trackB": "Piste B — Investissement marque et marché",
@@ -340,6 +342,7 @@
     "opportunitiesShort": "Opp.",
     "registerShort": "Inscr.",
     "dashboardShort": "Tab. bord",
+    "marketplaceShort": "Market",
     "detail": "Détails",
     "detailShort": "Info",
     "filterAll": "Tous",
@@ -678,6 +681,181 @@
     "bambara": "Bamanankan",
     "moore": "Mòoré",
     "fulfulde": "Fulfulde"
+  },
+  "producerDashboard": {
+    "title": "Mon tableau de bord producteur",
+    "identify": {
+      "title": "Accéder à mon tableau de bord",
+      "subtitle": "Entrez votre email ou numéro de téléphone enregistré",
+      "placeholder": "Email ou téléphone",
+      "submit": "Accéder à mon tableau de bord",
+      "notFound": "Aucun profil trouvé. Veuillez vous inscrire d'abord.",
+      "registerLink": "S'inscrire comme agriculteur"
+    },
+    "profile": {
+      "title": "Mon profil",
+      "registered": "Inscrit",
+      "status": {
+        "pending": "En cours de vérification",
+        "active": "Profil actif",
+        "certified": "Producteur certifié"
+      },
+      "steps": {
+        "registered": "Inscrit",
+        "verified": "Vérifié",
+        "certified": "Certifié",
+        "exportReady": "Prêt export"
+      },
+      "pendingMsg": "Votre profil est en cours de vérification. Notre équipe vous contactera sous 48h.",
+      "activeMsg": "Profil actif — vous êtes visible aux acheteurs et investisseurs.",
+      "certifiedMsg": "Certifié — vos produits sont éligibles à l'export USDA/EU."
+    },
+    "listings": {
+      "title": "Mes produits",
+      "noListings": "Aucun produit listé — contactez-nous pour ajouter vos produits disponibles.",
+      "visible": "Visible sur AfriYield",
+      "addProduct": "Ajouter un produit",
+      "lastUpdated": "Mis à jour",
+      "availableVolume": "Volume disponible"
+    },
+    "cooperative": {
+      "title": "Avantages coopératifs",
+      "equipment": "Accès équipements",
+      "certification": "Statut de certification",
+      "members": "Membres",
+      "nextMeeting": "Prochaine réunion",
+      "viewBenefits": "Voir les avantages disponibles",
+      "equipmentStatus": {
+        "available": "Disponible",
+        "applied": "Demandé",
+        "funded": "Financé"
+      }
+    },
+    "aiHistory": {
+      "title": "Historique outils IA",
+      "noHistory": "Utilisez nos outils IA pour obtenir des recommandations personnalisées.",
+      "soil": "Diagnostic du sol",
+      "disease": "Détection de maladies",
+      "thinkTank": "Requête Think Tank",
+      "redo": "Refaire une analyse"
+    }
+  },
+  "marketplace": {
+    "title": "Marketplace AfriYield — Commodités Africaines Certifiées",
+    "subtitle": "Approvisionnez-vous directement auprès de producteurs africains vérifiés",
+    "badges": {
+      "sheaSesame": "Shea Butter & Sesame",
+      "certifiedSupply": "Chaîne certifiée"
+    },
+    "filters": {
+      "all": "Tous",
+      "shea": "Shea Butter",
+      "sesame": "Sésame",
+      "usdaCertified": "Certifié USDA",
+      "regionalCertified": "Certifié régional",
+      "availableNow": "Disponible maintenant"
+    },
+    "card": {
+      "priceOnRequest": "Prix sur demande",
+      "priceLabel": "Prix",
+      "requestQuote": "Demander un devis",
+      "learnMore": "En savoir plus",
+      "comingSoon": "Disponible bientôt",
+      "notifyMe": "Être notifié",
+      "availableVolume": "Volume disponible",
+      "perMonth": "par mois"
+    },
+    "noListings": "Profils en cours de vérification — revenez sous 48h ou inscrivez-vous pour être notifié.",
+    "quoteModal": {
+      "title": "Demander un devis",
+      "buyerName": "Votre nom",
+      "company": "Nom de l'entreprise",
+      "email": "Email",
+      "phone": "Téléphone",
+      "product": "Produit souhaité",
+      "quantity": "Quantité (kg/mois)",
+      "delivery": "Pays de livraison",
+      "message": "Message ou détails supplémentaires",
+      "submit": "Envoyer la demande",
+      "success": "Votre demande de devis a été envoyée. Le producteur vous contactera sous 48h.",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
+  "adminDashboard": {
+    "urgentActions": "Actions requises",
+    "pendingProfiles": "Profils en attente",
+    "pendingOpportunities": "Opportunités en attente",
+    "unassignedExperts": "Demandes expert non assignées",
+    "quoteRequests": "Demandes de devis",
+    "pendingCooperatives": "Coopératives en attente",
+    "activateNow": "Activer maintenant",
+    "review": "Examiner",
+    "assign": "Assigner",
+    "view": "Voir",
+    "revenueMetrics": "Métriques de revenus",
+    "activeCountryLicenses": "Licences pays actives",
+    "monthlyRecurring": "Récurrent mensuel",
+    "registeredInvestors": "Investisseurs inscrits",
+    "investmentPotential": "Potentiel d'investissement",
+    "activeCooperatives": "Coopératives actives",
+    "annualRevenue": "Revenu annuel",
+    "certifiedProducers": "Producteurs certifiés",
+    "certificationRevenue": "Revenu certification",
+    "recentActivity": "Activité récente",
+    "hoursAgo": "il y a {{n}}h",
+    "minutesAgo": "il y a {{n}} min",
+    "daysAgo": "il y a {{n}}j",
+    "quickActions": "Actions rapides AfriYield",
+    "activateOpportunity": "Activer une opportunité",
+    "addInvestor": "Ajouter un investisseur manuellement",
+    "viewMarketplace": "Voir la marketplace",
+    "quoteRequestsTitle": "Demandes de devis",
+    "addInvestorTitle": "Ajouter un investisseur",
+    "noRecentActivity": "Aucune activité récente.",
+    "noQuoteRequests": "Aucune demande de devis.",
+    "investorForm": {
+      "name": "Nom",
+      "email": "Email",
+      "country": "Pays",
+      "range": "Fourchette d'investissement",
+      "saving": "Enregistrement..."
+    },
+    "tabs": {
+      "overview": "Aperçu",
+      "farmers": "Agriculteurs",
+      "cooperatives": "Coopératives",
+      "centers": "Centres",
+      "trainings": "Formations",
+      "governance": "Gouvernance",
+      "perks": "Avantages",
+      "irrigation": "Irrigation",
+      "optimization": "Optimisation",
+      "expertRequests": "Demandes Experts",
+      "seasonal": "Planification",
+      "certification": "Certification",
+      "logistics": "Logistique",
+      "reports": "Rapports",
+      "afriyield": "AfriYield Exchange",
+      "countryLicenses": "Licences Pays"
+    },
+    "tabsShort": {
+      "overview": "Aperçu",
+      "farmers": "Agric.",
+      "cooperatives": "Coop.",
+      "centers": "Centres",
+      "trainings": "Form.",
+      "governance": "Gouv.",
+      "perks": "Avant.",
+      "irrigation": "Irr.",
+      "optimization": "Opt.",
+      "expertRequests": "Experts",
+      "seasonal": "Plan.",
+      "certification": "Cert.",
+      "logistics": "Log.",
+      "reports": "Rapp.",
+      "afriyield": "AfriY.",
+      "countryLicenses": "Lic."
+    }
   }
 }
 

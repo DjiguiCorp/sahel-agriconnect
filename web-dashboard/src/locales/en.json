@@ -293,6 +293,8 @@
     "breadcrumbRegister": "Register",
     "dashboard": "My Dashboard",
     "breadcrumbDashboard": "Dashboard",
+    "marketplace": "Marketplace",
+    "breadcrumbMarketplace": "Marketplace",
     "browseOpportunities": "Browse verified transformation centers and cooperatives open for investment",
     "trackA": "Track A — Operations Investment",
     "trackB": "Track B — Brand & Market Investment",
@@ -340,6 +342,7 @@
     "opportunitiesShort": "Opp.",
     "registerShort": "Reg.",
     "dashboardShort": "Dash.",
+    "marketplaceShort": "Market",
     "detail": "Details",
     "detailShort": "Info",
     "filterAll": "All",
@@ -678,6 +681,181 @@
     "bambara": "Bamanankan",
     "moore": "Mòoré",
     "fulfulde": "Fulfulde"
+  },
+  "producerDashboard": {
+    "title": "My Producer Dashboard",
+    "identify": {
+      "title": "Access My Dashboard",
+      "subtitle": "Enter your registered email or phone number",
+      "placeholder": "Email or phone number",
+      "submit": "Access my dashboard",
+      "notFound": "No profile found. Please register first.",
+      "registerLink": "Register as a farmer"
+    },
+    "profile": {
+      "title": "My Profile",
+      "registered": "Registered",
+      "status": {
+        "pending": "Pending verification",
+        "active": "Active profile",
+        "certified": "Certified producer"
+      },
+      "steps": {
+        "registered": "Registered",
+        "verified": "Verified",
+        "certified": "Certified",
+        "exportReady": "Export Ready"
+      },
+      "pendingMsg": "Your profile is being reviewed. Our team will contact you within 48 hours.",
+      "activeMsg": "Active profile — you are visible to buyers and investors.",
+      "certifiedMsg": "Certified — your products are eligible for USDA/EU export."
+    },
+    "listings": {
+      "title": "My Listings",
+      "noListings": "No products listed — contact us to add your available products.",
+      "visible": "Visible on AfriYield",
+      "addProduct": "Add a product",
+      "lastUpdated": "Last updated",
+      "availableVolume": "Available volume"
+    },
+    "cooperative": {
+      "title": "Cooperative Benefits",
+      "equipment": "Equipment access",
+      "certification": "Certification status",
+      "members": "Members",
+      "nextMeeting": "Next meeting",
+      "viewBenefits": "View available benefits",
+      "equipmentStatus": {
+        "available": "Available",
+        "applied": "Applied",
+        "funded": "Funded"
+      }
+    },
+    "aiHistory": {
+      "title": "AI Tools History",
+      "noHistory": "Use our AI tools to get personalized recommendations.",
+      "soil": "Soil diagnosis",
+      "disease": "Disease detection",
+      "thinkTank": "Think Tank query",
+      "redo": "Run new analysis"
+    }
+  },
+  "marketplace": {
+    "title": "AfriYield Marketplace — Certified African Commodities",
+    "subtitle": "Source directly from verified African producers",
+    "badges": {
+      "sheaSesame": "Shea Butter & Sesame",
+      "certifiedSupply": "Certified Supply Chain"
+    },
+    "filters": {
+      "all": "All",
+      "shea": "Shea Butter",
+      "sesame": "Sesame",
+      "usdaCertified": "USDA Certified",
+      "regionalCertified": "Regional Certified",
+      "availableNow": "Available Now"
+    },
+    "card": {
+      "priceOnRequest": "Price on request",
+      "priceLabel": "Price",
+      "requestQuote": "Request a quote",
+      "learnMore": "Learn more",
+      "comingSoon": "Coming soon",
+      "notifyMe": "Notify me when available",
+      "availableVolume": "Available volume",
+      "perMonth": "per month"
+    },
+    "noListings": "Listings are being verified — check back within 48 hours or register to be notified.",
+    "quoteModal": {
+      "title": "Request a Quote",
+      "buyerName": "Your name",
+      "company": "Company name",
+      "email": "Email",
+      "phone": "Phone",
+      "product": "Product wanted",
+      "quantity": "Quantity needed (kg/month)",
+      "delivery": "Delivery country",
+      "message": "Message or additional details",
+      "submit": "Send quote request",
+      "success": "Your quote request has been sent. The producer will contact you within 48 hours.",
+      "error": "Something went wrong. Please try again."
+    }
+  },
+  "adminDashboard": {
+    "urgentActions": "Actions Required",
+    "pendingProfiles": "Pending profiles",
+    "pendingOpportunities": "Pending opportunities",
+    "unassignedExperts": "Unassigned expert requests",
+    "quoteRequests": "Quote requests",
+    "pendingCooperatives": "Pending cooperatives",
+    "activateNow": "Activate now",
+    "review": "Review",
+    "assign": "Assign",
+    "view": "View",
+    "revenueMetrics": "Revenue Metrics",
+    "activeCountryLicenses": "Active country licenses",
+    "monthlyRecurring": "Monthly recurring",
+    "registeredInvestors": "Registered investors",
+    "investmentPotential": "Investment potential",
+    "activeCooperatives": "Active cooperatives",
+    "annualRevenue": "Annual revenue",
+    "certifiedProducers": "Certified producers",
+    "certificationRevenue": "Certification revenue",
+    "recentActivity": "Recent Activity",
+    "hoursAgo": "{{n}}h ago",
+    "minutesAgo": "{{n}}m ago",
+    "daysAgo": "{{n}}d ago",
+    "quickActions": "AfriYield Quick Actions",
+    "activateOpportunity": "Activate an opportunity",
+    "addInvestor": "Add investor manually",
+    "viewMarketplace": "View marketplace",
+    "quoteRequestsTitle": "Quote requests",
+    "addInvestorTitle": "Add investor",
+    "noRecentActivity": "No recent activity.",
+    "noQuoteRequests": "No quote requests.",
+    "investorForm": {
+      "name": "Name",
+      "email": "Email",
+      "country": "Country",
+      "range": "Investment range",
+      "saving": "Saving..."
+    },
+    "tabs": {
+      "overview": "Overview",
+      "farmers": "Farmers",
+      "cooperatives": "Cooperatives",
+      "centers": "Centers",
+      "trainings": "Trainings",
+      "governance": "Governance",
+      "perks": "Benefits",
+      "irrigation": "Irrigation",
+      "optimization": "Optimization",
+      "expertRequests": "Expert requests",
+      "seasonal": "Planning",
+      "certification": "Certification",
+      "logistics": "Logistics",
+      "reports": "Reports",
+      "afriyield": "AfriYield Exchange",
+      "countryLicenses": "Country licenses"
+    },
+    "tabsShort": {
+      "overview": "Overview",
+      "farmers": "Farm.",
+      "cooperatives": "Coop.",
+      "centers": "Centers",
+      "trainings": "Train.",
+      "governance": "Gov.",
+      "perks": "Benefits",
+      "irrigation": "Irr.",
+      "optimization": "Opt.",
+      "expertRequests": "Experts",
+      "seasonal": "Plan.",
+      "certification": "Cert.",
+      "logistics": "Log.",
+      "reports": "Rept.",
+      "afriyield": "AfriY.",
+      "countryLicenses": "Lic."
+    }
   }
 }
 

@@ -28,6 +28,7 @@ import FarmerCertificationProgram from './pages/FarmerCertificationProgram';
 import EquipmentFund from './pages/EquipmentFund';
 import AfriYieldLayout from './pages/AfriYieldLayout';
 import Pricing from './pages/Pricing';
+import ProducerDashboard from './pages/ProducerDashboard';
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="about" element={<About />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="my-dashboard" element={<ProducerDashboard />} />
             <Route path="contact" element={<Contact />} />
             <Route path="pricing" element={<Pricing />} />
             <Route path="diagnostic-sol" element={<SoilDiagnostic />} />

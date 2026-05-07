@@ -5,6 +5,7 @@ export const validateFarmer = (req, res, next) => {
   const schema = Joi.object({
     nom: Joi.string().required().trim().min(2).max(100),
     telephone: Joi.string().required().trim().min(8).max(20),
+    email: Joi.string().email().optional().allow(''),
     latitude: Joi.string().required(),
     longitude: Joi.string().required(),
     superficie: Joi.number().required().min(0),

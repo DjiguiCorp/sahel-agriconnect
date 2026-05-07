@@ -196,6 +196,27 @@ export default function AfriYieldExchange() {
       </section>
 
       <section className="section-container pt-0">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest">Acheteurs &amp; Importateurs</h2>
+          <p className="mt-3 text-gray-700 max-w-2xl mx-auto">Vous cherchez à vous approvisionner, pas à investir? Visitez notre marketplace.</p>
+        </div>
+        <div className="rounded-2xl border-2 border-[#B5850A] bg-white p-8 shadow-lg max-w-4xl mx-auto">
+          <h3 className="text-2xl font-extrabold text-brand-forest">Marketplace Commodités</h3>
+          <p className="mt-3 text-gray-700">
+            Parcourez les producteurs certifiés, demandez des devis, et approvisionnez votre entreprise directement.
+          </p>
+          <div className="mt-6">
+            <Link
+              to="/afri-yield/marketplace"
+              className="inline-flex items-center justify-center rounded-lg bg-[#B5850A] px-6 py-3 text-sm font-extrabold text-white hover:bg-[#9a7109] transition"
+            >
+              Accéder à la Marketplace →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-container pt-0">
         <h2 className="text-3xl md:text-4xl font-extrabold text-brand-forest text-center mb-10">{t('afriYield.whyTitle')}</h2>
         <div className="grid gap-8 md:grid-cols-3">
           <div className="card border border-gray-100">

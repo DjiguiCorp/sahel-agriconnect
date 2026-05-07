@@ -11,6 +11,12 @@ const farmerSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    default: ''
+  },
   latitude: {
     type: String,
     required: true

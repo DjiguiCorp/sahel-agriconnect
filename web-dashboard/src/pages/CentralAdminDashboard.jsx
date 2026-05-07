@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import CooperativesManagement from '../components/admin/CooperativesManagement';
 import CooperativesDiasporaManagement from '../components/admin/CooperativesDiasporaManagement';
 import SeasonalPlanning from '../components/admin/SeasonalPlanning';
@@ -42,25 +43,21 @@ import {
 } from 'lucide-react';
 
 const BASE_TABS = [
-  { id: 'farmers', label: 'Agriculteurs', Icon: Sprout, shortLabel: 'Agric.' },
-  { id: 'cooperatives', label: 'Coopératives', Icon: Handshake, shortLabel: 'Coop.' },
-  { id: 'centers', label: 'Centres', Icon: Building2, shortLabel: 'Centres' },
-  { id: 'trainings', label: 'Formations', Icon: BookOpen, shortLabel: 'Form.' },
-  { id: 'governance', label: 'Gouvernance', Icon: Scale, shortLabel: 'Gouv.' },
-  { id: 'perks', label: 'Avantages', Icon: Gift, shortLabel: 'Avant.' },
-  { id: 'irrigation', label: 'Irrigation', Icon: Droplets, shortLabel: 'Irr.' },
-  { id: 'optimization', label: 'Optimisation', Icon: Bot, shortLabel: 'Opt.' },
-  {
-    id: 'expertRequests',
-    label: 'Demandes Experts',
-    Icon: ClipboardList,
-    shortLabel: 'Experts',
-  },
-  { id: 'seasonal', label: 'Planification', Icon: Calendar, shortLabel: 'Plan.' },
-  { id: 'certification', label: 'Certification', Icon: Star, shortLabel: 'Cert.' },
-  { id: 'logistics', label: 'Logistique', Icon: Truck, shortLabel: 'Log.' },
-  { id: 'reports', label: 'Rapports', Icon: BarChart3, shortLabel: 'Rapp.' },
-  { id: 'afriyield', label: 'AfriYield Exchange', Icon: Coins, shortLabel: 'AfriY.', accent: 'gold' },
+  { id: 'overview', labelKey: 'adminDashboard.tabs.overview', shortKey: 'adminDashboard.tabsShort.overview', Icon: ShieldAlert },
+  { id: 'farmers', labelKey: 'adminDashboard.tabs.farmers', shortKey: 'adminDashboard.tabsShort.farmers', Icon: Sprout },
+  { id: 'cooperatives', labelKey: 'adminDashboard.tabs.cooperatives', shortKey: 'adminDashboard.tabsShort.cooperatives', Icon: Handshake },
+  { id: 'centers', labelKey: 'adminDashboard.tabs.centers', shortKey: 'adminDashboard.tabsShort.centers', Icon: Building2 },
+  { id: 'trainings', labelKey: 'adminDashboard.tabs.trainings', shortKey: 'adminDashboard.tabsShort.trainings', Icon: BookOpen },
+  { id: 'governance', labelKey: 'adminDashboard.tabs.governance', shortKey: 'adminDashboard.tabsShort.governance', Icon: Scale },
+  { id: 'perks', labelKey: 'adminDashboard.tabs.perks', shortKey: 'adminDashboard.tabsShort.perks', Icon: Gift },
+  { id: 'irrigation', labelKey: 'adminDashboard.tabs.irrigation', shortKey: 'adminDashboard.tabsShort.irrigation', Icon: Droplets },
+  { id: 'optimization', labelKey: 'adminDashboard.tabs.optimization', shortKey: 'adminDashboard.tabsShort.optimization', Icon: Bot },
+  { id: 'expertRequests', labelKey: 'adminDashboard.tabs.expertRequests', shortKey: 'adminDashboard.tabsShort.expertRequests', Icon: ClipboardList },
+  { id: 'seasonal', labelKey: 'adminDashboard.tabs.seasonal', shortKey: 'adminDashboard.tabsShort.seasonal', Icon: Calendar },
+  { id: 'certification', labelKey: 'adminDashboard.tabs.certification', shortKey: 'adminDashboard.tabsShort.certification', Icon: Star },
+  { id: 'logistics', labelKey: 'adminDashboard.tabs.logistics', shortKey: 'adminDashboard.tabsShort.logistics', Icon: Truck },
+  { id: 'reports', labelKey: 'adminDashboard.tabs.reports', shortKey: 'adminDashboard.tabsShort.reports', Icon: BarChart3 },
+  { id: 'afriyield', labelKey: 'adminDashboard.tabs.afriyield', shortKey: 'adminDashboard.tabsShort.afriyield', Icon: Coins, accent: 'gold' },
 ];
 
 function authHeaders() {
@@ -75,6 +72,464 @@ function fmtMoney(n) {
   const v = Number(n);
   if (!Number.isFinite(v)) return '—';
   return `$${v.toLocaleString()}`;
+}
+
+function timeAgo(d, t) {
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return '';
+  const diff = Date.now() - dt.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return t('adminDashboard.minutesAgo', { n: 0 });
+  if (mins < 60) return t('adminDashboard.minutesAgo', { n: mins });
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return t('adminDashboard.hoursAgo', { n: hrs });
+  const days = Math.floor(hrs / 24);
+  return t('adminDashboard.daysAgo', { n: days });
+}
+
+function parseMoneyRangePotential(s) {
+  const raw = String(s || '').trim();
+  if (!raw) return 0;
+  const parts = raw
+    .replace(/[,]/g, '')
+    .replace(/\$/g, '')
+    .toLowerCase()
+    .match(/(\d+(\.\d+)?)(\s*[km])?/g);
+  if (!parts || parts.length === 0) return 0;
+  const nums = parts
+    .map((p) => {
+      const m = String(p).match(/(\d+(\.\d+)?)(\s*[km])?/);
+      if (!m) return 0;
+      const n = Number(m[1]);
+      const suf = (m[3] || '').trim();
+      if (suf === 'k') return n * 1000;
+      if (suf === 'm') return n * 1000000;
+      return n;
+    })
+    .filter((n) => Number.isFinite(n));
+  if (nums.length === 0) return 0;
+  return Math.max(...nums);
+}
+
+function MetricCard({ title, value }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-semibold text-gray-600">{title}</p>
+      <p className="mt-2 text-2xl font-extrabold text-brand-forest">{value}</p>
+    </div>
+  );
+}
+
+function UrgentCard({ title, count, color, actionLabel, onAction }) {
+  const badgeCls =
+    color === 'red'
+      ? 'bg-red-50 text-red-800 border-red-200'
+      : color === 'amber'
+        ? 'bg-amber-50 text-amber-900 border-amber-200'
+        : color === 'gold'
+          ? 'bg-[#fff7df] text-[#7a5b10] border-[#e9d7a7]'
+          : 'bg-gray-50 text-gray-800 border-gray-200';
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm w-[260px]">
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-extrabold text-brand-forest">{title}</p>
+        <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border ${badgeCls}`}>{count}</span>
+      </div>
+      <button
+        type="button"
+        onClick={onAction}
+        className="mt-4 w-full rounded-xl bg-brand-forest text-white font-extrabold py-2.5 hover:bg-[#143326]"
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
+function OverviewControlTower({ onGoTab }) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+
+  const [pendingFarmers, setPendingFarmers] = useState(0);
+  const [pendingOpps, setPendingOpps] = useState(0);
+  const [newExpert, setNewExpert] = useState(0);
+  const [newQuotes, setNewQuotes] = useState(0);
+  const [pendingCoops, setPendingCoops] = useState(0);
+
+  const [metrics, setMetrics] = useState({
+    activeLicenses: 0,
+    mrr: 0,
+    investors: 0,
+    investorPotential: 0,
+    activeCoops: 0,
+    coopAnnual: 0,
+    certifiedProducers: 0,
+    certificationRevenue: 0,
+  });
+
+  const [feed, setFeed] = useState([]);
+  const [quoteModal, setQuoteModal] = useState({ open: false, items: [] });
+
+  const [investorModal, setInvestorModal] = useState({ open: false });
+  const [investorForm, setInvestorForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    countryOfResidence: '',
+    investmentTrack: 'Both Tracks',
+    commodityInterest: ['Both'],
+    investmentRange: '',
+    message: '',
+  });
+  const [investorSaving, setInvestorSaving] = useState(false);
+  const [investorBanner, setInvestorBanner] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const headers = authHeaders();
+
+      const [
+        farmersPendingRes,
+        oppAllRes,
+        expertNewRes,
+        quoteNewRes,
+        coopPendingRes,
+        licensesRes,
+        investorsRes,
+        farmersAllRes,
+        coopActiveRes,
+        farmerRecentRes,
+        investorRecentRes,
+        coopRecentRes,
+        expertRecentRes,
+        quoteRecentRes,
+      ] = await Promise.all([
+        fetch(`${API_ENDPOINTS.FARMERS.BASE}?statut=En%20attente&limit=1`, { headers }),
+        fetch(API_ENDPOINTS.OPPORTUNITIES.ALL, { headers }),
+        fetch(`${API_ENDPOINTS.EXPERTS.REQUESTS}?status=new`, { headers }),
+        fetch(`${API_BASE_URL}/api/marketplace/quote-requests?status=new`, { headers }),
+        fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations?status=pending`, { headers }),
+        fetch(`${API_BASE_URL}/api/licenses`, { headers }),
+        fetch(`${API_BASE_URL}/api/investors`, { headers }),
+        fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=500`, { headers }),
+        fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations?status=active`, { headers }),
+        fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=2`, { headers }),
+        fetch(`${API_BASE_URL}/api/investors`, { headers }),
+        fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations`, { headers }),
+        fetch(`${API_ENDPOINTS.EXPERTS.REQUESTS}`, { headers }),
+        fetch(`${API_BASE_URL}/api/marketplace/quote-requests`, { headers }),
+      ]);
+
+      const farmersPendingJson = await farmersPendingRes.json().catch(() => ({}));
+      const oppAllJson = await oppAllRes.json().catch(() => ({}));
+      const expertNewJson = await expertNewRes.json().catch(() => ({}));
+      const quoteNewJson = await quoteNewRes.json().catch(() => ({}));
+      const coopPendingJson = await coopPendingRes.json().catch(() => ({}));
+      const licensesJson = await licensesRes.json().catch(() => ({}));
+      const investorsJson = await investorsRes.json().catch(() => ({}));
+      const farmersAllJson = await farmersAllRes.json().catch(() => ({}));
+      const coopActiveJson = await coopActiveRes.json().catch(() => ({}));
+
+      const farmerRecentJson = await farmerRecentRes.json().catch(() => ({}));
+      const investorRecentJson = await investorRecentRes.json().catch(() => ({}));
+      const coopRecentJson = await coopRecentRes.json().catch(() => ({}));
+      const expertRecentJson = await expertRecentRes.json().catch(() => ({}));
+      const quoteRecentJson = await quoteRecentRes.json().catch(() => ({}));
+
+      if (!oppAllRes.ok) throw new Error(oppAllJson.error || 'Failed to load overview');
+
+      setPendingFarmers(Number(farmersPendingJson?.pagination?.total || (farmersPendingJson?.farmers?.length ?? 0)));
+      const opps = Array.isArray(oppAllJson?.opportunities) ? oppAllJson.opportunities : [];
+      setPendingOpps(opps.filter((o) => o.status === 'pending').length);
+      setNewExpert(Array.isArray(expertNewJson?.requests) ? expertNewJson.requests.length : 0);
+      setNewQuotes(Array.isArray(quoteNewJson?.quoteRequests) ? quoteNewJson.quoteRequests.length : 0);
+      setPendingCoops(Array.isArray(coopPendingJson?.registrations) ? coopPendingJson.registrations.length : 0);
+
+      const licenses = Array.isArray(licensesJson?.licenses) ? licensesJson.licenses : [];
+      const activeLicenses = licenses.filter((l) => l.status === 'active');
+      const mrr = activeLicenses.reduce((sum, l) => sum + (Number(l.monthlyFee) || 0), 0);
+
+      const investors = Array.isArray(investorsJson?.investors) ? investorsJson.investors : [];
+      const investorPotential = investors.reduce((sum, inv) => sum + parseMoneyRangePotential(inv.investmentRange), 0);
+
+      const farmersAll = Array.isArray(farmersAllJson?.farmers) ? farmersAllJson.farmers : [];
+      const certifiedProducers = farmersAll.filter((f) => String(f.qualityLevel || '').toLowerCase() === 'international').length;
+
+      const activeCoops = Array.isArray(coopActiveJson?.registrations) ? coopActiveJson.registrations.length : 0;
+
+      setMetrics({
+        activeLicenses: activeLicenses.length,
+        mrr,
+        investors: investors.length,
+        investorPotential,
+        activeCoops,
+        coopAnnual: activeCoops * 199,
+        certifiedProducers,
+        certificationRevenue: certifiedProducers * 299,
+      });
+
+      const farmerRecent = Array.isArray(farmerRecentJson?.farmers) ? farmerRecentJson.farmers.slice(0, 2) : [];
+      const investorRecent = Array.isArray(investorRecentJson?.investors) ? investorRecentJson.investors.slice(0, 2) : [];
+      const coopRecent = Array.isArray(coopRecentJson?.registrations) ? coopRecentJson.registrations.slice(0, 2) : [];
+      const expertRecent = Array.isArray(expertRecentJson?.requests) ? expertRecentJson.requests.slice(0, 2) : [];
+      const quoteRecent = Array.isArray(quoteRecentJson?.quoteRequests) ? quoteRecentJson.quoteRequests.slice(0, 2) : [];
+
+      const events = [
+        ...farmerRecent.map((f) => ({
+          createdAt: f.createdAt,
+          text: `🟢 Nouveau agriculteur — ${f.nom || '—'}, ${f.region || '—'}, ${f.country || '—'}`,
+        })),
+        ...investorRecent.map((i) => ({
+          createdAt: i.createdAt,
+          text: `🟡 Nouvel investisseur — ${i.fullName || '—'} — ${i.countryOfResidence || '—'}`,
+        })),
+        ...coopRecent.map((c) => ({
+          createdAt: c.createdAt,
+          text: `🟦 Nouvelle coopérative — ${c.cooperativeName || '—'} — ${c.country || '—'}`,
+        })),
+        ...expertRecent.map((r) => ({
+          createdAt: r.createdAt,
+          text: `🔴 Demande expert — ${r.farmerName || '—'} — ${r.urgency || '—'}`,
+        })),
+        ...quoteRecent.map((q) => ({
+          createdAt: q.createdAt,
+          text: `🟠 Demande de devis — ${q.companyName || q.buyerName || '—'} — ${q.productWanted || '—'}`,
+        })),
+      ]
+        .filter((e) => e.createdAt)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 10)
+        .map((e) => ({ ...e, ago: timeAgo(e.createdAt, t) }));
+
+      setFeed(events);
+      setQuoteModal((p) => ({ ...p, items: Array.isArray(quoteRecentJson?.quoteRequests) ? quoteRecentJson.quoteRequests : [] }));
+    } catch (e) {
+      setErr(e.message || 'Error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const createInvestor = async (e) => {
+    e.preventDefault();
+    setInvestorSaving(true);
+    setInvestorBanner('');
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/investors/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(investorForm),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || 'Create failed');
+      setInvestorBanner('Investisseur ajouté.');
+      await load();
+    } catch (e2) {
+      setInvestorBanner(e2.message || 'Error');
+    } finally {
+      setInvestorSaving(false);
+    }
+  };
+
+  if (loading) return <div className="text-center py-10">{t('common.loading')}</div>;
+  if (err) return <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{err}</div>;
+
+  return (
+    <div className="space-y-8">
+      <div className="overflow-x-auto">
+        <div className="flex gap-4 min-w-max pb-2">
+          <UrgentCard
+            title={t('adminDashboard.pendingProfiles')}
+            count={pendingFarmers}
+            color={pendingFarmers > 0 ? 'red' : 'gray'}
+            actionLabel={t('adminDashboard.activateNow')}
+            onAction={() => onGoTab('farmers')}
+          />
+          <UrgentCard
+            title={t('adminDashboard.pendingOpportunities')}
+            count={pendingOpps}
+            color={pendingOpps > 0 ? 'amber' : 'gray'}
+            actionLabel={t('adminDashboard.review')}
+            onAction={() => onGoTab('afriyield')}
+          />
+          <UrgentCard
+            title={t('adminDashboard.unassignedExperts')}
+            count={newExpert}
+            color={newExpert > 0 ? 'red' : 'gray'}
+            actionLabel={t('adminDashboard.assign')}
+            onAction={() => onGoTab('expertRequests')}
+          />
+          <UrgentCard
+            title={t('adminDashboard.quoteRequests')}
+            count={newQuotes}
+            color={newQuotes > 0 ? 'gold' : 'gray'}
+            actionLabel={t('adminDashboard.view')}
+            onAction={() => setQuoteModal((p) => ({ ...p, open: true }))}
+          />
+          <UrgentCard
+            title={t('adminDashboard.pendingCooperatives')}
+            count={pendingCoops}
+            color={pendingCoops > 0 ? 'amber' : 'gray'}
+            actionLabel={t('adminDashboard.activateNow')}
+            onAction={() => onGoTab('cooperatives')}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          title={`${t('adminDashboard.activeCountryLicenses')} • ${t('adminDashboard.monthlyRecurring')}`}
+          value={`${metrics.activeLicenses} • ${fmtMoney(metrics.mrr)}`}
+        />
+        <MetricCard
+          title={`${t('adminDashboard.registeredInvestors')} • ${t('adminDashboard.investmentPotential')}`}
+          value={`${metrics.investors} • ${fmtMoney(metrics.investorPotential)}`}
+        />
+        <MetricCard
+          title={`${t('adminDashboard.activeCooperatives')} • ${t('adminDashboard.annualRevenue')}`}
+          value={`${metrics.activeCoops} • ${fmtMoney(metrics.coopAnnual)}`}
+        />
+        <MetricCard
+          title={`${t('adminDashboard.certifiedProducers')} • ${t('adminDashboard.certificationRevenue')}`}
+          value={`${metrics.certifiedProducers} • ${fmtMoney(metrics.certificationRevenue)}`}
+        />
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-extrabold text-brand-forest mb-4">{t('adminDashboard.recentActivity')}</h3>
+        {feed.length === 0 ? (
+          <p className="text-sm text-gray-600">{t('adminDashboard.noRecentActivity')}</p>
+        ) : (
+          <div className="space-y-3">
+            {feed.map((e, idx) => (
+              <div
+                key={idx}
+                className="flex items-start justify-between gap-4 border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
+              >
+                <p className="text-sm text-gray-800">{e.text}</p>
+                <span className="text-xs text-gray-500 shrink-0">{e.ago}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-extrabold text-brand-forest mb-4">{t('adminDashboard.quickActions')}</h3>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={() => onGoTab('afriyield')}
+            className="rounded-xl bg-[#B5850A] text-white font-extrabold px-4 py-3 hover:bg-[#9a7109]"
+          >
+            {t('adminDashboard.activateOpportunity')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setInvestorBanner('');
+              setInvestorModal({ open: true });
+            }}
+            className="rounded-xl bg-brand-forest text-white font-extrabold px-4 py-3 hover:bg-[#143326]"
+          >
+            {t('adminDashboard.addInvestor')}
+          </button>
+          <Link
+            to="/afri-yield/marketplace"
+            className="rounded-xl border-2 border-brand-forest text-brand-forest font-extrabold px-4 py-3 text-center hover:bg-brand-forest hover:text-white transition"
+          >
+            {t('adminDashboard.viewMarketplace')}
+          </Link>
+        </div>
+      </div>
+
+      <Modal
+        isOpen={quoteModal.open}
+        onClose={() => setQuoteModal((p) => ({ ...p, open: false }))}
+        title={t('adminDashboard.quoteRequestsTitle')}
+      >
+        <div className="space-y-3">
+          {Array.isArray(quoteModal.items) && quoteModal.items.length ? (
+            quoteModal.items.map((q) => (
+              <div key={q._id} className="rounded-lg border border-gray-200 bg-white p-4">
+                <p className="font-semibold text-gray-900">{q.companyName || q.buyerName || '—'}</p>
+                <p className="text-sm text-gray-600">{q.email}</p>
+                <p className="text-sm text-gray-700 mt-1">
+                  {q.productWanted || '—'} • {q.quantityKg ? `${q.quantityKg} kg/mois` : '—'}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">{timeAgo(q.createdAt, t)}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-600">{t('adminDashboard.noQuoteRequests')}</p>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={investorModal.open}
+        onClose={() => setInvestorModal({ open: false })}
+        title={t('adminDashboard.addInvestorTitle')}
+      >
+        <form onSubmit={createInvestor} className="space-y-4">
+          <label className="block space-y-1">
+            <span className="text-sm font-medium text-gray-700">{t('adminDashboard.investorForm.name')} *</span>
+            <input
+              required
+              value={investorForm.fullName}
+              onChange={(e) => setInvestorForm((p) => ({ ...p, fullName: e.target.value }))}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className="text-sm font-medium text-gray-700">{t('adminDashboard.investorForm.email')} *</span>
+            <input
+              type="email"
+              required
+              value={investorForm.email}
+              onChange={(e) => setInvestorForm((p) => ({ ...p, email: e.target.value }))}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className="text-sm font-medium text-gray-700">{t('adminDashboard.investorForm.country')}</span>
+            <input
+              value={investorForm.countryOfResidence}
+              onChange={(e) => setInvestorForm((p) => ({ ...p, countryOfResidence: e.target.value }))}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className="text-sm font-medium text-gray-700">{t('adminDashboard.investorForm.range')}</span>
+            <input
+              value={investorForm.investmentRange}
+              onChange={(e) => setInvestorForm((p) => ({ ...p, investmentRange: e.target.value }))}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+              placeholder="$50k-$100k"
+            />
+          </label>
+          {investorBanner ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800">{investorBanner}</div>
+          ) : null}
+          <button
+            type="submit"
+            disabled={investorSaving}
+            className="w-full rounded-lg bg-primary-green px-4 py-3 font-bold text-white hover:bg-primary-lightgreen disabled:opacity-60"
+          >
+            {investorSaving ? t('adminDashboard.investorForm.saving') : t('common.submit')}
+          </button>
+        </form>
+      </Modal>
+    </div>
+  );
 }
 
 function statusPill(status) {
@@ -333,7 +788,8 @@ const CountryLicensesPanel = () => {
 };
 
 const CentralAdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('farmers');
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState('overview');
   const [expertRequestsNewCount, setExpertRequestsNewCount] = useState(0);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -356,12 +812,21 @@ const CentralAdminDashboard = () => {
   }, [activeTab]);
 
   const tabs = useMemo(() => {
-    const out = [...BASE_TABS];
+    const out = BASE_TABS.map((tab) => ({
+      ...tab,
+      label: t(tab.labelKey),
+      shortLabel: t(tab.shortKey),
+    }));
     if (isSuperAdmin) {
-      out.push({ id: 'countryLicenses', label: 'Licences Pays', Icon: Database, shortLabel: 'Lic.' });
+      out.push({
+        id: 'countryLicenses',
+        label: t('adminDashboard.tabs.countryLicenses'),
+        Icon: Database,
+        shortLabel: t('adminDashboard.tabsShort.countryLicenses'),
+      });
     }
     return out;
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, t]);
 
   const handleLogout = () => {
     logout();
@@ -487,6 +952,7 @@ const CentralAdminDashboard = () => {
       {/* Main Content - Adjusted for mobile */}
       <main className="md:ml-64 p-3 sm:p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
+          {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
           {activeTab === 'farmers' && <RealTimeFarmers />}
           {activeTab === 'cooperatives' && <CooperativesManagement />}
           {activeTab === 'centers' && <CentersManagement />}
