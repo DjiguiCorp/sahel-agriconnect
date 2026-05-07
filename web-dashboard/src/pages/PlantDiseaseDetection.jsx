@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ExpertRequestModal from '../components/ExpertRequestModal';
 import { analyzeDiseaseImage } from '../lib/diseaseAnalysis';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
@@ -27,6 +28,7 @@ export default function PlantDiseaseDetection() {
   const [aiSolution, setAiSolution] = useState({ loading: false, err: '', data: null });
   const fileRef = useRef(null);
   const camRef = useRef(null);
+  const [showExpertModal, setShowExpertModal] = useState(false);
 
   const onPickFile = (e) => {
     const f = e.target.files?.[0];
@@ -347,21 +349,35 @@ export default function PlantDiseaseDetection() {
             )}
 
             <div className="flex flex-wrap gap-3">
-              <Link to="/contact" className="btn-primary inline-block text-center">
+              <button
+                type="button"
+                onClick={() => setShowExpertModal(true)}
+                className="btn-primary inline-block text-center"
+              >
                 Consulter un expert
-              </Link>
+              </button>
               <Link to="/enregistrer-agriculteur" className="border border-brand-sage text-brand-forest rounded-lg px-4 py-3 font-medium">
                 Créer un profil agriculteur
               </Link>
             </div>
 
             <p className="text-xs text-gray-500 border-t pt-4">
-              Cette analyse ne remplace pas une visite sur le terrain. En production, préférez une clé Anthropic côté
-              serveur (variable ANTHROPIC_API_KEY sur Vercel) ou Plant.id (VITE_PLANT_ID_API_KEY).
+              Cette analyse est fournie à titre indicatif. Consultez un expert pour confirmation sur le terrain.
             </p>
           </div>
         )}
       </section>
+
+      <ExpertRequestModal
+        isOpen={showExpertModal}
+        onClose={() => setShowExpertModal(false)}
+        prefillData={{
+          diseaseDetected: result?.disease_name,
+          cropType: result?.plant_type,
+          problemDescription: result?.symptoms,
+          source: 'disease_detection',
+        }}
+      />
     </div>
   );
 }

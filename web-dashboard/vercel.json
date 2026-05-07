@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/analyze-disease.js": {
+      "maxDuration": 30
+    }
+  },
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",

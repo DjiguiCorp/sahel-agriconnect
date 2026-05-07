@@ -129,6 +129,12 @@ export const API_ENDPOINTS = {
   SOIL: {
     DIAGNOSE: `${API_BASE_URL}/api/soil/diagnose`,
   },
+  EXPERTS: {
+    REQUEST: `${API_BASE_URL}/api/experts/request`,
+    REQUESTS: `${API_BASE_URL}/api/experts/requests`,
+    ASSIGN: (id) => `${API_BASE_URL}/api/experts/requests/${id}/assign`,
+    STATUS: (id) => `${API_BASE_URL}/api/experts/requests/${id}/status`,
+  },
   INVESTORS: {
     REGISTER: `${API_BASE_URL}/api/investors/register`,
     BASE: `${API_BASE_URL}/api/investors`,

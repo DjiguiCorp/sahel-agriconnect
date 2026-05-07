@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ExpertRequestModal from '../components/ExpertRequestModal';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { regionsByCountry } from '../data/sahelRegions';
 import { AFRICAN_COUNTRIES } from '../data/africanCountries';
@@ -59,6 +60,18 @@ export default function SoilDiagnostic() {
   const [farmerIdInput, setFarmerIdInput] = useState('');
   const [aiState, setAiState] = useState({ loading: false, err: '' });
   const [saveState, setSaveState] = useState({ loading: false, msg: '', err: '' });
+  const [showExpertModal, setShowExpertModal] = useState(false);
+
+  const soilExpertPrefill = useMemo(
+    () => ({
+      cropType: lastCrop,
+      problemDescription: result
+        ? `Diagnostic sol: ${result.rating}${result.summary ? ` - ${result.summary}` : ''}`
+        : '',
+      source: 'soil_diagnosis',
+    }),
+    [lastCrop, result]
+  );
 
   const regionOptions = useMemo(
     () => (regionsByCountry[country]?.length > 0 ? regionsByCountry[country] : ['Autre']),
@@ -454,13 +467,23 @@ export default function SoilDiagnostic() {
               <button type="button" onClick={() => setStep(2)} className="border border-gray-300 rounded-lg px-4 py-2">
                 Modifier le contexte
               </button>
-              <Link to="/contact" className="btn-secondary inline-block text-center">
-                Consulter un expert
-              </Link>
+              <button
+                type="button"
+                onClick={() => setShowExpertModal(true)}
+                className="btn-secondary inline-block text-center"
+              >
+                Consulter un expert sol
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      <ExpertRequestModal
+        isOpen={showExpertModal}
+        onClose={() => setShowExpertModal(false)}
+        prefillData={soilExpertPrefill}
+      />
     </div>
   );
 }

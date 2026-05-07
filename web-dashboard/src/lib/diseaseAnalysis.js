@@ -1,5 +1,5 @@
 /**
- * Analyse maladies — ordre : API Vercel (Anthropic) → Plant.id → simulation locale.
+ * Analyse maladies — ordre : API Vercel (Gemini Vision) → Plant.id → estimation locale.
  */
 
 /**
@@ -12,7 +12,7 @@ export async function analyzeDiseaseImage(file) {
   const base64 = dataUrl.split(',')[1];
   const mediaType = file.type || 'image/jpeg';
 
-  // 1) Route serveur Vercel (Anthropic côté serveur — pas d’exposition de clé)
+  // 1) Route serveur Vercel (Gemini Vision — clé serveur GEMINI_API_KEY)
   try {
     const r = await fetch('/api/analyze-disease', {
       method: 'POST',
@@ -21,8 +21,8 @@ export async function analyzeDiseaseImage(file) {
     });
     if (r.ok) {
       const j = await r.json();
-      if (j?.disease_name) {
-        return { ...j, source: j.source || 'anthropic' };
+      if (j?.disease_name && !j.error) {
+        return { ...j, source: j.source || 'gemini-vision' };
       }
     }
   } catch {
@@ -52,18 +52,7 @@ export async function analyzeDiseaseImage(file) {
     }
   }
 
-  // 3) Anthropic direct (peut échouer CORS en navigateur — documenté)
-  const anthropicKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (anthropicKey) {
-    try {
-      const out = await callAnthropicDirect(base64, mediaType, anthropicKey);
-      if (out) return { ...out, source: 'anthropic-direct' };
-    } catch {
-      /* CORS ou erreur */
-    }
-  }
-
-  return { ...mockSahelAnalysis(file), source: 'simulation' };
+  return { ...mockSahelAnalysis(file), source: 'estimation-locale' };
 }
 
 function fileToDataUrl(file) {
@@ -73,49 +62,6 @@ function fileToDataUrl(file) {
     r.onerror = reject;
     r.readAsDataURL(file);
   });
-}
-
-async function callAnthropicDirect(base64, mediaType, apiKey) {
-  const system = `Tu es un agronome expert des maladies des cultures en Afrique de l'Ouest et au-delà. Réponds UNIQUEMENT en JSON valide: {"disease_name":"","confidence":0-100,"symptoms":"","treatment":"","prevention":""} en français.`;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType,
-                data: base64,
-              },
-            },
-            {
-              type: 'text',
-              text: "Diagnostique la maladie visible sur cette image de culture en Afrique de l'Ouest ou contexte tropical sec.",
-            },
-          ],
-        },
-      ],
-    }),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const text = data?.content?.[0]?.text;
-  if (!text) return null;
-  const parsed = parseJsonLoose(text);
-  if (!parsed?.disease_name) return null;
-  return normalizeResult(parsed);
 }
 
 function mapPlantIdIdentification(data) {
@@ -145,26 +91,6 @@ function mapPlantIdIdentification(data) {
       'Si symptômes de maladie : traitement ciblé après diagnostic terrain. Sinon entretenir irrigation et nutrition.',
     prevention: 'Rotation, variétés adaptées à votre zone climatique, éviter l’excès d’humidité sur le feuillage.',
     source: 'plant.id',
-  };
-}
-
-function parseJsonLoose(text) {
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) return null;
-  try {
-    return JSON.parse(m[0]);
-  } catch {
-    return null;
-  }
-}
-
-function normalizeResult(p) {
-  return {
-    disease_name: String(p.disease_name || 'Maladie'),
-    confidence: Math.min(100, Math.max(0, Number(p.confidence) || 70)),
-    symptoms: String(p.symptoms || ''),
-    treatment: String(p.treatment || ''),
-    prevention: String(p.prevention || ''),
   };
 }
 

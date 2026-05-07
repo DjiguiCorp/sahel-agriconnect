@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ExpertRequestModal from '../components/ExpertRequestModal';
 import {
   Droplet,
   Bug,
@@ -51,7 +52,29 @@ export default function ThinkTank() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [showExpertModal, setShowExpertModal] = useState(false);
   const resultsRef = useRef(null);
+
+  const expertPrefill = useMemo(
+    () => ({
+      problemDescription: problem.trim()
+        ? [
+            problem.trim(),
+            result?.summary ? `Synthèse IA: ${result.summary}` : '',
+            result?.solution ? `Solution IA: ${result.solution}` : '',
+          ]
+          .filter(Boolean)
+          .join('\n\n')
+        : '',
+      cropType,
+      urgency:
+        result?.urgency && ['immediate', 'within_week', 'seasonal'].includes(result.urgency)
+          ? result.urgency
+          : undefined,
+      source: 'think_tank',
+    }),
+    [problem, cropType, result]
+  );
 
   const selected = CATEGORIES.find((c) => c.id === selectedId);
 
@@ -337,28 +360,40 @@ export default function ThinkTank() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-4 text-sm text-stone-600">
+                  <p>En tant que membre d&apos;une coopérative, vous pouvez solliciter une visite technique prioritaire ou un expert agricole.</p>
+                </div>
+              )}
+              {cooperativeMember && result.additionalSupport?.description && (
+                <p className="mt-4 text-sm text-stone-600">{result.additionalSupport.description}</p>
+              )}
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                {cooperativeMember && (
                   <Link
                     to="/contact?topic=technician-visit"
                     className="inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-emerald-700"
                   >
                     Demander une visite de technicien
                   </Link>
-                  <Link
-                    to="/contact?topic=expert"
-                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-stone-300 bg-white px-4 py-3 text-center text-sm font-semibold text-stone-900 hover:bg-stone-50"
-                  >
-                    Contacter un expert
-                  </Link>
-                </div>
-              )}
-              {cooperativeMember && result.additionalSupport?.description && (
-                <p className="mt-4 text-sm text-stone-600">{result.additionalSupport.description}</p>
-              )}
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowExpertModal(true)}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl border border-amber-600 bg-gradient-to-r from-brand-forest to-brand-forest/90 px-4 py-3 text-center text-sm font-semibold text-white shadow hover:opacity-95"
+                >
+                  Consulter un expert
+                </button>
+              </div>
             </section>
           </div>
         )}
       </div>
+
+      <ExpertRequestModal
+        isOpen={showExpertModal}
+        onClose={() => setShowExpertModal(false)}
+        prefillData={expertPrefill}
+      />
     </div>
   );
 }

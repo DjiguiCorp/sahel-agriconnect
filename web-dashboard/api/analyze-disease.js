@@ -1,96 +1,76 @@
-/**
- * Vercel Serverless — Anthropic Claude (clé serveur ANTHROPIC_API_KEY, jamais VITE_*).
- * En local (`vite`), cette route n’existe pas : le front retombe sur Plant.id ou simulation.
- */
-
-const SYSTEM = `Tu es un agronome expert des maladies des cultures en Afrique de l'Ouest et au-delà.
-Réponds UNIQUEMENT en JSON valide, sans markdown, avec:
-{"disease_name":"string","confidence":nombre 0-100,"symptoms":"string","treatment":"string","prevention":"string"}
-Texte en français, concis.`;
-
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    return res.status(204).end();
-  }
-
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) {
-    return res.status(503).json({ error: 'ANTHROPIC_API_KEY manquant côté serveur' });
+  const { imageBase64, mediaType } = req.body;
+  if (!imageBase64 || !mediaType) {
+    return res.status(400).json({ error: 'Missing image data' });
   }
 
-  const { imageBase64, mediaType = 'image/jpeg' } = req.body || {};
-
-  if (!imageBase64) {
-    return res.status(400).json({ error: 'imageBase64 requis' });
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
   }
 
   try {
-    const out = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: SYSTEM,
-        messages: [
-          {
-            role: 'user',
-            content: [
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
               {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: mediaType,
-                  data: imageBase64,
-                },
+                inline_data: {
+                  mime_type: mediaType,
+                  data: imageBase64
+                }
               },
               {
-                type: 'text',
-                text: "Diagnostique la maladie ou le problème visible sur cette plante cultivée en Afrique de l'Ouest ou climat tropical sec.",
-              },
-            ],
-          },
-        ],
-      }),
-    });
+                text: `You are an expert agronomist specializing in plant diseases across Africa and globally.
 
-    if (!out.ok) {
-      const errText = await out.text();
-      return res.status(502).json({ error: 'Anthropic', detail: errText.slice(0, 200) });
+Carefully analyze this plant image and identify:
+1. The exact plant species or crop type you see
+2. Any disease, pest damage, nutrient deficiency, or health issue visible
+3. If the plant is healthy, say so clearly
+
+Respond ONLY with this exact JSON, no other text:
+{
+  "disease_name": "Exact disease name or 'Healthy plant' if no disease found",
+  "plant_type": "The actual plant species visible in the image",
+  "confidence": 85,
+  "symptoms": "Specific visible symptoms described from what you see",
+  "treatment": "Practical treatment recommendation appropriate for West African farmers",
+  "prevention": "Prevention measures",
+  "is_healthy": false,
+  "source": "gemini-vision"
+}`
+              }
+            ]
+          }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(`Gemini error: ${JSON.stringify(data)}`);
     }
 
-    const data = await out.json();
-    const text = data?.content?.[0]?.text;
-    if (!text) {
-      return res.status(502).json({ error: 'Réponse vide' });
-    }
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Empty response from Gemini');
 
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) {
-      return res.status(502).json({ error: 'JSON introuvable dans la réponse' });
-    }
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse Gemini response');
 
-    const parsed = JSON.parse(m[0]);
-    return res.status(200).json({
-      disease_name: String(parsed.disease_name || 'Non identifié'),
-      confidence: Math.min(100, Math.max(0, Number(parsed.confidence) || 70)),
-      symptoms: String(parsed.symptoms || ''),
-      treatment: String(parsed.treatment || ''),
-      prevention: String(parsed.prevention || ''),
-      source: 'anthropic',
-    });
-  } catch (e) {
-    return res.status(500).json({ error: e.message || 'Erreur serveur' });
+    const result = JSON.parse(jsonMatch[0]);
+    return res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Disease analysis error:', error.message);
+    return res.status(500).json({ error: error.message });
   }
 }

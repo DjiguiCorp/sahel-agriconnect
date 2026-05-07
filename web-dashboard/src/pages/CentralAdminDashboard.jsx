@@ -18,7 +18,8 @@ import ProductionOptimizationManagement from '../components/admin/ProductionOpti
 import AfriYieldManagement from '../components/admin/AfriYieldManagement';
 import Governance from '../pages/Governance';
 import Modal from '../components/Modal';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
+import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
 import {
   Sprout,
   Handshake,
@@ -37,6 +38,7 @@ import {
   BadgeCheck,
   ShieldAlert,
   UserPlus,
+  ClipboardList,
 } from 'lucide-react';
 
 const BASE_TABS = [
@@ -48,6 +50,12 @@ const BASE_TABS = [
   { id: 'perks', label: 'Avantages', Icon: Gift, shortLabel: 'Avant.' },
   { id: 'irrigation', label: 'Irrigation', Icon: Droplets, shortLabel: 'Irr.' },
   { id: 'optimization', label: 'Optimisation', Icon: Bot, shortLabel: 'Opt.' },
+  {
+    id: 'expertRequests',
+    label: 'Demandes Experts',
+    Icon: ClipboardList,
+    shortLabel: 'Experts',
+  },
   { id: 'seasonal', label: 'Planification', Icon: Calendar, shortLabel: 'Plan.' },
   { id: 'certification', label: 'Certification', Icon: Star, shortLabel: 'Cert.' },
   { id: 'logistics', label: 'Logistique', Icon: Truck, shortLabel: 'Log.' },
@@ -326,9 +334,26 @@ const CountryLicensesPanel = () => {
 
 const CentralAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('farmers');
+  const [expertRequestsNewCount, setExpertRequestsNewCount] = useState(0);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const isSuperAdmin = user?.role === 'super-admin';
+
+  useEffect(() => {
+    async function badge() {
+      try {
+        const r = await fetch(`${API_ENDPOINTS.EXPERTS.REQUESTS}?status=new`, {
+          headers: authHeaders(),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) return;
+        setExpertRequestsNewCount(Array.isArray(data.requests) ? data.requests.length : 0);
+      } catch {
+        setExpertRequestsNewCount(0);
+      }
+    }
+    if (localStorage.getItem('adminToken')) badge();
+  }, [activeTab]);
 
   const tabs = useMemo(() => {
     const out = [...BASE_TABS];
@@ -399,7 +424,7 @@ const CentralAdminDashboard = () => {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === tab.id
                   ? tab.accent === 'gold'
                     ? 'bg-[#B5850A] text-white shadow-md'
@@ -407,13 +432,20 @@ const CentralAdminDashboard = () => {
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <tab.Icon
-                className={`h-5 w-5 shrink-0 ${
-                  activeTab === tab.id ? 'text-white' : 'text-brand-forest'
-                }`}
-                aria-hidden
-              />
-              <span className="font-medium">{tab.label}</span>
+              <span className="flex min-w-0 items-center space-x-3">
+                <tab.Icon
+                  className={`h-5 w-5 shrink-0 ${
+                    activeTab === tab.id ? 'text-white' : 'text-brand-forest'
+                  }`}
+                  aria-hidden
+                />
+                <span className="font-medium truncate">{tab.label}</span>
+              </span>
+              {tab.id === 'expertRequests' && expertRequestsNewCount > 0 ? (
+                <span className="shrink-0 rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+                  {expertRequestsNewCount}
+                </span>
+              ) : null}
             </button>
           ))}
         </nav>
@@ -441,6 +473,11 @@ const CentralAdminDashboard = () => {
                   aria-hidden
                 />
                 <span className="text-xs font-medium">{tab.shortLabel}</span>
+                {tab.id === 'expertRequests' && expertRequestsNewCount > 0 ? (
+                  <span className="rounded-full bg-red-500 px-1.5 py-px text-[10px] font-bold leading-none text-white">
+                    {expertRequestsNewCount}
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>
@@ -458,6 +495,9 @@ const CentralAdminDashboard = () => {
           {activeTab === 'perks' && <PerksManagement />}
           {activeTab === 'irrigation' && <IrrigationManagement />}
           {activeTab === 'optimization' && <ProductionOptimizationManagement />}
+          {activeTab === 'expertRequests' && (
+            <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} />
+          )}
           {activeTab === 'seasonal' && <SeasonalPlanning />}
           {activeTab === 'certification' && <CertificationManagement />}
           {activeTab === 'logistics' && <LogisticsManagement />}
