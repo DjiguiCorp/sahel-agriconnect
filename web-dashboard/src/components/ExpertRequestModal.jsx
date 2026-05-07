@@ -134,6 +134,14 @@ export default function ExpertRequestModal({ isOpen, onClose, prefillData = defa
               <p className="mt-2 text-sm">
                 Un expert lié à votre coopérative vous contactera dans les 48 heures.
               </p>
+              <a
+                href="https://wa.me/message/YOURWHATSAPPBUSINESS"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium mt-3"
+              >
+                💬 Continuer sur WhatsApp
+              </a>
               {!success.submittedAsMember && (
                 <div className="mt-5 rounded-xl border border-amber-200 bg-white px-4 py-3 text-left text-sm">
                   <p className="font-medium text-gray-900">💡 Rejoignez une coopérative pour un accès prioritaire aux experts</p>

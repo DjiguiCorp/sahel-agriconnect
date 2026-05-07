@@ -822,6 +822,7 @@
     },
     "tabs": {
       "overview": "Aperçu",
+      "notifications": "Notifications",
       "farmers": "Agriculteurs",
       "cooperatives": "Coopératives",
       "centers": "Centres",
@@ -840,6 +841,7 @@
     },
     "tabsShort": {
       "overview": "Aperçu",
+      "notifications": "Notif.",
       "farmers": "Agric.",
       "cooperatives": "Coop.",
       "centers": "Centres",
@@ -855,6 +857,18 @@
       "reports": "Rapp.",
       "afriyield": "AfriY.",
       "countryLicenses": "Lic."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "name": "Nom",
+      "phone": "Téléphone",
+      "message": "Message",
+      "source": "Source",
+      "date": "Date",
+      "actions": "Actions",
+      "markSent": "Marquer envoyé",
+      "sendWhatsapp": "Envoyer WhatsApp →",
+      "empty": "Aucune notification en attente."
     }
   }
 }

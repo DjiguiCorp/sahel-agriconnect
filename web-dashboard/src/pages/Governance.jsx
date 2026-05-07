@@ -19,7 +19,7 @@ const Governance = () => {
       <section className="section-container py-16">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-primary-green mb-6">
-            🔒 Souveraineté des Données
+            Souveraineté des Données
           </h2>
           <div className="card mb-8">
             <h3 className="text-xl font-semibold text-primary-green mb-4">
@@ -31,7 +31,7 @@ const Governance = () => {
             </p>
             <div className="bg-blue-50 border-l-4 border-primary-blue p-4 rounded">
               <p className="text-sm text-gray-700">
-                <strong>💡 Engagement :</strong> Aucune vente de données à des tiers sans consentement explicite. 
+                <strong>Engagement :</strong> Aucune vente de données à des tiers sans consentement explicite. 
                 Les agriculteurs peuvent exporter leurs données à tout moment.
               </p>
             </div>
@@ -45,7 +45,7 @@ const Governance = () => {
               </h3>
               <p className="text-gray-600 text-sm">
                 Les données sont hébergées dans des infrastructures contrôlées par les partenaires locaux 
-                (AES, ministères). Aucune dépendance externe.
+                  (gouvernements, ministères, organisations partenaires). Aucune dépendance externe.
               </p>
             </div>
             <div className="card">
@@ -77,7 +77,7 @@ const Governance = () => {
         <div className="section-container">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-primary-green mb-6">
-              👤 Qui Possède les Données ?
+              Qui Possède les Données ?
             </h2>
             <div className="card">
               <div className="space-y-6">
@@ -113,7 +113,7 @@ const Governance = () => {
                   </h3>
                   <p className="text-gray-700">
                     Les statistiques agrégées (nombre total d'agriculteurs, superficies totales) 
-                    peuvent être utilisées par les <strong>ministères et organisations partenaires</strong> 
+                    peuvent être utilisées par les <strong>gouvernements et organisations partenaires</strong> 
                     pour le suivi des politiques agricoles, avec anonymisation des données individuelles.
                   </p>
                 </div>
@@ -127,7 +127,7 @@ const Governance = () => {
       <section className="section-container py-16">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-primary-green mb-6">
-            🔐 Confidentialité et Protection
+            Confidentialité et Protection
           </h2>
           <div className="card">
             <div className="space-y-6">
@@ -185,7 +185,7 @@ const Governance = () => {
         <div className="section-container">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-primary-green mb-6">
-              🔌 Stratégie API Future
+              Stratégie API Future
             </h2>
             <div className="card">
               <div className="space-y-6">
@@ -204,7 +204,7 @@ const Governance = () => {
                     Phase 2 (2027) - APIs Publiques
                   </h3>
                   <p className="text-gray-700">
-                    Documentation complète des APIs pour partenaires (ministères, organisations). 
+                    Documentation complète des APIs pour partenaires (gouvernements, ministères, organisations partenaires). 
                     Versioning, rate limiting, authentification par clé API.
                   </p>
                 </div>
@@ -221,7 +221,7 @@ const Governance = () => {
 
                 <div className="bg-blue-50 border-l-4 border-primary-blue p-4 rounded">
                   <p className="text-sm text-gray-700">
-                    <strong>💡 Engagement :</strong> Toutes les APIs seront documentées, versionnées, 
+                    <strong>Engagement :</strong> Toutes les APIs seront documentées, versionnées, 
                     et respecteront les principes de souveraineté des données.
                   </p>
                 </div>
@@ -235,7 +235,7 @@ const Governance = () => {
       <section className="section-container py-16">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-primary-green mb-6">
-            🌍 Engagement Souverain
+            Engagement Souverain
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="card">

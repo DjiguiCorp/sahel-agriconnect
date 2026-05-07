@@ -1,9 +1,9 @@
 import { Sprout } from 'lucide-react';
 
 const stats = [
-  { value: '500+', label: 'Agriculteurs pilotes' },
-  { value: '54', label: 'Pays (Afrique)' },
-  { value: 'En cours', label: 'Déploiement' },
+  { value: '🌍', label: 'Pan-African platform' },
+  { value: '🌾', label: 'Shea Butter & Sesame' },
+  { value: '🚀', label: 'Now live — join first' },
 ];
 
 const Hero = () => {
@@ -52,13 +52,42 @@ const Hero = () => {
             </a>
             <button
               type="button"
+              onClick={() => document.getElementById('waitlist-form').scrollIntoView({ behavior: 'smooth' })}
               className="inline-flex items-center justify-center rounded-lg bg-brand-amber px-6 py-3 font-semibold text-brand-forest shadow-lg transition hover:bg-brand-amberDeep"
-              onClick={() => {
-                window.alert("Application mobile bientôt disponible !");
-              }}
             >
-              Télécharger l&apos;app
+              Télécharger l&apos;app — bientôt
             </button>
+          </div>
+
+          <div id="waitlist-form" className="mt-12 max-w-md mx-auto">
+            <p className="text-white/80 text-sm text-center mb-3">
+              Soyez notifié au lancement de l'application mobile
+            </p>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const email = e.target.email.value;
+                await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/waitlist`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email })
+                });
+                e.target.reset();
+                alert('Merci ! Vous serez notifié au lancement.');
+              }}
+              className="flex gap-2"
+            >
+              <input
+                name="email"
+                type="email"
+                required
+                placeholder="Votre email"
+                className="flex-1 rounded-lg px-4 py-2 text-brand-forest text-sm outline-none"
+              />
+              <button type="submit" className="bg-brand-amber text-brand-forest font-semibold px-4 py-2 rounded-lg text-sm hover:bg-brand-amberDeep transition">
+                S'inscrire
+              </button>
+            </form>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import Farmer from '../models/Farmer.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateFarmer, validateFarmerUpdate } from '../middleware/validation.js';
 import { countryFilter } from '../middleware/countryFilter.js';
+import { queueNotification, messageTemplates } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -16,6 +17,14 @@ router.post('/', validateFarmer, async (req, res) => {
 
     const farmer = new Farmer(farmerData);
     await farmer.save();
+
+    queueNotification({
+      name: farmer.nom || '',
+      phone: farmer.telephone || farmer.phone,
+      email: farmer.email,
+      message: messageTemplates.farmerRegistered(farmer.nom || ''),
+      source: 'farmer_registration',
+    }).catch(console.error);
 
     // Émettre l'événement WebSocket
     const io = req.app.get('io');

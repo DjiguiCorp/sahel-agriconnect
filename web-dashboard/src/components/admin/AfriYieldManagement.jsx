@@ -6,6 +6,8 @@ const SUB = [
   { id: 'opportunities', label: 'Opportunities' },
   { id: 'investors', label: 'Investors' },
   { id: 'meetings', label: 'Meeting Requests' },
+  { id: 'investments', label: 'Investissements' },
+  { id: 'traceability', label: 'Traçabilité' },
 ];
 
 const COUNTRIES = [
@@ -91,9 +93,48 @@ export default function AfriYieldManagement() {
   const [opportunities, setOpportunities] = useState([]);
   const [investors, setInvestors] = useState([]);
   const [meetingRequests, setMeetingRequests] = useState([]);
+  const [investments, setInvestments] = useState([]);
+  const [investmentStats, setInvestmentStats] = useState({ totalDeployed: 0, totalPaidOut: 0, activeCount: 0 });
+  const [batches, setBatches] = useState([]);
+  const [batchStats, setBatchStats] = useState({ harvest: 0, processing: 0, certified: 0, sold: 0, exported: 0 });
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(emptyOppForm());
   const [saving, setSaving] = useState(false);
+
+  const [invModal, setInvModal] = useState({ open: false });
+  const [payoutModal, setPayoutModal] = useState({ open: false, investment: null });
+  const [invForm, setInvForm] = useState({
+    investorEmail: '',
+    opportunityId: '',
+    track: 'Track A',
+    amountDeployed: '',
+    expectedROIPercent: 8,
+    deploymentDate: '',
+  });
+  const [invSaving, setInvSaving] = useState(false);
+  const [batchModal, setBatchModal] = useState({ open: false });
+  const [batchForm, setBatchForm] = useState({
+    commodity: 'Shea Butter',
+    farmerName: '',
+    farmerCountry: 'Mali',
+    farmerRegion: '',
+    cooperativeName: '',
+    processorName: '',
+    harvestDate: '',
+    processingDate: '',
+    quantityHarvestedKg: '',
+    quantityProcessedKg: '',
+    certificationStatus: 'None',
+    qualityGrade: 'A',
+    buyerName: '',
+    buyerCountry: '',
+    exportDate: '',
+    exportValueUSD: '',
+    status: 'harvest',
+    documents: '',
+    adminNotes: '',
+  });
+  const [batchSaving, setBatchSaving] = useState(false);
 
   const loadOpportunities = useCallback(async () => {
     const r = await fetch(API_ENDPOINTS.OPPORTUNITIES.ALL, { headers: authHeaders() });
@@ -116,12 +157,64 @@ export default function AfriYieldManagement() {
     else if (Array.isArray(data)) setMeetingRequests(data);
   }, []);
 
+  const loadInvestments = useCallback(async () => {
+    const r = await fetch(`${API_BASE_URL}/api/investments`, { headers: authHeaders() });
+    const data = await r.json().catch(() => ({}));
+    if (data.success && Array.isArray(data.investments)) setInvestments(data.investments);
+    else setInvestments([]);
+  }, []);
+
+  const loadInvestmentStats = useCallback(async () => {
+    const r = await fetch(`${API_BASE_URL}/api/investments/stats`, { headers: authHeaders() });
+    const data = await r.json().catch(() => ({}));
+    if (data.success) {
+      setInvestmentStats({
+        totalDeployed: Number(data.totalDeployed) || 0,
+        totalPaidOut: Number(data.totalPaidOut) || 0,
+        activeCount: Number(data.activeCount) || 0,
+      });
+    } else {
+      setInvestmentStats({ totalDeployed: 0, totalPaidOut: 0, activeCount: 0 });
+    }
+  }, []);
+
+  const loadBatches = useCallback(async () => {
+    const r = await fetch(API_ENDPOINTS.SUPPLYCHAIN.BASE, { headers: authHeaders() });
+    const data = await r.json().catch(() => ({}));
+    if (data.success && Array.isArray(data.records)) setBatches(data.records);
+    else setBatches([]);
+  }, []);
+
+  const loadBatchStats = useCallback(async () => {
+    const r = await fetch(API_ENDPOINTS.SUPPLYCHAIN.STATS, { headers: authHeaders() });
+    const data = await r.json().catch(() => ({}));
+    if (data.success && data.byStatus) {
+      setBatchStats({
+        harvest: Number(data.byStatus.harvest) || 0,
+        processing: Number(data.byStatus.processing) || 0,
+        certified: Number(data.byStatus.certified) || 0,
+        sold: Number(data.byStatus.sold) || 0,
+        exported: Number(data.byStatus.exported) || 0,
+      });
+    } else {
+      setBatchStats({ harvest: 0, processing: 0, certified: 0, sold: 0, exported: 0 });
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       try {
-        await Promise.all([loadOpportunities(), loadInvestors(), loadMeetings()]);
+        await Promise.all([
+          loadOpportunities(),
+          loadInvestors(),
+          loadMeetings(),
+          loadInvestments(),
+          loadInvestmentStats(),
+          loadBatches(),
+          loadBatchStats(),
+        ]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -129,7 +222,7 @@ export default function AfriYieldManagement() {
     return () => {
       cancelled = true;
     };
-  }, [loadOpportunities, loadInvestors, loadMeetings]);
+  }, [loadOpportunities, loadInvestors, loadMeetings, loadInvestments, loadInvestmentStats, loadBatches, loadBatchStats]);
 
   const openAdd = () => {
     setForm(emptyOppForm());
@@ -271,6 +364,141 @@ export default function AfriYieldManagement() {
     link.download = `afriyield-investors-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
+  };
+
+  const fmtMoney = (n) => {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return '—';
+    return `$${v.toLocaleString()}`;
+  };
+
+  const fmtDate = (d) => {
+    if (!d) return '—';
+    const dt = new Date(d);
+    if (Number.isNaN(dt.getTime())) return '—';
+    return dt.toLocaleDateString();
+  };
+
+  const nextPayoutDate = (inv) => {
+    const d = (inv.payoutSchedule || [])
+      .filter((p) => p.status === 'scheduled')
+      .map((p) => new Date(p.payoutDate))
+      .filter((x) => !Number.isNaN(x.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    return d ? fmtDate(d) : '—';
+  };
+
+  const openAddInvestment = () => {
+    setInvForm({
+      investorEmail: '',
+      opportunityId: opportunities.find((o) => o.status === 'active')?._id || '',
+      track: 'Track A',
+      amountDeployed: '',
+      expectedROIPercent: 8,
+      deploymentDate: new Date().toISOString().slice(0, 10),
+    });
+    setInvModal({ open: true });
+  };
+
+  const submitInvestment = async (e) => {
+    e.preventDefault();
+    setInvSaving(true);
+    try {
+      const body = {
+        investorEmail: invForm.investorEmail,
+        opportunityId: invForm.opportunityId,
+        track: invForm.track,
+        amountDeployed: Number(invForm.amountDeployed),
+        expectedROIPercent: Number(invForm.expectedROIPercent),
+        deploymentDate: invForm.deploymentDate ? new Date(invForm.deploymentDate) : undefined,
+      };
+      const r = await fetch(`${API_BASE_URL}/api/investments`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.success) throw new Error(data.error || 'Create failed');
+      setInvModal({ open: false });
+      await Promise.all([loadInvestments(), loadInvestmentStats()]);
+    } catch (e2) {
+      alert(e2.message || 'Create failed');
+    } finally {
+      setInvSaving(false);
+    }
+  };
+
+  const openMarkPayout = (investment) => {
+    setPayoutModal({ open: true, investment });
+  };
+
+  const markPayoutPaid = async (investmentId, payoutIndex) => {
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/investments/${investmentId}/payout/${payoutIndex}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({}),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.success) throw new Error(data.error || 'Update failed');
+      setPayoutModal({ open: false, investment: null });
+      await Promise.all([loadInvestments(), loadInvestmentStats()]);
+    } catch (e) {
+      alert(e.message || 'Update failed');
+    }
+  };
+
+  const openNewBatch = () => {
+    setBatchForm((p) => ({
+      ...p,
+      harvestDate: new Date().toISOString().slice(0, 10),
+      status: 'harvest',
+    }));
+    setBatchModal({ open: true });
+  };
+
+  const submitBatch = async (e) => {
+    e.preventDefault();
+    setBatchSaving(true);
+    try {
+      const body = {
+        commodity: batchForm.commodity,
+        farmerName: batchForm.farmerName,
+        farmerCountry: batchForm.farmerCountry,
+        farmerRegion: batchForm.farmerRegion,
+        cooperativeName: batchForm.cooperativeName,
+        processorName: batchForm.processorName,
+        harvestDate: batchForm.harvestDate ? new Date(batchForm.harvestDate) : undefined,
+        processingDate: batchForm.processingDate ? new Date(batchForm.processingDate) : undefined,
+        quantityHarvestedKg: batchForm.quantityHarvestedKg !== '' ? Number(batchForm.quantityHarvestedKg) : undefined,
+        quantityProcessedKg: batchForm.quantityProcessedKg !== '' ? Number(batchForm.quantityProcessedKg) : undefined,
+        certificationStatus: batchForm.certificationStatus,
+        qualityGrade: batchForm.qualityGrade,
+        buyerName: batchForm.buyerName,
+        buyerCountry: batchForm.buyerCountry,
+        exportDate: batchForm.exportDate ? new Date(batchForm.exportDate) : undefined,
+        exportValueUSD: batchForm.exportValueUSD !== '' ? Number(batchForm.exportValueUSD) : undefined,
+        status: batchForm.status,
+        documents: String(batchForm.documents || '')
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean),
+        adminNotes: batchForm.adminNotes,
+      };
+      const r = await fetch(API_ENDPOINTS.SUPPLYCHAIN.BASE, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.success) throw new Error(data.error || 'Create failed');
+      setBatchModal({ open: false });
+      await Promise.all([loadBatches(), loadBatchStats()]);
+    } catch (e2) {
+      alert(e2.message || 'Create failed');
+    } finally {
+      setBatchSaving(false);
+    }
   };
 
   if (loading) {
@@ -507,6 +735,145 @@ export default function AfriYieldManagement() {
         </div>
       )}
 
+      {sub === 'investments' && (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <p className="text-sm font-semibold text-gray-600">Total deployed</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary-green">{fmtMoney(investmentStats.totalDeployed)}</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <p className="text-sm font-semibold text-gray-600">Total paid out</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary-green">{fmtMoney(investmentStats.totalPaidOut)}</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <p className="text-sm font-semibold text-gray-600">Active investments</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary-green">{investmentStats.activeCount}</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={openAddInvestment}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary-green text-white px-4 py-2 font-semibold hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter un investissement
+            </button>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-left">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Investor Name</th>
+                  <th className="px-3 py-2 font-semibold">Email</th>
+                  <th className="px-3 py-2 font-semibold">Opportunity</th>
+                  <th className="px-3 py-2 font-semibold">Track</th>
+                  <th className="px-3 py-2 font-semibold">Amount</th>
+                  <th className="px-3 py-2 font-semibold">Deployment Date</th>
+                  <th className="px-3 py-2 font-semibold">Next Payout</th>
+                  <th className="px-3 py-2 font-semibold">Status</th>
+                  <th className="px-3 py-2 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {investments.map((inv) => (
+                  <tr key={inv._id} className="border-t border-gray-100">
+                    <td className="px-3 py-2">{inv.investorName || '—'}</td>
+                    <td className="px-3 py-2">{inv.investorEmail || '—'}</td>
+                    <td className="px-3 py-2">{inv.opportunityName || '—'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{inv.track || '—'}</td>
+                    <td className="px-3 py-2">{fmtMoney(inv.amountDeployed)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{fmtDate(inv.deploymentDate)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{nextPayoutDate(inv)}</td>
+                    <td className="px-3 py-2">{inv.status}</td>
+                    <td className="px-3 py-2">
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-[#B5850A] hover:underline"
+                        onClick={() => openMarkPayout(inv)}
+                      >
+                        Marquer paiement effectué
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {investments.length === 0 ? (
+              <p className="p-6 text-center text-gray-500">No investments yet.</p>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {sub === 'traceability' && (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-5">
+            {['harvest', 'processing', 'certified', 'sold', 'exported'].map((k) => (
+              <div key={k} className="rounded-xl border border-gray-200 bg-white p-4">
+                <p className="text-sm font-semibold text-gray-600">{k}</p>
+                <p className="mt-1 text-2xl font-extrabold text-primary-green">{batchStats[k] || 0}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={openNewBatch}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary-green text-white px-4 py-2 font-semibold hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Nouveau lot
+            </button>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-left">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Batch Number</th>
+                  <th className="px-3 py-2 font-semibold">Commodity</th>
+                  <th className="px-3 py-2 font-semibold">Farmer</th>
+                  <th className="px-3 py-2 font-semibold">Processor</th>
+                  <th className="px-3 py-2 font-semibold">Harvest Date</th>
+                  <th className="px-3 py-2 font-semibold">Status</th>
+                  <th className="px-3 py-2 font-semibold">Buyer Country</th>
+                  <th className="px-3 py-2 font-semibold">Link</th>
+                </tr>
+              </thead>
+              <tbody>
+                {batches.map((b) => (
+                  <tr key={b._id} className="border-t border-gray-100">
+                    <td className="px-3 py-2 font-mono">{b.batchNumber}</td>
+                    <td className="px-3 py-2">{b.commodity}</td>
+                    <td className="px-3 py-2">{b.farmerName || '—'}</td>
+                    <td className="px-3 py-2">{b.processorName || '—'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{fmtDate(b.harvestDate)}</td>
+                    <td className="px-3 py-2">{b.status}</td>
+                    <td className="px-3 py-2">{b.buyerCountry || '—'}</td>
+                    <td className="px-3 py-2">
+                      <a
+                        href={`/trace/${encodeURIComponent(b.batchNumber)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold text-[#B5850A] hover:underline"
+                      >
+                        Ouvrir
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {batches.length === 0 ? <p className="p-6 text-center text-gray-500">No batches yet.</p> : null}
+          </div>
+        </div>
+      )}
+
       {modal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
@@ -687,6 +1054,297 @@ export default function AfriYieldManagement() {
                   onClick={() => setModal(null)}
                 >
                   Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {invModal.open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-lg font-bold text-primary-green mb-4">Ajouter un investissement</h3>
+            <form onSubmit={submitInvestment} className="space-y-3 text-sm">
+              <label className="block">
+                <span className="font-medium text-gray-700">Investor email *</span>
+                <input
+                  required
+                  list="investor-emails"
+                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  value={invForm.investorEmail}
+                  onChange={(e) => setInvForm((p) => ({ ...p, investorEmail: e.target.value }))}
+                />
+                <datalist id="investor-emails">
+                  {investors.map((i) => (
+                    <option key={i._id} value={i.email} />
+                  ))}
+                </datalist>
+              </label>
+
+              <label className="block">
+                <span className="font-medium text-gray-700">Opportunity *</span>
+                <select
+                  required
+                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                  value={invForm.opportunityId}
+                  onChange={(e) => setInvForm((p) => ({ ...p, opportunityId: e.target.value }))}
+                >
+                  <option value="" disabled>
+                    Select...
+                  </option>
+                  {opportunities
+                    .filter((o) => o.status === 'active')
+                    .map((o) => (
+                      <option key={o._id} value={o._id}>
+                        {o.centerName} — {o.commodity}
+                      </option>
+                    ))}
+                </select>
+              </label>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Track *</span>
+                  <select
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    value={invForm.track}
+                    onChange={(e) => setInvForm((p) => ({ ...p, track: e.target.value }))}
+                  >
+                    <option value="Track A">Track A</option>
+                    <option value="Track B">Track B</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Amount deployed ($) *</span>
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    value={invForm.amountDeployed}
+                    onChange={(e) => setInvForm((p) => ({ ...p, amountDeployed: e.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Expected ROI %</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    value={invForm.expectedROIPercent}
+                    onChange={(e) => setInvForm((p) => ({ ...p, expectedROIPercent: e.target.value }))}
+                  />
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Deployment date</span>
+                  <input
+                    type="date"
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    value={invForm.deploymentDate}
+                    onChange={(e) => setInvForm((p) => ({ ...p, deploymentDate: e.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setInvModal({ open: false })}
+                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={invSaving}
+                  className="rounded-lg bg-primary-green px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                >
+                  {invSaving ? 'Saving...' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {payoutModal.open && payoutModal.investment ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-lg font-bold text-primary-green mb-4">Marquer paiement effectué</h3>
+            <p className="text-sm text-gray-700">
+              {payoutModal.investment.investorEmail} — {payoutModal.investment.opportunityName}
+            </p>
+            <div className="mt-4 space-y-2">
+              {(payoutModal.investment.payoutSchedule || []).map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  disabled={p.status === 'paid'}
+                  onClick={() => markPayoutPaid(payoutModal.investment._id, idx)}
+                  className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 text-left hover:bg-gray-50 disabled:opacity-60"
+                >
+                  <span className="text-sm font-semibold text-gray-900">
+                    {fmtDate(p.payoutDate)} — {fmtMoney(p.amount)}
+                  </span>
+                  <span className="text-xs font-bold text-gray-600">{p.status}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end pt-4">
+              <button
+                type="button"
+                onClick={() => setPayoutModal({ open: false, investment: null })}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {batchModal.open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-lg font-bold text-primary-green mb-4">Nouveau lot</h3>
+            <form onSubmit={submitBatch} className="space-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Commodity *</span>
+                  <input
+                    required
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    value={batchForm.commodity}
+                    onChange={(e) => setBatchForm((p) => ({ ...p, commodity: e.target.value }))}
+                  />
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Status</span>
+                  <select
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    value={batchForm.status}
+                    onChange={(e) => setBatchForm((p) => ({ ...p, status: e.target.value }))}
+                  >
+                    <option value="harvest">harvest</option>
+                    <option value="processing">processing</option>
+                    <option value="certified">certified</option>
+                    <option value="sold">sold</option>
+                    <option value="exported">exported</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Farmer name</span>
+                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerName} onChange={(e) => setBatchForm((p) => ({ ...p, farmerName: e.target.value }))} />
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Farmer country</span>
+                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, farmerCountry: e.target.value }))} />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="font-medium text-gray-700">Farmer region</span>
+                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerRegion} onChange={(e) => setBatchForm((p) => ({ ...p, farmerRegion: e.target.value }))} />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Cooperative name</span>
+                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.cooperativeName} onChange={(e) => setBatchForm((p) => ({ ...p, cooperativeName: e.target.value }))} />
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Processor name</span>
+                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.processorName} onChange={(e) => setBatchForm((p) => ({ ...p, processorName: e.target.value }))} />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Harvest date</span>
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.harvestDate} onChange={(e) => setBatchForm((p) => ({ ...p, harvestDate: e.target.value }))} />
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Processing date</span>
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.processingDate} onChange={(e) => setBatchForm((p) => ({ ...p, processingDate: e.target.value }))} />
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Export date</span>
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.exportDate} onChange={(e) => setBatchForm((p) => ({ ...p, exportDate: e.target.value }))} />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Quantity harvested (kg)</span>
+                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.quantityHarvestedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityHarvestedKg: e.target.value }))} />
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Quantity processed (kg)</span>
+                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.quantityProcessedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityProcessedKg: e.target.value }))} />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Certification status</span>
+                  <select className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white" value={batchForm.certificationStatus} onChange={(e) => setBatchForm((p) => ({ ...p, certificationStatus: e.target.value }))}>
+                    <option value="None">None</option>
+                    <option value="Local">Local</option>
+                    <option value="Regional">Regional</option>
+                    <option value="USDA">USDA</option>
+                    <option value="EU Organic">EU Organic</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Quality grade</span>
+                  <select className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white" value={batchForm.qualityGrade} onChange={(e) => setBatchForm((p) => ({ ...p, qualityGrade: e.target.value }))}>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="Export Grade">Export Grade</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="font-medium text-gray-700">Buyer name</span>
+                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.buyerName} onChange={(e) => setBatchForm((p) => ({ ...p, buyerName: e.target.value }))} />
+                </label>
+                <label className="block">
+                  <span className="font-medium text-gray-700">Buyer country</span>
+                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.buyerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, buyerCountry: e.target.value }))} />
+                </label>
+              </div>
+
+              <label className="block">
+                <span className="font-medium text-gray-700">Export value (USD)</span>
+                <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.exportValueUSD} onChange={(e) => setBatchForm((p) => ({ ...p, exportValueUSD: e.target.value }))} />
+              </label>
+
+              <label className="block">
+                <span className="font-medium text-gray-700">Documents (one per line URL/path)</span>
+                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.documents} onChange={(e) => setBatchForm((p) => ({ ...p, documents: e.target.value }))} />
+              </label>
+
+              <label className="block">
+                <span className="font-medium text-gray-700">Admin notes</span>
+                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.adminNotes} onChange={(e) => setBatchForm((p) => ({ ...p, adminNotes: e.target.value }))} />
+              </label>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setBatchModal({ open: false })} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={batchSaving} className="rounded-lg bg-primary-green px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60">
+                  {batchSaving ? 'Saving...' : 'Create'}
                 </button>
               </div>
             </form>

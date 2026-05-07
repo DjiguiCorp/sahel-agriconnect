@@ -28,6 +28,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/impact" className="text-gray-300 hover:text-white transition-colors">
+                  Impact &amp; Métriques
+                </Link>
+              </li>
+              <li>
                 <Link to="/dashboard" className="text-gray-300 hover:text-white transition-colors">
                   Dashboard
                 </Link>
@@ -79,8 +84,13 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-600 pt-8 pb-4 text-center text-sm text-gray-300">
-          <p>&copy; {new Date().getFullYear()} Sahel AgriConnect. Tous droits réservés.</p>
+        <div className="border-t border-white/10 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-400">
+          <span>© 2026 Djigui Corporation. Tous droits réservés.</span>
+          <div className="flex gap-4">
+            <Link to="/terms" className="hover:text-white transition">Conditions d&apos;utilisation</Link>
+            <Link to="/privacy" className="hover:text-white transition">Politique de confidentialité</Link>
+            <Link to="/impact" className="hover:text-white transition">Impact &amp; Métriques</Link>
+          </div>
         </div>
       </div>
     </footer>

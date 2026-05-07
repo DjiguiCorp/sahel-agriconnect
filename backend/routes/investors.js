@@ -2,6 +2,7 @@ import express from 'express';
 import Investor from '../models/Investor.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { confirmInvestorRegistration, notifyAdminNewInvestor } from '../services/emailService.js';
+import { queueNotification, messageTemplates } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -50,6 +51,13 @@ router.post('/register', async (req, res) => {
 
     notifyAdminNewInvestor(investor).catch(console.error);
     confirmInvestorRegistration(investor).catch(console.error);
+    queueNotification({
+      name: investor.fullName,
+      phone: investor.phone,
+      email: investor.email,
+      message: messageTemplates.investorWelcome(investor.fullName),
+      source: 'investor_registration',
+    }).catch(console.error);
 
     res.status(201).json({ success: true, message: 'Registration received' });
   } catch (err) {

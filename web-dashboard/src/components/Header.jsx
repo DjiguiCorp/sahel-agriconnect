@@ -66,6 +66,9 @@ const Header = () => {
             <Link to="/about" className={navLinkClass}>
               {t('nav.about')}
             </Link>
+            <Link to="/impact" className={navLinkClass}>
+              Impact
+            </Link>
             <Link to="/dashboard" className={navLinkClass}>
               {t('nav.dashboard')}
             </Link>
@@ -179,6 +182,9 @@ const Header = () => {
               </Link>
               <Link to="/about" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.about')}
+              </Link>
+              <Link to="/impact" className={navLinkClass} onClick={closeMenu}>
+                Impact
               </Link>
               <Link to="/dashboard" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.dashboard')}

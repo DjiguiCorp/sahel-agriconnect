@@ -26,6 +26,10 @@ import expertsRouter from './routes/experts.js';
 import diasporaRouter from './routes/diaspora.js';
 import Admin from './models/Admin.js';
 import marketplaceRouter from './routes/marketplace.js';
+import waitlistRouter from './routes/waitlist.js';
+import investmentsRouter from './routes/investments.js';
+import supplychainRouter from './routes/supplychain.js';
+import notificationsRouter from './routes/notifications.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -124,6 +128,10 @@ app.use('/api/soil', soilRouter);
 app.use('/api/experts', expertsRouter);
 app.use('/api/diaspora', diasporaRouter);
 app.use('/api/marketplace', marketplaceRouter);
+app.use('/api/waitlist', waitlistRouter);
+app.use('/api/investments', investmentsRouter);
+app.use('/api/supplychain', supplychainRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // Route de base - Message informatif
 app.get('/', (req, res) => {

@@ -4,6 +4,7 @@ import CooperativePlatformRegistration from '../models/CooperativePlatformRegist
 import { authenticateToken } from '../middleware/auth.js';
 import { countryFilter } from '../middleware/countryFilter.js';
 import { confirmCooperativeRegistration, notifyAdminNewCooperative } from '../services/emailService.js';
+import { queueNotification, messageTemplates } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -24,6 +25,13 @@ router.post('/register-platform', async (req, res) => {
 
     notifyAdminNewCooperative(cooperative).catch(console.error);
     confirmCooperativeRegistration(cooperative).catch(console.error);
+    queueNotification({
+      name: cooperative.leaderName || cooperative.nomResponsable || '',
+      phone: cooperative.phone,
+      email: cooperative.email,
+      message: messageTemplates.cooperativeRegistered(cooperative.leaderName || cooperative.nomResponsable || ''),
+      source: 'cooperative_registration',
+    }).catch(console.error);
 
     res.status(201).json({ success: true });
   } catch (error) {

@@ -19,7 +19,7 @@ const About = () => {
 
       <section className="section-container py-16">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-6">Présentation de Sahel AgriConnect</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-6">Notre Mission</h2>
           <div className="space-y-6 text-gray-700 text-lg">
             <p>
               <strong>Sahel AgriConnect</strong> est une initiative ambitieuse visant à digitaliser et moderniser

@@ -147,6 +147,11 @@ export const API_ENDPOINTS = {
     MEETING_REQUEST: (id) => `${API_BASE_URL}/api/opportunities/${id}/meeting-request`,
     MEETING_REQUESTS: `${API_BASE_URL}/api/opportunities/meeting-requests`,
   },
+  SUPPLYCHAIN: {
+    BASE: `${API_BASE_URL}/api/supplychain`,
+    BATCH: (num) => `${API_BASE_URL}/api/supplychain/batch/${num}`,
+    STATS: `${API_BASE_URL}/api/supplychain/stats`,
+  },
 };
 
 export { API_BASE_URL, WS_BASE_URL, BUILD_VERSION };

@@ -44,6 +44,7 @@ import {
 
 const BASE_TABS = [
   { id: 'overview', labelKey: 'adminDashboard.tabs.overview', shortKey: 'adminDashboard.tabsShort.overview', Icon: ShieldAlert },
+  { id: 'notifications', labelKey: 'adminDashboard.tabs.notifications', shortKey: 'adminDashboard.tabsShort.notifications', Icon: BadgeCheck },
   { id: 'farmers', labelKey: 'adminDashboard.tabs.farmers', shortKey: 'adminDashboard.tabsShort.farmers', Icon: Sprout },
   { id: 'cooperatives', labelKey: 'adminDashboard.tabs.cooperatives', shortKey: 'adminDashboard.tabsShort.cooperatives', Icon: Handshake },
   { id: 'centers', labelKey: 'adminDashboard.tabs.centers', shortKey: 'adminDashboard.tabsShort.centers', Icon: Building2 },
@@ -787,6 +788,110 @@ const CountryLicensesPanel = () => {
   );
 };
 
+function NotificationsPanel() {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+  const [err, setErr] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/notifications`, { headers: authHeaders() });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || 'Failed');
+      setItems(Array.isArray(j?.notifications) ? j.notifications : []);
+    } catch (e) {
+      setErr(e.message || 'Error');
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const markSent = async (id) => {
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/notifications/${id}/status`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ status: 'sent' }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || 'Update failed');
+      await load();
+    } catch (e) {
+      alert(e.message || 'Update failed');
+    }
+  };
+
+  if (loading) return <div className="text-center py-10">{t('common.loading')}</div>;
+  if (err) return <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{err}</div>;
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-extrabold text-brand-forest">{t('adminDashboard.notifications.title')}</h2>
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-gray-700">
+            <tr>
+              <th className="px-4 py-3 text-left font-semibold">{t('adminDashboard.notifications.name')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('adminDashboard.notifications.phone')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('adminDashboard.notifications.message')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('adminDashboard.notifications.source')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('adminDashboard.notifications.date')}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t('adminDashboard.notifications.actions')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {items.map((n) => (
+              <tr key={n._id} className="text-gray-800">
+                <td className="px-4 py-3 font-medium">{n.recipientName || '—'}</td>
+                <td className="px-4 py-3">{n.recipientPhone || '—'}</td>
+                <td className="px-4 py-3 max-w-[420px] truncate" title={n.message}>
+                  {n.message || '—'}
+                </td>
+                <td className="px-4 py-3">{n.source || '—'}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {n.createdAt ? new Date(n.createdAt).toLocaleString() : '—'}
+                </td>
+                <td className="px-4 py-3 text-right whitespace-nowrap">
+                  <div className="inline-flex items-center gap-3">
+                    <a
+                      href={`https://wa.me/${n.recipientPhone?.replace(/\\D/g, '')}?text=${encodeURIComponent(
+                        n.message || ''
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-600 hover:text-green-800 text-sm font-medium"
+                    >
+                      {t('adminDashboard.notifications.sendWhatsapp')}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => markSent(n._id)}
+                      className="rounded-lg bg-brand-forest px-3 py-1.5 text-xs font-bold text-white hover:bg-[#143326]"
+                    >
+                      {t('adminDashboard.notifications.markSent')}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {items.length === 0 ? (
+          <p className="p-6 text-center text-gray-500">{t('adminDashboard.notifications.empty')}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 const CentralAdminDashboard = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
@@ -953,6 +1058,7 @@ const CentralAdminDashboard = () => {
       <main className="md:ml-64 p-3 sm:p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
+          {activeTab === 'notifications' && <NotificationsPanel />}
           {activeTab === 'farmers' && <RealTimeFarmers />}
           {activeTab === 'cooperatives' && <CooperativesManagement />}
           {activeTab === 'centers' && <CentersManagement />}

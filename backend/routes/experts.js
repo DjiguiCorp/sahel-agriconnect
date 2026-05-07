@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import ExpertRequest from '../models/ExpertRequest.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { notifyAdminExpertRequest } from '../services/emailService.js';
+import { queueNotification, messageTemplates } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -51,6 +52,13 @@ router.post('/request', async (req, res) => {
     });
 
     notifyAdminExpertRequest(doc).catch(console.error);
+    queueNotification({
+      name: doc.farmerName,
+      phone: doc.farmerPhone,
+      email: doc.farmerEmail,
+      message: messageTemplates.expertRequestReceived(doc.farmerName),
+      source: 'expert_request',
+    }).catch(console.error);
 
     const payload = {
       success: true,

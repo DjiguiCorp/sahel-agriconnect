@@ -4,6 +4,7 @@ import CertificationProgramApplication from '../models/CertificationProgramAppli
 import Farmer from '../models/Farmer.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateCertification } from '../middleware/validation.js';
+import { queueNotification, messageTemplates } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -35,6 +36,13 @@ router.post('/apply', async (req, res) => {
       email: req.body.email,
       phone: req.body.phone || '',
     });
+    queueNotification({
+      name: req.body.name,
+      phone: req.body.phone,
+      email: req.body.email,
+      message: messageTemplates.certificationReceived(req.body.name),
+      source: 'certification_apply',
+    }).catch(console.error);
     res.status(201).json({ success: true });
   } catch (error) {
     console.error('Erreur candidature certification export:', error);

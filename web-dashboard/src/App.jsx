@@ -29,6 +29,10 @@ import EquipmentFund from './pages/EquipmentFund';
 import AfriYieldLayout from './pages/AfriYieldLayout';
 import Pricing from './pages/Pricing';
 import ProducerDashboard from './pages/ProducerDashboard';
+import ImpactReport from './pages/ImpactReport';
+import TraceabilityLookup from './pages/TraceabilityLookup';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 function App() {
   return (
@@ -65,8 +69,12 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="about" element={<About />} />
+            <Route path="impact" element={<ImpactReport />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="my-dashboard" element={<ProducerDashboard />} />
+            <Route path="trace/:batchNumber?" element={<TraceabilityLookup />} />
+            <Route path="terms" element={<TermsOfService />} />
+            <Route path="privacy" element={<PrivacyPolicy />} />
             <Route path="contact" element={<Contact />} />
             <Route path="pricing" element={<Pricing />} />
             <Route path="diagnostic-sol" element={<SoilDiagnostic />} />
