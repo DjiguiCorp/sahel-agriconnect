@@ -546,6 +546,71 @@
       "a4": "Nous acceptons les virements bancaires, le mobile money (Orange Money, Wave) et les cartes internationales. Contactez-nous pour organiser le paiement."
     }
   },
+  "platformLicensing": {
+    "hero": {
+      "title": "Déployez AfriYield Exchange dans votre pays",
+      "subtitle": "Déploiement souverain pour les ministères, organismes régionaux et réseaux coopératifs — données opérationnelles privées avec une portée mondiale sur les commodités."
+    },
+    "pillars": {
+      "sovereign": {
+        "title": "Contrôle souverain des données",
+        "text": "Les données des agriculteurs, coopératives et certifications de votre pays restent isolées dans un environnement dédié."
+      },
+      "custom": {
+        "title": "Tableau de bord admin personnalisé",
+        "text": "Configurez les inscriptions, approbations et programmes selon les politiques nationales et les besoins de reporting."
+      },
+      "global": {
+        "title": "Visibilité mondiale des commodités",
+        "text": "Les commodités certifiées apparaissent sur la marketplace AfriYield pour les acheteurs diaspora et internationaux."
+      }
+    },
+    "license": {
+      "badge": "Licence plateforme",
+      "price": "999$/mois",
+      "description": "Déploiement complet par pays avec couche de référencement marketplace.",
+      "features": [
+        "Environnement admin dédié par pays",
+        "Inscriptions agriculteurs illimitées",
+        "Outils de gestion et gouvernance des coopératives",
+        "Workflow de certification & piste d'audit",
+        "Référencement commodités sur AfriYield Exchange (acheteurs voient les produits, pas les données privées)",
+        "Onboarding & formation pour votre équipe admin",
+        "Export et portabilité des données",
+        "Canal de support avec SLA garanti"
+      ]
+    },
+    "isolation": {
+      "title": "Isolation des données",
+      "subtitle": "Les opérations nationales restent privées ; seuls les référencements de commodités approuvés transitent vers la marketplace AfriYield partagée.",
+      "countryA": "Pays A — Privé",
+      "countryADesc": "Admin national, agriculteurs, coopératives",
+      "countryB": "Pays B — Privé",
+      "countryBDesc": "Admin national, agriculteurs, coopératives",
+      "marketplace": "Marketplace AfriYield — Commodités uniquement",
+      "marketplaceDesc": "Couche partagée pour la visibilité des produits vérifiés"
+    },
+    "form": {
+      "title": "Demander une démo",
+      "subtitle": "Parlez-nous de votre organisation. Nous vous contacterons pour une présentation personnalisée.",
+      "orgName": "Nom de l'organisation",
+      "country": "Pays",
+      "contactName": "Nom du contact",
+      "role": "Rôle",
+      "roles": {
+        "ministry": "Ministère de l'Agriculture",
+        "regional": "Organisation régionale",
+        "ngo": "ONG / Agence de développement",
+        "cooperative": "Réseau coopératif privé",
+        "other": "Autre"
+      },
+      "email": "Email",
+      "phone": "Téléphone",
+      "submit": "Demander une démo",
+      "success": "Merci — nous avons reçu votre demande et vous répondrons dans les 48 heures.",
+      "error": "Une erreur s'est produite. Veuillez réessayer ou nous contacter directement."
+    }
+  },
   "language": {
     "select": "Sélectionner la langue",
     "french": "Français",

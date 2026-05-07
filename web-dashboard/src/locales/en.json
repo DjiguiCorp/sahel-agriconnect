@@ -546,6 +546,71 @@
       "a4": "We accept bank transfers, mobile money (Orange Money, Wave), and international cards. Contact us to arrange payment."
     }
   },
+  "platformLicensing": {
+    "hero": {
+      "title": "Deploy AfriYield Exchange in Your Country",
+      "subtitle": "Sovereign deployment for ministries, regional bodies, and cooperative networks — private operations data with global commodity reach."
+    },
+    "pillars": {
+      "sovereign": {
+        "title": "Sovereign Data Control",
+        "text": "Your country's farmer, cooperative, and certification data stays isolated in a dedicated environment."
+      },
+      "custom": {
+        "title": "Custom Admin Dashboard",
+        "text": "Configure registrations, approvals, and programs to match national policy and reporting needs."
+      },
+      "global": {
+        "title": "Global Commodity Visibility",
+        "text": "Certified commodities surface on the AfriYield marketplace for diaspora and international buyers."
+      }
+    },
+    "license": {
+      "badge": "Platform license",
+      "price": "$999/month",
+      "description": "Full country deployment with marketplace listing layer.",
+      "features": [
+        "Dedicated country admin environment",
+        "Unlimited farmer registrations",
+        "Cooperative management & governance tools",
+        "Certification workflow & audit trail",
+        "Commodity listings on AfriYield Exchange (buyers see products, not private data)",
+        "Onboarding & training for your admin team",
+        "Data export and portability",
+        "SLA-backed support channel"
+      ]
+    },
+    "isolation": {
+      "title": "Data Isolation",
+      "subtitle": "Country operations remain private; only approved commodity listings flow to the shared AfriYield marketplace.",
+      "countryA": "Country A — Private",
+      "countryADesc": "National admin, farmers, cooperatives",
+      "countryB": "Country B — Private",
+      "countryBDesc": "National admin, farmers, cooperatives",
+      "marketplace": "AfriYield Marketplace — Commodities Only",
+      "marketplaceDesc": "Shared layer for verified product visibility"
+    },
+    "form": {
+      "title": "Request a Demo",
+      "subtitle": "Tell us about your organization. We will follow up with a tailored walkthrough.",
+      "orgName": "Organization name",
+      "country": "Country",
+      "contactName": "Contact name",
+      "role": "Role",
+      "roles": {
+        "ministry": "Ministry of Agriculture",
+        "regional": "Regional Organization",
+        "ngo": "NGO / Development Agency",
+        "cooperative": "Private Cooperative Network",
+        "other": "Other"
+      },
+      "email": "Email",
+      "phone": "Phone",
+      "submit": "Request Demo",
+      "success": "Thank you — we received your request and will respond within 48 hours.",
+      "error": "Something went wrong. Please try again or contact us directly."
+    }
+  },
   "language": {
     "select": "Select language",
     "french": "Français",
