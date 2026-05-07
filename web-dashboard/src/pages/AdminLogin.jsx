@@ -145,18 +145,6 @@ const AdminLogin = () => {
               {isLoading ? t('admin.login.connecting') : t('admin.login.submit')}
             </button>
           </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-brand-cream/80 border-l-4 border-brand-sage rounded">
-            <p className="text-sm text-gray-700 flex flex-col gap-1">
-              <span className="font-semibold flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-brand-sage shrink-0" aria-hidden />
-                {t('admin.login.demo.title')} :
-              </span>
-              {t('admin.login.demo.email')} : <code className="bg-gray-100 px-2 py-1 rounded">admin@sahelagriconnect.org</code><br />
-              {t('admin.login.demo.password')} : <code className="bg-gray-100 px-2 py-1 rounded">admin123</code>
-            </p>
-          </div>
         </div>
       </div>
     </div>
