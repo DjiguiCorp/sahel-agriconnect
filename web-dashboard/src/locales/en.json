@@ -611,6 +611,66 @@
       "error": "Something went wrong. Please try again or contact us directly."
     }
   },
+  "cooperativeReg": {
+    "hero": {
+      "title": "Register Your Cooperative",
+      "subtitle": "$199/year — unlock tools for recruitment, equipment funding, certification, investor matching, and export access."
+    },
+    "benefits": {
+      "recruitment": { "title": "Farmer Recruitment", "text": "Structured onboarding and member profiles for your cooperative." },
+      "equipment": { "title": "Equipment Fund", "text": "Eligible cooperatives can access asset-backed equipment programs." },
+      "certification": { "title": "Certification Pathway", "text": "Local to export certification workflows with admin review." },
+      "investor": { "title": "Investor Matching", "text": "Connect with diaspora capital via AfriYield Exchange." },
+      "export": { "title": "Export Access", "text": "List certified commodities for international buyers on AfriYield." }
+    },
+    "plan": {
+      "badge": "Cooperative platform",
+      "price": "$199/year",
+      "features": [
+        "Member farmer management",
+        "Equipment fund eligibility",
+        "Certification applications",
+        "AfriYield Exchange visibility",
+        "Admin activation within 48 hours of review"
+      ]
+    },
+    "form": {
+      "title": "Registration",
+      "subtitle": "Complete the form — an admin will activate your account after review.",
+      "cooperativeName": "Cooperative name",
+      "country": "Country",
+      "regionCity": "Region / City",
+      "regionPlaceholder": "e.g. Sikasso",
+      "memberCount": "Member count",
+      "certificationStatus": "Certification status",
+      "certStatuses": { "none": "None", "local": "Local", "regional": "Regional", "international": "International" },
+      "primaryCrops": "Primary crops",
+      "crops": {
+        "shea": "Shea Butter",
+        "sesame": "Sesame",
+        "cashew": "Cashew",
+        "mango": "Mango",
+        "rice": "Rice",
+        "cotton": "Cotton",
+        "millet": "Millet",
+        "sorghum": "Sorghum",
+        "other": "Other"
+      },
+      "leaderName": "Leader name",
+      "email": "Email",
+      "phone": "Phone",
+      "interests": "Interests",
+      "interestOptions": {
+        "equipment": "Equipment Fund",
+        "certification": "Certification",
+        "diaspora": "Diaspora Investment",
+        "export": "Export Program"
+      },
+      "submit": "Submit registration",
+      "success": "Registration received. An admin will activate your account within 48 hours.",
+      "error": "Something went wrong. Please try again."
+    }
+  },
   "language": {
     "select": "Select language",
     "french": "Français",

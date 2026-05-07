@@ -611,6 +611,66 @@
       "error": "Une erreur s'est produite. Veuillez réessayer ou nous contacter directement."
     }
   },
+  "cooperativeReg": {
+    "hero": {
+      "title": "Inscrivez votre coopérative",
+      "subtitle": "199$/an — débloquez les outils de recrutement, fonds d'équipement, certification, mise en relation avec les investisseurs et accès à l'export."
+    },
+    "benefits": {
+      "recruitment": { "title": "Recrutement d'agriculteurs", "text": "Intégration structurée et profils membres pour votre coopérative." },
+      "equipment": { "title": "Fonds d'équipement", "text": "Les coopératives éligibles peuvent accéder à des programmes d'équipement adossés à des actifs." },
+      "certification": { "title": "Parcours de certification", "text": "Workflows de certification locale à l'export avec révision administrative." },
+      "investor": { "title": "Mise en relation investisseurs", "text": "Connectez-vous aux capitaux diaspora via AfriYield Exchange." },
+      "export": { "title": "Accès à l'export", "text": "Référencez vos commodités certifiées pour les acheteurs internationaux sur AfriYield." }
+    },
+    "plan": {
+      "badge": "Plateforme coopérative",
+      "price": "199$/an",
+      "features": [
+        "Gestion des agriculteurs membres",
+        "Éligibilité au fonds d'équipement",
+        "Demandes de certification",
+        "Visibilité sur AfriYield Exchange",
+        "Activation admin dans les 48 heures après révision"
+      ]
+    },
+    "form": {
+      "title": "Inscription",
+      "subtitle": "Remplissez le formulaire — un administrateur activera votre compte après révision.",
+      "cooperativeName": "Nom de la coopérative",
+      "country": "Pays",
+      "regionCity": "Région / Ville",
+      "regionPlaceholder": "ex. Sikasso",
+      "memberCount": "Nombre de membres",
+      "certificationStatus": "Statut de certification",
+      "certStatuses": { "none": "Aucune", "local": "Local", "regional": "Régional", "international": "International" },
+      "primaryCrops": "Cultures principales",
+      "crops": {
+        "shea": "Beurre de karité",
+        "sesame": "Sésame",
+        "cashew": "Cajou",
+        "mango": "Mangue",
+        "rice": "Riz",
+        "cotton": "Coton",
+        "millet": "Mil",
+        "sorghum": "Sorgho",
+        "other": "Autre"
+      },
+      "leaderName": "Nom du responsable",
+      "email": "Email",
+      "phone": "Téléphone",
+      "interests": "Intérêts",
+      "interestOptions": {
+        "equipment": "Fonds d'équipement",
+        "certification": "Certification",
+        "diaspora": "Investissement diaspora",
+        "export": "Programme d'exportation"
+      },
+      "submit": "Soumettre l'inscription",
+      "success": "Inscription reçue. Un administrateur activera votre compte dans les 48 heures.",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
   "language": {
     "select": "Sélectionner la langue",
     "french": "Français",
