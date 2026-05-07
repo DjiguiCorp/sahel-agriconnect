@@ -1,224 +1,156 @@
 import { Link } from 'react-router-dom';
-import { Sprout, Factory, Building2, Landmark, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Sprout, Factory, Building2, Landmark, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 
-const tiers = [
-  {
-    name: 'Farmer Basic',
-    price: 'Free',
-    period: '',
-    Icon: Sprout,
-    features: [
-      'Soil diagnostic & disease detection tools',
-      'Register profile and connect to local centers',
-      'Browse trainings and cooperative perks',
-      'Community support resources',
-    ],
-    cta: { label: 'Get started', to: '/enregistrer-agriculteur', variant: 'outline' },
-  },
-  {
-    name: 'Producer Pro',
-    price: '$32',
-    period: '/month',
-    Icon: Factory,
-    features: [
-      'Everything in Farmer Basic',
-      'Priority irrigation assessments',
-      'Production optimization insights',
-      'Export readiness checklist',
-    ],
-    cta: { label: 'Choose Producer Pro', to: '/contact', variant: 'gold' },
-  },
-  {
-    name: 'Transformation Center',
-    price: '$109',
-    period: '/month',
-    Icon: Building2,
-    features: [
-      'Center dashboard & inventory tools',
-      'Member farmer onboarding',
-      'Certification workflow integration',
-      'AfriYield Exchange listing support',
-    ],
-    cta: { label: 'Talk to sales', to: '/contact', variant: 'gold' },
-  },
-  {
-    name: 'Enterprise / Government',
-    price: '$999',
-    period: '/month',
-    Icon: Landmark,
-    features: [
-      'Country-isolated admin & data',
-      'Unlimited farmer & cooperative seats',
-      'Custom governance modules',
-      'Global commodity visibility on AfriYield',
-    ],
-    cta: { label: 'Platform licensing', to: '/platform-licensing', variant: 'gold' },
-  },
-];
-
-function TierCard({ tier }) {
-  const Icon = tier.Icon;
-  const isGold = tier.cta.variant === 'gold';
-  return (
-    <div
-      className={`rounded-2xl border p-8 flex flex-col h-full ${
-        tier.name === 'Enterprise / Government'
-          ? 'border-[#B5850A] bg-gradient-to-b from-[#1a3c2e] to-[#143326] text-white shadow-xl'
-          : 'border-gray-200 bg-white shadow-md'
-      }`}
-    >
-      <div
-        className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-          tier.name === 'Enterprise / Government' ? 'bg-[#B5850A]/20' : 'bg-brand-iconBg'
-        }`}
-      >
-        <Icon
-          className={`w-6 h-6 ${tier.name === 'Enterprise / Government' ? 'text-[#B5850A]' : 'text-brand-forest'}`}
-          aria-hidden
-        />
-      </div>
-      <h3
-        className={`text-xl font-extrabold ${
-          tier.name === 'Enterprise / Government' ? 'text-white' : 'text-[#1a3c2e]'
-        }`}
-      >
-        {tier.name}
-      </h3>
-      <p className="mt-3 flex items-baseline gap-1">
-        <span
-          className={`text-4xl font-extrabold ${
-            tier.name === 'Enterprise / Government' ? 'text-[#B5850A]' : 'text-[#1a3c2e]'
-          }`}
-        >
-          {tier.price}
-        </span>
-        {tier.period ? (
-          <span
-            className={`text-sm font-medium ${
-              tier.name === 'Enterprise / Government' ? 'text-white/80' : 'text-gray-600'
-            }`}
-          >
-            {tier.period}
-          </span>
-        ) : null}
-      </p>
-      <ul className="mt-6 space-y-3 flex-1">
-        {tier.features.map((f) => (
-          <li key={f} className="flex gap-2 text-sm">
-            <Check
-              className={`w-5 h-5 shrink-0 mt-0.5 ${
-                tier.name === 'Enterprise / Government' ? 'text-[#B5850A]' : 'text-[#B5850A]'
-              }`}
-              aria-hidden
-            />
-            <span className={tier.name === 'Enterprise / Government' ? 'text-white/90' : 'text-gray-700'}>
-              {f}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <Link
-        to={tier.cta.to}
-        className={`mt-8 block text-center rounded-xl py-3 px-4 font-bold transition ${
-          isGold
-            ? tier.name === 'Enterprise / Government'
-              ? 'bg-[#B5850A] text-[#1a3c2e] hover:bg-[#9a7109]'
-              : 'bg-[#B5850A] text-white hover:bg-[#9a7109]'
-            : 'border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e]/5'
-        }`}
-      >
-        {tier.cta.label}
-      </Link>
-    </div>
-  );
-}
+const TIER_KEYS = ['farmerBasic', 'producerPro', 'transformationCenter', 'enterprise'];
+const TIER_PRICES = ['', '$32', '$109', '$999'];
+const TIER_ICONS = [Sprout, Factory, Building2, Landmark];
+const TIER_LINKS = ['/dashboard', '/contact', '/contact', '/platform-licensing'];
+const TIER_VARIANTS = ['outline', 'gold', 'gold', 'gold'];
+const TIER_POPULAR = [false, true, false, false];
 
 export default function Pricing() {
+  const { t } = useTranslation();
+  const [openFaq, setOpenFaq] = useState(null);
+
   return (
-    <div className="bg-brand-cream min-h-[60vh]">
-      <section className="bg-gradient-to-br from-[#1a3c2e] via-[#1a3c2e] to-[#143326] text-white">
-        <div className="section-container py-16 md:py-20 text-center">
-          <p className="text-sm font-semibold text-[#B5850A] tracking-wide uppercase">Transparent pricing</p>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mt-2">Pricing</h1>
-          <p className="mt-4 text-lg text-white/90 max-w-3xl mx-auto">
-            Plans for farmers, producers, transformation centers, and national programs — aligned with AfriYield
-            Exchange growth.
-          </p>
-        </div>
-      </section>
+    <div className="max-w-6xl mx-auto px-4 py-12">
 
-      <section className="section-container py-14 md:py-20">
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-8">
-          {tiers.map((tier) => (
-            <TierCard key={tier.name} tier={tier} />
-          ))}
-        </div>
-      </section>
+      {/* Hero */}
+      <div className="text-center mb-14">
+        <h1 className="text-4xl md:text-5xl font-bold text-[#1a3c2e] mb-4">
+          {t('pricing.title')}
+        </h1>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          {t('pricing.subtitle')}
+        </p>
+      </div>
 
-      <section className="section-container pt-0 pb-12">
-        <div className="rounded-2xl border border-[#B5850A]/30 bg-white p-8 md:p-10 shadow-lg">
-          <div className="grid md:grid-cols-2 gap-10 items-center">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-[#1a3c2e]">Cooperatives</h2>
-              <p className="mt-3 text-gray-700">
-                Register your cooperative for equipment fund access, certification pathways, investor matching, and
-                export programs.
-              </p>
-              <p className="mt-4 text-2xl font-extrabold text-[#B5850A]">$199/year</p>
+      {/* Main pricing tiers */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        {TIER_KEYS.map((key, i) => {
+          const Icon = TIER_ICONS[i];
+          const isEnterprise = key === 'enterprise';
+          const isPopular = TIER_POPULAR[i];
+          const isGold = TIER_VARIANTS[i] === 'gold';
+          return (
+            <div
+              key={key}
+              className={`relative rounded-2xl border p-7 flex flex-col h-full ${
+                isEnterprise
+                  ? 'border-[#B5850A] bg-gradient-to-b from-[#1a3c2e] to-[#143326] text-white shadow-xl'
+                  : 'border-gray-200 bg-white shadow-md'
+              }`}
+            >
+              {isPopular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#B5850A] text-white text-xs font-bold px-3 py-1 rounded-full">
+                  {t('pricing.popular')}
+                </div>
+              )}
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${
+                isEnterprise ? 'bg-[#B5850A]/20' : 'bg-green-50'
+              }`}>
+                <Icon className={`w-5 h-5 ${isEnterprise ? 'text-[#B5850A]' : 'text-[#1a3c2e]'}`} />
+              </div>
+              <h3 className={`text-lg font-bold mb-1 ${isEnterprise ? 'text-white' : 'text-[#1a3c2e]'}`}>
+                {t(`pricing.tiers.${key}.name`)}
+              </h3>
+              <div className="mb-5">
+                <span className={`text-3xl font-bold ${isEnterprise ? 'text-[#B5850A]' : 'text-[#1a3c2e]'}`}>
+                  {TIER_PRICES[i] || t('pricing.free')}
+                </span>
+                {TIER_PRICES[i] && (
+                  <span className={`text-sm ${isEnterprise ? 'text-gray-300' : 'text-gray-500'}`}>
+                    {t('pricing.perMonth')}
+                  </span>
+                )}
+              </div>
+              <ul className="space-y-2 mb-8 flex-1">
+                {t(`pricing.tiers.${key}.features`, { returnObjects: true }).map((feat, fi) => (
+                  <li key={fi} className="flex items-start gap-2 text-sm">
+                    <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isEnterprise ? 'text-[#B5850A]' : 'text-[#1a3c2e]'}`} />
+                    <span className={isEnterprise ? 'text-gray-200' : 'text-gray-600'}>{feat}</span>
+                  </li>
+                ))}
+              </ul>
               <Link
-                to="/cooperative-registration"
-                className="mt-6 inline-flex rounded-xl bg-[#1a3c2e] text-white font-bold px-6 py-3 hover:bg-[#143326] transition"
+                to={TIER_LINKS[i]}
+                className={`w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm transition ${
+                  isEnterprise
+                    ? 'bg-[#B5850A] text-white hover:bg-[#9a7009]'
+                    : isGold
+                    ? 'bg-[#1a3c2e] text-white hover:bg-[#143326]'
+                    : 'border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e] hover:text-white'
+                }`}
               >
-                Cooperative registration
+                {t(`pricing.tiers.${key}.cta`)}
               </Link>
             </div>
-            <div className="rounded-xl bg-[#1a3c2e]/5 border border-gray-200 p-6">
-              <h3 className="font-bold text-[#1a3c2e]">Includes</h3>
-              <ul className="mt-3 space-y-2 text-gray-700 text-sm">
-                <li>• Farmer recruitment & member tools</li>
-                <li>• Equipment fund eligibility</li>
-                <li>• Certification & AfriYield visibility</li>
-              </ul>
+          );
+        })}
+      </div>
+
+      {/* Bottom three sections */}
+      <div className="grid md:grid-cols-3 gap-6 mb-16">
+        {/* Cooperative */}
+        <div className="rounded-2xl border-2 border-[#1a3c2e] bg-white p-7 flex flex-col">
+          <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{t('pricing.cooperative.title')}</h3>
+          <p className="text-gray-600 text-sm mb-4 flex-1">{t('pricing.cooperative.description')}</p>
+          <p className="text-2xl font-bold text-[#B5850A] mb-5">{t('pricing.cooperative.price')}</p>
+          <Link to="/cooperative-registration" className="w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm bg-[#1a3c2e] text-white hover:bg-[#143326] transition">
+            {t('pricing.cooperative.cta')}
+          </Link>
+        </div>
+
+        {/* Government */}
+        <div className="rounded-2xl border-2 border-[#B5850A] bg-white p-7 flex flex-col">
+          <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{t('pricing.government.title')}</h3>
+          <p className="text-gray-600 text-sm mb-4 flex-1">{t('pricing.government.description')}</p>
+          <p className="text-2xl font-bold text-[#B5850A] mb-5">{t('pricing.government.price')}</p>
+          <Link to="/platform-licensing" className="w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm bg-[#B5850A] text-white hover:bg-[#9a7009] transition">
+            {t('pricing.government.cta')}
+          </Link>
+        </div>
+
+        {/* Diaspora Investor */}
+        <div className="rounded-2xl border-2 border-gray-200 bg-white p-7 flex flex-col">
+          <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{t('pricing.diaspora.title')}</h3>
+          <p className="text-gray-600 text-sm mb-2 flex-1">{t('pricing.diaspora.description')}</p>
+          <p className="text-sm text-[#1a3c2e] font-medium mb-5">✓ {t('pricing.diaspora.track')}</p>
+          <Link to="/afri-yield/register" className="w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e] hover:text-white transition">
+            {t('pricing.diaspora.cta')}
+          </Link>
+        </div>
+      </div>
+
+      {/* FAQ */}
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-2xl font-bold text-[#1a3c2e] text-center mb-8">{t('pricing.faq.title')}</h2>
+        <div className="space-y-3">
+          {[1,2,3,4].map(n => (
+            <div key={n} className="border border-gray-200 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenFaq(openFaq === n ? null : n)}
+                className="w-full flex items-center justify-between px-6 py-4 text-left font-medium text-[#1a3c2e] hover:bg-gray-50 transition"
+              >
+                <span>{t(`pricing.faq.q${n}`)}</span>
+                {openFaq === n
+                  ? <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  : <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                }
+              </button>
+              {openFaq === n && (
+                <div className="px-6 pb-4 text-gray-600 text-sm leading-relaxed">
+                  {t(`pricing.faq.a${n}`)}
+                </div>
+              )}
             </div>
-          </div>
+          ))}
         </div>
-      </section>
+      </div>
 
-      <section className="section-container pt-0 pb-12">
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 md:p-10 shadow-lg">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-[#1a3c2e]">Governments & regional organizations</h2>
-          <p className="mt-3 text-gray-700 max-w-2xl">
-            Deploy Sahel AgriConnect and AfriYield Exchange in your country with sovereign data control and custom admin.
-          </p>
-          <p className="mt-4 text-2xl font-extrabold text-[#B5850A]">From $999/month</p>
-          <Link
-            to="/platform-licensing"
-            className="mt-6 inline-flex rounded-xl border-2 border-[#B5850A] text-[#1a3c2e] font-bold px-6 py-3 hover:bg-[#B5850A]/10 transition"
-          >
-            Platform licensing
-          </Link>
-        </div>
-      </section>
-
-      <section className="section-container pt-0 pb-20">
-        <div className="rounded-2xl bg-gradient-to-br from-[#1a3c2e] to-[#143326] text-white p-8 md:p-10 shadow-xl">
-          <h2 className="text-2xl md:text-3xl font-extrabold">Diaspora investors</h2>
-          <p className="mt-3 text-white/90 max-w-2xl">
-            Browsing AfriYield Exchange opportunities is free. When you deploy capital through the platform, a{' '}
-            <span className="font-bold text-[#B5850A]">5% facilitation fee</span> applies on capital deployed — covering
-            due diligence, documentation, and program administration.
-          </p>
-          <Link
-            to="/afri-yield/register"
-            className="mt-6 inline-flex rounded-xl bg-[#B5850A] text-[#1a3c2e] font-bold px-6 py-3 hover:bg-[#9a7109] transition"
-          >
-            Register as an investor
-          </Link>
-          <p className="mt-4 text-sm text-white/75">
-            See also: <Link to="/afri-yield/opportunities" className="text-[#B5850A] font-semibold underline">Investment opportunities</Link>
-          </p>
-        </div>
-      </section>
     </div>
   );
 }

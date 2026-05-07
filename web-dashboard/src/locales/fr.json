@@ -468,6 +468,84 @@
     "preferredDate": "Date préférée",
     "meetingSent": "Demande envoyée. Confirmation sous 24 h."
   },
+  "pricing": {
+    "title": "Tarifs simples et transparents",
+    "subtitle": "Choisissez le plan adapté à votre rôle dans la chaîne de valeur agricole",
+    "popular": "Le plus populaire",
+    "perMonth": "/mois",
+    "free": "Gratuit",
+    "tiers": {
+      "farmerBasic": {
+        "name": "Agriculteur Basique",
+        "features": [
+          "Diagnostic sol & détection de maladies",
+          "Créer un profil et se connecter aux centres locaux",
+          "Accéder aux formations et avantages coopératifs",
+          "Ressources de soutien communautaire"
+        ],
+        "cta": "Commencer gratuitement"
+      },
+      "producerPro": {
+        "name": "Producteur Pro",
+        "features": [
+          "Tout ce qui est inclus dans Agriculteur Basique",
+          "Évaluations d'irrigation prioritaires",
+          "Optimisation de la production avec IA",
+          "Checklist de préparation à l'exportation"
+        ],
+        "cta": "Choisir Producteur Pro"
+      },
+      "transformationCenter": {
+        "name": "Centre de Transformation",
+        "features": [
+          "Tableau de bord & outils d'inventaire",
+          "Intégration des agriculteurs membres",
+          "Intégration du workflow de certification",
+          "Support de référencement AfriYield Exchange"
+        ],
+        "cta": "Parler à un commercial"
+      },
+      "enterprise": {
+        "name": "Entreprise / Gouvernement",
+        "features": [
+          "Admin & données isolées par pays",
+          "Sièges illimités agriculteurs & coopératives",
+          "Modules de gouvernance personnalisés",
+          "Visibilité mondiale des commodités sur AfriYield"
+        ],
+        "cta": "Licences pays"
+      }
+    },
+    "cooperative": {
+      "title": "Pour les Coopératives",
+      "description": "Inscrivez votre coopérative. Accédez aux fonds d'équipement, certifications et investissements diaspora.",
+      "price": "199$/an",
+      "cta": "S'inscrire maintenant"
+    },
+    "government": {
+      "title": "Pour les Gouvernements & Organisations",
+      "description": "Déployez la plateforme complète dans votre pays. Données souveraines, admin personnalisé, visibilité mondiale.",
+      "price": "À partir de 999$/mois",
+      "cta": "En savoir plus"
+    },
+    "diaspora": {
+      "title": "Pour les Investisseurs Diaspora",
+      "description": "Navigation gratuite des opportunités. Frais de facilitation de 5% sur le capital déployé via la plateforme.",
+      "track": "Accès aux investissements Piste A & Piste B",
+      "cta": "S'inscrire comme investisseur"
+    },
+    "faq": {
+      "title": "Questions Fréquemment Posées",
+      "q1": "Puis-je changer de plan plus tard ?",
+      "a1": "Oui — vous pouvez passer à un plan supérieur ou inférieur à tout moment. Contactez notre équipe et nous gérerons la transition.",
+      "q2": "Y a-t-il un essai gratuit pour les plans payants ?",
+      "a2": "Les plans Producteur Pro et Centre de Transformation incluent un essai gratuit de 30 jours. Aucune carte de crédit requise.",
+      "q3": "Comment fonctionne l'adhésion à une coopérative ?",
+      "a3": "Les coopératives paient des frais annuels de 199$. Cela donne accès à la gestion des membres, au fonds d'équipement et à la visibilité AfriYield Exchange.",
+      "q4": "Quels modes de paiement sont acceptés ?",
+      "a4": "Nous acceptons les virements bancaires, le mobile money (Orange Money, Wave) et les cartes internationales. Contactez-nous pour organiser le paiement."
+    }
+  },
   "language": {
     "select": "Sélectionner la langue",
     "french": "Français",
