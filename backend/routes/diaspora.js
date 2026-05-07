@@ -3,6 +3,12 @@ import { authenticateToken } from '../middleware/auth.js';
 import DiasporaProducer from '../models/DiasporaProducer.js';
 import DiasporaBuyer from '../models/DiasporaBuyer.js';
 import DiasporaContactInquiry from '../models/DiasporaContactInquiry.js';
+import {
+  confirmBuyerRegistration,
+  confirmProducerRegistration,
+  notifyAdminNewBuyer,
+  notifyAdminNewProducer,
+} from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -25,6 +31,9 @@ router.post('/producers', async (req, res) => {
 
     const producer = new DiasporaProducer(payload);
     await producer.save();
+
+    notifyAdminNewProducer(producer).catch(console.error);
+    confirmProducerRegistration(producer).catch(console.error);
 
     res.status(201).json({ success: true });
   } catch (error) {
@@ -101,6 +110,9 @@ router.post('/buyers', async (req, res) => {
 
     const buyer = new DiasporaBuyer(payload);
     await buyer.save();
+
+    notifyAdminNewBuyer(buyer).catch(console.error);
+    confirmBuyerRegistration(buyer).catch(console.error);
 
     res.status(201).json({ success: true });
   } catch (error) {

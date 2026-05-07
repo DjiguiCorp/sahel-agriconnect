@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import ExpertRequest from '../models/ExpertRequest.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { notifyAdminExpertRequest } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -48,6 +49,8 @@ router.post('/request', async (req, res) => {
       source:
         ['disease_detection', 'think_tank', 'soil_diagnosis', 'direct'].includes(source) ? source : 'direct',
     });
+
+    notifyAdminExpertRequest(doc).catch(console.error);
 
     const payload = {
       success: true,

@@ -3,12 +3,13 @@ import Cooperative from '../models/Cooperative.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { countryFilter } from '../middleware/countryFilter.js';
+import { confirmCooperativeRegistration, notifyAdminNewCooperative } from '../services/emailService.js';
 
 const router = express.Router();
 
 router.post('/register-platform', async (req, res) => {
   try {
-    await CooperativePlatformRegistration.create({
+    const cooperative = await CooperativePlatformRegistration.create({
       cooperativeName: req.body.cooperativeName,
       country: req.body.country,
       regionCity: req.body.regionCity,
@@ -20,6 +21,10 @@ router.post('/register-platform', async (req, res) => {
       phone: req.body.phone || '',
       interests: Array.isArray(req.body.interests) ? req.body.interests : [],
     });
+
+    notifyAdminNewCooperative(cooperative).catch(console.error);
+    confirmCooperativeRegistration(cooperative).catch(console.error);
+
     res.status(201).json({ success: true });
   } catch (error) {
     console.error('Erreur enregistrement coopérative plateforme:', error);

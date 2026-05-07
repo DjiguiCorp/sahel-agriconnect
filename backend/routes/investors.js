@@ -1,6 +1,7 @@
 import express from 'express';
 import Investor from '../models/Investor.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { confirmInvestorRegistration, notifyAdminNewInvestor } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ router.post('/register', async (req, res) => {
     } = req.body;
     const heardFrom = req.body.heardFrom ?? req.body.heardAbout ?? '';
 
-    await Investor.create({
+    const investor = await Investor.create({
       fullName,
       email,
       phone,
@@ -46,6 +47,9 @@ router.post('/register', async (req, res) => {
       heardFrom,
       message: message || '',
     });
+
+    notifyAdminNewInvestor(investor).catch(console.error);
+    confirmInvestorRegistration(investor).catch(console.error);
 
     res.status(201).json({ success: true, message: 'Registration received' });
   } catch (err) {
