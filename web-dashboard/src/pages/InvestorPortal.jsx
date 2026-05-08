@@ -636,7 +636,11 @@ function PricesTab({ onOpenPremium }) {
     }
   });
 
-  const lang = i18n.language === 'fr' ? 'fr' : 'en';
+  /** fr, fr-FR, fr-CA etc. */
+  const lang = /^fr\b/i.test(String(i18n.language || '').toLowerCase()) ? 'fr' : 'en';
+
+  const commodityLabel = (ckey) =>
+    COMMODITY_NAMES[ckey]?.[lang] ?? t(`investorPortal.prices.names.${ckey}`, { defaultValue: ckey });
 
   const toggleAlert = (key) => {
     const next = { ...alerts, [key]: !alerts[key] };
@@ -645,7 +649,7 @@ function PricesTab({ onOpenPremium }) {
   };
 
   return (
-    <div className="px-4 pt-6 pb-24 md:pb-10 space-y-5 md:px-6">
+    <div className="px-4 pt-6 pb-24 md:pb-10 space-y-5 md:px-6 w-full max-w-full min-w-0 overflow-x-hidden">
       <div>
         <h2 className="font-bold text-xl md:text-2xl" style={{ color: '#F5F0E8' }}>
           {t('investorPortal.prices.title')}
@@ -655,11 +659,11 @@ function PricesTab({ onOpenPremium }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full min-w-0">
         {COMMODITIES.map(({ key, emoji, price, trend, demand }) => (
           <div
             key={key}
-            className="rounded-2xl p-4 overflow-hidden flex flex-col min-h-0 md:p-3"
+            className="rounded-2xl p-4 overflow-hidden flex flex-col min-h-0 md:p-3 max-w-full"
             style={{
               background: '#132a1e',
               border:
@@ -668,20 +672,31 @@ function PricesTab({ onOpenPremium }) {
                   : '1px solid rgba(181,133,10,0.25)',
             }}
           >
-            <div className="flex items-center justify-between mb-3 gap-2 min-w-0">
-              <div className="flex items-center gap-2 min-w-0 overflow-hidden flex-1">
-                <span className="text-2xl shrink-0">{emoji}</span>
-                <span className="text-white font-bold text-sm break-words">
-                  {COMMODITY_NAMES[key]?.[lang] || key}
+            {/* Emoji + name on one row; HOT badge full-width below — avoids flex squeeze hiding the title */}
+            <div className="mb-3 w-full min-w-0 flex flex-col gap-2">
+              <div className="flex items-start gap-2 min-w-0 w-full">
+                <span className="text-2xl shrink-0 leading-none pt-0.5" aria-hidden>
+                  {emoji}
+                </span>
+                <span
+                  className="min-w-0 flex-1 font-bold text-sm leading-snug break-words hyphens-auto"
+                  style={{ color: '#F5F0E8' }}
+                >
+                  {commodityLabel(key)}
                 </span>
               </div>
               {demand === 'high' && (
-                <span
-                  className="text-xs px-2 py-0.5 rounded-2xl font-bold animate-pulse shrink-0"
-                  style={{ background: '#ef4444', color: 'white' }}
-                >
-                  🔥 {t('investorPortal.prices.demand.high')}
-                </span>
+                <div className="w-full min-w-0 ps-10 sm:ps-10">
+                  <span
+                    className="inline-flex items-start gap-1.5 text-xs px-2 py-1 rounded-2xl font-bold animate-pulse max-w-full"
+                    style={{ background: '#ef4444', color: 'white' }}
+                  >
+                    <span className="shrink-0" aria-hidden>
+                      🔥
+                    </span>
+                    <span className="break-words min-w-0">{t('investorPortal.prices.demand.high')}</span>
+                  </span>
+                </div>
               )}
             </div>
 
@@ -723,9 +738,9 @@ function PricesTab({ onOpenPremium }) {
             {/* Sparkline — desktop has a clear trend preview */}
             <div className="mt-3 shrink-0">
               <p className="text-white/30 text-xs mb-1">
-                {i18n.language === 'fr' ? 'Tendance des prix (6 derniers mois)' : 'Price trend (last 6 months)'}
+                {lang === 'fr' ? 'Tendance des prix (6 derniers mois)' : 'Price trend (last 6 months)'}
               </p>
-              <svg viewBox="0 0 100 60" className="w-full h-12 mt-1">
+              <svg viewBox="0 0 100 60" className="w-full max-w-full h-12 mt-1 shrink-0" preserveAspectRatio="none">
                 <path d={SPARKLINES[key]} fill="none" stroke="#B5850A" strokeWidth="2" />
               </svg>
             </div>
@@ -1349,8 +1364,8 @@ export default function InvestorPortal() {
       )}
 
         {/* Scrollable content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[375px] md:max-w-none">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
+          <div className="mx-auto w-full max-w-[375px] md:max-w-none min-w-0 overflow-x-hidden">
             {activeTab === 'home' && (
               <HomeTab
                 investor={investor}
