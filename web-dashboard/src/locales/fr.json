@@ -961,6 +961,168 @@
       }
     }
   },
+  "trust": {
+    "howItWorks": {
+      "title": "Comment fonctionne AfriYield Exchange",
+      "subtitle": "Une explication transparente et détaillée de comment nous connectons les investisseurs à l'agriculture africaine",
+      "simple": {
+        "title": "La version simple",
+        "step1title": "Nous trouvons des coopératives vérifiées",
+        "step1body": "Nous identifions et vérifions des coopératives agricoles africaines qui recherchent des investissements pour des équipements et des infrastructures de transformation.",
+        "step2title": "Nous les connectons aux investisseurs",
+        "step2body": "Les investisseurs de la diaspora et internationaux choisissent des opportunités correspondant à leurs objectifs et engagent leur capital via notre plateforme.",
+        "step3title": "Tout le monde en bénéficie",
+        "step3body": "Les investisseurs reçoivent des retours semestriels. Les coopératives développent leurs activités. Les agriculteurs gagnent plus pour leur récolte."
+      },
+      "detailed": {
+        "title": "La version détaillée",
+        "q1": "Comment vérifions-nous les coopératives?",
+        "a1": "Chaque coopérative doit soumettre des documents d'enregistrement, une adresse physique, une identification du responsable et un nombre minimum de membres avant d'apparaître sur AfriYield Exchange. Notre équipe examine chaque demande manuellement avant d'activer une annonce.",
+        "q2": "Comment mon argent est-il protégé?",
+        "a2": "Les investissements Piste A financent des équipements physiques appartenant à la coopérative — tracteurs, machines de séchage, stockage frigorifique. L'équipement existe comme garantie tangible. Les investissements Piste B sont régis par un accord formel de partage de revenus signé avant tout transfert de fonds.",
+        "q3": "Comment fonctionnent les versements?",
+        "a3": "Les centres de transformation soumettent des rapports de production et de ventes deux fois par an — avant le 1er juin et le 1er décembre. Les retours sont calculés à partir des données de revenus réels. Les versements sont distribués en juin et décembre par virement bancaire, Zelle, WISE ou mobile money selon la localisation de l'investisseur.",
+        "q4": "Que se passe-t-il si une coopérative fait faillite?",
+        "a4": "Pour les investissements Piste A, l'équipement peut être récupéré et vendu pour récupérer le capital de l'investisseur. Nous travaillons avec toutes les parties pour trouver une résolution. Les protections complètes sont détaillées dans le contrat d'investissement que chaque investisseur signe avant d'engager des fonds.",
+        "q5": "Qui est derrière AfriYield Exchange?",
+        "a5": "AfriYield Exchange est exploitée par Djigui Corporation, fondée par Isabelle Coulibaly. En savoir plus sur djiguicorporation.org et isacoultess.com."
+      },
+      "fees": {
+        "title": "Notre structure de frais — Transparence totale",
+        "col1": "Service",
+        "col2": "Frais",
+        "col3": "Quand",
+        "row1": ["Facilitation d'investissement", "5% du capital déployé", "Unique à l'investissement"],
+        "row2": ["Abonnement Premium", "29,99$/mois ou 299$/an", "Optionnel, récurrent"],
+        "row3": ["Appel conseil — premier", "GRATUIT", "Première session uniquement"],
+        "row4": ["Appel conseil — suivi", "99$/session", "Par session"],
+        "row5": ["Adhésion coopérative", "199$/an", "Annuel"],
+        "row6": ["Certification export", "299–499$", "Unique"],
+        "note": "Pas de frais cachés. Pas de frais de gestion. Pas de frais de retrait."
+      },
+      "agreement": {
+        "title": "Le contrat d'investissement",
+        "body": "Chaque investisseur reçoit un contrat d'investissement formel avant tout mouvement de fonds. Le contrat couvre le montant et les conditions d'investissement, le calendrier des retours prévus, le mécanisme de versement, la résolution des litiges et les dispositions de sortie.",
+        "cta": "Demander un exemple de contrat"
+      },
+      "regulatory": {
+        "title": "Statut réglementaire",
+        "body": "AfriYield Exchange est une plateforme de facilitation d'investissement exploitée par Djigui Corporation. Nous ne sommes pas une institution financière agréée ou un courtier-négociant. Les investissements comportent des risques. Les performances passées ne garantissent pas les résultats futurs. Nous recommandons de consulter un conseiller financier avant d'investir."
+      }
+    },
+    "updates": {
+      "title": "Mises à jour investisseurs",
+      "subtitle": "Rapports de progression transparents d'AfriYield Exchange — publiés régulièrement",
+      "subscribe": "Recevez les mises à jour par email",
+      "subscribePlaceholder": "votre@email.com",
+      "subscribeCta": "S'abonner",
+      "subscribeSuccess": "Abonné! Vous recevrez notre prochaine mise à jour investisseur.",
+      "readMore": "Lire la suite",
+      "readLess": "Réduire",
+      "categories": {
+        "platform": "Mise à jour plateforme",
+        "milestone": "Étape franchie",
+        "market": "Intelligence marché",
+        "deal": "Mise à jour deal"
+      }
+    },
+    "investorRelations": {
+      "label": "RELATIONS INVESTISSEURS",
+      "title": "Investissez dans AfriYield Exchange",
+      "subtitle": "Nous construisons l'infrastructure pour l'investissement agricole africain — connectant le capital diaspora aux producteurs certifiés à travers le continent",
+      "requestDeck": "Demander le pitch deck",
+      "scheduleCall": "Planifier un appel",
+      "opportunity": {
+        "title": "L'opportunité",
+        "stat1value": "2,7 Mds$",
+        "stat1label": "Marché mondial du beurre de karité",
+        "stat2value": "60M+",
+        "stat2label": "Petits agriculteurs sans accès aux marchés",
+        "stat3value": "89 Mds$",
+        "stat3label": "Envois de fonds de la diaspora africaine annuellement"
+      },
+      "model": {
+        "title": "Notre modèle économique",
+        "supply": "Sahel AgriConnect — Côté offre",
+        "investment": "AfriYield Exchange — Côté investissement",
+        "year1": "Objectif Année 1",
+        "year2": "Projection Année 2",
+        "total1": "Objectif combiné Année 1: 91 738$",
+        "total2": "Projection combinée Année 2: 270 514$"
+      },
+      "traction": {
+        "title": "Traction et jalons",
+        "items": [
+          { "status": "done", "text": "Plateforme construite et déployée — live sur sahelagriconnect.vercel.app" },
+          { "status": "done", "text": "Portail d'investissement AfriYield Exchange lancé" },
+          { "status": "done", "text": "Architecture admin multi-pays et souveraineté des données construite" },
+          { "status": "done", "text": "Outils agricoles IA live — diagnostic sol, détection maladies, Think Tank" },
+          { "status": "done", "text": "Système de notification email et WhatsApp opérationnel" },
+          { "status": "current", "text": "Premier partenariat coopérative — en cours" },
+          { "status": "current", "text": "Premier deal investisseur — objectif dans 2 semaines" },
+          { "status": "upcoming", "text": "Premier versement ROI distribué" },
+          { "status": "upcoming", "text": "Première licence pays signée" },
+          { "status": "upcoming", "text": "100 000$ en investissements facilités" },
+          { "status": "upcoming", "text": "3 licences pays actives" },
+          { "status": "upcoming", "text": "Levée de fonds Série A" }
+        ]
+      },
+      "whyNow": {
+        "title": "Pourquoi maintenant",
+        "r1title": "Ouverture du marché panafricain",
+        "r1body": "Les gouvernements africains priorisent l'infrastructure agricole numérique. Des deals de licences pays sont maintenant réalisables qui n'étaient pas possibles il y a 3 ans.",
+        "r2title": "Capital diaspora prêt",
+        "r2body": "Les investisseurs de la diaspora africaine ont envoyé 89 Mds$ chez eux en 2023. Moins de 1% est allé dans des investissements agricoles structurés. AfriYield Exchange capte cet écart.",
+        "r3title": "Infrastructure mobile-first",
+        "r3body": "65% de l'Afrique subsaharienne est maintenant connectée par smartphone. Le moment pour une plateforme d'investissement agricole mobile-first n'a jamais été aussi propice."
+      },
+      "team": {
+        "title": "L'équipe",
+        "founderTitle": "Fondatrice et PDG",
+        "founderBio": "Isabelle Coulibaly est la fondatrice et PDG de Djigui Corporation, l'organisation derrière Sahel AgriConnect et AfriYield Exchange. Avec des racines profondes dans l'agriculture ouest-africaine et une perspective mondiale de la diaspora, elle a créé ces plateformes pour connecter les producteurs africains aux marchés mondiaux et au capital diaspora.",
+        "joinTitle": "Rejoignez notre équipe",
+        "joinBody": "Nous construisons notre équipe. Si vous êtes passionné par l'agriculture africaine et la technologie, nous aimerions vous entendre.",
+        "joinCta": "Nous contacter"
+      },
+      "terms": {
+        "title": "Conditions d'investissement",
+        "raising": "Nous levons actuellement notre tour Pre-Seed",
+        "fundsTitle": "Utilisation des fonds",
+        "fund1": "Développement de la plateforme et application mobile",
+        "fund2": "Développement de marché — Afrique de l'Ouest",
+        "fund3": "Support d'acquisition de la première licence pays",
+        "fund4": "Opérations et équipe",
+        "fund1pct": "40%",
+        "fund2pct": "25%",
+        "fund3pct": "20%",
+        "fund4pct": "15%",
+        "minimum": "Investissement minimum: 5 000$",
+        "structure": "Structure: Note SAFE ou Équité — à discuter avec l'équipe",
+        "deckNote": "Pour recevoir notre pitch deck et notre modèle financier, veuillez en faire la demande ci-dessous"
+      },
+      "form": {
+        "title": "Demander des informations",
+        "name": "Nom complet",
+        "email": "Email",
+        "org": "Organisation (optionnel)",
+        "range": "Intérêt d'investissement",
+        "ranges": ["5K–25K$", "25K–100K$", "100K–500K$", "500K$+"],
+        "source": "Comment avez-vous entendu parler de nous?",
+        "message": "Message",
+        "submit": "Demander le pitch deck",
+        "success": "Merci — nous vous enverrons votre pitch deck et planifierons un appel dans les 48 heures."
+      }
+    },
+    "founder": {
+      "sectionLabel": "Fondatrice & PDG",
+      "name": "Isabelle Coulibaly",
+      "bio": "Isabelle Coulibaly est la fondatrice et PDG de Djigui Corporation, l'organisation derrière Sahel AgriConnect et AfriYield Exchange. Avec des racines profondes dans l'agriculture ouest-africaine et une perspective mondiale de la diaspora, elle a créé ces plateformes pour connecter les producteurs africains aux marchés mondiaux et au capital diaspora.",
+      "photoAlt": "Isabelle Coulibaly — Fondatrice et PDG de Djigui Corporation",
+      "photoSoon": "Photo bientôt disponible",
+      "visitSite": "Visiter isacoultess.com",
+      "visitOrg": "Visiter djiguicorporation.org"
+    }
+  },
   "investorPortal": {
     "tabs": {
       "home": "Accueil",

@@ -42,7 +42,7 @@ function buildBreadcrumbItems(pathname) {
   }
 
   const section = rest[0];
-  const allowed = ['register', 'dashboard', 'marketplace'];
+  const allowed = ['register', 'dashboard', 'marketplace', 'updates'];
   if (!allowed.includes(section)) {
     return [crumb('home', null, { i18n: 'home', i18nShort: 'homeShort' })];
   }
@@ -51,6 +51,7 @@ function buildBreadcrumbItems(pathname) {
     register: { i18n: 'breadcrumbRegister', i18nShort: 'registerShort' },
     dashboard: { i18n: 'breadcrumbDashboard', i18nShort: 'dashboardShort' },
     marketplace: { i18n: 'breadcrumbMarketplace', i18nShort: 'marketplaceShort' },
+    updates: { label: 'Updates', labelShort: 'Updates' },
   };
 
   return [
@@ -84,6 +85,8 @@ export default function AfriYieldShell() {
               {crumbs.map((c, i) => {
                 const full = c.i18n ? `afriYield.${c.i18n}` : `afriYield.${c.segment}`;
                 const shortKey = c.i18nShort ? `afriYield.${c.i18nShort}` : `afriYield.${c.segment}Short`;
+                const fullLabel = c.label ?? t(full);
+                const shortLabel = c.labelShort ?? t(shortKey, { defaultValue: fullLabel });
                 return (
                 <span key={`${c.segment}-${i}`} className="inline-flex flex-col items-center md:inline-flex md:flex-row md:items-center">
                   {i > 0 ? (
@@ -94,15 +97,13 @@ export default function AfriYieldShell() {
                   ) : null}
                   {c.href ? (
                     <Link to={c.href} className="hover:text-[#B5850A] transition-colors underline-offset-2 hover:underline px-1">
-                      <span className="hidden md:inline">{t(full)}</span>
-                      <span className="md:hidden">{t(shortKey, { defaultValue: t(full) })}</span>
+                      <span className="hidden md:inline">{fullLabel}</span>
+                      <span className="md:hidden">{shortLabel}</span>
                     </Link>
                   ) : (
                     <>
-                      <span className="hidden font-medium text-white md:inline px-1">{t(full)}</span>
-                      <span className="font-medium text-white md:hidden px-1">
-                        {t(shortKey, { defaultValue: t(full) })}
-                      </span>
+                      <span className="hidden font-medium text-white md:inline px-1">{fullLabel}</span>
+                      <span className="font-medium text-white md:hidden px-1">{shortLabel}</span>
                     </>
                   )}
                 </span>

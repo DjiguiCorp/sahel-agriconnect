@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const Footer = () => {
+  const { i18n } = useTranslation();
   return (
     <footer className="bg-brand-forest text-white">
       <div className="section-container">
@@ -11,6 +13,11 @@ const Footer = () => {
             <p className="text-gray-300 text-sm">
               Plateforme de digitalisation souveraine de l&apos;agriculture en Afrique de l&apos;Ouest et au-delà.
             </p>
+            <div className="mt-4">
+              <Link to="/how-it-works" className="text-gray-400 hover:text-white transition text-sm">
+                {i18n.language === 'fr' ? 'Comment ça marche' : 'How It Works'}
+              </Link>
+            </div>
           </div>
 
           {/* Quick Links */}
@@ -70,6 +77,16 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-gray-300">
               <li>Zones : Afrique de l&apos;Ouest et au-delà</li>
               <li>Objectif : Souveraineté alimentaire</li>
+              <li className="pt-2">
+                <Link to="/afri-yield/updates" className="text-gray-400 hover:text-white transition text-sm">
+                  {i18n.language === 'fr' ? 'Mises à jour investisseurs' : 'Investor Updates'}
+                </Link>
+              </li>
+              <li>
+                <Link to="/investor-relations" className="text-gray-400 hover:text-white transition text-sm">
+                  {i18n.language === 'fr' ? 'Relations investisseurs' : 'Investor Relations'}
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -82,6 +99,25 @@ const Footer = () => {
               <li>Universités US</li>
             </ul>
           </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-1 mt-2">
+          <a
+            href="https://djiguicorporation.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-gray-500 hover:text-[#B5850A] transition"
+          >
+            djiguicorporation.org ↗
+          </a>
+          <a
+            href="https://isacoultess.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-gray-500 hover:text-[#B5850A] transition ml-0 sm:ml-4"
+          >
+            isacoultess.com ↗
+          </a>
         </div>
 
         <div className="border-t border-white/10 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-400">

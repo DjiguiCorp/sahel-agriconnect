@@ -33,6 +33,8 @@ import ImpactReport from './pages/ImpactReport';
 import TraceabilityLookup from './pages/TraceabilityLookup';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import HowItWorks from './pages/HowItWorks';
+import InvestorRelations from './pages/InvestorRelations';
 
 function App() {
   return (
@@ -77,6 +79,8 @@ function App() {
             <Route path="privacy" element={<PrivacyPolicy />} />
             <Route path="contact" element={<Contact />} />
             <Route path="pricing" element={<Pricing />} />
+            <Route path="how-it-works" element={<HowItWorks />} />
+            <Route path="investor-relations" element={<InvestorRelations />} />
             <Route path="diagnostic-sol" element={<SoilDiagnostic />} />
             <Route path="think-tank" element={<ThinkTank />} />
             <Route path="detection-maladies" element={<PlantDiseaseDetection />} />

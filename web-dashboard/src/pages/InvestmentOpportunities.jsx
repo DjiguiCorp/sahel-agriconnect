@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Loader2, X } from 'lucide-react';
@@ -357,13 +357,12 @@ export default function InvestmentOpportunities() {
                     >
                       {t('afriYield.scheduleMeeting')}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/afri-yield/register')}
+                    <Link
+                      to={`/afri-yield/invest/${opp._id || opp.id || 'sample'}`}
                       className="flex-1 rounded-lg border-2 border-[#1a3c2e] px-4 py-3 text-sm font-bold text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition text-center"
                     >
-                      {t('afriYield.expressInterest')}
-                    </button>
+                      {t('afriYield.investNow') || 'Invest Now'}
+                    </Link>
                   </div>
                 </article>
               );

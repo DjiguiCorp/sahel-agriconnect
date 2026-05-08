@@ -1,8 +1,10 @@
 import { Helmet } from 'react-helmet-async';
 import IconCircle from '../components/IconCircle';
 import { Target, Banknote, Smartphone, Sprout, Handshake, Globe, GraduationCap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const About = () => {
+  const { t } = useTranslation();
   return (
     <div>
       <Helmet>
@@ -132,6 +134,51 @@ const About = () => {
         </div>
       </section>
 
+      {/* Founder section */}
+      <section className="py-12 px-4 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <p className="text-sm font-semibold text-[#B5850A] uppercase tracking-wide mb-2">
+              {t('trust.founder.sectionLabel')}
+            </p>
+            <h2 className="text-3xl font-bold text-[#1a3c2e] mb-4">{t('trust.founder.name')}</h2>
+            <p className="text-gray-600 leading-relaxed mb-6">{t('trust.founder.bio')}</p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a
+                href="https://isacoultess.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1a3c2e] text-white text-sm font-semibold hover:bg-[#143326] transition"
+              >
+                {t('trust.founder.visitSite')} →
+              </a>
+              <a
+                href="https://djiguicorporation.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-[#1a3c2e] text-[#1a3c2e] text-sm font-semibold hover:bg-[#1a3c2e]/5 transition"
+              >
+                {t('trust.founder.visitOrg')} →
+              </a>
+            </div>
+          </div>
+          <div
+            className="rounded-2xl overflow-hidden h-56 flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#1a3c2e,#2d5a3d)' }}
+          >
+            <div className="text-center text-white">
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl font-bold text-[#0d1f17]"
+                style={{ background: '#B5850A' }}
+              >
+                IC
+              </div>
+              <p className="text-white/50 text-xs">{t('trust.founder.photoSoon')}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-brand-forest text-white py-16">
         <div className="section-container">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Nos partenaires</h2>
@@ -156,6 +203,16 @@ const About = () => {
                 </div>
                 <h3 className="text-2xl font-semibold mb-3">{title}</h3>
                 <p className="text-white/90">{text}</p>
+                {title === 'Djigui Corporation' ? (
+                  <a
+                    href="https://djiguicorporation.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-[#B5850A] hover:underline"
+                  >
+                    djiguicorporation.org →
+                  </a>
+                ) : null}
               </div>
             ))}
           </div>

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Shield, TrendingUp, Globe } from 'lucide-react';
 
 export default function AfriYieldExchange() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const stats = useMemo(
@@ -58,6 +58,14 @@ export default function AfriYieldExchange() {
             >
               {t('afriYield.viewOpportunities')}
             </button>
+          </div>
+          <div className="mt-5">
+            <Link
+              to="/how-it-works"
+              className="text-white/60 hover:text-white text-sm underline underline-offset-2 transition"
+            >
+              {i18n.language === 'fr' ? 'Comment ça fonctionne →' : 'How it works →'}
+            </Link>
           </div>
         </div>
       </section>

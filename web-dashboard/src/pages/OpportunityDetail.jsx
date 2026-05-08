@@ -255,10 +255,10 @@ export default function OpportunityDetail() {
               {t('afriYield.scheduleMeeting')}
             </button>
             <Link
-              to="/afri-yield/register"
+              to={`/afri-yield/invest/${opportunity?._id || id || 'sample'}`}
               className="rounded-lg border-2 border-[#1a3c2e] px-6 py-3 text-center text-sm font-bold text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition"
             >
-              {t('afriYield.expressInterest')}
+              {t('afriYield.investNow') || 'Invest Now'}
             </Link>
           </div>
         </div>

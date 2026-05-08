@@ -961,6 +961,168 @@
       }
     }
   },
+  "trust": {
+    "howItWorks": {
+      "title": "How AfriYield Exchange Works",
+      "subtitle": "A transparent, step-by-step explanation of how we connect investors with African agriculture",
+      "simple": {
+        "title": "The Simple Version",
+        "step1title": "We find verified cooperatives",
+        "step1body": "We identify and verify African agricultural cooperatives seeking investment for equipment and processing infrastructure.",
+        "step2title": "We connect them with investors",
+        "step2body": "Diaspora and international investors choose opportunities that match their goals and commit capital through our platform.",
+        "step3title": "Everyone benefits",
+        "step3body": "Investors receive bi-annual returns. Cooperatives grow their operations. Farmers earn more for their harvest."
+      },
+      "detailed": {
+        "title": "The Detailed Version",
+        "q1": "How do we verify cooperatives?",
+        "a1": "Every cooperative must submit registration documents, physical address, leader identification, and minimum member count before appearing on AfriYield Exchange. Our team reviews every application manually before activating any listing.",
+        "q2": "How is my money protected?",
+        "a2": "Track A investments fund physical equipment owned by the cooperative — tractors, drying machines, cold storage. The equipment exists as tangible collateral. Track B investments are governed by a formal revenue-share agreement signed before any funds are transferred.",
+        "q3": "How do payouts work?",
+        "a3": "Transformation centers submit production and sales reports twice a year — before June 1 and December 1. Returns are calculated from actual revenue data. Payouts are distributed in June and December via bank transfer, Zelle, WISE, or mobile money depending on the investor's location.",
+        "q4": "What if a cooperative fails?",
+        "a4": "For Track A investments, equipment can be recovered and sold to recover investor capital. We work with all parties to find resolution. Full protections are detailed in the investment agreement every investor signs before committing funds.",
+        "q5": "Who is behind AfriYield Exchange?",
+        "a5": "AfriYield Exchange is operated by Djigui Corporation, founded by Isabelle Coulibaly. Learn more at djiguicorporation.org and isacoultess.com."
+      },
+      "fees": {
+        "title": "Our Fee Structure — Full Transparency",
+        "col1": "Service",
+        "col2": "Fee",
+        "col3": "When",
+        "row1": ["Investment facilitation", "5% of capital deployed", "One-time at investment"],
+        "row2": ["Premium subscription", "$29.99/month or $299/year", "Optional, recurring"],
+        "row3": ["Advisory call — first", "FREE", "First session only"],
+        "row4": ["Advisory call — follow-up", "$99/session", "Per session"],
+        "row5": ["Cooperative membership", "$199/year", "Annual"],
+        "row6": ["Export certification", "$299–$499", "One-time"],
+        "note": "No hidden fees. No management fee. No withdrawal fee."
+      },
+      "agreement": {
+        "title": "The Investment Agreement",
+        "body": "Every investor receives a formal investment agreement before any funds move. The agreement covers investment amount and terms, expected return schedule, payout mechanism, dispute resolution, and exit provisions.",
+        "cta": "Request Sample Agreement"
+      },
+      "regulatory": {
+        "title": "Regulatory Status",
+        "body": "AfriYield Exchange is an investment facilitation platform operated by Djigui Corporation. We are not a licensed financial institution or broker-dealer. Investments carry risk. Past performance does not guarantee future returns. We recommend consulting a financial advisor before investing."
+      }
+    },
+    "updates": {
+      "title": "Investor Updates",
+      "subtitle": "Transparent progress reports from AfriYield Exchange — published regularly",
+      "subscribe": "Get updates in your inbox",
+      "subscribePlaceholder": "your@email.com",
+      "subscribeCta": "Subscribe",
+      "subscribeSuccess": "Subscribed! You will receive our next investor update.",
+      "readMore": "Read more",
+      "readLess": "Read less",
+      "categories": {
+        "platform": "Platform Update",
+        "milestone": "Milestone",
+        "market": "Market Intelligence",
+        "deal": "Deal Update"
+      }
+    },
+    "investorRelations": {
+      "label": "INVESTOR RELATIONS",
+      "title": "Invest in AfriYield Exchange",
+      "subtitle": "We are building the infrastructure for African agricultural investment — connecting diaspora capital with certified producers across the continent",
+      "requestDeck": "Request Pitch Deck",
+      "scheduleCall": "Schedule a Call",
+      "opportunity": {
+        "title": "The Opportunity",
+        "stat1value": "$2.7B",
+        "stat1label": "Global shea butter market",
+        "stat2value": "60M+",
+        "stat2label": "Smallholder farmers without market access",
+        "stat3value": "$89B",
+        "stat3label": "African diaspora remittances annually"
+      },
+      "model": {
+        "title": "Our Business Model",
+        "supply": "Sahel AgriConnect — Supply Side",
+        "investment": "AfriYield Exchange — Investment Side",
+        "year1": "Year 1 Target",
+        "year2": "Year 2 Projection",
+        "total1": "Combined Year 1 Target: $91,738",
+        "total2": "Combined Year 2 Projection: $270,514"
+      },
+      "traction": {
+        "title": "Traction & Milestones",
+        "items": [
+          { "status": "done", "text": "Platform built and deployed — live at sahelagriconnect.vercel.app" },
+          { "status": "done", "text": "AfriYield Exchange investment portal launched" },
+          { "status": "done", "text": "Multi-country admin and data sovereignty architecture built" },
+          { "status": "done", "text": "AI-powered farmer tools live — soil diagnosis, disease detection, Think Tank" },
+          { "status": "done", "text": "Email and WhatsApp notification system operational" },
+          { "status": "current", "text": "First cooperative partnership — in progress" },
+          { "status": "current", "text": "First investor deal — target within 2 weeks" },
+          { "status": "upcoming", "text": "First ROI payout distributed" },
+          { "status": "upcoming", "text": "First country license signed" },
+          { "status": "upcoming", "text": "$100K in facilitated investments" },
+          { "status": "upcoming", "text": "3 country licenses active" },
+          { "status": "upcoming", "text": "Series A raise" }
+        ]
+      },
+      "whyNow": {
+        "title": "Why Now",
+        "r1title": "Pan-African Market Opening",
+        "r1body": "African governments are prioritizing digital agricultural infrastructure. Country license deals are now achievable that were not possible 3 years ago.",
+        "r2title": "Diaspora Capital Ready",
+        "r2body": "African diaspora investors sent $89B home in 2023. Less than 1% went into structured agricultural investment. AfriYield Exchange captures this gap.",
+        "r3title": "Mobile-First Infrastructure",
+        "r3body": "65% of sub-Saharan Africa is now smartphone-connected. The timing for a mobile-first agricultural investment platform has never been better."
+      },
+      "team": {
+        "title": "The Team",
+        "founderTitle": "Founder & CEO",
+        "founderBio": "Isabelle Coulibaly is the founder and CEO of Djigui Corporation, the organization behind Sahel AgriConnect and AfriYield Exchange. With deep roots in West African agriculture and a global diaspora perspective, she built these platforms to connect African producers with world markets and diaspora capital.",
+        "joinTitle": "Join Our Team",
+        "joinBody": "We are building our team. If you are passionate about African agriculture and technology, we would love to hear from you.",
+        "joinCta": "Get in touch"
+      },
+      "terms": {
+        "title": "Investment Terms",
+        "raising": "We are currently raising our Pre-Seed round",
+        "fundsTitle": "Use of Funds",
+        "fund1": "Platform development and mobile app",
+        "fund2": "Market development — West Africa",
+        "fund3": "First country license acquisition support",
+        "fund4": "Operations and team",
+        "fund1pct": "40%",
+        "fund2pct": "25%",
+        "fund3pct": "20%",
+        "fund4pct": "15%",
+        "minimum": "Minimum investment: $5,000",
+        "structure": "Structure: SAFE note or Equity — discuss with team",
+        "deckNote": "To receive our pitch deck and financial model, please request below"
+      },
+      "form": {
+        "title": "Request Information",
+        "name": "Full name",
+        "email": "Email",
+        "org": "Organization (optional)",
+        "range": "Investment interest",
+        "ranges": ["$5K–$25K", "$25K–$100K", "$100K–$500K", "$500K+"],
+        "source": "How did you hear about us?",
+        "message": "Message",
+        "submit": "Request pitch deck",
+        "success": "Thank you — we will send your pitch deck and schedule a call within 48 hours."
+      }
+    },
+    "founder": {
+      "sectionLabel": "Founder & CEO",
+      "name": "Isabelle Coulibaly",
+      "bio": "Isabelle Coulibaly is the founder and CEO of Djigui Corporation, the organization behind Sahel AgriConnect and AfriYield Exchange. With deep roots in West African agriculture and a global diaspora perspective, she built these platforms to connect African producers with world markets and diaspora capital.",
+      "photoAlt": "Isabelle Coulibaly — Founder & CEO of Djigui Corporation",
+      "photoSoon": "Photo coming soon",
+      "visitSite": "Visit isacoultess.com",
+      "visitOrg": "Visit djiguicorporation.org"
+    }
+  },
   "investorPortal": {
     "tabs": {
       "home": "Home",
