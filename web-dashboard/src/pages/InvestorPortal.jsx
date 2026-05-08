@@ -54,6 +54,13 @@ const SPARKLINES = {
   mango: 'M0,35 L20,33 L40,32 L60,30 L80,28 L100,25',
 };
 
+const COMMODITY_NAMES = {
+  shea: { en: 'Shea Butter', fr: 'Beurre de Karité' },
+  sesame: { en: 'Sesame', fr: 'Sésame' },
+  cashew: { en: 'Cashew', fr: 'Noix de cajou' },
+  mango: { en: 'Dried Mango', fr: 'Mangue séchée' },
+};
+
 function formatUSD(n) {
   return `$${Number(n).toLocaleString('en-US')}`;
 }
@@ -619,7 +626,8 @@ function FarmTab({ investments, t, navigate }) {
 }
 
 /* ─── PRICES TAB ────────────────────────────────────────────────────── */
-function PricesTab({ t, onOpenPremium }) {
+function PricesTab({ onOpenPremium }) {
+  const { t, i18n } = useTranslation();
   const [alerts, setAlerts] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('afriyield_price_alerts') || '{}');
@@ -627,6 +635,8 @@ function PricesTab({ t, onOpenPremium }) {
       return {};
     }
   });
+
+  const lang = i18n.language === 'fr' ? 'fr' : 'en';
 
   const toggleAlert = (key) => {
     const next = { ...alerts, [key]: !alerts[key] };
@@ -645,11 +655,11 @@ function PricesTab({ t, onOpenPremium }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {COMMODITIES.map(({ key, emoji, price, trend, demand }) => (
           <div
             key={key}
-            className="rounded-2xl p-4 md:p-5"
+            className="rounded-2xl p-4 overflow-hidden flex flex-col min-h-0 md:p-3"
             style={{
               background: '#132a1e',
               border:
@@ -658,11 +668,11 @@ function PricesTab({ t, onOpenPremium }) {
                   : '1px solid rgba(181,133,10,0.25)',
             }}
           >
-            <div className="flex items-center justify-between mb-3 gap-2">
-              <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center justify-between mb-3 gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 overflow-hidden flex-1">
                 <span className="text-2xl shrink-0">{emoji}</span>
-                <span className="font-bold text-sm truncate" style={{ color: '#F5F0E8' }}>
-                  {t(`investorPortal.prices.names.${key}`)}
+                <span className="text-white font-bold text-sm break-words">
+                  {COMMODITY_NAMES[key]?.[lang] || key}
                 </span>
               </div>
               {demand === 'high' && (
@@ -711,23 +721,25 @@ function PricesTab({ t, onOpenPremium }) {
             </div>
 
             {/* Sparkline — desktop has a clear trend preview */}
-            <div className="mt-3">
-              <p className="text-xs" style={{ color: 'rgba(245,240,232,0.45)' }}>
-                Price trend (last 6 months)
+            <div className="mt-3 shrink-0">
+              <p className="text-white/30 text-xs mb-1">
+                {i18n.language === 'fr' ? 'Tendance des prix (6 derniers mois)' : 'Price trend (last 6 months)'}
               </p>
               <svg viewBox="0 0 100 60" className="w-full h-12 mt-1">
                 <path d={SPARKLINES[key]} fill="none" stroke="#B5850A" strokeWidth="2" />
               </svg>
             </div>
 
-            <p className="text-xs mt-2 leading-relaxed" style={{ color: 'rgba(245,240,232,0.45)' }}>
-              {t(`investorPortal.prices.context.${key}`)}
-            </p>
+            <div className="flex-1 min-h-0 mt-2 overflow-hidden">
+              <p className="text-white/40 text-xs leading-relaxed line-clamp-2 break-words">
+                {t(`investorPortal.prices.context.${key}`)}
+              </p>
+            </div>
 
             <button
               type="button"
               onClick={() => toggleAlert(key)}
-              className={`mt-3 w-full rounded-2xl py-2 text-xs font-semibold transition ${
+              className={`mt-3 w-full rounded-2xl py-2 text-xs font-semibold transition shrink-0 ${
                 alerts[key]
                   ? 'bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/35'
                   : 'border border-white/10 hover:border-[#B5850A]/40'
@@ -1350,7 +1362,7 @@ export default function InvestorPortal() {
               />
             )}
             {activeTab === 'farm' && <FarmTab investments={investments} t={t} navigate={navigate} />}
-            {activeTab === 'prices' && <PricesTab t={t} onOpenPremium={() => setShowPremiumModal(true)} />}
+            {activeTab === 'prices' && <PricesTab onOpenPremium={() => setShowPremiumModal(true)} />}
             {activeTab === 'news' && <NewsTab t={t} onOpenPremium={() => setShowPremiumModal(true)} />}
             {activeTab === 'help' && <HelpTab investor={investor} t={t} />}
           </div>
