@@ -894,6 +894,7 @@ function NewsTab({ t, onOpenPremium }) {
 /* ─── HELP TAB ──────────────────────────────────────────────────────── */
 function HelpTab({ investor, t }) {
   const { i18n } = useTranslation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(null);
   const [question, setQuestion] = useState('');
   const [sent, setSent] = useState(false);
@@ -1037,13 +1038,13 @@ function HelpTab({ investor, t }) {
               <p className="text-white/30 text-xs text-center mb-2">
                 {i18n.language === 'fr' ? 'Gestion du compte' : 'Account management'}
               </p>
-              <Link
-                to="/delete-account?type=investor"
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs text-red-400/60 hover:text-red-400 hover:bg-red-400/5 transition border border-red-400/10 hover:border-red-400/30"
+              <button
+                type="button"
+                onClick={() => navigate('/delete-account?type=investor')}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs text-red-400/60 hover:text-red-400 hover:bg-red-400/5 transition border border-red-400/10 hover:border-red-400/30 mt-4"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                {i18n.language === 'fr' ? 'Supprimer mon compte' : 'Delete my account'}
-              </Link>
+                🗑️ {i18n.language === 'fr' ? 'Supprimer mon compte' : 'Delete my account'}
+              </button>
             </div>
           </div>
         </div>

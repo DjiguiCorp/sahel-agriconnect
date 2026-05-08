@@ -114,8 +114,145 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // PUT /api/deletion-requests/:id — update status — admin only
 router.put('/:id', authenticateToken, async (req, res) => {
-  const request = await DeletionRequest.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json({ success: true, request });
+  try {
+    const request = await DeletionRequest.findById(req.params.id);
+    if (!request) return res.status(404).json({ error: 'Not found' });
+
+    // If admin is marking as completed — purge/anonymize the user data
+    if (req.body.status === 'completed' && request.status !== 'completed') {
+      const email = request.userEmail;
+      const deletedEmail = `deleted_${Date.now()}@removed.com`;
+
+      // Import all relevant models
+      const [
+        { default: Investor },
+        { default: Farmer },
+        { default: Cooperative },
+        { default: CooperativePlatformRegistration },
+        { default: PendingNotification },
+        { default: InvestorNotification },
+        { default: ExpertRequest },
+        { default: DiasporaProducer },
+        { default: DiasporaBuyer },
+        { default: DiasporaContactInquiry },
+      ] = await Promise.all([
+        import('../models/Investor.js'),
+        import('../models/Farmer.js'),
+        import('../models/Cooperative.js'),
+        import('../models/CooperativePlatformRegistration.js'),
+        import('../models/PendingNotification.js'),
+        import('../models/InvestorNotification.js'),
+        import('../models/ExpertRequest.js'),
+        import('../models/DiasporaProducer.js'),
+        import('../models/DiasporaBuyer.js'),
+        import('../models/DiasporaContactInquiry.js'),
+      ]);
+
+      // Purge based on user type
+      if (request.userType === 'investor') {
+        // Anonymize investor record — do NOT fully delete (keep for financial records)
+        await Investor.findOneAndUpdate(
+          { email },
+          {
+            fullName: '[DELETED]',
+            email: deletedEmail,
+            phone: null,
+            countryOfResidence: null,
+            message: null,
+            status: 'declined',
+          }
+        );
+
+        // Delete investor notifications (non-financial)
+        await InvestorNotification.deleteMany({ investorEmail: email });
+      } else if (request.userType === 'farmer') {
+        // Anonymize farmer record (keep required fields populated)
+        await Farmer.findOneAndUpdate(
+          { email },
+          {
+            nom: '[SUPPRIMÉ]',
+            email: deletedEmail,
+            telephone: 'DELETED',
+            latitude: '0',
+            longitude: '0',
+            localisation: '0, 0',
+          }
+        );
+
+        // Delete support/expert requests tied to farmer email
+        await ExpertRequest.deleteMany({ farmerEmail: email });
+      } else if (request.userType === 'cooperative') {
+        // Prefer platform registration cooperative records (have email/phone/status)
+        await CooperativePlatformRegistration.findOneAndUpdate(
+          { email },
+          {
+            cooperativeName: '[SUPPRIMÉ]',
+            leaderName: '[SUPPRIMÉ]',
+            email: deletedEmail,
+            phone: null,
+            status: 'declined',
+          }
+        );
+
+        // Also anonymize any legacy cooperative record if it exists (no email field in schema)
+        // (best effort: no-op if not found)
+        await Cooperative.updateMany(
+          { contact: email },
+          {
+            responsable: '[SUPPRIMÉ]',
+            contact: deletedEmail,
+            nom: '[SUPPRIMÉ]',
+            localisation: '[SUPPRIMÉ]',
+          }
+        );
+      } else if (request.userType === 'diaspora_producer') {
+        await DiasporaProducer.findOneAndUpdate(
+          { email },
+          {
+            fullName: '[DELETED]',
+            email: deletedEmail,
+            phone: 'DELETED',
+            whatsapp: null,
+            cooperativeName: null,
+            region: null,
+            products: [],
+            monthlyVolumeKg: null,
+            status: 'inactive',
+          }
+        );
+
+        // Best-effort: remove inquiries where this email was used
+        await DiasporaContactInquiry.deleteMany({ contactEmail: email });
+      } else if (request.userType === 'diaspora_buyer') {
+        await DiasporaBuyer.findOneAndUpdate(
+          { email },
+          {
+            fullName: '[DELETED]',
+            email: deletedEmail,
+            phone: null,
+            whatsapp: null,
+            businessName: '[DELETED]',
+            cityState: null,
+            productsSought: [],
+            monthlyVolumeNeededKg: null,
+            status: 'contacted',
+          }
+        );
+      }
+
+      // Always clean up pending notifications for this email
+      await PendingNotification.deleteMany({ recipientEmail: email });
+
+      console.log(`✅ Data purged for ${request.userType}: ${email}`);
+    }
+
+    // Update the request status (and other fields sent by admin)
+    const updated = await DeletionRequest.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json({ success: true, request: updated });
+  } catch (err) {
+    console.error('Deletion error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
