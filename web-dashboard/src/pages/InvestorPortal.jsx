@@ -1003,8 +1003,10 @@ function HelpTab({ investor, t }) {
                 },
                 {
                   icon: '📞',
-                  label: t('investorPortal.help.call'),
-                  href: `mailto:info@djiguicorporation.org?subject=${encodeURIComponent('Advisory Call Booking')}&body=${encodeURIComponent(`Name: ${investor?.fullName || ''}\nEmail: ${investor?.email || ''}`)}`,
+                  label: t('investorPortal.advisory.cta'),
+                  href: `mailto:info@djiguicorporation.org?subject=Free Intro Call Request - AfriYield Exchange&body=Hello! I would like to book my free 30-minute intro call.%0A%0AName: ${encodeURIComponent(
+                    investor?.fullName || ''
+                  )}%0AEmail: ${encodeURIComponent(investor?.email || '')}%0APreferred time (timezone): %0AInvestment interest: `,
                 },
               ].map((c) => (
                 <a
