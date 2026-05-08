@@ -1277,7 +1277,7 @@
       "alertOff": "Get alerts for this",
       "premiumTitle": "Want to know before everyone else?",
       "premiumBody": "Premium members get price alerts on their phone when African commodity prices move. They also get monthly reports written in plain language — no financial jargon.",
-      "premiumPrice": "$49 per month — cancel any time",
+      "premiumPrice": "$29.99/month or $299/year — cancel any time",
       "premiumCta": "Learn more about Premium"
     },
     "news": {
@@ -1286,7 +1286,7 @@
       "readMore": "Read more",
       "readingTime": "min read",
       "premiumLabel": "Premium members only",
-      "premiumUnlock": "This is for Premium members. Join for $49/month to read the full story.",
+      "premiumUnlock": "This is for Premium members. Join for $29.99/month to read the full story.",
       "unlock": "Unlock",
       "tags": {
         "market": "Market news",

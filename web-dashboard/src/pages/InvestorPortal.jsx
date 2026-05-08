@@ -1324,13 +1324,13 @@ export default function InvestorPortal() {
           <div className="rounded-2xl p-4" style={{ background: '#132a1e', border: '1px solid rgba(181,133,10,0.25)' }}>
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-[#B5850A]" />
-              <p className="font-bold text-sm" style={{ color: '#F5F0E8' }}>
-                Upgrade to Premium
+              <p className="font-semibold text-white text-sm">
+                {i18n.language === 'fr' ? 'Passer à Premium' : 'Upgrade to Premium'}
               </p>
             </div>
             <p className="tabular-nums text-[#B5850A] font-bold text-lg mt-2">{t('investorPortal.premium.price')}</p>
             <button type="button" onClick={() => setShowPremiumModal(true)} className="text-xs font-bold text-[#B5850A] mt-2 hover:underline">
-              Learn more →
+              <span>{i18n.language === 'fr' ? 'En savoir plus →' : 'Learn more →'}</span>
             </button>
           </div>
 

@@ -1265,7 +1265,7 @@
       "alertOff": "Recevoir des alertes",
       "premiumTitle": "Vous voulez savoir avant tout le monde?",
       "premiumBody": "Les membres Premium reçoivent des alertes de prix sur leur téléphone quand les prix des commodités africaines bougent. Ils reçoivent aussi des rapports mensuels écrits en langage simple — sans jargon financier.",
-      "premiumPrice": "49$ par mois — annulez à tout moment",
+      "premiumPrice": "29,99$/mois ou 299$/an — annulez à tout moment",
       "premiumCta": "En savoir plus sur Premium"
     },
     "news": {
@@ -1274,7 +1274,7 @@
       "readMore": "Lire la suite",
       "readingTime": "min de lecture",
       "premiumLabel": "Membres Premium uniquement",
-      "premiumUnlock": "Ceci est pour les membres Premium. Rejoignez pour 49$/mois pour lire l'histoire complète.",
+      "premiumUnlock": "Ceci est pour les membres Premium. Rejoignez pour 29,99$/mois pour lire l'histoire complète.",
       "unlock": "Débloquer",
       "tags": {
         "market": "Actualité marché",
