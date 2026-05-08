@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Globe, Leaf, Loader2, Mail, Phone, Package, Users, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, Globe, Leaf, Loader2, Mail, Phone, Package, Trash2, Users, X } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LocationSelector from './LocationSelector';
@@ -26,6 +27,7 @@ export default function DiasporaPartnership() {
   const [tab, setTab] = useState('producer'); // producer | buyer | matching
   const tabsRef = useRef(null);
   const { registerUser } = useRegisteredUser();
+  const isFr = /^fr\b/i.test(String(navigator.language || '').toLowerCase());
 
   const [activeProducers, setActiveProducers] = useState([]);
   const [loadingActive, setLoadingActive] = useState(true);
@@ -464,6 +466,10 @@ export default function DiasporaPartnership() {
                   Questions? Contactez-nous via la page Contact
                 </a>
               }
+              accountDeletion={{
+                to: '/delete-account?type=diaspora_producer',
+                label: isFr ? 'Demander la suppression de mon profil diaspora producteur' : 'Request diaspora producer profile deletion',
+              }}
             />
           )}
         </div>
@@ -652,6 +658,10 @@ export default function DiasporaPartnership() {
                   Vous pouvez aussi parcourir les producteurs disponibles dès maintenant
                 </button>
               }
+              accountDeletion={{
+                to: '/delete-account?type=diaspora_buyer',
+                label: isFr ? 'Demander la suppression de mon profil diaspora acheteur' : 'Request diaspora buyer profile deletion',
+              }}
             />
           )}
         </div>
@@ -766,7 +776,7 @@ function HowItWorks({ steps }) {
   );
 }
 
-function SuccessCard({ title, subtitle, steps, footer }) {
+function SuccessCard({ title, subtitle, steps, footer, accountDeletion }) {
   return (
     <div className="bg-white rounded-2xl border border-green-200 shadow-sm p-6 md:p-8">
       <div className="flex items-start gap-4">
@@ -787,6 +797,20 @@ function SuccessCard({ title, subtitle, steps, footer }) {
         ))}
       </ol>
       {footer ? <div className="mt-6">{footer}</div> : null}
+      {accountDeletion?.to ? (
+        <div className="mt-6 pt-4 border-t border-gray-100 text-center">
+          <Link
+            to={accountDeletion.to}
+            className="inline-flex items-center gap-2 text-xs text-red-500 hover:text-red-700 hover:underline transition"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            {accountDeletion.label ||
+              (/^fr\b/i.test(String(navigator.language || '').toLowerCase())
+                ? 'Supprimer mon compte'
+                : 'Delete my account')}
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

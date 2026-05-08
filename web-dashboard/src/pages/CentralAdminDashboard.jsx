@@ -43,11 +43,13 @@ import {
   MapPin,
   UserPlus,
   ClipboardList,
+  Trash2,
 } from 'lucide-react';
 
 const BASE_TABS = [
   { id: 'overview', labelKey: 'adminDashboard.tabs.overview', shortKey: 'adminDashboard.tabsShort.overview', Icon: ShieldAlert },
   { id: 'notifications', labelKey: 'adminDashboard.tabs.notifications', shortKey: 'adminDashboard.tabsShort.notifications', Icon: BadgeCheck },
+  { id: 'deletions', labelKey: 'adminDashboard.tabs.deletions', shortKey: 'adminDashboard.tabsShort.deletions', Icon: Trash2 },
   { id: 'farmers', labelKey: 'adminDashboard.tabs.farmers', shortKey: 'adminDashboard.tabsShort.farmers', Icon: Sprout },
   { id: 'cooperatives', labelKey: 'adminDashboard.tabs.cooperatives', shortKey: 'adminDashboard.tabsShort.cooperatives', Icon: Handshake },
   { id: 'centers', labelKey: 'adminDashboard.tabs.centers', shortKey: 'adminDashboard.tabsShort.centers', Icon: Building2 },
@@ -701,30 +703,264 @@ function NotificationsPanel() {
   );
 }
 
+function needsAdminDeletionAttention(status) {
+  return status === 'pending' || status === 'notice_period' || status === 'final_payout_pending';
+}
+
+function countDeletionRequestsNeedingAttention(requests) {
+  const list = Array.isArray(requests) ? requests : [];
+  return list.filter((x) => needsAdminDeletionAttention(x.status)).length;
+}
+
+function DeletionRequestsPanel({ onRequestsLoaded }) {
+  const { t, i18n } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+  const [err, setErr] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/deletion-requests`, { headers: authHeaders() });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || 'Failed');
+      const list = Array.isArray(j?.requests) ? j.requests : [];
+      setItems(list);
+      onRequestsLoaded?.(list);
+    } catch (e) {
+      setErr(e.message || 'Error');
+      setItems([]);
+      onRequestsLoaded?.([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [onRequestsLoaded]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const update = async (id, patch) => {
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/deletion-requests/${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(patch),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || 'Update failed');
+      await load();
+    } catch (e) {
+      alert(e.message || 'Update failed');
+    }
+  };
+
+  const badgeForStatus = (status) => {
+    if (status === 'pending') return 'bg-gray-100 text-gray-900 border-gray-200';
+    if (status === 'notice_period') return 'bg-red-50 text-red-900 border-red-200 animate-pulse';
+    if (status === 'final_payout_pending') return 'bg-orange-50 text-orange-900 border-orange-200';
+    if (status === 'completed') return 'bg-green-50 text-green-900 border-green-200';
+    if (status === 'cancelled') return 'bg-gray-100 text-gray-500 border-gray-200 line-through';
+    return 'bg-gray-100 text-gray-900 border-gray-200';
+  };
+
+  const typeBadge = (userType) => {
+    const base = 'text-[11px] font-extrabold px-2 py-1 rounded-full border ';
+    const map = {
+      investor: 'bg-[#fff7df] text-[#7a5b10] border-[#e9d7a7]',
+      farmer: 'bg-green-50 text-green-900 border-green-200',
+      cooperative: 'bg-blue-50 text-blue-900 border-blue-200',
+      diaspora_producer: 'bg-purple-50 text-purple-900 border-purple-200',
+      diaspora_buyer: 'bg-indigo-50 text-indigo-900 border-indigo-200',
+    };
+    return base + (map[userType] || 'bg-gray-50 text-gray-900 border-gray-200');
+  };
+
+  const mailtoInvestorDeletion = (row) => {
+    const noticeStart =
+      row.noticePeriodStartDate ? new Date(row.noticePeriodStartDate).toLocaleDateString() : '—';
+    const planned =
+      row.scheduledDeletionDate ? new Date(row.scheduledDeletionDate).toLocaleDateString() : '—';
+    const subject = encodeURIComponent('Your AfriYield Account Deletion — Action Required');
+    const body = encodeURIComponent(
+      `Hello ${row.userName || ''},\n\n` +
+        `This email confirms your account deletion request on AfriYield Exchange.\n\n` +
+        `6-month notice period start date: ${noticeStart}\n` +
+        `Planned timeline for final payout coordination: ${planned}\n\n` +
+        `Next steps:\n` +
+        `- Our team will contact you within 48 hours to confirm details and payout timing.\n` +
+        `- Your final ROI payout will be processed to your registered payment method before closure.\n\n` +
+        `Thank you,\n` +
+        `AfriYield / Sahel AgriConnect Team`
+    );
+    return `mailto:${row.userEmail}?subject=${subject}&body=${body}`;
+  };
+
+  const isFr = String(i18n.language || '').toLowerCase().startsWith('fr');
+
+  if (loading) return <div className="text-center py-10">{t('common.loading')}</div>;
+  if (err) return <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{err}</div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-2xl font-extrabold text-brand-forest">{t('adminDashboard.tabs.deletions')}</h2>
+        <button
+          type="button"
+          onClick={load}
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+        <table className="min-w-[1100px] w-full text-sm">
+          <thead className="bg-gray-50 text-gray-700">
+            <tr>
+              <th className="px-4 py-3 text-left font-semibold">{isFr ? 'Type' : 'User type'}</th>
+              <th className="px-4 py-3 text-left font-semibold">{isFr ? 'Nom' : 'Name'}</th>
+              <th className="px-4 py-3 text-left font-semibold">Email</th>
+              <th className="px-4 py-3 text-left font-semibold">{isFr ? 'Investissement actif' : 'Active investment'}</th>
+              <th className="px-4 py-3 text-left font-semibold">{isFr ? 'Raison' : 'Reason'}</th>
+              <th className="px-4 py-3 text-left font-semibold">{isFr ? 'Statut' : 'Status'}</th>
+              <th className="px-4 py-3 text-left font-semibold">{isFr ? 'Suppression planifiée' : 'Scheduled deletion'}</th>
+              <th className="px-4 py-3 text-right font-semibold">{isFr ? 'Actions' : 'Actions'}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {items.map((r) => (
+              <tr key={r._id} className="text-gray-800 align-top">
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={typeBadge(r.userType)}>{String(r.userType || '—').replaceAll('_', ' ')}</span>
+                </td>
+                <td className="px-4 py-3 font-medium">{r.userName || '—'}</td>
+                <td className="px-4 py-3">{r.userEmail || '—'}</td>
+                <td className="px-4 py-3">
+                  <span className={`text-xs font-extrabold ${r.hasActiveInvestment ? 'text-red-700' : 'text-gray-700'}`}>
+                    {r.hasActiveInvestment ? (isFr ? 'OUI' : 'YES') : isFr ? 'Non' : 'No'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 max-w-[320px]">
+                  <p className="line-clamp-3" title={r.reason || ''}>
+                    {r.reason || '—'}
+                  </p>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border ${badgeForStatus(r.status)}`}>
+                    {r.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {r.scheduledDeletionDate ? new Date(r.scheduledDeletionDate).toLocaleDateString() : '—'}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <div className="flex flex-col items-end gap-2">
+                    {r.status === 'pending' ? (
+                      <button
+                        type="button"
+                        onClick={() => update(r._id, { status: 'notice_period', confirmedByAdmin: true })}
+                        className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-extrabold text-white hover:bg-black"
+                      >
+                        Confirm
+                      </button>
+                    ) : null}
+
+                    {['pending', 'notice_period'].includes(r.status) ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          update(r._id, {
+                            finalPayoutSent: true,
+                            status: 'final_payout_pending',
+                          })
+                        }
+                        className="rounded-lg bg-[#B5850A] px-3 py-1.5 text-xs font-extrabold text-white hover:bg-[#9a7109]"
+                      >
+                        Payout Sent
+                      </button>
+                    ) : null}
+
+                    {['pending', 'notice_period', 'final_payout_pending'].includes(r.status) ? (
+                      <button
+                        type="button"
+                        onClick={() => update(r._id, { status: 'completed' })}
+                        className="rounded-lg bg-green-700 px-3 py-1.5 text-xs font-extrabold text-white hover:bg-green-800"
+                      >
+                        Mark Complete
+                      </button>
+                    ) : null}
+
+                    {r.status !== 'cancelled' && r.status !== 'completed' ? (
+                      <button
+                        type="button"
+                        onClick={() => update(r._id, { status: 'cancelled' })}
+                        className="rounded-lg bg-white px-3 py-1.5 text-xs font-extrabold text-gray-700 border border-gray-200 hover:bg-gray-50"
+                      >
+                        Cancel Request
+                      </button>
+                    ) : null}
+
+                    {r.userType === 'investor' && r.hasActiveInvestment ? (
+                      <a
+                        href={mailtoInvestorDeletion(r)}
+                        className="text-xs font-bold text-brand-forest hover:underline"
+                      >
+                        Email investor
+                      </a>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {items.length === 0 ? <p className="p-6 text-center text-gray-500">{isFr ? 'Aucune demande.' : 'No requests.'}</p> : null}
+      </div>
+    </div>
+  );
+}
+
 const CentralAdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
   const [expertRequestsNewCount, setExpertRequestsNewCount] = useState(0);
+  const [deletionRequestsPendingCount, setDeletionRequestsPendingCount] = useState(0);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const isSuperAdmin = user?.role === 'super-admin';
   const { country: detectedCountry } = useGeolocation();
   const [globalCountryFilter, setGlobalCountryFilter] = useState('');
 
+  const handleDeletionRequestsLoaded = useCallback((requests) => {
+    setDeletionRequestsPendingCount(countDeletionRequestsNeedingAttention(requests));
+  }, []);
+
   useEffect(() => {
-    async function badge() {
+    async function badges() {
+      if (!localStorage.getItem('adminToken')) return;
       try {
-        const r = await fetch(`${API_ENDPOINTS.EXPERTS.REQUESTS}?status=new`, {
-          headers: authHeaders(),
-        });
-        const data = await r.json().catch(() => ({}));
-        if (!r.ok) return;
-        setExpertRequestsNewCount(Array.isArray(data.requests) ? data.requests.length : 0);
+        const headers = authHeaders();
+
+        const expertRes = await fetch(`${API_ENDPOINTS.EXPERTS.REQUESTS}?status=new`, { headers });
+        const expertJson = await expertRes.json().catch(() => ({}));
+        if (expertRes.ok) {
+          setExpertRequestsNewCount(Array.isArray(expertJson.requests) ? expertJson.requests.length : 0);
+        }
+
+        const delRes = await fetch(`${API_BASE_URL}/api/deletion-requests`, { headers });
+        const delJson = await delRes.json().catch(() => ({}));
+        if (delRes.ok) {
+          const list = Array.isArray(delJson.requests) ? delJson.requests : [];
+          setDeletionRequestsPendingCount(countDeletionRequestsNeedingAttention(list));
+        }
       } catch {
         setExpertRequestsNewCount(0);
+        setDeletionRequestsPendingCount(0);
       }
     }
-    if (localStorage.getItem('adminToken')) badge();
+    badges();
   }, [activeTab]);
 
   const tabs = useMemo(() => {
@@ -827,6 +1063,11 @@ const CentralAdminDashboard = () => {
                   {expertRequestsNewCount}
                 </span>
               ) : null}
+              {tab.id === 'deletions' && deletionRequestsPendingCount > 0 ? (
+                <span className="shrink-0 rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white animate-pulse">
+                  {deletionRequestsPendingCount}
+                </span>
+              ) : null}
             </button>
           ))}
         </nav>
@@ -857,6 +1098,11 @@ const CentralAdminDashboard = () => {
                 {tab.id === 'expertRequests' && expertRequestsNewCount > 0 ? (
                   <span className="rounded-full bg-red-500 px-1.5 py-px text-[10px] font-bold leading-none text-white">
                     {expertRequestsNewCount}
+                  </span>
+                ) : null}
+                {tab.id === 'deletions' && deletionRequestsPendingCount > 0 ? (
+                  <span className="rounded-full bg-red-500 px-1.5 py-px text-[10px] font-bold leading-none text-white animate-pulse">
+                    {deletionRequestsPendingCount}
                   </span>
                 ) : null}
               </button>
@@ -926,6 +1172,9 @@ const CentralAdminDashboard = () => {
           </div>
           {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
           {activeTab === 'notifications' && <NotificationsPanel />}
+          {activeTab === 'deletions' && (
+            <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />
+          )}
           {activeTab === 'farmers' && <RealTimeFarmers globalCountryFilter={globalCountryFilter} />}
           {activeTab === 'cooperatives' && <CooperativesManagement globalCountryFilter={globalCountryFilter} />}
           {activeTab === 'centers' && <CentersManagement globalCountryFilter={globalCountryFilter} />}

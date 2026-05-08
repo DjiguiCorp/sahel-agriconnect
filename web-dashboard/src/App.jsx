@@ -35,6 +35,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import HowItWorks from './pages/HowItWorks';
 import InvestorRelations from './pages/InvestorRelations';
+import DeleteAccount from './pages/DeleteAccount';
 import { useGeolocation } from './hooks/useGeolocation';
 
 function App() {
@@ -77,6 +78,7 @@ function App() {
             <Route path="impact" element={<ImpactReport />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="my-dashboard" element={<ProducerDashboard />} />
+            <Route path="delete-account" element={<DeleteAccount />} />
             <Route path="trace/:batchNumber?" element={<TraceabilityLookup />} />
             <Route path="terms" element={<TermsOfService />} />
             <Route path="privacy" element={<PrivacyPolicy />} />

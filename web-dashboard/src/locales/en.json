@@ -858,6 +858,7 @@
     "tabs": {
       "overview": "Overview",
       "notifications": "Notifications",
+      "deletions": "🗑️ Suppressions",
       "farmers": "Farmers",
       "cooperatives": "Cooperatives",
       "centers": "Centers",
@@ -877,6 +878,7 @@
     "tabsShort": {
       "overview": "Overview",
       "notifications": "Notif.",
+      "deletions": "Del.",
       "farmers": "Farm.",
       "cooperatives": "Coop.",
       "centers": "Centers",
@@ -1369,6 +1371,69 @@
       "markRead": "Mark all as read"
     },
     "signOut": "Sign out"
+  }
+  ,
+  "accountDeletion": {
+    "title": "Delete My Account",
+    "subtitle": "We are sorry to see you go. Please read the following carefully before proceeding.",
+    "warning": "This action is permanent and cannot be undone.",
+    "investorNotice": {
+      "title": "⚠️ Important — You Have an Active Investment",
+      "body": "You currently have an active investment on AfriYield Exchange. Under our platform terms, investors with active capital must provide a minimum 6-month notice before account deletion. Your investment will continue to generate returns during this period and your final payout will be processed before your account is closed.",
+      "notice": "Your deletion request will be scheduled for processing after your 6-month notice period.",
+      "payoutNote": "Your final ROI payout will be sent to your registered payment method before closure."
+    },
+    "noInvestmentNotice": {
+      "title": "Account Deletion",
+      "body": "Your account and all associated data will be permanently deleted within 30 days of your request. This includes your profile, investment history, and any saved preferences."
+    },
+    "whatHappens": "What happens when you delete your account",
+    "steps": {
+      "s1": "Your request is received and confirmed via email",
+      "s2": "If you have active investments — 6-month notice period begins",
+      "s3": "Final payout is processed and sent to you",
+      "s4": "Your data is permanently deleted within 30 days of the notice period ending",
+      "s5": "You receive a final confirmation email"
+    },
+    "dataRemoved": "Data that will be removed",
+    "dataItems": [
+      "Your personal profile and contact information",
+      "Your investment history and payout records",
+      "Your commodity watchlist and price alerts",
+      "Your support messages and question history",
+      "Your login credentials"
+    ],
+    "dataKept": "Data we are required to keep",
+    "dataKeptItems": [
+      "Transaction records (required for financial compliance — 7 years)",
+      "Investment agreement documents (required for legal purposes)",
+      "Anonymized impact data (no personal identifiers)"
+    ],
+    "confirmText": "I understand that this action is permanent and I want to delete my account",
+    "confirmPlaceholder": "Type DELETE to confirm",
+    "reason": "Reason for leaving (optional — helps us improve)",
+    "reasons": [
+      "I no longer wish to invest",
+      "I found a better platform",
+      "I had a bad experience",
+      "The platform does not meet my needs",
+      "Personal reasons",
+      "Other"
+    ],
+    "submit": "Submit deletion request",
+    "cancel": "Cancel — keep my account",
+    "success": {
+      "title": "Deletion request received",
+      "withInvestment": "Your request has been received. Because you have an active investment, your 6-month notice period begins today. Our team will contact you within 48 hours to confirm the process and your final payout timeline.",
+      "withoutInvestment": "Your request has been received. Your account and data will be permanently deleted within 30 days. You will receive a confirmation email shortly.",
+      "email": "A confirmation has been sent to your registered email address."
+    },
+    "contact": "Questions about this process? Contact us at",
+    "backToPortal": "Back to my account",
+    "farmerTitle": "Delete My Farmer Profile",
+    "farmerBody": "Your farmer profile, crop data, cooperative memberships, and AI tool history will be permanently removed. If you are part of a cooperative, your cooperative administrator will be notified.",
+    "cooperativeTitle": "Delete My Cooperative Account",
+    "cooperativeBody": "Deleting your cooperative account will remove all member data, equipment fund records, and certification history. All member farmers must be notified at least 30 days in advance."
   }
 }
 

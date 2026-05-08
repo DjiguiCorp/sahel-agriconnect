@@ -31,6 +31,7 @@ import investmentsRouter from './routes/investments.js';
 import supplychainRouter from './routes/supplychain.js';
 import notificationsRouter from './routes/notifications.js';
 import investorNotificationsRouter from './routes/investorNotifications.js';
+import deletionRequestsRouter from './routes/deletionRequests.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -134,6 +135,7 @@ app.use('/api/investments', investmentsRouter);
 app.use('/api/supplychain', supplychainRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/investor-notifications', investorNotificationsRouter);
+app.use('/api/deletion-requests', deletionRequestsRouter);
 
 // Route de base - Message informatif
 app.get('/', (req, res) => {

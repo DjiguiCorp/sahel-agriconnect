@@ -858,6 +858,7 @@
     "tabs": {
       "overview": "Aperçu",
       "notifications": "Notifications",
+      "deletions": "🗑️ Suppressions",
       "farmers": "Agriculteurs",
       "cooperatives": "Coopératives",
       "centers": "Centres",
@@ -877,6 +878,7 @@
     "tabsShort": {
       "overview": "Aperçu",
       "notifications": "Notif.",
+      "deletions": "Supp.",
       "farmers": "Agric.",
       "cooperatives": "Coop.",
       "centers": "Centres",
@@ -1357,6 +1359,69 @@
       "markRead": "Tout marquer comme lu"
     },
     "signOut": "Se déconnecter"
+  }
+  ,
+  "accountDeletion": {
+    "title": "Supprimer mon compte",
+    "subtitle": "Nous sommes désolés de vous voir partir. Veuillez lire attentivement ce qui suit avant de continuer.",
+    "warning": "Cette action est permanente et ne peut pas être annulée.",
+    "investorNotice": {
+      "title": "⚠️ Important — Vous avez un investissement actif",
+      "body": "Vous avez actuellement un investissement actif sur AfriYield Exchange. Conformément aux conditions de notre plateforme, les investisseurs ayant du capital actif doivent fournir un préavis minimum de 6 mois avant la suppression du compte. Votre investissement continuera à générer des retours pendant cette période et votre versement final sera traité avant la fermeture de votre compte.",
+      "notice": "Votre demande de suppression sera planifiée pour traitement après votre période de préavis de 6 mois.",
+      "payoutNote": "Votre dernier versement ROI sera envoyé à votre méthode de paiement enregistrée avant la fermeture."
+    },
+    "noInvestmentNotice": {
+      "title": "Suppression de compte",
+      "body": "Votre compte et toutes les données associées seront définitivement supprimés dans les 30 jours suivant votre demande. Cela inclut votre profil, l'historique des investissements et toutes les préférences enregistrées."
+    },
+    "whatHappens": "Ce qui se passe quand vous supprimez votre compte",
+    "steps": {
+      "s1": "Votre demande est reçue et confirmée par email",
+      "s2": "Si vous avez des investissements actifs — la période de préavis de 6 mois commence",
+      "s3": "Le versement final est traité et vous est envoyé",
+      "s4": "Vos données sont définitivement supprimées dans les 30 jours suivant la fin de la période de préavis",
+      "s5": "Vous recevez un email de confirmation final"
+    },
+    "dataRemoved": "Données qui seront supprimées",
+    "dataItems": [
+      "Votre profil personnel et coordonnées",
+      "Votre historique d'investissement et relevés de versements",
+      "Votre liste de surveillance des commodités et alertes de prix",
+      "Vos messages de support et historique de questions",
+      "Vos identifiants de connexion"
+    ],
+    "dataKept": "Données que nous sommes tenus de conserver",
+    "dataKeptItems": [
+      "Relevés de transactions (requis pour la conformité financière — 7 ans)",
+      "Documents de contrat d'investissement (requis à des fins légales)",
+      "Données d'impact anonymisées (sans identifiants personnels)"
+    ],
+    "confirmText": "Je comprends que cette action est permanente et je souhaite supprimer mon compte",
+    "confirmPlaceholder": "Tapez SUPPRIMER pour confirmer",
+    "reason": "Raison de départ (optionnel — nous aide à nous améliorer)",
+    "reasons": [
+      "Je ne souhaite plus investir",
+      "J'ai trouvé une meilleure plateforme",
+      "J'ai eu une mauvaise expérience",
+      "La plateforme ne répond pas à mes besoins",
+      "Raisons personnelles",
+      "Autre"
+    ],
+    "submit": "Soumettre la demande de suppression",
+    "cancel": "Annuler — garder mon compte",
+    "success": {
+      "title": "Demande de suppression reçue",
+      "withInvestment": "Votre demande a été reçue. Parce que vous avez un investissement actif, votre période de préavis de 6 mois commence aujourd'hui. Notre équipe vous contactera dans les 48 heures pour confirmer le processus et le calendrier de votre versement final.",
+      "withoutInvestment": "Votre demande a été reçue. Votre compte et vos données seront définitivement supprimés dans les 30 jours. Vous recevrez bientôt un email de confirmation.",
+      "email": "Une confirmation a été envoyée à votre adresse email enregistrée."
+    },
+    "contact": "Des questions sur ce processus? Contactez-nous à",
+    "backToPortal": "Retour à mon compte",
+    "farmerTitle": "Supprimer mon profil agriculteur",
+    "farmerBody": "Votre profil agriculteur, données de culture, adhésions aux coopératives et historique des outils IA seront définitivement supprimés. Si vous faites partie d'une coopérative, votre administrateur de coopérative sera notifié.",
+    "cooperativeTitle": "Supprimer mon compte coopérative",
+    "cooperativeBody": "La suppression de votre compte coopérative supprimera toutes les données des membres, les relevés du fonds d'équipement et l'historique de certification. Tous les agriculteurs membres doivent être notifiés au moins 30 jours à l'avance."
   }
 }
 

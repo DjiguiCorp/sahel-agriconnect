@@ -126,6 +126,9 @@ const Footer = () => {
             <Link to="/terms" className="hover:text-white transition">Conditions d&apos;utilisation</Link>
             <Link to="/privacy" className="hover:text-white transition">Politique de confidentialité</Link>
             <Link to="/impact" className="hover:text-white transition">Impact &amp; Métriques</Link>
+            <Link to="/delete-account" className="hover:text-white transition text-xs text-gray-500">
+              {i18n.language === 'fr' ? 'Supprimer mon compte' : 'Delete Account'}
+            </Link>
           </div>
         </div>
       </div>

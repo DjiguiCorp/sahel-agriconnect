@@ -15,7 +15,7 @@ const INTEREST_KEYS = ['equipment','certification','diaspora','export'];
 const INTEREST_VALUES = ['Equipment Fund','Certification','Diaspora Investment','Export Program'];
 
 export default function CooperativeRegistration() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { registerUser } = useRegisteredUser();
   const [form, setForm] = useState({
     cooperativeName: '', country: 'Sénégal', regionCity: '',
@@ -218,6 +218,13 @@ export default function CooperativeRegistration() {
                   {t('cooperativeReg.form.success')}
                 </p>
               )}
+              {state.ok ? (
+                <p className="sm:col-span-2 text-xs text-gray-400 mt-2 text-center">
+                  {i18n.language === 'fr'
+                    ? 'Pour supprimer votre compte, contactez-nous à info@djiguicorporation.org'
+                    : 'To delete your account, contact us at info@djiguicorporation.org'}
+                </p>
+              ) : null}
               {state.err && (
                 <p className="sm:col-span-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
                   {t('cooperativeReg.form.error')}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
-import { CheckCircle2, Clock, Package, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { CheckCircle2, Clock, Package, ShieldCheck, Sparkles, Users, Trash2 } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
 function apiUrl(path) {
@@ -50,7 +50,7 @@ function normalizeListings(profile) {
 }
 
 export default function ProducerDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { registerUser } = useRegisteredUser();
   const [params, setParams] = useSearchParams();
   const initial = params.get('q') || '';
@@ -361,6 +361,22 @@ export default function ProducerDashboard() {
           {t('producerDashboard.aiHistory.noHistory')}
         </p>
       </section>
+
+      <div className="mt-8 pt-6 border-t border-gray-200 text-center space-y-2">
+        <Link
+          to={isCoop ? '/delete-account?type=cooperative' : '/delete-account?type=farmer'}
+          className="inline-flex items-center gap-2 text-xs text-red-400 hover:text-red-600 hover:underline transition"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          {i18n.language === 'fr'
+            ? isCoop
+              ? 'Supprimer mon compte coopérative'
+              : 'Supprimer mon profil'
+            : isCoop
+              ? 'Delete my cooperative account'
+              : 'Delete my profile'}
+        </Link>
+      </div>
     </div>
   );
 }
