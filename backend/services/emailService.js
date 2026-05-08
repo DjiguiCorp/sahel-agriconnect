@@ -1,6 +1,20 @@
-import { Resend } from 'resend';
+import { createRequire } from 'module';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const require = createRequire(import.meta.url);
+
+let resendSingleton = null;
+
+function getResend() {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️ RESEND_API_KEY not set — email notifications disabled');
+    return null;
+  }
+  if (!resendSingleton) {
+    const { Resend } = require('resend');
+    resendSingleton = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendSingleton;
+}
 
 const FROM_ADDRESS = 'notifications@sahelagriconnect.com'; // update after domain is connected
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'contact@djiguicorporation.org';
@@ -8,6 +22,8 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'contact@djiguicorporation.org';
 // ── INTERNAL ADMIN NOTIFICATIONS ──────────────────────────────────────
 
 export async function notifyAdminNewProducer(producer) {
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: ADMIN_EMAIL,
@@ -38,6 +54,8 @@ export async function notifyAdminNewProducer(producer) {
 }
 
 export async function notifyAdminNewBuyer(buyer) {
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: ADMIN_EMAIL,
@@ -68,6 +86,8 @@ export async function notifyAdminNewBuyer(buyer) {
 }
 
 export async function notifyAdminNewInvestor(investor) {
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: ADMIN_EMAIL,
@@ -110,6 +130,8 @@ export async function notifyAdminNewInvestor(investor) {
 }
 
 export async function notifyAdminNewCooperative(cooperative) {
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: ADMIN_EMAIL,
@@ -140,6 +162,8 @@ export async function notifyAdminNewCooperative(cooperative) {
 }
 
 export async function notifyAdminExpertRequest(request) {
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: ADMIN_EMAIL,
@@ -173,6 +197,8 @@ export async function notifyAdminExpertRequest(request) {
 
 export async function confirmProducerRegistration(producer) {
   if (!producer.email) return;
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: producer.email,
@@ -204,6 +230,8 @@ export async function confirmProducerRegistration(producer) {
 }
 
 export async function confirmBuyerRegistration(buyer) {
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: buyer.email,
@@ -238,6 +266,8 @@ export async function confirmBuyerRegistration(buyer) {
 }
 
 export async function confirmInvestorRegistration(investor) {
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: investor.email,
@@ -284,6 +314,8 @@ export async function confirmInvestorRegistration(investor) {
 }
 
 export async function confirmCooperativeRegistration(cooperative) {
+  const resend = getResend();
+  if (!resend) return;
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: cooperative.email,
