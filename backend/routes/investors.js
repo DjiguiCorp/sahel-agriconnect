@@ -1,6 +1,7 @@
 import express from 'express';
 import Investor from '../models/Investor.js';
 import InvestorNotification from '../models/InvestorNotification.js';
+import PendingNotification from '../models/PendingNotification.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { confirmInvestorRegistration, notifyAdminNewInvestor } from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
@@ -79,6 +80,49 @@ router.post('/register', async (req, res) => {
     }
     console.error(err);
     res.status(400).json({ success: false, error: err.message || 'Registration failed' });
+  }
+});
+
+// POST /api/investors/investment-intent — public
+router.post('/investment-intent', async (req, res) => {
+  try {
+    const { name, email, amount, opportunityId, message } = req.body || {};
+    const cleanName = String(name || '').trim();
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanOpp = String(opportunityId || '').trim();
+    const amt = Number(amount);
+
+    if (!cleanName || !cleanEmail || !Number.isFinite(amt) || amt <= 0 || !cleanOpp) {
+      return res.status(400).json({ success: false, error: 'name, email, amount, opportunityId required' });
+    }
+
+    await PendingNotification.create({
+      recipientName: 'Admin',
+      recipientPhone: null,
+      recipientEmail: process.env.ADMIN_EMAIL,
+      message: `💰 INVESTMENT INTENT: ${cleanName} (${cleanEmail}) wants to invest $${amt}. Opportunity: ${cleanOpp}. Message: ${
+        String(message || '').trim() || 'None'
+      }`,
+      source: 'investment_intent',
+      status: 'pending',
+      channel: 'email',
+    });
+
+    notifyAdminNewInvestor({
+      fullName: cleanName,
+      email: cleanEmail,
+      investmentRange: `$${amt}`,
+      investmentTrack: 'Confirmed Intent',
+      commodityInterest: 'TBD',
+      countryOfResidence: 'TBD',
+      phone: '',
+      message: String(message || ''),
+      heardFrom: 'investment_confirmation',
+    }).catch(console.error);
+
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
   }
 });
 
