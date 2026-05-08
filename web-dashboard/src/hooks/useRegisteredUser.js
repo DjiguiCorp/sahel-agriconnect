@@ -6,13 +6,33 @@ export function useRegisteredUser() {
   const [userName, setUserName] = useState(null);
 
   useEffect(() => {
-    const email = localStorage.getItem('sac_user_email');
-    const name = localStorage.getItem('sac_user_name');
-    if (email) {
-      setIsRegistered(true);
-      setUserEmail(email);
-      setUserName(name);
-    }
+    const sync = () => {
+      const email = localStorage.getItem('sac_user_email');
+      const name = localStorage.getItem('sac_user_name');
+      if (email) {
+        setIsRegistered(true);
+        setUserEmail(email);
+        setUserName(name);
+      } else {
+        setIsRegistered(false);
+        setUserEmail(null);
+        setUserName(null);
+      }
+    };
+
+    sync();
+
+    const onStorage = (e) => {
+      if (!e || e.key === 'sac_user_email' || e.key === 'sac_user_name') sync();
+    };
+    const onCustom = () => sync();
+
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('sac_user_updated', onCustom);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('sac_user_updated', onCustom);
+    };
   }, []);
 
   const registerUser = (email, name) => {
@@ -21,6 +41,7 @@ export function useRegisteredUser() {
     setIsRegistered(true);
     setUserEmail(email);
     setUserName(name);
+    window.dispatchEvent(new Event('sac_user_updated'));
   };
 
   const clearUser = () => {
@@ -29,6 +50,7 @@ export function useRegisteredUser() {
     setIsRegistered(false);
     setUserEmail(null);
     setUserName(null);
+    window.dispatchEvent(new Event('sac_user_updated'));
   };
 
   return { isRegistered, userEmail, userName, registerUser, clearUser };

@@ -1236,6 +1236,10 @@ export default function InvestorPortal() {
   const signOut = () => {
     localStorage.removeItem('afriyield_investor_email');
     localStorage.removeItem('afriyield_investor_name');
+    // Also clear shared header greeting (Sahel AgriConnect registered user)
+    localStorage.removeItem('sac_user_email');
+    localStorage.removeItem('sac_user_name');
+    window.dispatchEvent(new Event('sac_user_updated'));
     setInvestor(null);
     setInvestments([]);
     setNotifications([]);
