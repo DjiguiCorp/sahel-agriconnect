@@ -1074,6 +1074,7 @@ function HelpTab({ investor, t }) {
 
 /* ─── PREMIUM MODAL ─────────────────────────────────────────────────── */
 function PremiumModal({ t, onClose }) {
+  const { i18n } = useTranslation();
   const features = t('investorPortal.premium.features', { returnObjects: true });
   const [billing, setBilling] = useState('annual'); // 'monthly' or 'annual'
   return (
@@ -1082,7 +1083,7 @@ function PremiumModal({ t, onClose }) {
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
     >
       <div
-        className="w-full max-w-sm rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-[520px] md:max-w-[680px] rounded-2xl p-5 md:p-7 max-h-[90vh] overflow-y-auto"
         style={{ background: '#132a1e', border: '1px solid rgba(181,133,10,0.4)' }}
       >
         <div className="flex items-center justify-between mb-4">
@@ -1167,6 +1168,11 @@ function PremiumModal({ t, onClose }) {
         >
           {t('investorPortal.premium.cta')} — {billing === 'annual' ? '$299/yr' : '$29.99/mo'}
         </a>
+        <p className="text-xs mt-2" style={{ color: 'rgba(245,240,232,0.45)' }}>
+          {String(i18n.language || '').toLowerCase().startsWith('fr')
+            ? "Pour l'instant, l'abonnement se fait par email. Les détails bancaires arrivent bientôt."
+            : 'For now, Premium is activated via email. Banking details will be added soon.'}
+        </p>
         <button
           type="button"
           onClick={onClose}
