@@ -43,7 +43,7 @@ function countryFlagEmoji(country) {
 }
 
 export default function CommodityMarketplace() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
@@ -53,6 +53,9 @@ export default function CommodityMarketplace() {
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quoteTarget, setQuoteTarget] = useState(null);
   const [quoteState, setQuoteState] = useState({ sending: false, ok: false, error: '' });
+  const [notified, setNotified] = useState({});
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [showNotifyModal, setShowNotifyModal] = useState(null);
   const [quoteForm, setQuoteForm] = useState({
     buyerName: '',
     companyName: '',
@@ -176,11 +179,16 @@ export default function CommodityMarketplace() {
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{err}</div>
       ) : filtered.length === 0 ? (
         <div className="grid md:grid-cols-2 gap-6">
-          {['Shea Butter', 'Sesame', 'Shea Butter', 'Sesame'].map((c, idx) => (
-            <div key={`${c}-${idx}`} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          {[
+            { key: 'Shea Butter', name: 'Shea Butter' },
+            { key: 'Sesame', name: 'Sesame' },
+            { key: 'Shea Butter (2)', name: 'Shea Butter' },
+            { key: 'Sesame (2)', name: 'Sesame' },
+          ].map((commodity) => (
+            <div key={commodity.key} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-lg font-extrabold text-[#1a3c2e]">{c}</p>
+                  <p className="text-lg font-extrabold text-[#1a3c2e]">{commodity.name}</p>
                   <p className="text-sm text-gray-600">{t('marketplace.card.comingSoon')}</p>
                 </div>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-800">
@@ -188,10 +196,17 @@ export default function CommodityMarketplace() {
                 </span>
               </div>
               <button
+                onClick={() => setShowNotifyModal(commodity.key || commodity.name)}
                 type="button"
-                className="mt-5 w-full rounded-xl border-2 border-[#1a3c2e] text-[#1a3c2e] font-extrabold py-2.5 hover:bg-[#1a3c2e] hover:text-white transition"
+                className={`mt-5 w-full rounded-xl py-3 font-semibold text-sm transition ${
+                  notified[commodity.key || commodity.name]
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e] hover:text-white'
+                }`}
               >
-                {t('marketplace.card.notifyMe')}
+                {notified[commodity.key || commodity.name]
+                  ? '✓ ' + (i18n.language === 'fr' ? 'Vous serez notifié' : 'You will be notified')
+                  : t('marketplace.card.notifyMe')}
               </button>
             </div>
           ))}
@@ -324,6 +339,53 @@ export default function CommodityMarketplace() {
           </div>
         </div>
       ) : null}
+
+      {showNotifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="font-bold text-[#1a3c2e] text-lg mb-1">{i18n.language === 'fr' ? 'Recevoir une alerte' : 'Get notified'}</h3>
+            <p className="text-gray-500 text-sm mb-4">
+              {i18n.language === 'fr'
+                ? `Entrez votre email pour être notifié quand ${showNotifyModal} est disponible.`
+                : `Enter your email to be notified when ${showNotifyModal} is available.`}
+            </p>
+            <input
+              type="email"
+              value={notifyEmail}
+              onChange={(e) => setNotifyEmail(e.target.value)}
+              placeholder={i18n.language === 'fr' ? 'votre@email.com' : 'your@email.com'}
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm mb-3 outline-none focus:ring-2 focus:ring-[#B5850A]"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (!notifyEmail) return;
+                  try {
+                    await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/waitlist`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: notifyEmail, source: `marketplace_${showNotifyModal}` }),
+                    });
+                  } catch {}
+                  setNotified((p) => ({ ...p, [showNotifyModal]: true }));
+                  setShowNotifyModal(null);
+                  setNotifyEmail('');
+                }}
+                className="flex-1 rounded-xl py-2.5 font-bold text-sm text-white"
+                style={{ background: '#1a3c2e' }}
+              >
+                {i18n.language === 'fr' ? 'Me notifier' : 'Notify me'}
+              </button>
+              <button
+                onClick={() => setShowNotifyModal(null)}
+                className="px-4 rounded-xl text-sm text-gray-500 hover:bg-gray-100 transition"
+              >
+                {i18n.language === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

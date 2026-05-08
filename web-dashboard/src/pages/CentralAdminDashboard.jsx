@@ -421,15 +421,15 @@ function OverviewControlTower({ onGoTab }) {
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-extrabold text-brand-forest mb-4">Investment Pipeline</h3>
+        <h3 className="text-lg font-extrabold text-brand-forest mb-4">{t('admin.pipeline.title')}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-0">
           {[
-            { label: 'New', count: pipeline.New || 0, color: 'bg-gray-100 text-gray-700', emoji: '🆕' },
-            { label: 'Call Scheduled', count: pipeline['Call Scheduled'] || 0, color: 'bg-blue-50 text-blue-700', emoji: '📅' },
-            { label: 'Call Done', count: pipeline['Call Completed'] || 0, color: 'bg-purple-50 text-purple-700', emoji: '✅' },
-            { label: 'Opps Sent', count: pipeline['Opportunity Sent'] || 0, color: 'bg-yellow-50 text-yellow-700', emoji: '📨' },
-            { label: 'Investing', count: pipeline['Investment Active'] || 0, color: 'bg-green-50 text-green-700', emoji: '💰' },
-            { label: 'Paid Out', count: pipeline['Paid Out'] || 0, color: 'bg-amber-50 text-amber-700', emoji: '🏆' },
+            { label: t('admin.pipeline.new'), count: pipeline.New || 0, color: 'bg-gray-100 text-gray-700', emoji: '🆕' },
+            { label: t('admin.pipeline.callScheduled'), count: pipeline['Call Scheduled'] || 0, color: 'bg-blue-50 text-blue-700', emoji: '📅' },
+            { label: t('admin.pipeline.callDone'), count: pipeline['Call Completed'] || 0, color: 'bg-purple-50 text-purple-700', emoji: '✅' },
+            { label: t('admin.pipeline.oppsSent'), count: pipeline['Opportunity Sent'] || 0, color: 'bg-yellow-50 text-yellow-700', emoji: '📨' },
+            { label: t('admin.pipeline.investing'), count: pipeline['Investment Active'] || 0, color: 'bg-green-50 text-green-700', emoji: '💰' },
+            { label: t('admin.pipeline.paidOut'), count: pipeline['Paid Out'] || 0, color: 'bg-amber-50 text-amber-700', emoji: '🏆' },
           ].map(({ label, count, color, emoji }) => (
             <div key={label} className={`rounded-xl p-3 text-center ${color}`}>
               <div className="text-xl mb-1">{emoji}</div>

@@ -1,0 +1,96 @@
+export const AFRICAN_REGIONS = {
+  // WEST AFRICA
+  Sénégal: [
+    'Dakar',
+    'Thiès',
+    'Kaolack',
+    'Saint-Louis',
+    'Ziguinchor',
+    'Tambacounda',
+    'Kolda',
+    'Louga',
+    'Fatick',
+    'Kaffrine',
+    'Kédougou',
+    'Matam',
+    'Sédhiou',
+    'Diourbel',
+  ],
+  Mali: ['Bamako', 'Sikasso', 'Ségou', 'Mopti', 'Kayes', 'Koulikoro', 'Kidal', 'Gao', 'Tombouctou', 'Taoudénit', 'Ménaka'],
+  "Côte d'Ivoire": ['Abidjan', 'Bouaké', 'Daloa', 'Korhogo', 'Yamoussoukro', 'Man', 'San-Pédro', 'Gagnoa', 'Divo', 'Abengourou'],
+  Ghana: ['Accra', 'Kumasi', 'Tamale', 'Cape Coast', 'Sunyani', 'Koforidua', 'Ho', 'Bolgatanga', 'Wa', 'Techiman'],
+  Nigeria: ['Lagos', 'Abuja', 'Kano', 'Ibadan', 'Port Harcourt', 'Benin City', 'Kaduna', 'Enugu', 'Sokoto', 'Abeokuta'],
+  'Burkina Faso': ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou', 'Banfora', 'Ouahigouya', 'Kaya', "Tenkodogo", "Fada N'Gourma"],
+  Niger: ['Niamey', 'Zinder', 'Maradi', 'Agadez', 'Tahoua', 'Dosso', 'Diffa', 'Tillabéri'],
+  Guinée: ['Conakry', 'Kankan', 'Labé', 'Kindia', 'Nzérékoré', 'Mamou', 'Faranah'],
+  Togo: ['Lomé', 'Sokodé', 'Kara', 'Palimé', 'Atakpamé', 'Dapaong', 'Tsévié'],
+  Bénin: ['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Djougou', 'Bohicon'],
+  Gambie: ['Banjul', 'Serekunda', 'Brikama', 'Farafenni', 'Lamin'],
+  'Guinée-Bissau': ['Bissau', 'Bafatá', 'Gabú', 'Cacheu'],
+  'Sierra Leone': ['Freetown', 'Bo', 'Kenema', 'Makeni', 'Koidu'],
+  Liberia: ['Monrovia', 'Gbarnga', 'Kakata', 'Buchanan', 'Voinjama'],
+  Mauritanie: ['Nouakchott', 'Nouadhibou', 'Rosso', 'Kaédi', 'Zouérate'],
+  'Cap-Vert': ['Praia', 'Mindelo', 'Santa Maria', 'Assomada'],
+
+  // CENTRAL AFRICA
+  Cameroun: ['Yaoundé', 'Douala', 'Garoua', 'Bamenda', 'Maroua', 'Bafoussam', 'Ngaoundéré'],
+  Tchad: ["N'Djamena", 'Moundou', 'Sarh', 'Abéché', 'Kélo'],
+  'RD Congo': ['Kinshasa', 'Lubumbashi', 'Mbuji-Mayi', 'Goma', 'Bukavu', 'Kisangani'],
+
+  // EAST AFRICA
+  Kenya: ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Malindi'],
+  Éthiopie: ['Addis-Abeba', 'Dire Dawa', 'Mekele', 'Gondar', 'Bahir Dar', 'Hawassa'],
+  Tanzanie: ['Dar es Salaam', 'Dodoma', 'Mwanza', 'Arusha', 'Mbeya', 'Zanzibar'],
+  Ouganda: ['Kampala', 'Gulu', 'Mbarara', 'Entebbe', 'Jinja'],
+  Rwanda: ['Kigali', 'Butare', 'Gisenyi', 'Ruhengeri', 'Gitarama'],
+  Mozambique: ['Maputo', 'Matola', 'Beira', 'Nampula', 'Chimoio'],
+
+  // SOUTHERN AFRICA
+  'Afrique du Sud': ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth'],
+  Zimbabwe: ['Harare', 'Bulawayo', 'Mutare', 'Gweru', 'Kwekwe'],
+  Zambie: ['Lusaka', 'Livingstone', 'Kitwe', 'Ndola', 'Kabwe'],
+  Madagascar: ['Antananarivo', 'Toamasina', 'Antsirabe', 'Fianarantsoa', 'Mahajanga'],
+
+  // NORTH AFRICA
+  Maroc: ['Casablanca', 'Rabat', 'Fès', 'Marrakech', 'Tanger', 'Agadir'],
+  Algérie: ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida'],
+  Tunisie: ['Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte'],
+};
+
+export const COUNTRY_CODES = {
+  Sénégal: 'SN',
+  Mali: 'ML',
+  "Côte d'Ivoire": 'CI',
+  Ghana: 'GH',
+  Nigeria: 'NG',
+  'Burkina Faso': 'BF',
+  Niger: 'NE',
+  Guinée: 'GN',
+  Togo: 'TG',
+  Bénin: 'BJ',
+  Gambie: 'GM',
+  'Guinée-Bissau': 'GW',
+  'Sierra Leone': 'SL',
+  Liberia: 'LR',
+  Mauritanie: 'MR',
+  'Cap-Vert': 'CV',
+  Cameroun: 'CM',
+  Tchad: 'TD',
+  'RD Congo': 'CD',
+  Kenya: 'KE',
+  Éthiopie: 'ET',
+  Tanzanie: 'TZ',
+  Ouganda: 'UG',
+  Rwanda: 'RW',
+  Mozambique: 'MZ',
+  'Afrique du Sud': 'ZA',
+  Zimbabwe: 'ZW',
+  Zambie: 'ZM',
+  Madagascar: 'MG',
+  Maroc: 'MA',
+  Algérie: 'DZ',
+  Tunisie: 'TN',
+};
+
+export const COUNTRY_LIST = Object.keys(AFRICAN_REGIONS);
+

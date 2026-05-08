@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Lock } from 'lucide-react';
-import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 import { API_ENDPOINTS } from '../config/api';
+import LocationSelector from './LocationSelector';
 
 const defaultPrefill = {};
 
@@ -194,25 +194,14 @@ export default function ExpertRequestModal({ isOpen, onClose, prefillData = defa
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-brand-forest">Pays</span>
-                <select
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 px-3 py-2 text-stone-900 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-                >
-                  {AFRICAN_COUNTRIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-brand-forest">Région / Ville</span>
-                <input
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 px-3 py-2 text-stone-900 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                <LocationSelector
+                  value={{ country, region }}
+                  onChange={({ country: c, region: r }) => {
+                    setCountry(c);
+                    setRegion(r);
+                  }}
+                  required={false}
+                  showDetectedBanner={true}
                 />
               </label>
               <label className="block space-y-1">

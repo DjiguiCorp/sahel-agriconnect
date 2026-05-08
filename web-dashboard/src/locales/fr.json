@@ -235,6 +235,15 @@
         "logistics": "Logistique",
         "reports": "Rapports"
       }
+    },
+    "pipeline": {
+      "title": "Pipeline d'investissement",
+      "new": "Nouveau",
+      "callScheduled": "Appel planifié",
+      "callDone": "Appel effectué",
+      "oppsSent": "Opps envoyées",
+      "investing": "En cours",
+      "paidOut": "Versé"
     }
   },
   "soilDiagnostic": {

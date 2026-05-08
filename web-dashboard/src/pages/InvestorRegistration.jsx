@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
+import { useGeolocation } from '../hooks/useGeolocation';
 
 const RESIDENCE = ['USA', 'France', 'UK', 'Canada', 'UAE', 'Sénégal', "Côte d'Ivoire", 'Ghana', 'Nigeria', 'Other'];
 const RANGES = ['$1,000–$5,000', '$5,000–$25,000', '$25,000–$100,000', '$100,000+'];
@@ -13,6 +14,7 @@ export default function InvestorRegistration() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { registerUser } = useRegisteredUser();
+  const { country: detectedCountry, detected } = useGeolocation();
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -29,6 +31,15 @@ export default function InvestorRegistration() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!detected || !detectedCountry) return;
+    if (!RESIDENCE.includes(detectedCountry)) return;
+    setForm((p) => {
+      if (p.countryOfResidence && p.countryOfResidence !== 'USA') return p;
+      return { ...p, countryOfResidence: detectedCountry };
+    });
+  }, [detected, detectedCountry]);
 
   const trackOptions = useMemo(
     () => [

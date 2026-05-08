@@ -235,6 +235,15 @@
         "logistics": "Logistics",
         "reports": "Reports"
       }
+    },
+    "pipeline": {
+      "title": "Investment Pipeline",
+      "new": "New",
+      "callScheduled": "Call Scheduled",
+      "callDone": "Call Done",
+      "oppsSent": "Opps Sent",
+      "investing": "Investing",
+      "paidOut": "Paid Out"
     }
   },
   "soilDiagnostic": {

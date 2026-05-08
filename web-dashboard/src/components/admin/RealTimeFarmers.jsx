@@ -1,10 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useWebSocket } from '../../context/WebSocketContext';
+import { useTranslation } from 'react-i18next';
+import { COUNTRY_LIST } from '../../data/africanRegions';
+import { useGeolocation } from '../../hooks/useGeolocation';
 
 const RealTimeFarmers = () => {
   const { farmers, realTimeUpdates, isConnected, clearUpdates } = useWebSocket();
+  const { i18n } = useTranslation();
+  const { country: detectedCountry, detected } = useGeolocation();
   const [filter, setFilter] = useState('all');
   const [showUpdates, setShowUpdates] = useState(true);
+  const [countryFilter, setCountryFilter] = useState('');
+
+  useEffect(() => {
+    if (!detected || !detectedCountry) return;
+    if (!COUNTRY_LIST.includes(detectedCountry)) return;
+    setCountryFilter((p) => p || detectedCountry);
+  }, [detected, detectedCountry]);
 
   const farmersWithInvestment = farmers.filter(f => f.investissementCooperative === 'oui');
   const farmersByObjective = {
@@ -19,17 +31,29 @@ const RealTimeFarmers = () => {
     energie: farmers.filter(f => f.accesElectricite === 'non' || f.accesElectricite === 'partiel')
   };
 
-  const filteredFarmers = filter === 'all' 
-    ? farmers 
-    : filter === 'investment' 
-      ? farmersWithInvestment 
-      : filter === 'irrigation' 
-        ? challenges.irrigation 
-        : filter === 'stockage' 
-          ? challenges.stockage 
-          : filter === 'energie' 
-            ? challenges.energie 
-            : farmers;
+  const filteredFarmers = useMemo(() => {
+    const byCategory =
+      filter === 'all'
+        ? farmers
+        : filter === 'investment'
+          ? farmersWithInvestment
+          : filter === 'irrigation'
+            ? challenges.irrigation
+            : filter === 'stockage'
+              ? challenges.stockage
+              : filter === 'energie'
+                ? challenges.energie
+                : farmers;
+
+    if (!countryFilter) return byCategory;
+    const cf = countryFilter.toLowerCase();
+    return byCategory.filter((f) => {
+      const c = String(f.pays || f.country || '').toLowerCase();
+      if (c === cf) return true;
+      const region = String(f.region || '').toLowerCase();
+      return region.includes(cf);
+    });
+  }, [challenges.energie, challenges.irrigation, challenges.stockage, countryFilter, farmers, farmersWithInvestment, filter]);
 
   return (
     <div>
@@ -127,6 +151,22 @@ const RealTimeFarmers = () => {
         >
           Énergie ({challenges.energie.length})
         </button>
+
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-sm text-gray-600">{i18n.language === 'fr' ? 'Pays :' : 'Country:'}</span>
+          <select
+            value={countryFilter}
+            onChange={(e) => setCountryFilter(e.target.value)}
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+          >
+            <option value="">{i18n.language === 'fr' ? 'Tous les pays' : 'All countries'}</option>
+            {COUNTRY_LIST.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Liste des agriculteurs */}

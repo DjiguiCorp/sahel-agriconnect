@@ -35,8 +35,11 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import HowItWorks from './pages/HowItWorks';
 import InvestorRelations from './pages/InvestorRelations';
+import { useGeolocation } from './hooks/useGeolocation';
 
 function App() {
+  // Starts detection once at app load; cached in localStorage
+  useGeolocation();
   return (
     <AuthProvider>
       <WebSocketProvider>

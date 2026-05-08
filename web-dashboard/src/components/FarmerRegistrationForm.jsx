@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { cooperativesByRegion, processorsByRegion } from '../data/cooperativesData';
-import { regionsByCountry } from '../data/sahelRegions';
 import PlantDiseaseAnalyzer from './PlantDiseaseAnalyzer';
 import LandDetection from './LandDetection';
 import { API_ENDPOINTS } from '../config/api';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
+import LocationSelector from './LocationSelector';
 
 const FarmerRegistrationForm = ({ onFarmerAdded }) => {
   const { emitFarmerRegistration } = useWebSocket();
@@ -21,6 +21,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
     cultures: [],
     // Nouveaux champs
     region: '',
+    pays: '',
     typeExploitation: '',
     lienCooperative: '',
     nomCooperative: '',
@@ -618,32 +619,24 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
 
             {/* Région / Zone */}
             <div>
-              <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Région / Zone <span className="text-red-500">*</span>
               </label>
-              <select
-                id="region"
-                name="region"
-                value={formData.region}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent ${
-                  errors.region ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Sélectionnez votre région/zone</option>
-                {Object.entries(regionsByCountry).map(([cName, cities]) => (
-                  <optgroup key={cName} label={cName}>
-                    {cities.map((city) => {
-                      const full = `${city}, ${cName}`;
-                      return (
-                        <option key={full} value={full}>
-                          {city}
-                        </option>
-                      );
-                    })}
-                  </optgroup>
-                ))}
-              </select>
+              <LocationSelector
+                value={{
+                  country: formData.pays || '',
+                  region: formData.region ? String(formData.region).split(',')[0].trim() : '',
+                }}
+                onChange={({ country, region }) =>
+                  setFormData((p) => ({
+                    ...p,
+                    pays: country,
+                    region: country && region ? `${region}, ${country}` : '',
+                  }))
+                }
+                required
+                showDetectedBanner={true}
+              />
               {errors.region && <p className="mt-1 text-sm text-red-600">{errors.region}</p>}
             </div>
           </div>

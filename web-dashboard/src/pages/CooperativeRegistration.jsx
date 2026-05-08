@@ -3,12 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe, Loader2, Check } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
-
-const COUNTRIES = [
-  'Sénégal','Mali',"Côte d'Ivoire",'Ghana','Nigeria',
-  'Burkina Faso','Niger','Guinée','Togo','Bénin',
-  'Cameroun','Kenya','Éthiopie','Tanzanie','Autre',
-];
+import LocationSelector from '../components/LocationSelector';
 
 const BENEFIT_KEYS = ['recruitment','equipment','certification','investor','export'];
 const BENEFIT_ICONS = [Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe];
@@ -136,20 +131,14 @@ export default function CooperativeRegistration() {
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none" />
               </label>
 
-              <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-700">{t('cooperativeReg.form.country')}</span>
-                <select name="country" value={form.country} onChange={onChange} required
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none bg-white">
-                  {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-700">{t('cooperativeReg.form.regionCity')}</span>
-                <input name="regionCity" value={form.regionCity} onChange={onChange} required
-                  placeholder={t('cooperativeReg.form.regionPlaceholder')}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none" />
-              </label>
+              <div className="sm:col-span-2">
+                <LocationSelector
+                  value={{ country: form.country, region: form.regionCity }}
+                  onChange={({ country, region }) => setForm((p) => ({ ...p, country, regionCity: region }))}
+                  required
+                  showDetectedBanner={true}
+                />
+              </div>
 
               <label className="space-y-1">
                 <span className="text-sm font-medium text-gray-700">{t('cooperativeReg.form.memberCount')}</span>
