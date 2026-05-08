@@ -21,6 +21,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
     cultures: [],
     // Nouveaux champs
     region: '',
+    zone: '',
     pays: '',
     typeExploitation: '',
     lienCooperative: '',
@@ -624,16 +625,12 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               </label>
               <LocationSelector
                 value={{
-                  country: formData.pays || '',
-                  region: formData.region ? String(formData.region).split(',')[0].trim() : '',
+                  country: formData.pays || formData.country || '',
+                  region: formData.region || formData.zone || '',
                 }}
-                onChange={({ country, region }) =>
-                  setFormData((p) => ({
-                    ...p,
-                    pays: country,
-                    region: country && region ? `${region}, ${country}` : '',
-                  }))
-                }
+                onChange={({ country, region }) => {
+                  setFormData((p) => ({ ...p, pays: country, region, zone: region }));
+                }}
                 required
                 showDetectedBanner={true}
               />

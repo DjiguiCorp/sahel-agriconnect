@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-const CooperativesManagement = () => {
+const CooperativesManagement = ({ globalCountryFilter = '' }) => {
   const [selectedCooperative, setSelectedCooperative] = useState(null);
   const [toolsUpdate, setToolsUpdate] = useState({});
 
@@ -73,6 +73,12 @@ const CooperativesManagement = () => {
     });
   };
 
+  const filteredCoops = useMemo(() => {
+    if (!globalCountryFilter) return cooperatives;
+    const cf = globalCountryFilter.toLowerCase();
+    return cooperatives.filter((c) => String(c.localisation || '').toLowerCase().includes(cf));
+  }, [cooperatives, globalCountryFilter]);
+
   return (
     <div>
       <div className="mb-6">
@@ -81,7 +87,7 @@ const CooperativesManagement = () => {
       </div>
 
       <div className="grid gap-6">
-        {cooperatives.map((coop) => (
+        {filteredCoops.map((coop) => (
           <div key={coop.id} className="card">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
               <div>

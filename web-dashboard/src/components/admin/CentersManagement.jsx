@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../../config/api';
+import LocationSelector from '../LocationSelector';
+import { COUNTRY_CODES } from '../../data/africanRegions';
 
-const CentersManagement = () => {
+const CentersManagement = ({ globalCountryFilter = '' }) => {
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedCenter, setSelectedCenter] = useState(null);
+  const [processorLocation, setProcessorLocation] = useState({ country: '', region: '' });
   const [formData, setFormData] = useState({
     nom: '',
     region: '',
@@ -60,6 +63,10 @@ const CentersManagement = () => {
         },
         body: JSON.stringify({
           ...formData,
+          pays: processorLocation.country,
+          country: processorLocation.country,
+          countryCode: COUNTRY_CODES[processorLocation.country] || '',
+          region: processorLocation.region || formData.region,
           latitude: parseFloat(formData.latitude),
           longitude: parseFloat(formData.longitude)
         })
@@ -70,6 +77,7 @@ const CentersManagement = () => {
         await fetchCenters();
         setShowForm(false);
         setSelectedCenter(null);
+        setProcessorLocation({ country: '', region: '' });
         setFormData({
           nom: '',
           region: '',
@@ -92,6 +100,15 @@ const CentersManagement = () => {
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
+
+  const filteredCenters = globalCountryFilter
+    ? centers.filter(
+        (item) =>
+          item.country === globalCountryFilter ||
+          item.pays === globalCountryFilter ||
+          String(item.region || '').includes(globalCountryFilter)
+      )
+    : centers;
 
   return (
     <div>
@@ -126,23 +143,7 @@ const CentersManagement = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Région</label>
-                <select
-                  value={formData.region}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
-                >
-                  <option value="">Sélectionner</option>
-                  <option value="Kayes">Kayes</option>
-                  <option value="Koulikoro">Koulikoro</option>
-                  <option value="Sikasso">Sikasso</option>
-                  <option value="Ségou">Ségou</option>
-                  <option value="Mopti">Mopti</option>
-                  <option value="Tombouctou">Tombouctou</option>
-                  <option value="Gao">Gao</option>
-                  <option value="Kidal">Kidal</option>
-                </select>
+                <LocationSelector value={processorLocation} onChange={setProcessorLocation} required showDetectedBanner={true} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Latitude</label>
@@ -215,7 +216,7 @@ const CentersManagement = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {centers.map((center) => (
+        {filteredCenters.map((center) => (
           <div key={center._id} className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-xl font-bold mb-2">{center.nom}</h3>
             <p className="text-gray-600 mb-2">{center.region}</p>
@@ -231,6 +232,10 @@ const CentersManagement = () => {
               <button
                 onClick={() => {
                   setSelectedCenter(center);
+                  setProcessorLocation({
+                    country: center.pays || center.country || '',
+                    region: center.region || '',
+                  });
                   setFormData({
                     nom: center.nom,
                     region: center.region,

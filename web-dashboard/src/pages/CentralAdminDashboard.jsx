@@ -17,10 +17,12 @@ import TrainingsManagement from '../components/admin/TrainingsManagement';
 import IrrigationManagement from '../components/admin/IrrigationManagement';
 import ProductionOptimizationManagement from '../components/admin/ProductionOptimizationManagement';
 import AfriYieldManagement from '../components/admin/AfriYieldManagement';
+import CountryLicensesManagement from '../components/admin/CountryLicensesManagement';
 import Governance from '../pages/Governance';
 import Modal from '../components/Modal';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
+import { useGeolocation } from '../hooks/useGeolocation';
 import {
   Sprout,
   Handshake,
@@ -38,6 +40,7 @@ import {
   Coins,
   BadgeCheck,
   ShieldAlert,
+  MapPin,
   UserPlus,
   ClipboardList,
 } from 'lucide-react';
@@ -590,238 +593,8 @@ function typePill(type) {
 }
 
 const CountryLicensesPanel = () => {
-  const [loading, setLoading] = useState(true);
-  const [licenses, setLicenses] = useState([]);
-  const [error, setError] = useState(null);
-
-  const [modal, setModal] = useState({ open: false, license: null });
-  const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '' });
-  const [adminCreating, setAdminCreating] = useState(false);
-  const [adminBanner, setAdminBanner] = useState(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await fetch(`${API_BASE_URL}/api/licenses`, { headers: authHeaders() });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data.error || data.message || 'Failed to load licenses');
-      setLicenses(Array.isArray(data.licenses) ? data.licenses : []);
-    } catch (e) {
-      setError(e.message || 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const summary = useMemo(() => {
-    const active = licenses.filter((l) => l.status === 'active');
-    const activeCount = active.length;
-    const mrr = active.reduce((sum, l) => sum + (Number(l.monthlyFee) || 0), 0);
-    return { activeCount, mrr };
-  }, [licenses]);
-
-  const updateStatus = async (licenseId, status) => {
-    try {
-      const r = await fetch(`${API_BASE_URL}/api/licenses/${licenseId}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify({ status }),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data.error || data.message || 'Update failed');
-      setLicenses((prev) => prev.map((l) => (l._id === licenseId ? data.license : l)));
-    } catch (e) {
-      alert(e.message || 'Update failed');
-    }
-  };
-
-  const openCreateAdmin = (license) => {
-    setAdminBanner(null);
-    setAdminForm({ name: '', email: '', password: '' });
-    setModal({ open: true, license });
-  };
-
-  const createAdmin = async (e) => {
-    e.preventDefault();
-    if (!modal.license?._id) return;
-    setAdminCreating(true);
-    setAdminBanner(null);
-    try {
-      const r = await fetch(`${API_BASE_URL}/api/licenses/${modal.license._id}/create-admin`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(adminForm),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data.error || data.message || 'Create admin failed');
-      setAdminBanner(`Admin créé: ${data.admin?.email}`);
-      await load();
-    } catch (e2) {
-      setAdminBanner(e2.message || 'Create admin failed');
-    } finally {
-      setAdminCreating(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center py-8">Chargement...</div>;
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-gray-600">Licences actives</p>
-          <p className="mt-2 text-3xl font-extrabold text-brand-forest">{summary.activeCount}</p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-gray-600">MRR (actif)</p>
-          <p className="mt-2 text-3xl font-extrabold text-brand-forest">{fmtMoney(summary.mrr)}</p>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-          {error}
-        </div>
-      ) : null}
-
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 text-gray-700">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold">Organization</th>
-              <th className="px-4 py-3 text-left font-semibold">Country</th>
-              <th className="px-4 py-3 text-left font-semibold">Status</th>
-              <th className="px-4 py-3 text-left font-semibold">License Type</th>
-              <th className="px-4 py-3 text-left font-semibold">Monthly Fee</th>
-              <th className="px-4 py-3 text-left font-semibold">Admin Created</th>
-              <th className="px-4 py-3 text-right font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {licenses.map((l) => (
-              <tr key={l._id} className="text-gray-800">
-                <td className="px-4 py-3 font-medium">{l.organizationName}</td>
-                <td className="px-4 py-3">
-                  <div className="font-medium">{l.country}</div>
-                  <div className="text-xs text-gray-500">{l.countryCode}</div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusPill(l.status)}`}>
-                    {l.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${typePill(l.licenseType)}`}>
-                    {l.licenseType}
-                  </span>
-                </td>
-                <td className="px-4 py-3 font-semibold">{fmtMoney(l.monthlyFee)}</td>
-                <td className="px-4 py-3">
-                  {l.adminUserId ? (
-                    <span className="inline-flex items-center gap-1 text-green-700 font-semibold">
-                      <BadgeCheck className="h-4 w-4" aria-hidden /> Yes
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-amber-700 font-semibold">
-                      <ShieldAlert className="h-4 w-4" aria-hidden /> No
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => updateStatus(l._id, 'active')}
-                      className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700"
-                    >
-                      Activate
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateStatus(l._id, 'suspended')}
-                      className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700"
-                    >
-                      Suspend
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openCreateAdmin(l)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-bold text-gray-800 hover:bg-gray-50"
-                    >
-                      <UserPlus className="h-4 w-4" aria-hidden />
-                      Create Country Admin
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {licenses.length === 0 ? (
-              <tr>
-                <td className="px-4 py-8 text-center text-gray-500" colSpan={7}>
-                  No licenses yet.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-
-      <Modal
-        isOpen={modal.open}
-        onClose={() => setModal({ open: false, license: null })}
-        title={modal.license ? `Create Country Admin — ${modal.license.country}` : 'Create Country Admin'}
-      >
-        <form onSubmit={createAdmin} className="space-y-4">
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-gray-700">Name *</span>
-            <input
-              required
-              value={adminForm.name}
-              onChange={(e) => setAdminForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
-            />
-          </label>
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-gray-700">Email *</span>
-            <input
-              type="email"
-              required
-              value={adminForm.email}
-              onChange={(e) => setAdminForm((p) => ({ ...p, email: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
-            />
-          </label>
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-gray-700">Password *</span>
-            <input
-              type="password"
-              required
-              value={adminForm.password}
-              onChange={(e) => setAdminForm((p) => ({ ...p, password: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
-            />
-          </label>
-          {adminBanner ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800">{adminBanner}</div>
-          ) : null}
-          <button
-            type="submit"
-            disabled={adminCreating}
-            className="w-full rounded-lg bg-primary-green px-4 py-3 font-bold text-white hover:bg-primary-lightgreen disabled:opacity-60"
-          >
-            {adminCreating ? 'Creating...' : 'Create admin'}
-          </button>
-        </form>
-      </Modal>
-    </div>
-  );
+  const token = localStorage.getItem('adminToken') || '';
+  return <CountryLicensesManagement token={token} />;
 };
 
 function NotificationsPanel() {
@@ -929,12 +702,14 @@ function NotificationsPanel() {
 }
 
 const CentralAdminDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
   const [expertRequestsNewCount, setExpertRequestsNewCount] = useState(0);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const isSuperAdmin = user?.role === 'super-admin';
+  const { country: detectedCountry } = useGeolocation();
+  const [globalCountryFilter, setGlobalCountryFilter] = useState('');
 
   useEffect(() => {
     async function badge() {
@@ -1093,18 +868,74 @@ const CentralAdminDashboard = () => {
       {/* Main Content - Adjusted for mobile */}
       <main className="md:ml-64 p-3 sm:p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 bg-gray-50 rounded-xl mb-4">
+            <MapPin className="w-4 h-4 text-gray-400" />
+            <span className="text-xs text-gray-500 font-medium">
+              {i18n.language === 'fr' ? 'Filtrer par pays:' : 'Filter by country:'}
+            </span>
+            <select
+              value={globalCountryFilter}
+              onChange={(e) => setGlobalCountryFilter(e.target.value)}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+            >
+              <option value="">{i18n.language === 'fr' ? '🌍 Tous les pays' : '🌍 All countries'}</option>
+              <optgroup label="Afrique de l'Ouest">
+                {['Sénégal', 'Mali', "Côte d'Ivoire", 'Ghana', 'Nigeria', 'Burkina Faso', 'Niger', 'Guinée', 'Togo', 'Bénin', 'Gambie'].map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Afrique Centrale">
+                {['Cameroun', 'Tchad', 'RD Congo'].map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Afrique de l'Est">
+                {['Kenya', 'Éthiopie', 'Tanzanie', 'Ouganda', 'Rwanda'].map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Afrique Australe / Nord">
+                {['Afrique du Sud', 'Zimbabwe', 'Zambie', 'Madagascar', 'Maroc', 'Algérie', 'Tunisie'].map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            {globalCountryFilter ? (
+              <button type="button" onClick={() => setGlobalCountryFilter('')} className="text-xs text-gray-400 hover:text-gray-600">
+                {i18n.language === 'fr' ? 'Effacer' : 'Clear'} ×
+              </button>
+            ) : null}
+            {detectedCountry && !globalCountryFilter ? (
+              <button
+                type="button"
+                onClick={() => setGlobalCountryFilter(detectedCountry)}
+                className="text-xs text-[#B5850A] hover:underline flex items-center gap-1"
+              >
+                <MapPin className="w-3 h-3" />
+                {i18n.language === 'fr' ? `Voir ${detectedCountry}` : `View ${detectedCountry}`}
+              </button>
+            ) : null}
+          </div>
           {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
           {activeTab === 'notifications' && <NotificationsPanel />}
-          {activeTab === 'farmers' && <RealTimeFarmers />}
-          {activeTab === 'cooperatives' && <CooperativesManagement />}
-          {activeTab === 'centers' && <CentersManagement />}
+          {activeTab === 'farmers' && <RealTimeFarmers globalCountryFilter={globalCountryFilter} />}
+          {activeTab === 'cooperatives' && <CooperativesManagement globalCountryFilter={globalCountryFilter} />}
+          {activeTab === 'centers' && <CentersManagement globalCountryFilter={globalCountryFilter} />}
           {activeTab === 'trainings' && <TrainingsManagement />}
           {activeTab === 'governance' && <Governance />}
           {activeTab === 'perks' && <PerksManagement />}
           {activeTab === 'irrigation' && <IrrigationManagement />}
           {activeTab === 'optimization' && <ProductionOptimizationManagement />}
           {activeTab === 'expertRequests' && (
-            <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} />
+            <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} globalCountryFilter={globalCountryFilter} />
           )}
           {activeTab === 'seasonal' && <SeasonalPlanning />}
           {activeTab === 'certification' && <CertificationManagement />}

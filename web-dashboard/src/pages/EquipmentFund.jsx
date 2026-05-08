@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
-import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 import { Tractor, HandCoins, ShieldCheck, Loader2 } from 'lucide-react';
+import LocationSelector from '../components/LocationSelector';
 
 const categories = [
   'Tractors',
@@ -153,22 +153,14 @@ export default function EquipmentFund() {
                 />
               </label>
 
-              <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm font-medium text-gray-700">Country</span>
-                <select
-                  name="country"
-                  value={form.country}
-                  onChange={onChange}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none bg-white"
+              <div className="sm:col-span-2">
+                <LocationSelector
+                  value={{ country: form.country, region: '' }}
+                  onChange={({ country }) => setForm((p) => ({ ...p, country }))}
                   required
-                >
-                  {AFRICAN_COUNTRIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  showDetectedBanner={true}
+                />
+              </div>
 
               <div className="sm:col-span-2">
                 <p className="text-sm font-medium text-gray-700 mb-2">Equipment needed</p>

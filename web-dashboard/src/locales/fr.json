@@ -244,6 +244,32 @@
       "oppsSent": "Opps envoyées",
       "investing": "En cours",
       "paidOut": "Versé"
+    },
+    "countryLicenses": {
+      "title": "Licences Pays",
+      "overview": "Vue d'ensemble",
+      "active": "Licences actives",
+      "inquiries": "Demandes",
+      "revenue": "Revenus",
+      "newLicense": "Nouvelle licence",
+      "noLicenses": "Aucune licence créée.",
+      "noInquiries": "Aucune demande reçue.",
+      "createFirst": "Créer la première licence",
+      "licensedCountries": "Pays sous licence",
+      "latestInquiries": "Dernières demandes",
+      "revenueByLicense": "Revenus par licence",
+      "createAdmin": "Créer un admin pays",
+      "adminCreated": "Créé",
+      "dataWarning": "Cet admin ne verra que les données de son pays.",
+      "credentialsWarning": "Partagez ces identifiants de manière sécurisée. L'admin pays ne verra que les données de son pays.",
+      "reply": "Répondre",
+      "createLicense": "Créer licence",
+      "suspend": "Suspendre",
+      "activate": "Activer",
+      "filterAll": "Tous les pays",
+      "filterByCountry": "Filtrer par pays :",
+      "clearFilter": "Effacer",
+      "locationDetected": "Localisation détectée"
     }
   },
   "soilDiagnostic": {

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Globe, Leaf, Loader2, Mail, Phone, Package, Users, X } from 'lucide-react';
-import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 import { API_BASE_URL } from '../config/api';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
+import LocationSelector from './LocationSelector';
 
 const PRODUCT_OPTIONS = ['Karité', 'Sésame', 'Cajou', 'Mangue', 'Arachide', 'Coton', 'Mil', 'Sorgho', 'Niébé', 'Riz'];
 const PRODUCER_CERTS = ['Aucune', 'Bio local', 'Conventionnel', 'Export/FDA en cours'];
@@ -61,6 +61,7 @@ export default function DiasporaPartnership() {
     businessType: 'restaurant',
     cityState: '',
     country: 'USA',
+    region: '',
     productsSought: [],
     monthlyVolumeNeededKg: '',
     certificationRequired: 'Aucune',
@@ -342,24 +343,11 @@ export default function DiasporaPartnership() {
                   </Field>
 
                   <Field label="Pays *">
-                    <select
-                      value={prodForm.country}
-                      onChange={(e) => setProdForm((p) => ({ ...p, country: e.target.value }))}
-                      className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-green-600 focus:outline-none"
-                    >
-                      {AFRICAN_COUNTRIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label="Région / Ville">
-                    <input
-                      value={prodForm.region}
-                      onChange={(e) => setProdForm((p) => ({ ...p, region: e.target.value }))}
-                      className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-green-600 focus:outline-none"
+                    <LocationSelector
+                      value={{ country: prodForm.country, region: prodForm.region }}
+                      onChange={({ country, region }) => setProdForm((p) => ({ ...p, country, region }))}
+                      required
+                      showDetectedBanner={true}
                     />
                   </Field>
 
@@ -534,6 +522,15 @@ export default function DiasporaPartnership() {
                       onChange={(e) => setBuyForm((p) => ({ ...p, cityState: e.target.value }))}
                       placeholder="Ex. New York, NY ou Paris, France"
                       className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-green-600 focus:outline-none"
+                    />
+                  </Field>
+
+                  <Field label="Pays / Région">
+                    <LocationSelector
+                      value={{ country: buyForm.country, region: buyForm.region }}
+                      onChange={({ country, region }) => setBuyForm((p) => ({ ...p, country, region }))}
+                      required={false}
+                      showDetectedBanner={true}
                     />
                   </Field>
 

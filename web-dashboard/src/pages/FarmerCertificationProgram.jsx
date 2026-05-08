@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { API_ENDPOINTS } from '../config/api';
-import { AFRICAN_COUNTRIES } from '../data/africanCountries';
-import { regionsByCountry } from '../data/sahelRegions';
 import { Users, User, Loader2 } from 'lucide-react';
+import LocationSelector from '../components/LocationSelector';
 
 const crops = ['Shea Butter', 'Sesame', 'Other'];
 
@@ -19,9 +18,6 @@ export default function FarmerCertificationProgram() {
     phone: '',
   });
   const [state, setState] = useState({ loading: false, ok: false, err: '' });
-
-  const regionOptions =
-    regionsByCountry[form.country]?.length > 0 ? regionsByCountry[form.country] : ['Autre'];
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -162,38 +158,12 @@ export default function FarmerCertificationProgram() {
             </label>
 
             <label className="space-y-1">
-              <span className="text-sm font-medium text-gray-700">Country</span>
-              <select
-                name="country"
-                value={form.country}
-                onChange={(e) => setForm((p) => ({ ...p, country: e.target.value, region: '' }))}
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none bg-white"
+              <LocationSelector
+                value={{ country: form.country, region: form.region }}
+                onChange={({ country, region }) => setForm((p) => ({ ...p, country, region }))}
                 required
-              >
-                {AFRICAN_COUNTRIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-sm font-medium text-gray-700">Region</span>
-              <select
-                name="region"
-                value={form.region}
-                onChange={onChange}
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none bg-white"
-                required
-              >
-                <option value="">— Select —</option>
-                {regionOptions.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+                showDetectedBanner={true}
+              />
             </label>
 
             <label className="space-y-1">

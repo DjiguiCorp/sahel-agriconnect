@@ -34,7 +34,7 @@ function statusLabel(s) {
   return m[s] || s;
 }
 
-export default function ExpertRequestsManagement({ onCountsChanged }) {
+export default function ExpertRequestsManagement({ onCountsChanged, globalCountryFilter = '' }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [requests, setRequests] = useState([]);
@@ -72,6 +72,16 @@ export default function ExpertRequestsManagement({ onCountsChanged }) {
     return requests.filter((q) => q.status === filter);
   }, [requests, filter]);
 
+  const filteredByCountry = useMemo(() => {
+    if (!globalCountryFilter) return filtered;
+    return filtered.filter(
+      (item) =>
+        item.country === globalCountryFilter ||
+        item.pays === globalCountryFilter ||
+        String(item.region || '').includes(globalCountryFilter)
+    );
+  }, [filtered, globalCountryFilter]);
+
   const assignExpert = async (id) => {
     const assignedExpert = assignInput.name.trim();
     if (!assignedExpert || assignInput.id !== id) return;
@@ -106,8 +116,8 @@ export default function ExpertRequestsManagement({ onCountsChanged }) {
   };
 
   const exportCsv = () => {
-    if (filtered.length === 0) return;
-    const rows = filtered.map((q) => ({
+    if (filteredByCountry.length === 0) return;
+    const rows = filteredByCountry.map((q) => ({
       FarmerName: q.farmerName,
       Email: q.farmerEmail,
       Phone: q.farmerPhone || '',
@@ -190,7 +200,7 @@ export default function ExpertRequestsManagement({ onCountsChanged }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map((q) => (
+              {filteredByCountry.map((q) => (
                 <tr key={q._id} className="text-gray-800">
                   <td className="px-3 py-2 font-medium">{q.farmerName}</td>
                   <td className="px-3 py-2">{q.farmerEmail}</td>

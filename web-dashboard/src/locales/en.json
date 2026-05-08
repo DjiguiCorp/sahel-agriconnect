@@ -244,6 +244,32 @@
       "oppsSent": "Opps Sent",
       "investing": "Investing",
       "paidOut": "Paid Out"
+    },
+    "countryLicenses": {
+      "title": "Country Licenses",
+      "overview": "Overview",
+      "active": "Active Licenses",
+      "inquiries": "Inquiries",
+      "revenue": "Revenue",
+      "newLicense": "New License",
+      "noLicenses": "No licenses created yet.",
+      "noInquiries": "No inquiries received yet.",
+      "createFirst": "Create first license",
+      "licensedCountries": "Licensed Countries",
+      "latestInquiries": "Latest Inquiries",
+      "revenueByLicense": "Revenue by License",
+      "createAdmin": "Create Country Admin",
+      "adminCreated": "Created",
+      "dataWarning": "This admin will only see data from their country.",
+      "credentialsWarning": "Share these credentials securely. The country admin will only see their country's data.",
+      "reply": "Reply",
+      "createLicense": "Create license",
+      "suspend": "Suspend",
+      "activate": "Activate",
+      "filterAll": "All countries",
+      "filterByCountry": "Filter by country:",
+      "clearFilter": "Clear",
+      "locationDetected": "Location detected"
     }
   },
   "soilDiagnostic": {

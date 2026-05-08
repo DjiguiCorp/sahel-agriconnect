@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Shield, Settings, Globe, Loader2, Check } from 'lucide-react';
+import LocationSelector from '../components/LocationSelector';
 
 export default function PlatformLicensing() {
   const { t } = useTranslation();
@@ -151,13 +152,15 @@ export default function PlatformLicensing() {
             </label>
             <label className="space-y-1">
               <span className="text-sm text-white/90">{t('platformLicensing.form.country')}</span>
-              <input
-                name="country"
-                value={form.country}
-                onChange={onChange}
-                required
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-white/45 focus:ring-2 focus:ring-[#B5850A] outline-none"
-              />
+              <div className="rounded-lg border border-white/20 bg-white/10 p-0.5">
+                <LocationSelector
+                  value={{ country: form.country, region: '' }}
+                  onChange={({ country }) => setForm((p) => ({ ...p, country }))}
+                  required
+                  showDetectedBanner={true}
+                  className="[&_*]:!text-white [&_label]:hidden"
+                />
+              </div>
             </label>
             <label className="space-y-1">
               <span className="text-sm text-white/90">{t('platformLicensing.form.contactName')}</span>

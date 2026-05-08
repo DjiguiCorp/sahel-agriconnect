@@ -4,13 +4,18 @@ import { useTranslation } from 'react-i18next';
 import { COUNTRY_LIST } from '../../data/africanRegions';
 import { useGeolocation } from '../../hooks/useGeolocation';
 
-const RealTimeFarmers = () => {
+const RealTimeFarmers = ({ globalCountryFilter = '' }) => {
   const { farmers, realTimeUpdates, isConnected, clearUpdates } = useWebSocket();
   const { i18n } = useTranslation();
   const { country: detectedCountry, detected } = useGeolocation();
   const [filter, setFilter] = useState('all');
   const [showUpdates, setShowUpdates] = useState(true);
   const [countryFilter, setCountryFilter] = useState('');
+
+  useEffect(() => {
+    if (!globalCountryFilter) return;
+    setCountryFilter(globalCountryFilter);
+  }, [globalCountryFilter]);
 
   useEffect(() => {
     if (!detected || !detectedCountry) return;
