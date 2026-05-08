@@ -170,6 +170,15 @@ function OverviewControlTower({ onGoTab }) {
     certificationRevenue: 0,
   });
 
+  const [pipeline, setPipeline] = useState({
+    New: 0,
+    'Call Scheduled': 0,
+    'Call Completed': 0,
+    'Opportunity Sent': 0,
+    'Investment Active': 0,
+    'Paid Out': 0,
+  });
+
   const [feed, setFeed] = useState([]);
   const [quoteModal, setQuoteModal] = useState({ open: false, items: [] });
 
@@ -201,6 +210,7 @@ function OverviewControlTower({ onGoTab }) {
         coopPendingRes,
         licensesRes,
         investorsRes,
+        pipelineRes,
         farmersAllRes,
         coopActiveRes,
         farmerRecentRes,
@@ -216,6 +226,7 @@ function OverviewControlTower({ onGoTab }) {
         fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations?status=pending`, { headers }),
         fetch(`${API_BASE_URL}/api/licenses`, { headers }),
         fetch(`${API_BASE_URL}/api/investors`, { headers }),
+        fetch(`${API_BASE_URL}/api/investors/status-summary`, { headers }),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=500`, { headers }),
         fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations?status=active`, { headers }),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=2`, { headers }),
@@ -232,6 +243,7 @@ function OverviewControlTower({ onGoTab }) {
       const coopPendingJson = await coopPendingRes.json().catch(() => ({}));
       const licensesJson = await licensesRes.json().catch(() => ({}));
       const investorsJson = await investorsRes.json().catch(() => ({}));
+      const pipelineJson = await pipelineRes.json().catch(() => ({}));
       const farmersAllJson = await farmersAllRes.json().catch(() => ({}));
       const coopActiveJson = await coopActiveRes.json().catch(() => ({}));
 
@@ -272,6 +284,10 @@ function OverviewControlTower({ onGoTab }) {
         certifiedProducers,
         certificationRevenue: certifiedProducers * 299,
       });
+
+      if (pipelineRes.ok && pipelineJson?.success && pipelineJson?.counts) {
+        setPipeline((p) => ({ ...p, ...pipelineJson.counts }));
+      }
 
       const farmerRecent = Array.isArray(farmerRecentJson?.farmers) ? farmerRecentJson.farmers.slice(0, 2) : [];
       const investorRecent = Array.isArray(investorRecentJson?.investors) ? investorRecentJson.investors.slice(0, 2) : [];
@@ -402,6 +418,26 @@ function OverviewControlTower({ onGoTab }) {
           title={`${t('adminDashboard.certifiedProducers')} • ${t('adminDashboard.certificationRevenue')}`}
           value={`${metrics.certifiedProducers} • ${fmtMoney(metrics.certificationRevenue)}`}
         />
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-extrabold text-brand-forest mb-4">Investment Pipeline</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-0">
+          {[
+            { label: 'New', count: pipeline.New || 0, color: 'bg-gray-100 text-gray-700', emoji: '🆕' },
+            { label: 'Call Scheduled', count: pipeline['Call Scheduled'] || 0, color: 'bg-blue-50 text-blue-700', emoji: '📅' },
+            { label: 'Call Done', count: pipeline['Call Completed'] || 0, color: 'bg-purple-50 text-purple-700', emoji: '✅' },
+            { label: 'Opps Sent', count: pipeline['Opportunity Sent'] || 0, color: 'bg-yellow-50 text-yellow-700', emoji: '📨' },
+            { label: 'Investing', count: pipeline['Investment Active'] || 0, color: 'bg-green-50 text-green-700', emoji: '💰' },
+            { label: 'Paid Out', count: pipeline['Paid Out'] || 0, color: 'bg-amber-50 text-amber-700', emoji: '🏆' },
+          ].map(({ label, count, color, emoji }) => (
+            <div key={label} className={`rounded-xl p-3 text-center ${color}`}>
+              <div className="text-xl mb-1">{emoji}</div>
+              <div className="font-bold text-lg">{count}</div>
+              <div className="text-xs">{label}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">

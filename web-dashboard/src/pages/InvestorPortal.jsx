@@ -410,16 +410,15 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
               </p>
             </button>
             <a
-              href={`mailto:info@djiguicorporation.org?subject=Advisory Call - AfriYield&body=Name: ${encodeURIComponent(
+              href={`mailto:info@djiguicorporation.org?subject=Free Intro Call Request - AfriYield Exchange&body=Name: ${encodeURIComponent(
                 investor?.fullName || ''
-              )}%0AEmail: ${encodeURIComponent(investor?.email || '')}`}
+              )}%0AEmail: ${encodeURIComponent(investor?.email || '')}%0AInterest: `}
               className="rounded-2xl p-4 text-left block"
               style={{ background: '#132a1e', border: '1px solid rgba(181,133,10,0.25)' }}
             >
-              <div className="text-2xl mb-2">📞</div>
-              <p className="font-semibold text-sm" style={{ color: '#F5F0E8' }}>
-                {t('investorPortal.help.call')}
-              </p>
+              <div className="text-2xl mb-1">📞</div>
+              <p className="text-white font-semibold text-sm">{t('investorPortal.advisory.cta')}</p>
+              <p className="text-green-400 text-xs mt-0.5">{t('investorPortal.advisory.firstCall')}</p>
             </a>
           </div>
 
@@ -1034,23 +1033,39 @@ function HelpTab({ investor, t }) {
       </div>
 
       {/* Advisory call booking card (full width) */}
-      <div className="rounded-2xl p-5 md:p-6" style={{ background: '#0a1912', border: '1px solid rgba(181,133,10,0.25)' }}>
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0">
-            <p className="font-bold text-lg" style={{ color: '#F5F0E8' }}>
-              {t('investorPortal.help.call')}
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'rgba(245,240,232,0.55)' }}>
-              {t('investorPortal.help.callInclude')}
-            </p>
+      <div
+        className="rounded-2xl p-5 mt-4"
+        style={{
+          background: 'linear-gradient(135deg, #132a1e, #1a3c2e)',
+          border: '1px solid rgba(181,133,10,0.4)',
+        }}
+      >
+        <div className="flex items-start gap-3">
+          <span className="text-3xl">📞</span>
+          <div className="flex-1">
+            <p className="text-white font-bold text-base">{t('investorPortal.advisory.title')}</p>
+            <div className="inline-flex items-center gap-1 mt-1 mb-2 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/40">
+              <span className="text-green-400 text-xs font-bold">✓ {t('investorPortal.advisory.firstCall')}</span>
+            </div>
+            <p className="text-white/60 text-sm leading-relaxed mb-1">{t('investorPortal.advisory.firstCallDesc')}</p>
+            <p className="text-white/30 text-xs mb-4">{t('investorPortal.advisory.followUp')}</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <a
+                href={`mailto:info@djiguicorporation.org?subject=Free Intro Call Request - AfriYield Exchange&body=Hello! I would like to book my free 30-minute intro call.%0A%0AName: %0AEmail: %0APreferred time (timezone): %0AInvestment interest: `}
+                className="flex-1 rounded-xl py-3 font-bold text-center text-[#0d1f17] text-sm"
+                style={{ background: '#B5850A' }}
+              >
+                📞 {t('investorPortal.advisory.cta')}
+              </a>
+              <a
+                href={`mailto:info@djiguicorporation.org?subject=Follow-up Advisory Call - $99 - AfriYield Exchange&body=I would like to book a follow-up advisory call ($99).%0A%0AName: %0AEmail: %0APreferred time: `}
+                className="flex-1 rounded-xl py-3 font-medium text-center text-white/60 text-sm hover:text-white transition"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                {t('investorPortal.advisory.ctaFollowUp')}
+              </a>
+            </div>
           </div>
-          <a
-            href={`mailto:info@djiguicorporation.org?subject=${encodeURIComponent('Advisory Call Booking')}&body=${encodeURIComponent(`Name: ${investor?.fullName || ''}\nEmail: ${investor?.email || ''}`)}`}
-            className="rounded-2xl px-5 py-3 font-bold text-sm"
-            style={{ background: '#B5850A', color: '#0d1f17' }}
-          >
-            {t('investorPortal.help.call')} →
-          </a>
         </div>
       </div>
     </div>
@@ -1060,6 +1075,7 @@ function HelpTab({ investor, t }) {
 /* ─── PREMIUM MODAL ─────────────────────────────────────────────────── */
 function PremiumModal({ t, onClose }) {
   const features = t('investorPortal.premium.features', { returnObjects: true });
+  const [billing, setBilling] = useState('annual'); // 'monthly' or 'annual'
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
@@ -1095,16 +1111,61 @@ function PremiumModal({ t, onClose }) {
               </div>
             ))}
         </div>
-        <p className="tabular-nums text-[#B5850A] font-bold text-2xl mb-1">{t('investorPortal.premium.price')}</p>
-        <p className="text-xs mb-4" style={{ color: 'rgba(245,240,232,0.35)' }}>
-          {t('investorPortal.premium.nofees')}
-        </p>
+
+        {/* Billing toggle */}
+        <div className="flex rounded-xl overflow-hidden border border-white/10 mb-4">
+          <button
+            type="button"
+            onClick={() => setBilling('monthly')}
+            className={`flex-1 py-2 text-sm font-medium transition ${
+              billing === 'monthly' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            {t('investorPortal.premium.priceMonthly')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setBilling('annual')}
+            className={`flex-1 py-2 text-sm font-medium transition relative ${
+              billing === 'annual' ? 'bg-[#B5850A] text-[#0d1f17]' : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            {t('investorPortal.premium.priceAnnual')}
+            {billing === 'annual' && (
+              <span className="absolute -top-2 -right-1 text-xs bg-green-500 text-white px-1 rounded-full">
+                -17%
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Price display */}
+        <div className="mb-1">
+          {billing === 'annual' ? (
+            <div>
+              <p className="text-[#B5850A] font-mono font-bold text-3xl">
+                $299<span className="text-lg">/year</span>
+              </p>
+              <p className="text-green-400 text-xs mt-1">= $24.92/month — {t('investorPortal.premium.saveWithAnnual')}</p>
+            </div>
+          ) : (
+            <p className="text-[#B5850A] font-mono font-bold text-3xl">
+              $29.99<span className="text-lg">/month</span>
+            </p>
+          )}
+        </div>
+        <p className="text-white/30 text-xs mb-4">{t('investorPortal.premium.nofees')}</p>
+
         <a
-          href="mailto:info@djiguicorporation.org?subject=AfriYield Premium Upgrade Request"
-          className="block w-full rounded-2xl py-3 font-bold text-center"
-          style={{ background: '#B5850A', color: '#0d1f17' }}
+          href={`mailto:info@djiguicorporation.org?subject=AfriYield Premium - ${
+            billing === 'annual' ? 'Annual $299' : 'Monthly $29.99'
+          }&body=I would like to subscribe to AfriYield Premium (${
+            billing === 'annual' ? 'Annual plan - $299/year' : 'Monthly plan - $29.99/month'
+          }).%0A%0AName: %0AEmail: `}
+          className="block w-full rounded-xl py-3 font-bold text-center text-[#0d1f17]"
+          style={{ background: '#B5850A' }}
         >
-          {t('investorPortal.premium.cta')}
+          {t('investorPortal.premium.cta')} — {billing === 'annual' ? '$299/yr' : '$29.99/mo'}
         </a>
         <button
           type="button"

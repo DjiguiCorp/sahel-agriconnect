@@ -1135,12 +1135,24 @@
         "Voir les nouvelles opportunités 24 heures avant tout le monde",
         "Savoir ce qui se passe pays par pays"
       ],
-      "price": "49$ par mois",
+      "price": "29,99$/mois ou 299$/an",
+      "priceMonthly": "29,99$/mois",
+      "priceAnnual": "299$/an",
+      "saveWithAnnual": "Économisez 17% avec l'abonnement annuel — meilleure valeur",
       "nofees": "Annulez à tout moment. Pas de frais cachés.",
+      "annualBadge": "MEILLEURE VALEUR",
       "cta": "Rejoindre Premium",
       "later": "Peut-être plus tard",
       "currentFree": "Plan actuel: Gratuit",
       "currentPremium": "Plan actuel: Premium"
+    },
+    "advisory": {
+      "title": "Parlez à une vraie personne de votre investissement",
+      "firstCall": "Premier appel GRATUIT",
+      "firstCallDesc": "Réservez un appel d'introduction gratuit de 30 minutes. Nous examinerons votre profil investisseur, répondrons à toutes vos questions et vous montrerons les meilleures opportunités pour votre budget.",
+      "followUp": "Appels de suivi: 99$/session — inclut un résumé écrit",
+      "cta": "Réserver mon appel gratuit",
+      "ctaFollowUp": "Réserver un appel de suivi (99$)"
     },
     "notifications": {
       "title": "Notifications",

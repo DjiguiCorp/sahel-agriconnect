@@ -82,6 +82,31 @@ router.post('/register', async (req, res) => {
   }
 });
 
+router.get('/status-summary', authenticateToken, async (req, res) => {
+  try {
+    const rows = await Investor.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]);
+    const counts = {
+      New: 0,
+      'Call Scheduled': 0,
+      'Call Completed': 0,
+      'Opportunity Sent': 0,
+      'Investment Active': 0,
+      'Paid Out': 0,
+    };
+    for (const r of rows) {
+      const k = r?._id;
+      if (k in counts) counts[k] = Number(r.count) || 0;
+      // Backfill legacy statuses into the first stage
+      if (k === 'new') counts.New += Number(r.count) || 0;
+    }
+    return res.json({ success: true, counts });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
+  }
+});
+
 router.get('/', async (req, res, next) => {
   const q = req.query.email;
   if (q != null && String(q).trim() !== '') {

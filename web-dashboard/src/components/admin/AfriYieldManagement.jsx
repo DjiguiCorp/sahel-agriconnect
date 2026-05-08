@@ -43,7 +43,27 @@ const COUNTRIES = [
   'Belgium',
 ];
 
-const INVESTOR_STATUSES = ['new', 'contacted', 'active', 'declined'];
+const INVESTOR_STATUSES = [
+  'New',
+  'Call Scheduled',
+  'Call Completed',
+  'Opportunity Sent',
+  'Investment Active',
+  'Paid Out',
+];
+
+function investorStatusBadge(status) {
+  const s = String(status || 'New');
+  const map = {
+    New: { cls: 'bg-gray-100 text-gray-700', label: 'New', emoji: '🆕' },
+    'Call Scheduled': { cls: 'bg-blue-50 text-blue-700', label: 'Call Scheduled', emoji: '📅' },
+    'Call Completed': { cls: 'bg-purple-50 text-purple-700', label: 'Call Completed', emoji: '✅' },
+    'Opportunity Sent': { cls: 'bg-yellow-50 text-yellow-700', label: 'Opportunity Sent', emoji: '📨' },
+    'Investment Active': { cls: 'bg-green-50 text-green-700', label: 'Investment Active', emoji: '💰' },
+    'Paid Out': { cls: 'bg-amber-50 text-amber-700', label: 'Paid Out', emoji: '🏆' },
+  };
+  return map[s] || { cls: 'bg-gray-100 text-gray-700', label: s, emoji: '' };
+}
 
 const emptyOppForm = () => ({
   centerName: '',
@@ -635,7 +655,8 @@ export default function AfriYieldManagement() {
                   <th className="px-3 py-2 font-semibold">Commodity</th>
                   <th className="px-3 py-2 font-semibold">Investment Range</th>
                   <th className="px-3 py-2 font-semibold">Date Registered</th>
-                  <th className="px-3 py-2 font-semibold">Actions (status)</th>
+                  <th className="px-3 py-2 font-semibold">Status</th>
+                  <th className="px-3 py-2 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -651,18 +672,69 @@ export default function AfriYieldManagement() {
                       {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '—'}
                     </td>
                     <td className="px-3 py-2">
-                      <select
-                        value={inv.status}
-                        onChange={(e) => updateInvestorStatus(inv._id, e.target.value)}
-                        className="rounded border border-gray-300 px-2 py-1 text-xs"
-                        aria-label={`Status for ${inv.fullName}`}
-                      >
-                        {INVESTOR_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                      {(() => {
+                        const b = investorStatusBadge(inv.status);
+                        return (
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${b.cls}`}>
+                              {b.emoji ? <span aria-hidden>{b.emoji}</span> : null}
+                              <span>{b.label}</span>
+                            </span>
+                            <select
+                              value={INVESTOR_STATUSES.includes(inv.status) ? inv.status : (inv.status || 'New')}
+                              onChange={(e) => updateInvestorStatus(inv._id, e.target.value)}
+                              className="rounded border border-gray-300 px-2 py-1 text-xs bg-white"
+                              aria-label={`Status for ${inv.fullName}`}
+                            >
+                              {INVESTOR_STATUSES.map((s) => (
+                                <option key={s} value={s}>
+                                  {s}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col gap-1">
+                        <a
+                          href={`mailto:${inv.email}?subject=Your Free AfriYield Exchange Intro Call&body=Hello ${encodeURIComponent(
+                            inv.fullName || ''
+                          )},%0A%0AThank you for registering on AfriYield Exchange!%0A%0AI would love to schedule your free 30-minute intro call to discuss the opportunities available for your investment interests.%0A%0APlease reply with your preferred time and timezone.%0A%0ABest regards,%0AAfriYield Exchange Team`}
+                          className="text-xs text-blue-400 hover:text-blue-300 transition flex items-center gap-1"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          📅 Schedule Call
+                        </a>
+                        <a
+                          href={`mailto:${inv.email}?subject=AfriYield Exchange — Investment Opportunities Matched for You&body=Hello ${encodeURIComponent(
+                            inv.fullName || ''
+                          )},%0A%0ABased on your interest in ${encodeURIComponent(
+                            inv.commodityInterest || ''
+                          )} (${encodeURIComponent(
+                            inv.investmentTrack || ''
+                          )}), here are the opportunities we recommend:%0A%0A1. [Opportunity Name] — [Location] — Seeking $[Amount] — Expected ROI: 8%%0A%0AVisit your investor portal to view full details:%0Ahttps://sahel-agriconnect.vercel.app/afri-yield/portal%0A%0ABest regards,%0AAfriYield Exchange Team`}
+                          className="text-xs text-yellow-400 hover:text-yellow-300 transition flex items-center gap-1"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          📨 Send Opps
+                        </a>
+                        <a
+                          href="/afri-yield/portal"
+                          onClick={() => {
+                            localStorage.setItem('afriyield_investor_email', inv.email);
+                            localStorage.setItem('afriyield_investor_name', inv.fullName);
+                          }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#B5850A] hover:underline flex items-center gap-1"
+                        >
+                          👁 View Portal
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1150,6 +1222,28 @@ export default function AfriYieldManagement() {
                   />
                 </label>
               </div>
+
+              {/* Live payout preview */}
+              {invForm.amountDeployed && invForm.expectedROIPercent ? (() => {
+                const principal = Number(invForm.amountDeployed);
+                const roi = Number(invForm.expectedROIPercent);
+                if (!Number.isFinite(principal) || !Number.isFinite(roi) || principal <= 0) return null;
+                const monthlyAmount = (principal * (roi / 100)) / 2;
+                return (
+                  <div className="mt-2 p-3 rounded-lg bg-green-50 border border-green-200">
+                    <p className="text-green-800 text-xs font-semibold">Payout Preview (bi-annual):</p>
+                    <p className="text-green-700 text-sm mt-1">
+                      June 2026: <strong>${monthlyAmount.toFixed(2)}</strong>
+                    </p>
+                    <p className="text-green-700 text-sm">
+                      December 2026: <strong>${monthlyAmount.toFixed(2)}</strong>
+                    </p>
+                    <p className="text-green-500 text-xs mt-1">
+                      Total annual return: ${(monthlyAmount * 2).toFixed(2)} ({roi}% on ${principal.toLocaleString()})
+                    </p>
+                  </div>
+                );
+              })() : null}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button

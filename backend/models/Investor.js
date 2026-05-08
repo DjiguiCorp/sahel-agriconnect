@@ -30,8 +30,20 @@ const investorSchema = new mongoose.Schema({
   message: { type: String, trim: true },
   status: {
     type: String,
-    enum: ['new', 'contacted', 'active', 'declined'],
-    default: 'new',
+    // Keep legacy values for compatibility, plus new pipeline workflow
+    enum: [
+      'new',
+      'contacted',
+      'active',
+      'declined',
+      'New',
+      'Call Scheduled',
+      'Call Completed',
+      'Opportunity Sent',
+      'Investment Active',
+      'Paid Out',
+    ],
+    default: 'New',
   },
   createdAt: {
     type: Date,

@@ -1147,12 +1147,24 @@
         "See new opportunities 24 hours before everyone else",
         "Know what is happening country by country"
       ],
-      "price": "$49 per month",
+      "price": "$29.99/month or $299/year",
+      "priceMonthly": "$29.99/month",
+      "priceAnnual": "$299/year",
+      "saveWithAnnual": "Save 17% with annual — best value",
       "nofees": "Cancel any time. No hidden fees.",
+      "annualBadge": "BEST VALUE",
       "cta": "Join Premium",
       "later": "Maybe later",
       "currentFree": "Current plan: Free",
       "currentPremium": "Current plan: Premium"
+    },
+    "advisory": {
+      "title": "Talk to a real person about your investment",
+      "firstCall": "First call is FREE",
+      "firstCallDesc": "Book a free 30-minute intro call. We will review your investor profile, answer all your questions, and show you the best opportunities for your budget.",
+      "followUp": "Follow-up calls: $99/session — includes written summary",
+      "cta": "Book my free call",
+      "ctaFollowUp": "Book a follow-up call ($99)"
     },
     "notifications": {
       "title": "Notifications",
