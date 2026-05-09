@@ -32,6 +32,8 @@ import supplychainRouter from './routes/supplychain.js';
 import notificationsRouter from './routes/notifications.js';
 import investorNotificationsRouter from './routes/investorNotifications.js';
 import deletionRequestsRouter from './routes/deletionRequests.js';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './docs/swagger.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -108,6 +110,23 @@ const io = new Server(httpServer, {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// API Documentation — available at /api/docs
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'Sahel AgriConnect API',
+    customCss: '.swagger-ui .topbar { background-color: #1a3c2e; }',
+    swaggerOptions: { persistAuthorization: true },
+  })
+);
+
+// Raw OpenAPI JSON for mobile app integration
+app.get('/api/docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/farmers', farmerRoutes);
@@ -168,6 +187,7 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Sahel AgriConnect API is running',
+    docs: `${process.env.FRONTEND_URL || ''}/api/docs`,
     timestamp: new Date().toISOString()
   });
 });
