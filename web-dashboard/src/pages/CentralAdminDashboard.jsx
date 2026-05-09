@@ -604,6 +604,8 @@ function NotificationsPanel() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [err, setErr] = useState('');
+  const [sending, setSending] = useState({});
+  const [sendingAll, setSendingAll] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -640,12 +642,61 @@ function NotificationsPanel() {
     }
   };
 
+  const dispatchSms = async (id) => {
+    setSending((prev) => ({ ...prev, [id]: true }));
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/notifications/${id}/send`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || 'Send failed');
+      await load();
+    } catch (e) {
+      alert(e.message || 'Send failed');
+    } finally {
+      setSending((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const sendAll = async () => {
+    if (!window.confirm('Envoyer tous les SMS en attente ?')) return;
+    setSendingAll(true);
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/notifications/send-all`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      const j = await r.json().catch(() => ({}));
+      alert(`Envoyés: ${j.sent || 0} | Échoués: ${j.failed || 0}`);
+      await load();
+    } catch (e) {
+      alert(e.message || 'Bulk send failed');
+    } finally {
+      setSendingAll(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-10">{t('common.loading')}</div>;
   if (err) return <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{err}</div>;
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-extrabold text-brand-forest">{t('adminDashboard.notifications.title')}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-extrabold text-brand-forest">
+          {t('adminDashboard.notifications.title')}
+        </h2>
+        {items.length > 0 && (
+          <button
+            type="button"
+            onClick={sendAll}
+            disabled={sendingAll}
+            className="rounded-lg bg-green-700 px-4 py-2 text-sm font-bold text-white hover:bg-green-800 disabled:opacity-50"
+          >
+            {sendingAll ? 'Envoi...' : `Envoyer tout (${items.length} SMS)`}
+          </button>
+        )}
+      </div>
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-gray-700">
@@ -672,6 +723,14 @@ function NotificationsPanel() {
                 </td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
                   <div className="inline-flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => dispatchSms(n._id)}
+                      disabled={sending[n._id]}
+                      className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {sending[n._id] ? '...' : 'SMS'}
+                    </button>
                     <a
                       href={`https://wa.me/${n.recipientPhone?.replace(/\\D/g, '')}?text=${encodeURIComponent(
                         n.message || ''
