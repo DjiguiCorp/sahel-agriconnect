@@ -79,15 +79,15 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-md">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <header className="sticky top-0 z-50 bg-white shadow-md">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-50">
         <div className="flex items-center justify-between min-h-[4rem] gap-2">
           <Link to="/" className="flex items-center space-x-2 shrink-0 min-w-0" onClick={closeMenu}>
             <div className="w-12 h-12 bg-gradient-to-br from-brand-forest to-brand-sage rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-2xl">SA</span>
             </div>
             <span className="text-xl sm:text-2xl font-bold text-brand-forest truncate">
-              {t('common.appName')}
+              Sahel AgriConnect
             </span>
           </Link>
 
@@ -139,7 +139,7 @@ const Header = () => {
               </button>
               {desktopOutilsOpen && (
                 <div
-                  className="absolute left-0 top-full z-20 min-w-[14rem] pt-1"
+                  className="absolute left-0 top-full z-[100] min-w-[14rem] pt-1"
                   role="menu"
                   aria-label="Outils agricoles"
                 >
@@ -186,7 +186,7 @@ const Header = () => {
                 </span>
               </button>
               {desktopAfriYieldOpen && (
-                <div className="absolute right-0 top-full z-20 min-w-[14rem] pt-1" role="menu" aria-label="AfriYield">
+                <div className="absolute right-0 top-full z-[100] min-w-[14rem] pt-1" role="menu" aria-label="AfriYield">
                   <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
                     {AFRIYIELD_ITEMS.map(({ to, labelKey }) => (
                       <Link

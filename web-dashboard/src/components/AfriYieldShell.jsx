@@ -68,7 +68,7 @@ export default function AfriYieldShell() {
 
   return (
     <div className="min-h-[60vh] flex flex-col bg-brand-cream">
-      <header className="sticky top-0 z-40 border-b border-black/10 shadow-sm">
+      <header className="sticky top-0 z-30 border-b border-black/10 shadow-sm">
         <div className="bg-[#1a3c2e]">
           <div className="section-container relative flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between md:gap-4 md:py-3">
             <Link
