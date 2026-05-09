@@ -7,6 +7,13 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/tests/setup.js'],
+    include: ['src/**/*.test.{js,jsx}'],
+    pool: 'threads',
+  },
   server: {
     proxy: {
       '/api': {

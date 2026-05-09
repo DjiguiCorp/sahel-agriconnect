@@ -40,6 +40,7 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+export { app };
 
 // Configuration CORS - Permet toutes les origines Vercel
 const getVercelOrigins = () => {
@@ -307,14 +308,18 @@ const PORT = process.env.PORT || 3001;
 
 const startServer = async () => {
   await connectDB();
-  httpServer.listen(PORT, () => {
-    console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-    console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);
-    console.log(`🌐 API disponible sur http://localhost:${PORT}/api`);
-  });
+  if (process.env.NODE_ENV !== 'test') {
+    httpServer.listen(PORT, () => {
+      console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+      console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);
+      console.log(`🌐 API disponible sur http://localhost:${PORT}/api`);
+    });
+  }
 };
 
-startServer();
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 export { io };
 
