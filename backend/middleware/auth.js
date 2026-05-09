@@ -32,3 +32,29 @@ export const authenticateToken = async (req, res, next) => {
   }
 };
 
+export const authenticateInvestor = (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Token d\'authentification requis' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded || decoded.role !== 'investor' || !decoded.email) {
+      return res.status(401).json({ error: 'Token invalide' });
+    }
+
+    req.investorEmail = decoded.email;
+    next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Token invalide' });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expiré' });
+    }
+    return res.status(500).json({ error: 'Erreur d\'authentification' });
+  }
+};
+

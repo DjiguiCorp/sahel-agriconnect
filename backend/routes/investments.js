@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateInvestor, authenticateToken } from '../middleware/auth.js';
 import Investment from '../models/Investment.js';
 import Investor from '../models/Investor.js';
 import Opportunity from '../models/Opportunity.js';
@@ -117,11 +117,14 @@ router.get('/stats', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/investments/investor/:email — public
-router.get('/investor/:email', async (req, res) => {
+// GET /api/investments/investor/:email — investor token
+router.get('/investor/:email', authenticateInvestor, async (req, res) => {
   try {
     const email = String(req.params.email || '').trim().toLowerCase();
     if (!email) return res.status(400).json({ success: false, error: 'email required' });
+    if (String(req.investorEmail || '').trim().toLowerCase() !== email) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
     const investments = await Investment.find({ investorEmail: email }).sort({ createdAt: -1 }).lean();
     return res.json({ success: true, investments });
   } catch (e) {

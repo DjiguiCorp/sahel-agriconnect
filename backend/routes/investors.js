@@ -2,9 +2,10 @@ import express from 'express';
 import Investor from '../models/Investor.js';
 import InvestorNotification from '../models/InvestorNotification.js';
 import PendingNotification from '../models/PendingNotification.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateInvestor, authenticateToken } from '../middleware/auth.js';
 import { confirmInvestorRegistration, notifyAdminNewInvestor } from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
@@ -25,6 +26,33 @@ function mapCommodityInterest(body) {
   }
   return 'Shea Butter';
 }
+
+router.post('/login', async (req, res) => {
+  try {
+    const emailRaw = req.body?.email;
+    const email = String(emailRaw || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ success: false, error: 'email required' });
+
+    const investor = await Investor.findOne({ email: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }).lean();
+    if (!investor) {
+      return res.status(404).json({ success: false, error: 'Investor not found' });
+    }
+
+    const token = jwt.sign(
+      { role: 'investor', email: investor.email, name: investor.fullName },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    return res.json({
+      success: true,
+      token,
+      investor: { email: investor.email, fullName: investor.fullName, status: investor.status },
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
+  }
+});
 
 router.post('/register', async (req, res) => {
   try {
@@ -151,12 +179,15 @@ router.get('/status-summary', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/', async (req, res, next) => {
+router.get('/', authenticateInvestor, async (req, res, next) => {
   const q = req.query.email;
   if (q != null && String(q).trim() !== '') {
     try {
       const email = String(q).trim().toLowerCase();
-      const investor = await Investor.findOne({ email }).lean();
+      if (String(req.investorEmail || '').trim().toLowerCase() !== email) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+      const investor = await Investor.findOne({ email: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }).lean();
       if (!investor) {
         return res.json({ success: true, investors: [], investor: null });
       }

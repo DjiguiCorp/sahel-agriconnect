@@ -1,13 +1,16 @@
 import express from 'express';
 import InvestorNotification from '../models/InvestorNotification.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateInvestor, authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/:email', async (req, res) => {
+router.get('/:email', authenticateInvestor, async (req, res) => {
   try {
     const raw = req.params.email || '';
     const investorEmail = decodeURIComponent(raw).trim().toLowerCase();
+    if (String(req.investorEmail || '').trim().toLowerCase() !== investorEmail) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
     const notes = await InvestorNotification.find({ investorEmail })
       .sort({ createdAt: -1 })
       .limit(20)
@@ -18,10 +21,13 @@ router.get('/:email', async (req, res) => {
   }
 });
 
-router.put('/:email/read-all', async (req, res) => {
+router.put('/:email/read-all', authenticateInvestor, async (req, res) => {
   try {
     const raw = req.params.email || '';
     const investorEmail = decodeURIComponent(raw).trim().toLowerCase();
+    if (String(req.investorEmail || '').trim().toLowerCase() !== investorEmail) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
     await InvestorNotification.updateMany({ investorEmail }, { read: true });
     res.json({ success: true });
   } catch (e) {

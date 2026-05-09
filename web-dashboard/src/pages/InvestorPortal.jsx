@@ -100,13 +100,18 @@ function AccessScreen({ onAccess, t }) {
     setLoading(true);
     setNotFound(false);
     try {
-      const res = await fetch(`${API}/api/investors?email=${encodeURIComponent(email)}`);
+      const res = await fetch(`${API}/api/investors/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
       const data = await res.json();
-      const investor =
-        data?.investor ?? data?.investors?.[0] ?? (Array.isArray(data) ? data[0] : null);
-      if (investor && investor.email) {
-        localStorage.setItem('afriyield_investor_email', investor.email);
-        localStorage.setItem('afriyield_investor_name', investor.fullName || '');
+      const investor = data?.investor ?? null;
+      const token = data?.token;
+      if (investor && investor.email && token) {
+        sessionStorage.setItem('afriyield_token', token);
+        sessionStorage.setItem('afriyield_investor_email', investor.email);
+        sessionStorage.setItem('afriyield_investor_name', investor.fullName || '');
         onAccess(investor);
       } else {
         setNotFound(true);
@@ -1216,9 +1221,10 @@ export default function InvestorPortal() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
-    const email = localStorage.getItem('afriyield_investor_email');
-    const name = localStorage.getItem('afriyield_investor_name');
-    if (email) {
+    const token = sessionStorage.getItem('afriyield_token');
+    const email = sessionStorage.getItem('afriyield_investor_email');
+    const name = sessionStorage.getItem('afriyield_investor_name');
+    if (token && email) {
       setInvestor({ email, fullName: name || email });
       loadData(email);
     }
@@ -1226,9 +1232,11 @@ export default function InvestorPortal() {
 
   const loadData = useCallback(async (email) => {
     try {
+      const token = sessionStorage.getItem('afriyield_token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const [invRes, noteRes] = await Promise.allSettled([
-        fetch(`${API}/api/investments/investor/${encodeURIComponent(email)}`),
-        fetch(`${API}/api/investor-notifications/${encodeURIComponent(email)}`),
+        fetch(`${API}/api/investments/investor/${encodeURIComponent(email)}`, { headers }),
+        fetch(`${API}/api/investor-notifications/${encodeURIComponent(email)}`, { headers }),
       ]);
       if (invRes.status === 'fulfilled' && invRes.value.ok) {
         const d = await invRes.value.json();
@@ -1250,8 +1258,9 @@ export default function InvestorPortal() {
   };
 
   const signOut = () => {
-    localStorage.removeItem('afriyield_investor_email');
-    localStorage.removeItem('afriyield_investor_name');
+    sessionStorage.removeItem('afriyield_token');
+    sessionStorage.removeItem('afriyield_investor_email');
+    sessionStorage.removeItem('afriyield_investor_name');
     // Also clear shared header greeting (Sahel AgriConnect registered user)
     localStorage.removeItem('sac_user_email');
     localStorage.removeItem('sac_user_name');
@@ -1264,8 +1273,11 @@ export default function InvestorPortal() {
   const markAllNotificationsRead = async () => {
     if (!investor?.email) return;
     try {
+      const token = sessionStorage.getItem('afriyield_token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await fetch(`${API}/api/investor-notifications/${encodeURIComponent(investor.email)}/read-all`, {
         method: 'PUT',
+        headers,
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch {
