@@ -10,9 +10,9 @@ import {
 } from '../schemas/farmerRegistrationSchema';
 import { regionsByCountry } from '../data/sahelRegions';
 import { AFRICAN_COUNTRIES } from '../data/africanCountries';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { CheckCircle, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const defaults = {
   full_name: '',
@@ -67,36 +67,43 @@ export default function FarmerRegistrationPage() {
 
   const onFinalSubmit = async (data) => {
     setSubmitError('');
-    if (!isSupabaseConfigured() || !supabase) {
-      setSubmitError(
-        'Le service d’enregistrement n’est pas configuré. Ajoutez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans .env.local.'
-      );
-      return;
-    }
-
     setSubmitting(true);
     try {
       const payload = {
-        full_name: data.full_name.trim(),
-        phone: data.phone.replace(/\s+/g, ' ').trim(),
+        nom: data.full_name.trim(),
+        telephone: data.phone.replace(/\s+/g, ' ').trim(),
         region: data.region,
         country: data.country,
-        crops: data.crops,
-        area_hectares: Number(data.area_hectares),
-        area_unit: data.area_unit,
-        has_irrigation: data.has_irrigation,
-        cooperative_member: data.cooperative_member,
-        cooperative_name: data.cooperative_member ? data.cooperative_name?.trim() || null : null,
-        consent: true,
+        cultures: data.crops,
+        superficie: Number(data.area_hectares),
+        lienCooperative: data.cooperative_member ? 'Oui' : 'Non',
+        nomCooperative: data.cooperative_member ? data.cooperative_name?.trim() || '' : '',
+        irrigation: data.has_irrigation,
+        latitude: '0',
+        longitude: '0',
+        typeExploitation: 'Familiale',
+        accesElectricite: 'Non',
+        accesStockage: 'Non',
       };
 
-      const { data: inserted, error } = await supabase.from('farmers').insert(payload).select('id').single();
+      const r = await fetch(`${API_BASE_URL}/api/farmers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-      if (error) throw error;
+      const json = await r.json().catch(() => null);
+      if (!r.ok) {
+        const msg = json?.error || json?.message || json?.details || 'Request failed';
+        throw new Error(msg);
+      }
 
-      setSuccessId(inserted.id);
+      const insertedId = json?.farmer?._id || json?.farmer?.id;
+      if (!insertedId) throw new Error('Missing id');
+
+      setSuccessId(insertedId);
       captureEvent(AnalyticsEvents.FARMER_REGISTRATION_COMPLETED, {
-        farmer_id: inserted.id,
+        farmer_id: insertedId,
         country: data.country,
       });
     } catch (e) {
