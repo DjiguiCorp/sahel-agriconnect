@@ -1014,13 +1014,6 @@ const CentralAdminDashboard = () => {
               </div>
               
               {/* Logout Button - Mobile optimized */}
-              <Link
-                to="/admin/donnees"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-forest bg-brand-iconBg rounded-lg hover:bg-brand-cream border border-brand-sage/30"
-              >
-                <Database className="w-4 h-4" aria-hidden />
-                Données Supabase
-              </Link>
               <button
                 onClick={handleLogout}
                 className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap"

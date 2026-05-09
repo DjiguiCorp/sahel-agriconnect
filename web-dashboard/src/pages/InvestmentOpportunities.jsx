@@ -174,7 +174,7 @@ function trackBadge(opp, t) {
 
 export default function InvestmentOpportunities() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const filters = useMemo(
     () => [
       { id: 'all', label: t('afriYield.filterAll') },
@@ -200,6 +200,7 @@ export default function InvestmentOpportunities() {
   const [meetingSubmitting, setMeetingSubmitting] = useState(false);
   const [meetingBanner, setMeetingBanner] = useState(null);
   const [meetingError, setMeetingError] = useState(null);
+  const [isUsingSampleData, setIsUsingSampleData] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -212,11 +213,16 @@ export default function InvestmentOpportunities() {
         if (!cancelled && r.ok && Array.isArray(list) && list.length > 0) {
           setApiRows(list.map(normalizeApiOpportunity));
           setUseApi(true);
+          setIsUsingSampleData(false);
         } else if (!cancelled) {
           setUseApi(false);
+          setIsUsingSampleData(true);
         }
       } catch {
-        if (!cancelled) setUseApi(false);
+        if (!cancelled) {
+          setUseApi(false);
+          setIsUsingSampleData(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -259,8 +265,8 @@ export default function InvestmentOpportunities() {
         }),
       });
       if (!r.ok) {
-        const t = await r.text();
-        throw new Error(t || 'Request failed');
+        const errBody = await r.text();
+        throw new Error(errBody || 'Request failed');
       }
       setMeetingBanner(t('afriYield.meetingSuccess'));
       setMeetingForm({ investorName: '', investorEmail: '', preferredDate: '', message: '' });
@@ -288,6 +294,18 @@ export default function InvestmentOpportunities() {
           </div>
         ) : (
           <>
+            {isUsingSampleData ? (
+              <div
+                className="rounded-xl p-4 mb-6 text-center"
+                style={{ background: '#fff9e6', border: '1px solid #B5850A' }}
+              >
+                <p className="text-[#1a3c2e] text-sm font-medium">
+                  {i18n.language === 'fr'
+                    ? '📋 Ces annonces sont des exemples. Les vraies opportunités vérifiées arrivent bientôt.'
+                    : '📋 These are sample listings. Real verified opportunities are coming soon.'}
+                </p>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2 justify-center mb-10">
               {filters.map((f) => (
                 <button

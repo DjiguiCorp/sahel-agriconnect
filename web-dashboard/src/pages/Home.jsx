@@ -21,51 +21,128 @@ import {
 } from 'lucide-react';
 
 const Home = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+
+  const problemCards = [
+    {
+      Icon: Wheat,
+      title: isFr ? 'Accès aux intrants' : 'Access to inputs',
+      text: isFr
+        ? "Facilite l'accès aux semences, fertilisants et équipements via les coopératives"
+        : 'Easier access to seeds, fertilizers, and equipment through cooperatives',
+    },
+    {
+      Icon: BarChart3,
+      title: isFr ? 'Traçabilité' : 'Traceability',
+      text: isFr
+        ? 'Suivi complet de la production à la consommation pour certification qualité'
+        : 'Full tracking from production to consumption for quality certification',
+    },
+    {
+      Icon: Globe,
+      title: isFr ? 'Accès aux marchés' : 'Market access',
+      text: isFr
+        ? 'Connexion directe aux marchés locaux, régionaux et internationaux'
+        : 'Direct connection to local, regional, and international markets',
+    },
+    {
+      Icon: Banknote,
+      title: isFr ? 'Financement' : 'Financing',
+      text: isFr
+        ? 'Financement sans prêt via diaspora et ressources locales'
+        : 'Non-loan financing via diaspora and local resources',
+    },
+    {
+      Icon: Factory,
+      title: isFr ? 'Transformation' : 'Processing',
+      text: isFr
+        ? 'Connexion aux centres de transformation pour valorisation des produits'
+        : 'Connection to processing centers to add value to crops',
+    },
+    {
+      Icon: Star,
+      title: isFr ? 'Certification' : 'Certification',
+      text: isFr
+        ? 'Support pour certification locale, régionale et internationale (FDA/USDA)'
+        : 'Support for local, regional, and international certification (FDA/USDA)',
+    },
+  ];
+
+  const keyFeatures = [
+    {
+      Icon: Users,
+      title: isFr ? 'Enregistrement agriculteurs' : 'Farmer registration',
+      text: isFr
+        ? 'Formulaire complet avec géolocalisation GPS, détection satellite des terres, et analyse de maladies des plantes.'
+        : 'Full form with GPS geolocation, satellite land detection, and plant disease analysis.',
+      to: '/dashboard',
+      link: isFr ? 'Accéder au Dashboard →' : 'Go to Dashboard →',
+    },
+    {
+      Icon: Handshake,
+      title: isFr ? 'Gestion coopératives' : 'Cooperative management',
+      text: isFr
+        ? 'Liste complète des coopératives, demandes de financement, et gestion des équipements partagés.'
+        : 'Full cooperative listings, funding requests, and shared equipment management.',
+      to: '/cooperatives',
+      link: isFr ? 'Voir les coopératives →' : 'View cooperatives →',
+    },
+    {
+      Icon: Globe,
+      title: isFr ? 'Partenariat diaspora' : 'Diaspora partnership',
+      text: isFr
+        ? 'Connexion entreprises diaspora (USA) avec centres de transformation locaux. Matching automatique par produits.'
+        : 'Connect USA diaspora businesses with local processing centers. Product-based matching.',
+      to: '/diaspora',
+      link: isFr ? 'Rejoindre la diaspora →' : 'Join the diaspora →',
+    },
+    {
+      Icon: Factory,
+      title: isFr ? 'Centres de transformation' : 'Processing centers',
+      text: isFr
+        ? 'Liste des centres avec certification (local/régional/FDA-USDA), demande de certification, représentation aux USA.'
+        : 'Centers with certification (local/regional/FDA-USDA), certification requests, US representation.',
+      to: '/centres-transformation',
+      link: isFr ? 'Voir les centres →' : 'View centers →',
+    },
+    {
+      Icon: BarChart3,
+      title: isFr ? 'Dashboard administratif' : 'Admin dashboard',
+      text: isFr
+        ? 'Vue temps réel des agriculteurs, gestion des coopératives, suivi des demandes et statistiques complètes.'
+        : 'Real-time farmer view, cooperative management, request tracking, and full statistics.',
+      to: '/admin/login',
+      link: isFr ? 'Accéder au dashboard →' : 'Open admin dashboard →',
+    },
+    {
+      Icon: Microscope,
+      title: isFr ? 'Outils agricoles' : 'Agricultural tools',
+      text: isFr
+        ? 'Diagnostic du sol, détection de maladies, Think Tank Solutions avec recommandations personnalisées.'
+        : 'Soil diagnostics, disease detection, Think Tank Solutions with tailored recommendations.',
+      to: '/diagnostic-sol',
+      link: isFr ? 'Utiliser les outils →' : 'Use the tools →',
+    },
+  ];
+
   return (
     <div>
       <Hero />
 
       <section className="section-container py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">Problèmes résolus</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">
+            {isFr ? 'Problèmes résolus' : 'Problems we solve'}
+          </h2>
           <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-            Sahel AgriConnect répond aux défis majeurs de l&apos;agriculture en Afrique de l&apos;Ouest et au-delà
+            {isFr
+              ? "Sahel AgriConnect répond aux défis majeurs de l'agriculture en Afrique de l'Ouest et au-delà"
+              : 'Sahel AgriConnect addresses the major challenges of agriculture across Africa'}
           </p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            {
-              Icon: Wheat,
-              title: 'Accès aux intrants',
-              text: 'Facilite l\'accès aux semences, fertilisants et équipements via les coopératives',
-            },
-            {
-              Icon: BarChart3,
-              title: 'Traçabilité',
-              text: 'Suivi complet de la production à la consommation pour certification qualité',
-            },
-            {
-              Icon: Globe,
-              title: 'Accès aux marchés',
-              text: 'Connexion directe aux marchés locaux, régionaux et internationaux',
-            },
-            {
-              Icon: Banknote,
-              title: 'Financement',
-              text: 'Financement sans prêt via diaspora et ressources locales',
-            },
-            {
-              Icon: Factory,
-              title: 'Transformation',
-              text: 'Connexion aux centres de transformation pour valorisation des produits',
-            },
-            {
-              Icon: Star,
-              title: 'Certification',
-              text: 'Support pour certification locale, régionale et internationale (FDA/USDA)',
-            },
-          ].map(({ Icon, title, text }) => (
+          {problemCards.map(({ Icon, title, text }) => (
             <div key={title} className="card">
               <div className="mb-4">
                 <IconCircle>
@@ -82,56 +159,17 @@ const Home = () => {
       <section className="bg-gray-100/80 py-16">
         <div className="section-container">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">Fonctionnalités clés</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">
+              {isFr ? 'Fonctionnalités clés' : 'Key features'}
+            </h2>
             <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-              Une plateforme complète pour transformer l&apos;agriculture en Afrique de l&apos;Ouest et au-delà
+              {isFr
+                ? 'Une plateforme complète pour transformer l\'agriculture en Afrique de l\'Ouest et au-delà'
+                : 'A full platform to transform agriculture across West Africa and beyond'}
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
-            {[
-              {
-                Icon: Users,
-                title: 'Enregistrement agriculteurs',
-                text: 'Formulaire complet avec géolocalisation GPS, détection satellite des terres, et analyse de maladies des plantes.',
-                to: '/dashboard',
-                link: 'Accéder au Dashboard →',
-              },
-              {
-                Icon: Handshake,
-                title: 'Gestion coopératives',
-                text: 'Liste complète des coopératives, demandes de financement, et gestion des équipements partagés.',
-                to: '/cooperatives',
-                link: 'Voir les coopératives →',
-              },
-              {
-                Icon: Globe,
-                title: 'Partenariat diaspora',
-                text: 'Connexion entreprises diaspora (USA) avec centres de transformation locaux. Matching automatique par produits.',
-                to: '/diaspora',
-                link: 'Rejoindre la diaspora →',
-              },
-              {
-                Icon: Factory,
-                title: 'Centres de transformation',
-                text: 'Liste des centres avec certification (local/régional/FDA-USDA), demande de certification, représentation aux USA.',
-                to: '/centres-transformation',
-                link: 'Voir les centres →',
-              },
-              {
-                Icon: BarChart3,
-                title: 'Dashboard administratif',
-                text: 'Vue temps réel des agriculteurs, gestion des coopératives, suivi des demandes et statistiques complètes.',
-                to: '/admin/login',
-                link: 'Accéder au dashboard →',
-              },
-              {
-                Icon: Microscope,
-                title: 'Outils agricoles',
-                text: 'Diagnostic du sol, détection de maladies, Think Tank Solutions avec recommandations personnalisées.',
-                to: '/diagnostic-sol',
-                link: 'Utiliser les outils →',
-              },
-            ].map(({ Icon, title, text, to, link }) => (
+            {keyFeatures.map(({ Icon, title, text, to, link }) => (
               <div key={title} className="card">
                 <div className="flex items-start gap-4">
                   <IconCircle className="mt-0.5">

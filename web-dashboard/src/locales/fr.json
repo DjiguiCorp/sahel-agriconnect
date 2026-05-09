@@ -22,6 +22,11 @@
   "nav": {
     "home": "Accueil",
     "about": "À propos",
+    "impact": "Impact",
+    "howItWorks": "Comment ça marche",
+    "afriYieldMenu": "AfriYield Exchange",
+    "afriYieldOverview": "Vue d'ensemble",
+    "opportunities": "Opportunités",
     "dashboard": "Dashboard",
     "contact": "Contact",
     "soilDiagnostic": "Diagnostic Sol",
@@ -34,6 +39,18 @@
   },
   "home": {
     "title": "Sahel AgriConnect",
+    "hero": {
+      "subtitle": "Digitalisation souveraine de l'agriculture",
+      "lead": "Plateforme innovante pour les petits producteurs en Afrique de l'Ouest et au-delà",
+      "stats": {
+        "panAfrican": "Plateforme panafricaine",
+        "sheaSesame": "Beurre de karité & sésame",
+        "live": "En ligne — rejoignez-nous en premier"
+      },
+      "joinCooperative": "Rejoindre le projet (coopérative)",
+      "downloadAppSoon": "Télécharger l'app — bientôt",
+      "statsAria": "Indicateurs clés du projet"
+    },
     "subtitle": "Digitalisation de l'agriculture pour l'Afrique de l'Ouest et au-delà",
     "projectTitle": "Sahel AgriConnect",
     "projectDescription": "Sahel AgriConnect est une plateforme africaine de digitalisation agricole, connectant les producteurs aux marchés locaux et internationaux, et permettant la souveraineté alimentaire à travers le continent.",

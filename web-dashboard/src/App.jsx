@@ -21,7 +21,6 @@ import PerksRequest from './components/farmer/PerksRequest';
 import TrainingBooking from './components/farmer/TrainingBooking';
 import IrrigationAssessment from './components/farmer/IrrigationAssessment';
 import ProductionOptimizer from './components/farmer/ProductionOptimizer';
-import SupabaseDataDashboard from './pages/SupabaseDataDashboard';
 import PlatformLicensing from './pages/PlatformLicensing';
 import CooperativeRegistration from './pages/CooperativeRegistration';
 import FarmerCertificationProgram from './pages/FarmerCertificationProgram';
@@ -36,6 +35,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import HowItWorks from './pages/HowItWorks';
 import InvestorRelations from './pages/InvestorRelations';
 import DeleteAccount from './pages/DeleteAccount';
+import NotFound from './pages/NotFound';
 import { useGeolocation } from './hooks/useGeolocation';
 
 function App() {
@@ -49,8 +49,6 @@ function App() {
           {/* Route admin login (sans header/footer) */}
           <Route path="/admin/login" element={<AdminLogin />} />
 
-          <Route path="/admin/donnees" element={<SupabaseDataDashboard />} />
-          
           {/* Routes admin protégées (sans header/footer) */}
           {/* Route principale du dashboard admin */}
           <Route
@@ -102,7 +100,7 @@ function App() {
             <Route path="equipment-fund" element={<EquipmentFund />} />
             <Route path="afri-yield/*" element={<AfriYieldLayout />} />
             {/* Route catch-all pour les routes non trouvées */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
           {/* Catch-all pour les routes admin non trouvées */}
           <Route path="/admin/*" element={<Navigate to="/admin/login" replace />} />

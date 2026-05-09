@@ -1,140 +1,134 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-const Footer = () => {
+export default function Footer() {
   const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+
   return (
-    <footer className="bg-brand-forest text-white">
-      <div className="section-container">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 py-12">
-          {/* About */}
-          <div>
-            <h3 className="text-xl font-bold mb-4">Sahel AgriConnect</h3>
-            <p className="text-gray-300 text-sm">
-              Plateforme de digitalisation souveraine de l&apos;agriculture en Afrique de l&apos;Ouest et au-delà.
+    <footer className="bg-[#1a3c2e] text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12">
+          {/* Brand */}
+          <div className="col-span-2 md:col-span-1">
+            <h3 className="text-xl font-bold mb-3">Sahel AgriConnect</h3>
+            <p className="text-gray-300 text-sm leading-relaxed mb-3">
+              {isFr
+                ? 'Plateforme africaine de digitalisation agricole, connectant les producteurs aux marchés mondiaux.'
+                : 'African agricultural digitization platform, connecting producers to global markets.'}
             </p>
-            <div className="mt-4">
-              <Link to="/how-it-works" className="text-gray-400 hover:text-white transition text-sm">
-                {i18n.language === 'fr' ? 'Comment ça marche' : 'How It Works'}
-              </Link>
+            <div className="flex flex-col gap-1">
+              <a
+                href="https://djiguicorporation.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-400 hover:text-[#B5850A] transition"
+              >
+                djiguicorporation.org ↗
+              </a>
+              <a
+                href="https://isacoultess.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-400 hover:text-[#B5850A] transition"
+              >
+                isacoultess.com ↗
+              </a>
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Platform links */}
           <div>
-            <h4 className="font-semibold mb-4">Liens rapides</h4>
+            <h4 className="font-semibold mb-4 text-white">{isFr ? 'Plateforme' : 'Platform'}</h4>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/" className="text-gray-300 hover:text-white transition-colors">
-                  Accueil
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="text-gray-300 hover:text-white transition-colors">
-                  À propos
-                </Link>
-              </li>
-              <li>
-                <Link to="/impact" className="text-gray-300 hover:text-white transition-colors">
-                  Impact &amp; Métriques
-                </Link>
-              </li>
-              <li>
-                <Link to="/dashboard" className="text-gray-300 hover:text-white transition-colors">
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link to="/diagnostic-sol" className="text-gray-300 hover:text-white transition-colors">
-                  Diagnostic Sol
-                </Link>
-              </li>
-              <li>
-                <Link to="/detection-maladies" className="text-gray-300 hover:text-white transition-colors">
-                  Détection Maladies
-                </Link>
-              </li>
-              <li>
-                <Link to="/think-tank" className="text-gray-300 hover:text-white transition-colors">
-                  Think Tank
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-gray-300 hover:text-white transition-colors">
-                  Contact
-                </Link>
-              </li>
+              {[
+                [isFr ? 'Accueil' : 'Home', '/'],
+                [isFr ? 'À propos' : 'About', '/about'],
+                ['Dashboard', '/dashboard'],
+                [isFr ? 'Coopératives' : 'Cooperatives', '/cooperatives'],
+                [isFr ? 'Diaspora' : 'Diaspora', '/diaspora'],
+                [isFr ? 'Tarifs' : 'Pricing', '/pricing'],
+                ['Impact', '/impact'],
+                [isFr ? 'Contact' : 'Contact', '/contact'],
+              ].map(([label, to]) => (
+                <li key={to}>
+                  <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* AfriYield Exchange */}
+          {/* AfriYield */}
           <div>
             <h4 className="font-semibold mb-4">
-              <Link to="/afri-yield" className="hover:text-white transition-colors">
+              <Link to="/afri-yield" className="text-[#B5850A] hover:text-yellow-400 transition">
                 AfriYield Exchange
               </Link>
             </h4>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li>Zones : Afrique de l&apos;Ouest et au-delà</li>
-              <li>Objectif : Souveraineté alimentaire</li>
-              <li className="pt-2">
-                <Link to="/afri-yield/updates" className="text-gray-400 hover:text-white transition text-sm">
-                  {i18n.language === 'fr' ? 'Mises à jour investisseurs' : 'Investor Updates'}
-                </Link>
-              </li>
-              <li>
-                <Link to="/investor-relations" className="text-gray-400 hover:text-white transition text-sm">
-                  {i18n.language === 'fr' ? 'Relations investisseurs' : 'Investor Relations'}
-                </Link>
-              </li>
+            <ul className="space-y-2 text-sm">
+              {[
+                [isFr ? 'Opportunités' : 'Opportunities', '/afri-yield/opportunities'],
+                [isFr ? 'Marketplace' : 'Marketplace', '/afri-yield/marketplace'],
+                [isFr ? "S'inscrire investisseur" : 'Register as Investor', '/afri-yield/register'],
+                [isFr ? 'Mon portail' : 'My Portal', '/afri-yield/portal'],
+                [isFr ? 'Mises à jour' : 'Investor Updates', '/afri-yield/updates'],
+                [isFr ? 'Relations investisseurs' : 'Investor Relations', '/investor-relations'],
+                [isFr ? 'Comment ça marche' : 'How It Works', '/how-it-works'],
+              ].map(([label, to]) => (
+                <li key={to}>
+                  <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Partners */}
+          {/* Tools & Legal */}
           <div>
-            <h4 className="font-semibold mb-4">Partenaires</h4>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li>Diaspora Investors Network</li>
-              <li>Djigui</li>
-              <li>Universités US</li>
+            <h4 className="font-semibold mb-4 text-white">{isFr ? 'Outils & Légal' : 'Tools & Legal'}</h4>
+            <ul className="space-y-2 text-sm">
+              {[
+                [isFr ? 'Diagnostic Sol' : 'Soil Diagnosis', '/diagnostic-sol'],
+                [isFr ? 'Détection Maladies' : 'Disease Detection', '/detection-maladies'],
+                ['Think Tank', '/think-tank'],
+                [isFr ? 'Traçabilité' : 'Traceability', '/trace'],
+                [isFr ? 'Gouvernance' : 'Governance', '/governance'],
+                [isFr ? "Conditions d'utilisation" : 'Terms of Service', '/terms'],
+                [isFr ? 'Confidentialité' : 'Privacy Policy', '/privacy'],
+                [isFr ? 'Supprimer mon compte' : 'Delete Account', '/delete-account'],
+              ].map(([label, to]) => (
+                <li key={to}>
+                  <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-1 mt-2">
-          <a
-            href="https://djiguicorporation.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-gray-500 hover:text-[#B5850A] transition"
-          >
-            djiguicorporation.org ↗
-          </a>
-          <a
-            href="https://isacoultess.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-gray-500 hover:text-[#B5850A] transition ml-0 sm:ml-4"
-          >
-            isacoultess.com ↗
-          </a>
-        </div>
-
-        <div className="border-t border-white/10 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-400">
-          <span>© 2026 Djigui Corporation. Tous droits réservés.</span>
-          <div className="flex gap-4">
-            <Link to="/terms" className="hover:text-white transition">Conditions d&apos;utilisation</Link>
-            <Link to="/privacy" className="hover:text-white transition">Politique de confidentialité</Link>
-            <Link to="/impact" className="hover:text-white transition">Impact &amp; Métriques</Link>
-            <Link to="/delete-account" className="hover:text-white transition text-xs text-gray-500">
-              {i18n.language === 'fr' ? 'Supprimer mon compte' : 'Delete Account'}
+        {/* Bottom bar */}
+        <div className="border-t border-white/10 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-gray-400 text-xs">
+            © {new Date().getFullYear()} Djigui Corporation.{' '}
+            {isFr ? 'Tous droits réservés.' : 'All rights reserved.'}
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Link to="/terms" className="text-xs text-gray-500 hover:text-white transition">
+              {isFr ? 'Conditions' : 'Terms'}
+            </Link>
+            <Link to="/privacy" className="text-xs text-gray-500 hover:text-white transition">
+              {isFr ? 'Confidentialité' : 'Privacy'}
+            </Link>
+            <Link to="/investor-relations" className="text-xs text-gray-500 hover:text-white transition">
+              {isFr ? 'Relations investisseurs' : 'Investor Relations'}
             </Link>
           </div>
         </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
-
+}

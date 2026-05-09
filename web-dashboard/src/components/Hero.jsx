@@ -1,12 +1,23 @@
+import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sprout } from 'lucide-react';
 
-const stats = [
-  { value: '🌍', label: 'Pan-African platform' },
-  { value: '🌾', label: 'Shea Butter & Sesame' },
-  { value: '🚀', label: 'Now live — join first' },
-];
-
 const Hero = () => {
+  const { t } = useTranslation();
+  const stats = useMemo(
+    () => [
+      { value: '🌍', label: t('home.hero.stats.panAfrican') },
+      { value: '🌾', label: t('home.hero.stats.sheaSesame') },
+      { value: '🚀', label: t('home.hero.stats.live') },
+    ],
+    [t]
+  );
+
+  const scrollToWaitlist = () => {
+    document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-brand-forest via-primary-lightgreen to-brand-sage text-white py-16 md:py-24">
       <div className="section-container py-8 md:py-12">
@@ -18,16 +29,14 @@ const Hero = () => {
             Sahel AgriConnect
           </h1>
           <p className="text-xl md:text-2xl mb-3 text-brand-cream/95 font-medium">
-            Digitalisation souveraine de l&apos;agriculture
+            {t('home.hero.subtitle')}
           </p>
-          <p className="text-lg mb-10 text-white/90 max-w-2xl mx-auto">
-            Plateforme innovante pour les petits producteurs en Afrique de l&apos;Ouest et au-delà
-          </p>
+          <p className="text-lg mb-10 text-white/90 max-w-2xl mx-auto">{t('home.hero.lead')}</p>
 
           <div
             className="mb-10 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-0 max-w-3xl mx-auto border-y sm:border-y-0 border-white/20 py-6 sm:py-0"
             role="region"
-            aria-label="Indicateurs clés du projet"
+            aria-label={t('home.hero.statsAria')}
           >
             {stats.map((stat, i) => (
               <div
@@ -44,24 +53,24 @@ const Hero = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="#rejoindre"
+            <Link
+              to="/cooperative-registration"
               className="inline-flex items-center justify-center rounded-lg bg-brand-cream px-6 py-3 font-semibold text-brand-forest shadow-lg transition hover:bg-white"
             >
-              Rejoindre le projet
-            </a>
+              {t('home.hero.joinCooperative')}
+            </Link>
             <button
               type="button"
-              onClick={() => document.getElementById('waitlist-form').scrollIntoView({ behavior: 'smooth' })}
+              onClick={scrollToWaitlist}
               className="inline-flex items-center justify-center rounded-lg bg-brand-amber px-6 py-3 font-semibold text-brand-forest shadow-lg transition hover:bg-brand-amberDeep"
             >
-              Télécharger l&apos;app — bientôt
+              {t('home.hero.downloadAppSoon')}
             </button>
           </div>
 
           <div id="waitlist-form" className="mt-12 max-w-md mx-auto">
             <p className="text-white/80 text-sm text-center mb-3">
-              Soyez notifié au lancement de l'application mobile
+              Soyez notifié au lancement de l&apos;application mobile
             </p>
             <form
               onSubmit={async (e) => {
@@ -70,7 +79,7 @@ const Hero = () => {
                 await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/waitlist`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email })
+                  body: JSON.stringify({ email }),
                 });
                 e.target.reset();
                 alert('Merci ! Vous serez notifié au lancement.');
@@ -84,8 +93,11 @@ const Hero = () => {
                 placeholder="Votre email"
                 className="flex-1 rounded-lg px-4 py-2 text-brand-forest text-sm outline-none"
               />
-              <button type="submit" className="bg-brand-amber text-brand-forest font-semibold px-4 py-2 rounded-lg text-sm hover:bg-brand-amberDeep transition">
-                S'inscrire
+              <button
+                type="submit"
+                className="bg-brand-amber text-brand-forest font-semibold px-4 py-2 rounded-lg text-sm hover:bg-brand-amberDeep transition"
+              >
+                S&apos;inscrire
               </button>
             </form>
           </div>

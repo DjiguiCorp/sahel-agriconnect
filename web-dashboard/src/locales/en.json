@@ -22,6 +22,11 @@
   "nav": {
     "home": "Home",
     "about": "About",
+    "impact": "Impact",
+    "howItWorks": "How It Works",
+    "afriYieldMenu": "AfriYield Exchange",
+    "afriYieldOverview": "Overview",
+    "opportunities": "Opportunities",
     "dashboard": "Dashboard",
     "contact": "Contact",
     "soilDiagnostic": "Soil Diagnostic",
@@ -34,6 +39,18 @@
   },
   "home": {
     "title": "Sahel AgriConnect",
+    "hero": {
+      "subtitle": "Sovereign digitization of agriculture",
+      "lead": "An innovative platform for smallholder farmers across West Africa and beyond",
+      "stats": {
+        "panAfrican": "Pan-African platform",
+        "sheaSesame": "Shea Butter & Sesame",
+        "live": "Now live — join first"
+      },
+      "joinCooperative": "Join as a cooperative",
+      "downloadAppSoon": "Download the app — coming soon",
+      "statsAria": "Project highlights"
+    },
     "subtitle": "Digitalization of agriculture across West Africa and beyond",
     "projectTitle": "Sahel AgriConnect",
     "projectDescription": "Sahel AgriConnect is an African agricultural digitization platform, connecting producers to local and international markets and enabling food sovereignty across the continent.",
