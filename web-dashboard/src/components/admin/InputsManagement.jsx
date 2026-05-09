@@ -1,82 +1,77 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const InputsManagement = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [stock, setStock] = useState([]);
+  const [distributions, setDistributions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-  // Données mockées
-  const [stock] = useState([
-    {
-      id: 1,
-      type: 'Engrais',
-      nom: 'NPK 15-15-15',
-      quantite: '5000 kg',
-      unite: 'kg',
-      localisation: 'Entrepôt Central - Bamako',
-      dateReception: '2024-01-15',
-      dateExpiration: '2025-12-31'
-    },
-    {
-      id: 2,
-      type: 'Engrais',
-      nom: 'Urée',
-      quantite: '3000 kg',
-      unite: 'kg',
-      localisation: 'Entrepôt Central - Bamako',
-      dateReception: '2024-01-20',
-      dateExpiration: '2025-06-30'
-    },
-    {
-      id: 3,
-      type: 'Pesticide',
-      nom: 'Pesticide Biologique (Néem)',
-      quantite: '200 L',
-      unite: 'L',
-      localisation: 'Entrepôt Central - Bamako',
-      dateReception: '2024-02-01',
-      dateExpiration: '2025-12-31'
-    },
-    {
-      id: 4,
-      type: 'Semence',
-      nom: 'Semences de Riz Certifiées',
-      quantite: '1000 kg',
-      unite: 'kg',
-      localisation: 'Entrepôt Central - Bamako',
-      dateReception: '2024-01-10',
-      dateExpiration: '2024-12-31'
-    },
-    {
-      id: 5,
-      type: 'Fertilisant',
-      nom: 'Compost de Fèces de Bétail',
-      quantite: '20 tonnes',
-      unite: 'tonnes',
-      localisation: 'Unité de Compostage - Sikasso',
-      dateReception: '2024-02-15',
-      dateExpiration: 'N/A'
-    }
-  ]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setLoadError(false);
+      const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+      const token = localStorage.getItem('adminToken');
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  const [distributions] = useState([
-    {
-      id: 1,
-      cooperative: 'Coopérative Agricole de Sikasso',
-      agriculteur: 'Amadou Diallo',
-      intrant: 'NPK 15-15-15',
-      quantite: '200 kg',
-      date: '2024-02-20',
-      statut: 'Distribué'
-    },
-    {
-      id: 2,
-      cooperative: 'Union des Producteurs de Sikasso',
-      agriculteur: 'Fatou Traoré',
-      intrant: 'Compost de Fèces de Bétail',
-      quantite: '5 tonnes',
-      date: '2024-02-22',
-      statut: 'En attente'
-    }
-  ]);
+      const [perksRes, statsRes] = await Promise.allSettled([
+        fetch(`${base}/api/perks`, { headers }),
+        fetch(`${base}/api/perks/stats/usage`, { headers }),
+      ]);
+
+      if (cancelled) return;
+
+      let anyFail = false;
+      let perks = [];
+
+      if (perksRes.status === 'fulfilled' && perksRes.value.ok) {
+        const json = await perksRes.value.json().catch(() => null);
+        perks = json?.perks || json?.items || json || [];
+        if (!Array.isArray(perks)) perks = [];
+      } else {
+        anyFail = true;
+      }
+
+      if (!(statsRes.status === 'fulfilled' && statsRes.value.ok)) {
+        anyFail = true;
+      }
+
+      const mappedStock = perks.map((perk) => ({
+        id: perk._id,
+        type: perk.type,
+        nom: perk.name || perk.description,
+        quantite: perk.quantity || '—',
+        unite: perk.unit || 'unité',
+        localisation: perk.location || 'Non spécifié',
+        dateReception: perk.createdAt,
+        dateExpiration: '—',
+      }));
+
+      const mappedDistributions = perks
+        .filter((perk) => perk.status === 'fulfilled' || perk.status === 'pending')
+        .map((perk) => ({
+          id: perk._id,
+          cooperative: perk.cooperativeName || '—',
+          agriculteur: perk.farmerName || '—',
+          intrant: perk.name || perk.type,
+          quantite: perk.quantity || '—',
+          date: perk.fulfilledAt || perk.updatedAt,
+          statut: perk.status === 'fulfilled' ? 'Distribué' : 'En attente',
+        }));
+
+      setStock(mappedStock);
+      setDistributions(mappedDistributions);
+      setLoadError(anyFail);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const categories = ['all', 'Engrais', 'Pesticide', 'Semence', 'Fertilisant'];
   const filteredStock = selectedCategory === 'all' 
@@ -89,6 +84,28 @@ const InputsManagement = () => {
         <h2 className="text-3xl font-bold text-primary-green mb-2">Gestion des Intrants et Fertilisants</h2>
         <p className="text-gray-600">Stock central et distribution aux coopératives et agriculteurs</p>
       </div>
+
+      <div
+        className="rounded-lg p-4 mb-6"
+        style={{ background: '#fff9e6', border: '1px solid #B5850A' }}
+      >
+        <p className="text-sm font-medium text-[#1a3c2e]">
+          Les intrants affichés correspondent aux demandes de avantages coopératifs. Le module de gestion de stock complet arrive en Phase 2.
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="card mb-6 flex items-center justify-center gap-3 py-10">
+          <Loader2 className="w-6 h-6 animate-spin text-primary-green" aria-hidden />
+          <span className="text-sm text-gray-600">Chargement…</span>
+        </div>
+      ) : null}
+
+      {!loading && loadError ? (
+        <div className="mb-6 p-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
+          Erreur de chargement — vérifiez la connexion au serveur
+        </div>
+      ) : null}
 
       {/* Filtres */}
       <div className="mb-6 flex flex-wrap gap-2">

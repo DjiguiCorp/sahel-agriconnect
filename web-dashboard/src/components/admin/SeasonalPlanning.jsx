@@ -1,65 +1,63 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const SeasonalPlanning = () => {
   const [selectedSeason, setSelectedSeason] = useState('rainy');
+  const [farmers, setFarmers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-  // Données mockées
-  const [farmers] = useState([
-    {
-      id: 1,
-      nom: 'Amadou Diallo',
-      region: 'Sikasso, Mali',
-      saison: 'rainy',
-      cultures: ['Riz', 'Mil'],
-      superficie: '12 ha',
-      besoins: {
-        intrants: 'Semences de riz (50 kg), Engrais NPK (200 kg)',
-        fertilisants: 'Compost de fèces de bétail (5 tonnes)',
-        pesticides: 'Pesticides biologiques (néem)'
-      },
-      sol: {
-        type: 'Argileux',
-        pH: 6.2,
-        sante: 'Moyenne'
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setLoadError(false);
+      const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+      const url = `${base}/api/farmers?limit=50`;
+
+      const deriveSeason = (country) => {
+        const c = String(country || '').trim();
+        return ['Mali', 'Burkina Faso', 'Niger'].includes(c) ? 'rainy' : 'dry';
+      };
+
+      const mapFarmer = (farmer) => ({
+        id: farmer._id || farmer.id,
+        nom: farmer.nom,
+        region: `${farmer.region}, ${farmer.country}`,
+        saison: deriveSeason(farmer.country),
+        cultures: Array.isArray(farmer.cultures) ? farmer.cultures : [],
+        superficie: `${farmer.superficie} ha`,
+        besoins: { intrants: '—', fertilisants: '—', pesticides: '—' },
+        sol: { type: '—', pH: '—', sante: '—' },
+      });
+
+      try {
+        const publicRes = await fetch(url);
+        if (!cancelled && publicRes.ok) {
+          const json = await publicRes.json().catch(() => null);
+          const list = json?.farmers || json || [];
+          setFarmers(Array.isArray(list) ? list.map(mapFarmer) : []);
+        } else if (!cancelled && (publicRes.status === 401 || publicRes.status === 403)) {
+          const token = localStorage.getItem('adminToken');
+          const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+          const res2 = await fetch(url, { headers });
+          if (!res2.ok) throw new Error('Auth required');
+          const json2 = await res2.json().catch(() => null);
+          const list2 = json2?.farmers || json2 || [];
+          setFarmers(Array.isArray(list2) ? list2.map(mapFarmer) : []);
+        } else if (!cancelled) {
+          setLoadError(true);
+        }
+      } catch {
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    },
-    {
-      id: 2,
-      nom: 'Fatou Traoré',
-      region: 'Bobo-Dioulasso, Burkina Faso',
-      saison: 'dry',
-      cultures: ['Tomate', 'Oignon'],
-      superficie: '8 ha',
-      besoins: {
-        intrants: 'Semences de tomate (2 kg), Système irrigation',
-        fertilisants: 'Compost organique (3 tonnes)',
-        pesticides: 'Fongicides préventifs'
-      },
-      sol: {
-        type: 'Limoneux',
-        pH: 6.8,
-        sante: 'Bonne'
-      }
-    },
-    {
-      id: 3,
-      nom: 'Ibrahim Konaté',
-      region: 'Ségou, Mali',
-      saison: 'rainy',
-      cultures: ['Sorgho', 'Maïs'],
-      superficie: '15 ha',
-      besoins: {
-        intrants: 'Semences de sorgho (30 kg), Engrais azoté',
-        fertilisants: 'Fumier organique (8 tonnes)',
-        pesticides: 'Traitement préventif'
-      },
-      sol: {
-        type: 'Sableux',
-        pH: 5.8,
-        sante: 'Faible'
-      }
-    }
-  ]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getSoilRecommendations = (farmer) => {
     const recommendations = [];
@@ -111,6 +109,19 @@ const SeasonalPlanning = () => {
           ☀️ Hors Saison
         </button>
       </div>
+
+      {loading ? (
+        <div className="card mb-6 flex items-center justify-center gap-3 py-10">
+          <Loader2 className="w-6 h-6 animate-spin text-primary-green" aria-hidden />
+          <span className="text-sm text-gray-600">Chargement…</span>
+        </div>
+      ) : null}
+
+      {!loading && loadError ? (
+        <div className="mb-6 p-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
+          Erreur de chargement — vérifiez la connexion au serveur
+        </div>
+      ) : null}
 
       {/* Liste des agriculteurs */}
       <div className="space-y-6">

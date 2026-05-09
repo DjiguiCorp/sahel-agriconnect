@@ -1,53 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const ReportsManagement = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
-  const [reports] = useState([
-    {
-      id: 1,
-      cooperative: 'Coopérative Agricole de Sikasso',
-      periode: 'Février 2024',
-      type: 'Mensuel',
-      defis: [
-        '10 agriculteurs sans irrigation solaire',
-        'Pertes post-récolte : 15%',
-        'Manque de stockage : 5 agriculteurs'
-      ],
-      solutions: [
-        'Installation de 3 systèmes d\'irrigation solaire prévus',
-        'Formation sur techniques de conservation',
-        'Construction d\'un entrepôt communautaire'
-      ],
-      statistiques: {
-        agriculteurs: 45,
-        production: '120 tonnes',
-        ventes: '95 tonnes',
-        pertes: '18 tonnes'
-      }
-    },
-    {
-      id: 2,
-      cooperative: 'Union des Producteurs de Sikasso',
-      periode: 'Trimestre 1 - 2024',
-      type: 'Trimestriel',
-      defis: [
-        'Accès limité à l\'énergie',
-        'Conservation des produits',
-        'Transport vers marchés'
-      ],
-      solutions: [
-        'Programme biogaz en cours',
-        'Amélioration des techniques de séchage',
-        'Partenariat transport avec coopérative voisine'
-      ],
-      statistiques: {
-        agriculteurs: 32,
-        production: '85 tonnes',
-        ventes: '72 tonnes',
-        pertes: '10 tonnes'
-      }
-    }
-  ]);
+  const [stats, setStats] = useState(null);
+  const [cooperatives, setCooperatives] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const [challenges] = useState([
     { type: 'Production', count: 5, description: 'Problèmes de rendement' },
@@ -58,6 +17,62 @@ const ReportsManagement = () => {
     { type: 'Énergie', count: 15, description: 'Accès limité à l\'électricité' },
     { type: 'Conservation', count: 9, description: 'Techniques de conservation insuffisantes' }
   ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setLoadError(false);
+      const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+      const token = localStorage.getItem('adminToken');
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+      const [statsRes, coopRes] = await Promise.allSettled([
+        fetch(`${base}/api/farmers/stats/summary`, { headers }),
+        fetch(`${base}/api/cooperatives`, { headers }),
+      ]);
+
+      if (cancelled) return;
+
+      let anyFail = false;
+
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        const json = await statsRes.value.json().catch(() => null);
+        setStats(json?.stats || json || null);
+      } else {
+        anyFail = true;
+      }
+
+      if (coopRes.status === 'fulfilled' && coopRes.value.ok) {
+        const json = await coopRes.value.json().catch(() => null);
+        const list = json?.cooperatives || json?.items || json || [];
+        setCooperatives(Array.isArray(list) ? list : []);
+      } else {
+        anyFail = true;
+      }
+
+      setLoadError(anyFail);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const reports = cooperatives.map((coop) => ({
+    id: coop._id || coop.id,
+    cooperative: coop.name,
+    periode: '—',
+    type: 'Mensuel',
+    defis: [],
+    solutions: [],
+    statistiques: {
+      agriculteurs: coop.memberCount || 0,
+      production: '—',
+      ventes: '—',
+      pertes: '—',
+    },
+  }));
 
   const filteredReports = selectedPeriod === 'all'
     ? reports
@@ -103,6 +118,43 @@ const ReportsManagement = () => {
           Trimestriels
         </button>
       </div>
+
+      {loading ? (
+        <div className="card mb-6 flex items-center justify-center gap-3 py-10">
+          <Loader2 className="w-6 h-6 animate-spin text-primary-green" aria-hidden />
+          <span className="text-sm text-gray-600">Chargement…</span>
+        </div>
+      ) : null}
+
+      {!loading && loadError ? (
+        <div className="mb-6 p-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
+          Erreur de chargement — vérifiez la connexion au serveur
+        </div>
+      ) : null}
+
+      {!loading && stats ? (
+        <div className="card mb-6">
+          <h3 className="text-2xl font-bold text-primary-green mb-4">📈 Statistiques Réelles</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-primary-blue">{stats.total ?? '—'}</div>
+              <div className="text-sm text-gray-600">Total</div>
+            </div>
+            <div className="p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{stats.actifs ?? '—'}</div>
+              <div className="text-sm text-gray-600">Actifs</div>
+            </div>
+            <div className="p-4 bg-orange-50 rounded-lg">
+              <div className="text-2xl font-bold text-primary-orange">{stats.enAttente ?? '—'}</div>
+              <div className="text-sm text-gray-600">En attente</div>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-gray-700">{stats.superficieTotale ?? '—'}</div>
+              <div className="text-sm text-gray-600">Superficie totale</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Dashboard des défis */}
       <div className="card mb-6">
