@@ -315,10 +315,10 @@ const Home = () => {
               Voir le dashboard admin
             </Link>
             <Link
-              to="/dashboard"
+              to="/inscription"
               className="inline-flex justify-center rounded-lg border-2 border-brand-forest bg-transparent px-6 py-3 font-semibold text-brand-forest hover:bg-brand-forest/10 transition"
             >
-              S&apos;inscrire comme agriculteur
+              {isFr ? "S'inscrire comme agriculteur" : 'Register as a farmer'}
             </Link>
           </div>
         </div>

@@ -28,6 +28,7 @@ import EquipmentFund from './pages/EquipmentFund';
 import AfriYieldLayout from './pages/AfriYieldLayout';
 import Pricing from './pages/Pricing';
 import ProducerDashboard from './pages/ProducerDashboard';
+import FarmerRegistrationPage from './pages/FarmerRegistrationPage';
 import ImpactReport from './pages/ImpactReport';
 import TraceabilityLookup from './pages/TraceabilityLookup';
 import TermsOfService from './pages/TermsOfService';
@@ -75,6 +76,7 @@ function App() {
             <Route path="about" element={<About />} />
             <Route path="impact" element={<ImpactReport />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="inscription" element={<FarmerRegistrationPage />} />
             <Route path="my-dashboard" element={<ProducerDashboard />} />
             <Route path="delete-account" element={<DeleteAccount />} />
             <Route path="trace/:batchNumber?" element={<TraceabilityLookup />} />
