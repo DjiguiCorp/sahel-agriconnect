@@ -1,76 +1,68 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 const CooperativesManagement = ({ globalCountryFilter = '' }) => {
   const [selectedCooperative, setSelectedCooperative] = useState(null);
   const [toolsUpdate, setToolsUpdate] = useState({});
 
-  // Données mockées des coopératives
-  const [cooperatives] = useState([
-    {
-      id: 1,
-      nom: 'Coopérative Agricole de Sikasso',
-      localisation: 'Sikasso, Mali',
-      responsable: 'Amadou Diallo',
-      membres: 45,
-      statut: 'Fonctionnelle',
-      outils: {
-        tracteurs: 2,
-        sechoirs: 3,
-        stockage: 'Oui',
-        irrigationSolaire: 'Partiel',
-        transformation: 'Oui'
-      }
-    },
-    {
-      id: 2,
-      nom: 'Union des Producteurs de Sikasso',
-      localisation: 'Sikasso, Mali',
-      responsable: 'Fatou Traoré',
-      membres: 32,
-      statut: 'Fonctionnelle',
-      outils: {
-        tracteurs: 1,
-        sechoirs: 2,
-        stockage: 'Oui',
-        irrigationSolaire: 'Non',
-        transformation: 'Non'
-      }
-    },
-    {
-      id: 3,
-      nom: 'Coopérative de Bobo-Dioulasso',
-      localisation: 'Bobo-Dioulasso, Burkina Faso',
-      responsable: 'Ibrahim Konaté',
-      membres: 58,
-      statut: 'Fonctionnelle',
-      outils: {
-        tracteurs: 3,
-        sechoirs: 4,
-        stockage: 'Oui',
-        irrigationSolaire: 'Oui',
-        transformation: 'Oui'
-      }
-    }
-  ]);
+  const [cooperatives, setCooperatives] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_BASE_URL;
+    const token = localStorage.getItem('adminToken');
+    const headers = { Authorization: `Bearer ${token}` };
+
+    fetch(`${base}/api/cooperatives/admin`, { headers })
+      .then((r) => r.json())
+      .then((data) => {
+        setCooperatives(data.cooperatives || data || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Erreur de chargement — vérifiez la connexion au serveur');
+        setLoading(false);
+      });
+  }, []);
 
   const handleToolUpdate = (coopId, tool, value) => {
-    setToolsUpdate(prev => ({
+    setToolsUpdate((prev) => ({
       ...prev,
       [coopId]: {
         ...prev[coopId],
-        [tool]: value
-      }
+        [tool]: value,
+      },
     }));
   };
 
-  const saveToolsUpdate = (coopId) => {
-    // Simulation de sauvegarde
-    alert(`Outils mis à jour pour la coopérative ${coopId}`);
-    setToolsUpdate(prev => {
-      const updated = { ...prev };
-      delete updated[coopId];
-      return updated;
-    });
+  const saveToolsUpdate = async (coopId) => {
+    const base = import.meta.env.VITE_API_BASE_URL;
+    const token = localStorage.getItem('adminToken');
+    const updates = toolsUpdate[coopId];
+    if (!updates) return;
+
+    try {
+      await fetch(`${base}/api/cooperatives/${coopId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ outils: updates }),
+      });
+      setCooperatives((prev) =>
+        prev.map((c) =>
+          c._id === coopId ? { ...c, outils: { ...c.outils, ...updates } } : c
+        )
+      );
+      setToolsUpdate((prev) => {
+        const updated = { ...prev };
+        delete updated[coopId];
+        return updated;
+      });
+    } catch {
+      alert('Erreur lors de la sauvegarde');
+    }
   };
 
   const filteredCoops = useMemo(() => {
@@ -78,6 +70,14 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
     const cf = globalCountryFilter.toLowerCase();
     return cooperatives.filter((c) => String(c.localisation || '').toLowerCase().includes(cf));
   }, [cooperatives, globalCountryFilter]);
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-700"></div>
+      </div>
+    );
+  if (error) return <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>;
 
   return (
     <div>
@@ -88,7 +88,7 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
 
       <div className="grid gap-6">
         {filteredCoops.map((coop) => (
-          <div key={coop.id} className="card">
+          <div key={coop._id} className="card">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
               <div>
                 <h3 className="text-xl font-bold text-primary-green mb-2">{coop.nom}</h3>
@@ -112,14 +112,16 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
                 </div>
               </div>
               <button
-                onClick={() => setSelectedCooperative(selectedCooperative === coop.id ? null : coop.id)}
+                onClick={() =>
+                  setSelectedCooperative(selectedCooperative === coop._id ? null : coop._id)
+                }
                 className="mt-4 md:mt-0 btn-secondary"
               >
-                {selectedCooperative === coop.id ? 'Masquer' : 'Vérifier outils'}
+                {selectedCooperative === coop._id ? 'Masquer' : 'Vérifier outils'}
               </button>
             </div>
 
-            {selectedCooperative === coop.id && (
+            {selectedCooperative === coop._id && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-primary-blue">
                 <h4 className="font-bold text-primary-blue mb-4">Checklist des Outils Disponibles</h4>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -127,36 +129,48 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={toolsUpdate[coop.id]?.tracteurs !== undefined 
-                          ? toolsUpdate[coop.id].tracteurs 
-                          : coop.outils.tracteurs > 0}
-                        onChange={(e) => handleToolUpdate(coop.id, 'tracteurs', e.target.checked)}
+                        checked={
+                          toolsUpdate[coop._id]?.tracteurs !== undefined
+                            ? toolsUpdate[coop._id].tracteurs
+                            : (coop.outils?.tracteurs ?? 0) > 0
+                        }
+                        onChange={(e) => handleToolUpdate(coop._id, 'tracteurs', e.target.checked)}
                         className="w-4 h-4 text-primary-orange"
                       />
-                      <span>Tracteurs ({coop.outils.tracteurs} disponible{coop.outils.tracteurs > 1 ? 's' : ''})</span>
+                      <span>
+                        Tracteurs ({coop.outils?.tracteurs ?? 0} disponible
+                        {(coop.outils?.tracteurs ?? 0) > 1 ? 's' : ''})
+                      </span>
                     </label>
                   </div>
                   <div>
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={toolsUpdate[coop.id]?.sechoirs !== undefined 
-                          ? toolsUpdate[coop.id].sechoirs 
-                          : coop.outils.sechoirs > 0}
-                        onChange={(e) => handleToolUpdate(coop.id, 'sechoirs', e.target.checked)}
+                        checked={
+                          toolsUpdate[coop._id]?.sechoirs !== undefined
+                            ? toolsUpdate[coop._id].sechoirs
+                            : (coop.outils?.sechoirs ?? 0) > 0
+                        }
+                        onChange={(e) => handleToolUpdate(coop._id, 'sechoirs', e.target.checked)}
                         className="w-4 h-4 text-primary-orange"
                       />
-                      <span>Séchoirs ({coop.outils.sechoirs} disponible{coop.outils.sechoirs > 1 ? 's' : ''})</span>
+                      <span>
+                        Séchoirs ({coop.outils?.sechoirs ?? 0} disponible
+                        {(coop.outils?.sechoirs ?? 0) > 1 ? 's' : ''})
+                      </span>
                     </label>
                   </div>
                   <div>
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={toolsUpdate[coop.id]?.stockage !== undefined 
-                          ? toolsUpdate[coop.id].stockage 
-                          : coop.outils.stockage === 'Oui'}
-                        onChange={(e) => handleToolUpdate(coop.id, 'stockage', e.target.checked)}
+                        checked={
+                          toolsUpdate[coop._id]?.stockage !== undefined
+                            ? toolsUpdate[coop._id].stockage
+                            : coop.outils?.stockage === 'Oui'
+                        }
+                        onChange={(e) => handleToolUpdate(coop._id, 'stockage', e.target.checked)}
                         className="w-4 h-4 text-primary-orange"
                       />
                       <span>Stockage sec/froid</span>
@@ -166,10 +180,14 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={toolsUpdate[coop.id]?.irrigationSolaire !== undefined 
-                          ? toolsUpdate[coop.id].irrigationSolaire 
-                          : coop.outils.irrigationSolaire === 'Oui'}
-                        onChange={(e) => handleToolUpdate(coop.id, 'irrigationSolaire', e.target.checked)}
+                        checked={
+                          toolsUpdate[coop._id]?.irrigationSolaire !== undefined
+                            ? toolsUpdate[coop._id].irrigationSolaire
+                            : coop.outils?.irrigationSolaire === 'Oui'
+                        }
+                        onChange={(e) =>
+                          handleToolUpdate(coop._id, 'irrigationSolaire', e.target.checked)
+                        }
                         className="w-4 h-4 text-primary-orange"
                       />
                       <span>Irrigation solaire</span>
@@ -179,20 +197,19 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={toolsUpdate[coop.id]?.transformation !== undefined 
-                          ? toolsUpdate[coop.id].transformation 
-                          : coop.outils.transformation === 'Oui'}
-                        onChange={(e) => handleToolUpdate(coop.id, 'transformation', e.target.checked)}
+                        checked={
+                          toolsUpdate[coop._id]?.transformation !== undefined
+                            ? toolsUpdate[coop._id].transformation
+                            : coop.outils?.transformation === 'Oui'
+                        }
+                        onChange={(e) => handleToolUpdate(coop._id, 'transformation', e.target.checked)}
                         className="w-4 h-4 text-primary-orange"
                       />
                       <span>Équipement de transformation</span>
                     </label>
                   </div>
                 </div>
-                <button
-                  onClick={() => saveToolsUpdate(coop.id)}
-                  className="mt-4 btn-primary"
-                >
+                <button onClick={() => saveToolsUpdate(coop._id)} className="mt-4 btn-primary">
                   Enregistrer les modifications
                 </button>
               </div>
@@ -205,4 +222,3 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
 };
 
 export default CooperativesManagement;
-

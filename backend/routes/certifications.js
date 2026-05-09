@@ -107,6 +107,35 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/certifications/stats/by-level - Statistiques par niveau (protégée admin)
+// Must be registered before /:id so "stats" is not captured as an ObjectId
+router.get('/stats/by-level', authenticateToken, async (req, res) => {
+  try {
+    const stats = await Certification.aggregate([
+      {
+        $group: {
+          _id: '$niveau',
+          total: { $sum: 1 },
+          conformes: {
+            $sum: { $cond: [{ $eq: ['$statut', 'Conforme'] }, 1, 0] },
+          },
+          enInspection: {
+            $sum: { $cond: [{ $eq: ['$statut', 'En inspection'] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      stats,
+    });
+  } catch (error) {
+    console.error('Erreur statistiques certifications:', error);
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des statistiques' });
+  }
+});
+
 // GET /api/certifications/:id - Détails d'une certification (protégée admin)
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -159,34 +188,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Erreur mise à jour certification:', error);
     res.status(500).json({ error: 'Erreur serveur lors de la mise à jour' });
-  }
-});
-
-// GET /api/certifications/stats/by-level - Statistiques par niveau (protégée admin)
-router.get('/stats/by-level', authenticateToken, async (req, res) => {
-  try {
-    const stats = await Certification.aggregate([
-      {
-        $group: {
-          _id: '$niveau',
-          total: { $sum: 1 },
-          conformes: {
-            $sum: { $cond: [{ $eq: ['$statut', 'Conforme'] }, 1, 0] }
-          },
-          enInspection: {
-            $sum: { $cond: [{ $eq: ['$statut', 'En inspection'] }, 1, 0] }
-          }
-        }
-      }
-    ]);
-
-    res.json({
-      success: true,
-      stats
-    });
-  } catch (error) {
-    console.error('Erreur statistiques certifications:', error);
-    res.status(500).json({ error: 'Erreur serveur lors de la récupération des statistiques' });
   }
 });
 

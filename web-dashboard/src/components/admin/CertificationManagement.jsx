@@ -1,68 +1,92 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const statTotalForLevel = (stats, levelId) => {
+  if (stats == null) return null;
+  if (Array.isArray(stats)) {
+    const row = stats.find((s) => s._id === levelId);
+    return row != null ? row.total : null;
+  }
+  if (typeof stats === 'object' && levelId in stats) return stats[levelId];
+  return null;
+};
 
 const CertificationManagement = () => {
   const [selectedLevel, setSelectedLevel] = useState('all');
 
-  // Données mockées
-  const [products] = useState([
-    {
-      id: 1,
-      producteur: 'Amadou Diallo',
-      produit: 'Riz Premium',
-      quantite: '5 tonnes',
-      niveau: 'local',
-      statut: 'En inspection',
-      dateInspection: '2024-03-15',
-      conformite: 'En attente'
-    },
-    {
-      id: 2,
-      producteur: 'Fatou Traoré',
-      produit: 'Beurre de Karité',
-      quantite: '500 kg',
-      niveau: 'regional',
-      statut: 'Conforme',
-      dateInspection: '2024-03-10',
-      conformite: 'Conforme CEDEAO'
-    },
-    {
-      id: 3,
-      producteur: 'Ibrahim Konaté',
-      produit: 'Sésame Bio',
-      quantite: '2 tonnes',
-      niveau: 'international',
-      statut: 'En inspection',
-      dateInspection: '2024-03-20',
-      conformite: 'En attente'
-    },
-    {
-      id: 4,
-      producteur: 'Aissata Ouédraogo',
-      produit: 'Mangue Premium',
-      quantite: '3 tonnes',
-      niveau: 'international',
-      statut: 'Conforme',
-      dateInspection: '2024-03-05',
-      conformite: 'Conforme UE/USDA'
-    }
-  ]);
+  const [products, setProducts] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_BASE_URL;
+    const token = localStorage.getItem('adminToken');
+    const headers = { Authorization: `Bearer ${token}` };
+
+    Promise.allSettled([
+      fetch(`${base}/api/certifications`, { headers }).then((r) => r.json()),
+      fetch(`${base}/api/certifications/stats/by-level`, { headers }).then((r) => r.json()),
+    ])
+      .then(([certResult, statsResult]) => {
+        if (certResult.status === 'fulfilled') {
+          setProducts(certResult.value.certifications || certResult.value || []);
+        }
+        if (statsResult.status === 'fulfilled') {
+          setStats(statsResult.value.stats || statsResult.value || null);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Erreur de chargement — vérifiez la connexion au serveur');
+        setLoading(false);
+      });
+  }, []);
 
   const levels = [
-    { id: 'all', label: 'Tous les niveaux', icon: '⭐' },
-    { id: 'local', label: 'Local', icon: '⭐', color: 'green' },
-    { id: 'regional', label: 'Régional (CEDEAO)', icon: '⭐⭐', color: 'orange' },
-    { id: 'international', label: 'International (UE/USDA)', icon: '⭐⭐⭐', color: 'blue' }
+    { id: 'all', label: 'Tous les niveaux', icon: '⭐', count: products.length },
+    {
+      id: 'local',
+      label: 'Local',
+      icon: '⭐',
+      color: 'green',
+      count: statTotalForLevel(stats, 'local') ?? products.filter((p) => p.niveau === 'local').length,
+    },
+    {
+      id: 'regional',
+      label: 'Régional (CEDEAO)',
+      icon: '⭐⭐',
+      color: 'orange',
+      count:
+        statTotalForLevel(stats, 'regional') ??
+        products.filter((p) => p.niveau === 'regional').length,
+    },
+    {
+      id: 'international',
+      label: 'International (UE/USDA)',
+      icon: '⭐⭐⭐',
+      color: 'blue',
+      count:
+        statTotalForLevel(stats, 'international') ??
+        products.filter((p) => p.niveau === 'international').length,
+    },
   ];
 
-  const filteredProducts = selectedLevel === 'all' 
-    ? products 
-    : products.filter(p => p.niveau === selectedLevel);
+  const filteredProducts =
+    selectedLevel === 'all' ? products : products.filter((p) => p.niveau === selectedLevel);
 
   const getStatusColor = (statut) => {
     if (statut === 'Conforme') return 'text-green-600 bg-green-100';
     if (statut === 'En inspection') return 'text-yellow-600 bg-yellow-100';
     return 'text-red-600 bg-red-100';
   };
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-700"></div>
+      </div>
+    );
+  if (error) return <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>;
 
   return (
     <div>
@@ -84,7 +108,9 @@ const CertificationManagement = () => {
             }`}
           >
             <div className="text-2xl mb-2">{level.icon}</div>
-            <div className="font-medium text-gray-900">{level.label}</div>
+            <div className="font-medium text-gray-900">
+              {level.label} ({level.count})
+            </div>
           </button>
         ))}
       </div>
@@ -107,23 +133,31 @@ const CertificationManagement = () => {
             </thead>
             <tbody>
               {filteredProducts.map((product) => (
-                <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr key={product._id || product.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-4 px-4 font-medium text-gray-900">{product.producteur}</td>
                   <td className="py-4 px-4 text-gray-700">{product.produit}</td>
                   <td className="py-4 px-4 font-semibold text-primary-green">{product.quantite}</td>
                   <td className="py-4 px-4">
-                    <span className={`px-2 py-1 rounded text-sm font-medium ${
-                      product.niveau === 'local' ? 'bg-green-100 text-green-800' :
-                      product.niveau === 'regional' ? 'bg-orange-100 text-orange-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {product.niveau === 'local' ? '⭐ Local' :
-                       product.niveau === 'regional' ? '⭐⭐ Régional' :
-                       '⭐⭐⭐ International'}
+                    <span
+                      className={`px-2 py-1 rounded text-sm font-medium ${
+                        product.niveau === 'local'
+                          ? 'bg-green-100 text-green-800'
+                          : product.niveau === 'regional'
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {product.niveau === 'local'
+                        ? '⭐ Local'
+                        : product.niveau === 'regional'
+                          ? '⭐⭐ Régional'
+                          : '⭐⭐⭐ International'}
                     </span>
                   </td>
                   <td className="py-4 px-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(product.statut)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(product.statut)}`}
+                    >
                       {product.statut}
                     </span>
                   </td>
@@ -291,4 +325,3 @@ const CertificationManagement = () => {
 };
 
 export default CertificationManagement;
-
