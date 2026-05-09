@@ -16,7 +16,7 @@ function getResend() {
   return resendSingleton;
 }
 
-const FROM_ADDRESS = 'notifications@sahelagriconnect.com'; // update after domain is connected
+const FROM_ADDRESS = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'contact@djiguicorporation.org';
 
 // ── INTERNAL ADMIN NOTIFICATIONS ──────────────────────────────────────

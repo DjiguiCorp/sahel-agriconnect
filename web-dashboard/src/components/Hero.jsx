@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sprout } from 'lucide-react';
 
 const Hero = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistDone, setWaitlistDone] = useState(false);
   const stats = useMemo(
     () => [
       { value: '🌍', label: t('home.hero.stats.panAfrican') },
@@ -70,36 +73,45 @@ const Hero = () => {
 
           <div id="waitlist-form" className="mt-12 max-w-md mx-auto">
             <p className="text-white/80 text-sm text-center mb-3">
-              Soyez notifié au lancement de l&apos;application mobile
+              {isFr ? "📱 Soyez notifié au lancement de l'application mobile" : '📱 Get notified when the mobile app launches'}
             </p>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const email = e.target.email.value;
-                await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/waitlist`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email }),
-                });
-                e.target.reset();
-                alert('Merci ! Vous serez notifié au lancement.');
-              }}
-              className="flex gap-2"
-            >
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="Votre email"
-                className="flex-1 rounded-lg px-4 py-2 text-brand-forest text-sm outline-none"
-              />
-              <button
-                type="submit"
-                className="bg-brand-amber text-brand-forest font-semibold px-4 py-2 rounded-lg text-sm hover:bg-brand-amberDeep transition"
+            {waitlistDone ? (
+              <p className="text-green-300 font-semibold text-center">
+                ✓ {isFr ? 'Merci\u00a0! Vous serez notifié au lancement.' : 'Thank you! You will be notified at launch.'}
+              </p>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/waitlist`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: waitlistEmail, source: 'hero_waitlist' }),
+                    });
+                  } catch {}
+                  setWaitlistDone(true);
+                  setWaitlistEmail('');
+                }}
+                className="flex gap-2"
               >
-                S&apos;inscrire
-              </button>
-            </form>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                  placeholder={isFr ? 'votre@email.com' : 'your@email.com'}
+                  className="flex-1 rounded-lg px-4 py-2 text-brand-forest text-sm outline-none"
+                />
+                <button
+                  type="submit"
+                  className="bg-brand-amber text-brand-forest font-semibold px-4 py-2 rounded-lg text-sm hover:bg-brand-amberDeep transition"
+                >
+                  {isFr ? "S'inscrire" : 'Notify me'}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </div>

@@ -21,9 +21,11 @@ services:
       - key: JWT_SECRET
         sync: false  # Vous devrez le configurer manuellement dans Render
       - key: ADMIN_EMAIL
-        value: admin@sahelagriconnect.org
+        value: info@djiguicorporation.org
       - key: ADMIN_PASSWORD
         sync: false  # Vous devrez le configurer manuellement dans Render
       - key: FRONTEND_URL
         sync: false  # Vous devrez le configurer après le déploiement du frontend
+      - key: FROM_EMAIL
+        value: onboarding@resend.dev
 
