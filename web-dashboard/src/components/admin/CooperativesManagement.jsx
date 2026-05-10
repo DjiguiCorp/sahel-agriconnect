@@ -1,22 +1,29 @@
 import { useEffect, useState, useMemo } from 'react';
+import { API_BASE_URL } from '../../config/api';
 
 const CooperativesManagement = ({ globalCountryFilter = '' }) => {
   const [selectedCooperative, setSelectedCooperative] = useState(null);
   const [toolsUpdate, setToolsUpdate] = useState({});
 
   const [cooperatives, setCooperatives] = useState([]);
+  const [pendingRegs, setPendingRegs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE_URL;
+    const base = API_BASE_URL.replace(/\/$/, '');
     const token = localStorage.getItem('adminToken');
     const headers = { Authorization: `Bearer ${token}` };
 
-    fetch(`${base}/api/cooperatives/admin`, { headers })
-      .then((r) => r.json())
-      .then((data) => {
-        setCooperatives(data.cooperatives || data || []);
+    Promise.all([
+      fetch(`${base}/api/cooperatives/admin`, { headers }).then((r) => r.json()),
+      fetch(`${base}/api/cooperatives/platform-registrations?status=pending`, { headers }).then((r) =>
+        r.json()
+      ),
+    ])
+      .then(([adminData, pendData]) => {
+        setCooperatives(adminData.cooperatives || adminData || []);
+        setPendingRegs(pendData.registrations || []);
         setLoading(false);
       })
       .catch(() => {
@@ -36,7 +43,7 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
   };
 
   const saveToolsUpdate = async (coopId) => {
-    const base = import.meta.env.VITE_API_BASE_URL;
+    const base = API_BASE_URL.replace(/\/$/, '');
     const token = localStorage.getItem('adminToken');
     const updates = toolsUpdate[coopId];
     if (!updates) return;
@@ -71,6 +78,12 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
     return cooperatives.filter((c) => String(c.localisation || '').toLowerCase().includes(cf));
   }, [cooperatives, globalCountryFilter]);
 
+  const filteredPending = useMemo(() => {
+    if (!globalCountryFilter) return pendingRegs;
+    const cf = globalCountryFilter.toLowerCase();
+    return pendingRegs.filter((r) => String(r.country || '').toLowerCase().includes(cf));
+  }, [pendingRegs, globalCountryFilter]);
+
   if (loading)
     return (
       <div className="flex items-center justify-center p-12">
@@ -85,6 +98,45 @@ const CooperativesManagement = ({ globalCountryFilter = '' }) => {
         <h2 className="text-3xl font-bold text-primary-green mb-2">Gestion des Coopératives</h2>
         <p className="text-gray-600">Suivi et gestion des coopératives locales</p>
       </div>
+
+      {filteredPending.length > 0 ? (
+        <div className="card mb-8 border-amber-200 bg-amber-50/50">
+          <h3 className="text-xl font-bold text-amber-900 mb-2">Inscriptions plateforme — en attente</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Source API :{' '}
+            <code className="text-xs bg-white px-1 rounded">GET /api/cooperatives/platform-registrations?status=pending</code>
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-amber-200 text-left">
+                  <th className="py-2 pr-3">Coopérative</th>
+                  <th className="py-2 pr-3">Pays / région</th>
+                  <th className="py-2 pr-3">Responsable</th>
+                  <th className="py-2 pr-3">Contact</th>
+                  <th className="py-2 pr-3">Membres</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPending.map((r) => (
+                  <tr key={r._id} className="border-b border-amber-100">
+                    <td className="py-3 pr-3 font-medium">{r.cooperativeName}</td>
+                    <td className="py-3 pr-3">
+                      {r.country} — {r.regionCity}
+                    </td>
+                    <td className="py-3 pr-3">{r.leaderName}</td>
+                    <td className="py-3 pr-3 text-gray-600">
+                      {r.email}
+                      {r.phone ? ` · ${r.phone}` : ''}
+                    </td>
+                    <td className="py-3 pr-3">{r.memberCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-6">
         {filteredCoops.map((coop) => (

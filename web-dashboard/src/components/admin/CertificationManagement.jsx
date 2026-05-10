@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { API_BASE_URL } from '../../config/api';
+import { Loader2 } from 'lucide-react';
 
 const statTotalForLevel = (stats, levelId) => {
   if (stats == null) return null;
@@ -10,6 +12,8 @@ const statTotalForLevel = (stats, levelId) => {
   return null;
 };
 
+const STATUT_OPTIONS = ['En attente', 'En inspection', 'Conforme', 'Non conforme'];
+
 const CertificationManagement = () => {
   const [selectedLevel, setSelectedLevel] = useState('all');
 
@@ -17,30 +21,64 @@ const CertificationManagement = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [savingId, setSavingId] = useState(null);
 
-  useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE_URL;
+  const loadCerts = useCallback(async () => {
+    const base = API_BASE_URL.replace(/\/$/, '');
     const token = localStorage.getItem('adminToken');
     const headers = { Authorization: `Bearer ${token}` };
 
-    Promise.allSettled([
+    const [certResult, statsResult] = await Promise.allSettled([
       fetch(`${base}/api/certifications`, { headers }).then((r) => r.json()),
       fetch(`${base}/api/certifications/stats/by-level`, { headers }).then((r) => r.json()),
-    ])
-      .then(([certResult, statsResult]) => {
-        if (certResult.status === 'fulfilled') {
-          setProducts(certResult.value.certifications || certResult.value || []);
-        }
-        if (statsResult.status === 'fulfilled') {
-          setStats(statsResult.value.stats || statsResult.value || null);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Erreur de chargement — vérifiez la connexion au serveur');
-        setLoading(false);
-      });
+    ]);
+
+    if (certResult.status === 'fulfilled') {
+      setProducts(certResult.value.certifications || certResult.value || []);
+    }
+    if (statsResult.status === 'fulfilled') {
+      setStats(statsResult.value.stats || statsResult.value || null);
+    }
   }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    loadCerts()
+      .catch(() => setError('Erreur de chargement — vérifiez la connexion au serveur'))
+      .finally(() => setLoading(false));
+  }, [loadCerts]);
+
+  const updateCertStatut = async (id, statut, notes) => {
+    const base = API_BASE_URL.replace(/\/$/, '');
+    const token = localStorage.getItem('adminToken');
+    setSavingId(id);
+    try {
+      const res = await fetch(`${base}/api/certifications/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ statut, notes }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Mise à jour impossible');
+      setProducts((prev) =>
+        prev.map((p) =>
+          (p._id || p.id) === id ? { ...p, statut, ...(notes !== undefined ? { notes } : {}) } : p
+        )
+      );
+      const statsRes = await fetch(`${base}/api/certifications/stats/by-level`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((r) => r.json());
+      setStats(statsRes.stats || statsRes || null);
+    } catch (e) {
+      alert(e.message || 'Erreur');
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   const levels = [
     { id: 'all', label: 'Tous les niveaux', icon: '⭐', count: products.length },
@@ -129,6 +167,7 @@ const CertificationManagement = () => {
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Statut</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Date Inspection</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Conformité</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions admin</th>
               </tr>
             </thead>
             <tbody>
@@ -161,8 +200,33 @@ const CertificationManagement = () => {
                       {product.statut}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-gray-600">{product.dateInspection}</td>
+                  <td className="py-4 px-4 text-gray-600">
+                    {product.dateInspection
+                      ? new Date(product.dateInspection).toLocaleDateString()
+                      : '—'}
+                  </td>
                   <td className="py-4 px-4 text-gray-600">{product.conformite}</td>
+                  <td className="py-4 px-4">
+                    <div className="flex flex-col sm:flex-row gap-2 items-start">
+                      <select
+                        className="rounded-lg border border-gray-200 px-2 py-1 text-sm max-w-[160px]"
+                        value={product.statut}
+                        disabled={savingId === (product._id || product.id)}
+                        onChange={(e) =>
+                          updateCertStatut(product._id || product.id, e.target.value, product.notes)
+                        }
+                      >
+                        {STATUT_OPTIONS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                      {savingId === (product._id || product.id) ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-primary-green shrink-0" aria-hidden />
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

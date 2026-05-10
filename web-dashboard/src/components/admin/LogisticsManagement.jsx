@@ -1,219 +1,363 @@
-import { useState } from 'react';
-import { useWebSocket } from '../../context/WebSocketContext';
-import { processorsByRegion } from '../../data/cooperativesData';
+import { useCallback, useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
 
-const LogisticsManagement = () => {
-  const { farmers } = useWebSocket();
-  const [selectedRegion, setSelectedRegion] = useState('all');
+function authHeaders() {
+  const token = localStorage.getItem('adminToken');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
-  // Simuler des suggestions de connexion
-  const generateSuggestions = () => {
-    const suggestions = [];
-    
-    farmers.forEach(farmer => {
-      if (farmer.region && processorsByRegion[farmer.region]) {
-        processorsByRegion[farmer.region].forEach(processor => {
-          // Vérifier si le produit du processeur correspond aux cultures de l'agriculteur
-          const farmerCultures = farmer.cultures?.toLowerCase() || '';
-          const processorProducts = processor.produitsAcceptes.map(p => p.toLowerCase()).join(' ');
-          
-          if (processorProducts.includes(farmerCultures.split(',')[0]?.toLowerCase() || '')) {
-            suggestions.push({
-              farmer: farmer.nom,
-              farmerRegion: farmer.region,
-              farmerProduct: farmerCultures.split(',')[0],
-              processor: processor.nom,
-              processorLocation: processor.localisation,
-              processorCapacity: processor.capaciteMax,
-              processorProducts: processor.produitsTransformes.join(', '),
-              distance: '~50 km' // Simulé
-            });
-          }
-        });
-      }
-    });
-    
-    return suggestions;
+const STATUTS = [
+  'pending',
+  'scheduled',
+  'in_transit',
+  'in_storage',
+  'in_transformation',
+  'completed',
+  'cancelled',
+];
+
+export default function LogisticsManagement() {
+  const [logistics, setLogistics] = useState([]);
+  const [farmers, setFarmers] = useState([]);
+  const [cooperatives, setCooperatives] = useState([]);
+  const [capacity, setCapacity] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [form, setForm] = useState({
+    farmerId: '',
+    cooperativeId: '',
+    origine: '',
+    destination: '',
+    produit: '',
+    quantite: '',
+    dateEnlevement: '',
+    dateLivraison: '',
+    notes: '',
+  });
+
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    const headers = authHeaders();
+    try {
+      const [logRes, farmRes, coopRes, capRes] = await Promise.all([
+        fetch(API_ENDPOINTS.LOGISTICS.BASE, { headers }),
+        fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=300`, { headers }),
+        fetch(`${API_BASE_URL}/api/cooperatives/admin`, { headers }),
+        fetch(API_ENDPOINTS.LOGISTICS.CAPACITY, { headers }),
+      ]);
+      const logJson = await logRes.json().catch(() => ({}));
+      const farmJson = await farmRes.json().catch(() => ({}));
+      const coopJson = await coopRes.json().catch(() => ({}));
+      const capJson = await capRes.json().catch(() => ({}));
+
+      setLogistics(logJson.logistics || []);
+      const fl = Array.isArray(farmJson) ? farmJson : farmJson.farmers || [];
+      setFarmers(fl);
+      setCooperatives(coopJson.cooperatives || []);
+      setCapacity(capJson.success ? capJson : null);
+    } catch {
+      setError('Erreur de chargement — vérifiez la connexion au serveur');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
+
+  const submitSchedule = async () => {
+    if (!form.farmerId || !form.origine.trim() || !form.destination.trim()) {
+      alert('Agriculteur, origine et destination sont requis.');
+      return;
+    }
+    setScheduling(true);
+    try {
+      const payload = {
+        type: 'transport',
+        farmerId: form.farmerId,
+        ...(form.cooperativeId ? { cooperativeId: form.cooperativeId } : {}),
+        transport: {
+          origine: { adresse: form.origine.trim() },
+          destination: { adresse: form.destination.trim() },
+          produit: form.produit.trim() || '—',
+          quantite: Math.max(1, parseFloat(String(form.quantite).replace(',', '.')) || 100),
+          unite: 'kg',
+          dateEnlevement: form.dateEnlevement ? new Date(form.dateEnlevement).toISOString() : new Date().toISOString(),
+          dateLivraison: form.dateLivraison
+            ? new Date(form.dateLivraison).toISOString()
+            : new Date(Date.now() + 86400000 * 3).toISOString(),
+        },
+        notes: form.notes.trim() || undefined,
+      };
+      const res = await fetch(API_ENDPOINTS.LOGISTICS.SCHEDULE, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.details || 'Échec');
+      setShowSchedule(false);
+      setForm({
+        farmerId: '',
+        cooperativeId: '',
+        origine: '',
+        destination: '',
+        produit: '',
+        quantite: '',
+        dateEnlevement: '',
+        dateLivraison: '',
+        notes: '',
+      });
+      await loadAll();
+    } catch (e) {
+      alert(e.message || 'Erreur');
+    } finally {
+      setScheduling(false);
+    }
   };
 
-  const suggestions = generateSuggestions();
-
-  const storageFacilities = [
-    {
-      id: 1,
-      nom: 'Entrepôt Central - Bamako',
-      type: 'Stockage sec/froid',
-      capacite: '500 tonnes',
-      localisation: 'Bamako, Mali',
-      statut: 'Disponible'
-    },
-    {
-      id: 2,
-      nom: 'Centre de Stockage - Sikasso',
-      type: 'Stockage sec',
-      capacite: '200 tonnes',
-      localisation: 'Sikasso, Mali',
-      statut: 'Disponible'
-    },
-    {
-      id: 3,
-      nom: 'Entrepôt - Bobo-Dioulasso',
-      type: 'Stockage sec/froid',
-      capacite: '300 tonnes',
-      localisation: 'Bobo-Dioulasso, Burkina Faso',
-      statut: 'Disponible'
+  const updateStatus = async (id, statut) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.LOGISTICS.UPDATE_STATUS(id), {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ statut, notes: `Statut: ${statut}` }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Échec');
+      await loadAll();
+    } catch (e) {
+      alert(e.message || 'Erreur');
     }
-  ];
+  };
 
-  const transportRoutes = [
-    {
-      id: 1,
-      origine: 'Sikasso, Mali',
-      destination: 'Bamako, Mali',
-      distance: '375 km',
-      type: 'Route',
-      frequence: 'Hebdomadaire',
-      produits: 'Riz, Karité, Mangue'
-    },
-    {
-      id: 2,
-      origine: 'Bobo-Dioulasso, Burkina Faso',
-      destination: 'Ouagadougou, Burkina Faso',
-      distance: '365 km',
-      type: 'Route',
-      frequence: 'Hebdomadaire',
-      produits: 'Sésame, Coton'
-    },
-    {
-      id: 3,
-      origine: 'Bamako, Mali',
-      destination: 'Port de Dakar, Sénégal',
-      distance: '1200 km',
-      type: 'Route + Port',
-      frequence: 'Mensuelle',
-      produits: 'Export international'
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12 gap-3 text-gray-600">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-green" aria-hidden />
+        <span>Chargement logistique…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>;
+  }
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-primary-green mb-2">Logistique et Solutions</h2>
-        <p className="text-gray-600">Cartographie des chaînes d'approvisionnement et suggestions de connexion</p>
-      </div>
-
-      {/* Suggestions de connexion */}
-      <div className="card mb-6">
-        <h3 className="text-2xl font-bold text-primary-green mb-4">💡 Suggestions de Connexion</h3>
-        <p className="text-gray-600 mb-4">
-          Connexions automatiques entre agriculteurs et processeurs locaux basées sur les produits et la localisation
-        </p>
-        <div className="space-y-4">
-          {suggestions.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">Aucune suggestion disponible pour le moment</p>
-          ) : (
-            suggestions.map((suggestion, idx) => (
-              <div key={idx} className="p-4 border border-gray-200 rounded-lg hover:border-primary-orange transition-colors">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h4 className="font-bold text-primary-green mb-2">
-                      {suggestion.farmer} → {suggestion.processor}
-                    </h4>
-                    <div className="grid md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Agriculteur :</span>
-                        <p className="font-medium">{suggestion.farmer}</p>
-                        <p className="text-gray-500">{suggestion.farmerRegion}</p>
-                        <p className="text-primary-green">Produit : {suggestion.farmerProduct}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Processeur :</span>
-                        <p className="font-medium">{suggestion.processor}</p>
-                        <p className="text-gray-500">{suggestion.processorLocation}</p>
-                        <p className="text-primary-orange">Capacité : {suggestion.processorCapacity} tonnes/mois</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 p-3 bg-blue-50 rounded">
-                      <p className="text-sm text-gray-700">
-                        <strong>💡 Suggestion :</strong> Connectez {suggestion.farmer} à {suggestion.processor} 
-                        (capacité {suggestion.processorCapacity} tonnes/mois) pour transformation de {suggestion.farmerProduct}.
-                        Distance estimée : {suggestion.distance}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <button className="mt-3 btn-primary text-sm">
-                  Créer la connexion
-                </button>
-              </div>
-            ))
-          )}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-primary-green mb-2">Logistique</h2>
+          <p className="text-gray-600">
+            Opérations réelles via <code className="text-xs bg-gray-100 px-1 rounded">GET/POST /api/logistics</code>
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowSchedule(true)}
+          className="rounded-xl bg-brand-forest text-white font-semibold px-4 py-2 hover:bg-[#143326]"
+        >
+          + Planifier transport
+        </button>
       </div>
 
-      {/* Stockage */}
-      <div className="card mb-6">
-        <h3 className="text-2xl font-bold text-primary-green mb-4">📦 Installations de Stockage</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          {storageFacilities.map((facility) => (
-            <div key={facility.id} className="p-4 border border-gray-200 rounded-lg">
-              <h4 className="font-bold text-primary-green mb-2">{facility.nom}</h4>
-              <div className="space-y-1 text-sm">
-                <p><span className="text-gray-600">Type :</span> <span className="font-medium">{facility.type}</span></p>
-                <p><span className="text-gray-600">Capacité :</span> <span className="font-medium">{facility.capacite}</span></p>
-                <p><span className="text-gray-600">Localisation :</span> <span className="font-medium">{facility.localisation}</span></p>
-                <p>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    facility.statut === 'Disponible' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {facility.statut}
-                  </span>
-                </p>
-              </div>
-            </div>
-          ))}
+      {capacity?.capacity ? (
+        <div className="card mb-6 grid md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Capacité stockage (API capacity)</p>
+            <p className="text-lg font-bold text-primary-green">
+              utilisé {capacity.capacity.storage?.used ?? '—'} — transformation{' '}
+              {capacity.capacity.transformation?.used ?? '—'}
+            </p>
+          </div>
+          <div className="text-sm text-gray-600">
+            Source: GET /api/logistics/capacity/planning
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      {/* Routes de transport */}
-      <div className="card">
-        <h3 className="text-2xl font-bold text-primary-green mb-4">🚚 Chaînes Logistiques</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Origine</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Destination</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Distance</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Fréquence</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Produits</th>
+      <div className="card mb-6 overflow-x-auto">
+        <h3 className="text-xl font-bold text-primary-green mb-4">Opérations planifiées</h3>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b-2 border-gray-200 text-left">
+              <th className="py-2 pr-3">Type</th>
+              <th className="py-2 pr-3">Statut</th>
+              <th className="py-2 pr-3">Agriculteur</th>
+              <th className="py-2 pr-3">Détails</th>
+              <th className="py-2 pr-3">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logistics.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-gray-500">
+                  Aucune opération. Créez un transport ci-dessus.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {transportRoutes.map((route) => (
-                <tr key={route.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-4 px-4 font-medium">{route.origine}</td>
-                  <td className="py-4 px-4 font-medium">{route.destination}</td>
-                  <td className="py-4 px-4">{route.distance}</td>
-                  <td className="py-4 px-4">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                      {route.type}
-                    </span>
+            ) : (
+              logistics.map((log) => (
+                <tr key={log._id} className="border-b border-gray-100">
+                  <td className="py-3 pr-3 font-medium">{log.type}</td>
+                  <td className="py-3 pr-3">
+                    <span className="px-2 py-1 rounded bg-gray-100 text-xs">{log.statut}</span>
                   </td>
-                  <td className="py-4 px-4">{route.frequence}</td>
-                  <td className="py-4 px-4 text-sm text-gray-600">{route.produits}</td>
+                  <td className="py-3 pr-3">
+                    {log.farmerId?.nom || log.farmerId || '—'}
+                  </td>
+                  <td className="py-3 pr-3 text-gray-600 max-w-xs truncate">
+                    {log.type === 'transport' && log.transport
+                      ? `${log.transport.origine?.adresse || '—'} → ${log.transport.destination?.adresse || '—'}`
+                      : log.notes || '—'}
+                  </td>
+                  <td className="py-3 pr-3">
+                    <select
+                      className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+                      value={log.statut}
+                      onChange={(e) => updateStatus(log._id, e.target.value)}
+                    >
+                      {STATUTS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
+
+      {showSchedule ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-primary-green mb-4">Planifier un transport</h3>
+            <div className="space-y-3 text-sm">
+              <label className="block">
+                <span className="text-gray-600">Agriculteur *</span>
+                <select
+                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  value={form.farmerId}
+                  onChange={(e) => setForm((p) => ({ ...p, farmerId: e.target.value }))}
+                >
+                  <option value="">—</option>
+                  {farmers.map((f) => (
+                    <option key={f._id || f.id} value={f._id || f.id}>
+                      {f.nom} — {f.region}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-gray-600">Coopérative (optionnel)</span>
+                <select
+                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  value={form.cooperativeId}
+                  onChange={(e) => setForm((p) => ({ ...p, cooperativeId: e.target.value }))}
+                >
+                  <option value="">—</option>
+                  {cooperatives.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.nom}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-gray-600">Origine *</span>
+                <input
+                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  value={form.origine}
+                  onChange={(e) => setForm((p) => ({ ...p, origine: e.target.value }))}
+                  placeholder="Ex: Ferme, région"
+                />
+              </label>
+              <label className="block">
+                <span className="text-gray-600">Destination *</span>
+                <input
+                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  value={form.destination}
+                  onChange={(e) => setForm((p) => ({ ...p, destination: e.target.value }))}
+                  placeholder="Ex: Entrepôt, processeur"
+                />
+              </label>
+              <label className="block">
+                <span className="text-gray-600">Produit</span>
+                <input
+                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  value={form.produit}
+                  onChange={(e) => setForm((p) => ({ ...p, produit: e.target.value }))}
+                />
+              </label>
+              <label className="block">
+                <span className="text-gray-600">Quantité (kg)</span>
+                <input
+                  type="number"
+                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  value={form.quantite}
+                  onChange={(e) => setForm((p) => ({ ...p, quantite: e.target.value }))}
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="text-gray-600">Enlèvement</span>
+                  <input
+                    type="datetime-local"
+                    className="mt-1 w-full rounded-lg border px-3 py-2"
+                    value={form.dateEnlevement}
+                    onChange={(e) => setForm((p) => ({ ...p, dateEnlevement: e.target.value }))}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-gray-600">Livraison</span>
+                  <input
+                    type="datetime-local"
+                    className="mt-1 w-full rounded-lg border px-3 py-2"
+                    value={form.dateLivraison}
+                    onChange={(e) => setForm((p) => ({ ...p, dateLivraison: e.target.value }))}
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <span className="text-gray-600">Notes</span>
+                <textarea
+                  className="mt-1 w-full rounded-lg border px-3 py-2 min-h-[60px]"
+                  value={form.notes}
+                  onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-xl border"
+                onClick={() => setShowSchedule(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={scheduling}
+                onClick={submitSchedule}
+                className="px-4 py-2 rounded-xl bg-brand-forest text-white font-semibold disabled:opacity-50"
+              >
+                {scheduling ? 'Envoi…' : 'Créer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
-};
-
-export default LogisticsManagement;
-
+}
