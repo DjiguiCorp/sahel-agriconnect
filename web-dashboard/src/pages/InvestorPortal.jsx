@@ -139,7 +139,11 @@ function AccessScreen({ onAccess, t }) {
       <div className="w-full max-w-[375px]">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <span className="text-2xl">🌍</span>
+            <img
+              src="/sahel-logo.png"
+              alt="Sahel AgriConnect"
+              className="h-10 w-10 rounded-lg object-cover"
+            />
             <span className="text-[#B5850A] font-bold text-xl tracking-wide">AfriYield Exchange</span>
           </div>
           <h1 className="font-bold text-2xl leading-snug mb-2" style={{ color: '#F5F0E8' }}>

@@ -6,7 +6,11 @@ export default function NotFound() {
   const isFr = i18n.language === 'fr';
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
-      <div className="text-8xl mb-6">🌾</div>
+      <img
+        src="/sahel-logo.png"
+        alt="Sahel AgriConnect"
+        className="h-20 w-20 rounded-2xl object-cover mx-auto mb-6 opacity-60"
+      />
       <h1 className="text-4xl font-bold text-[#1a3c2e] mb-3">404</h1>
       <p className="text-xl text-gray-600 mb-2">
         {isFr ? "Cette page n'existe pas" : 'This page does not exist'}

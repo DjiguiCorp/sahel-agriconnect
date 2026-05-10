@@ -82,10 +82,12 @@ const Header = () => {
     <header className="sticky top-0 z-50 bg-white shadow-md">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-50">
         <div className="flex items-center justify-between min-h-[4rem] gap-2">
-          <Link to="/" className="flex items-center space-x-2 shrink-0 min-w-0" onClick={closeMenu}>
-            <div className="w-12 h-12 bg-gradient-to-br from-brand-forest to-brand-sage rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">SA</span>
-            </div>
+          <Link to="/" className="flex items-center gap-3 flex-shrink-0" onClick={closeMenu}>
+            <img
+              src="/sahel-logo.png"
+              alt="Sahel AgriConnect"
+              className="h-12 w-12 rounded-xl object-cover"
+            />
             <span className="text-xl sm:text-2xl font-bold text-brand-forest truncate">
               Sahel AgriConnect
             </span>
