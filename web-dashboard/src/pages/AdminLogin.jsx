@@ -45,8 +45,12 @@ const AdminLogin = () => {
       <div className="max-w-md w-full">
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-brand-forest to-brand-sage rounded-lg flex items-center justify-center mx-auto mb-4">
-              <span className="text-white font-bold text-2xl">SA</span>
+            <div className="flex justify-center mb-4">
+              <img
+                src="/sahel-logo.png"
+                alt="Sahel AgriConnect"
+                className="h-16 w-16 rounded-xl object-cover"
+              />
             </div>
             <h1 className="text-3xl font-bold text-brand-forest mb-2">
               {t('admin.login.title')}

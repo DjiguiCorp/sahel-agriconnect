@@ -1052,9 +1052,11 @@ const CentralAdminDashboard = () => {
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Left: Logo and Title */}
             <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary-green to-primary-lightgreen rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg sm:text-xl">SA</span>
-              </div>
+              <img
+                src="/sahel-logo.png"
+                alt="Sahel AgriConnect"
+                className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg object-cover"
+              />
               <div className="hidden sm:block">
                 <h1 className="text-lg sm:text-xl font-bold text-primary-green">Central Admin</h1>
                 <p className="text-xs text-gray-500 hidden lg:block">Tableau de bord administratif</p>
