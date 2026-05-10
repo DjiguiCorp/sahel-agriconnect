@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe, Loader2, Check } from 'lucide-react';
@@ -60,26 +61,26 @@ export default function CooperativeRegistration() {
 
   const submit = async (e) => {
     e.preventDefault();
-    setState((s) => ({ ...s, loading: true, ok: false, err: '' }));
+    setState({ loading: true, ok: false, err: '' });
     try {
       const r = await fetch(API_ENDPOINTS.COOPERATIVES.REGISTER_PLATFORM, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, memberCount: Number(form.memberCount || 0) }),
+        body: JSON.stringify({
+          ...form,
+          memberCount: Number(form.memberCount || 0),
+        }),
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         throw new Error(j?.error || 'Request failed');
       }
+      if (form.email && form.leaderName) {
+        registerUser(form.email, form.leaderName);
+      }
       setState({ loading: false, ok: true, err: '' });
-      registerUser(form.email, form.leaderName);
     } catch (err) {
-      setState((s) => ({
-        ...s,
-        loading: false,
-        ok: false,
-        err: err.message || t('cooperativeReg.form.error'),
-      }));
+      setState({ loading: false, ok: false, err: err.message || 'Error' });
     }
   };
 
@@ -97,8 +98,8 @@ export default function CooperativeRegistration() {
         </div>
       </section>
 
-      {/* Benefits — keep exactly as is, only show on step 1 */}
-      {step === 1 && (
+      {/* Benefits — only before success, step 1 */}
+      {!state.ok && step === 1 && (
         <section className="section-container py-12 md:py-16">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {BENEFIT_KEYS.map((key, i) => {
@@ -183,65 +184,57 @@ export default function CooperativeRegistration() {
               <h2 className="text-2xl font-extrabold text-[#1a3c2e] mb-3">
                 {i18n.language === 'fr' ? 'Inscription reçue !' : 'Registration received!'}
               </h2>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">{t('cooperativeReg.form.success')}</p>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                {i18n.language === 'fr'
+                  ? 'Notre équipe activera votre compte dans les 48 heures et vous contactera par email et WhatsApp.'
+                  : 'Our team will activate your account within 48 hours and contact you by email and WhatsApp.'}
+              </p>
+
               {/* What happens next */}
-              <div className="text-left bg-[#F5F0E8] rounded-2xl p-6 mb-6">
-                <p className="font-bold text-[#1a3c2e] mb-4">
+              <div className="text-left bg-[#F5F0E8] rounded-2xl p-6 mb-6 border border-[#B5850A]/20">
+                <p className="font-bold text-[#1a3c2e] mb-4 text-sm">
                   {i18n.language === 'fr' ? '📋 Ce qui se passe ensuite :' : '📋 What happens next:'}
                 </p>
                 <div className="space-y-3">
                   {[
-                    {
-                      icon: '1️⃣',
-                      text:
-                        i18n.language === 'fr'
-                          ? 'Notre équipe examine votre dossier dans les 48 heures'
-                          : 'Our team reviews your application within 48 hours',
-                    },
-                    {
-                      icon: '2️⃣',
-                      text:
-                        i18n.language === 'fr'
-                          ? 'Vous recevez un email de confirmation avec les prochaines étapes'
-                          : 'You receive a confirmation email with next steps',
-                    },
-                    {
-                      icon: '3️⃣',
-                      text:
-                        i18n.language === 'fr'
-                          ? 'Votre coopérative est activée et visible sur la plateforme'
-                          : 'Your cooperative is activated and visible on the platform',
-                    },
-                    {
-                      icon: '4️⃣',
-                      text:
-                        i18n.language === 'fr'
-                          ? 'Accédez aux outils de gestion, certifications et investisseurs diaspora'
-                          : 'Access management tools, certifications, and diaspora investors',
-                    },
-                  ].map(({ icon, text }) => (
-                    <div key={text} className="flex items-start gap-3 text-sm text-gray-700">
-                      <span className="text-lg flex-shrink-0">{icon}</span>
+                    i18n.language === 'fr'
+                      ? 'Notre équipe examine votre dossier dans les 48 heures'
+                      : 'Our team reviews your application within 48 hours',
+                    i18n.language === 'fr'
+                      ? 'Vous recevez un email de confirmation avec les prochaines étapes'
+                      : 'You receive a confirmation email with next steps',
+                    i18n.language === 'fr'
+                      ? 'Votre coopérative est activée et visible sur la plateforme'
+                      : 'Your cooperative is activated and visible on the platform',
+                    i18n.language === 'fr'
+                      ? 'Accédez aux outils de gestion, certifications et investisseurs diaspora'
+                      : 'Access management tools, certifications and diaspora investors',
+                  ].map((text, i) => (
+                    <div key={i} className="flex items-start gap-3 text-sm text-gray-700">
+                      <span className="font-bold text-[#B5850A] flex-shrink-0">{i + 1}.</span>
                       <span>{text}</span>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* CTAs using Link from react-router-dom */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <a
-                  href="/my-dashboard"
+                <Link
+                  to="/my-dashboard"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm"
                   style={{ background: '#1a3c2e' }}
                 >
-                  {i18n.language === 'fr' ? 'Accéder à mon tableau de bord' : 'Go to my dashboard'}
-                </a>
-                <a
-                  href="/afri-yield"
+                  {i18n.language === 'fr' ? 'Mon tableau de bord' : 'My dashboard'}
+                </Link>
+                <Link
+                  to="/afri-yield"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition"
                 >
-                  {i18n.language === 'fr' ? 'Découvrir AfriYield Exchange' : 'Discover AfriYield Exchange'}
-                </a>
+                  AfriYield Exchange
+                </Link>
               </div>
+
               <p className="text-xs text-gray-400 mt-6">
                 {i18n.language === 'fr'
                   ? 'Pour supprimer votre compte, contactez-nous à info@djiguicorporation.org'
