@@ -4,13 +4,16 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CooperativesManagement from '../components/admin/CooperativesManagement';
 import CooperativesDiasporaManagement from '../components/admin/CooperativesDiasporaManagement';
-import SeasonalPlanning from '../components/admin/SeasonalPlanning';
 import InputsManagement from '../components/admin/InputsManagement';
-import CertificationManagement from '../components/admin/CertificationManagement';
 import PartnershipsManagement from '../components/admin/PartnershipsManagement';
 import ReportsManagement from '../components/admin/ReportsManagement';
 import RealTimeFarmers from '../components/admin/RealTimeFarmers';
-import LogisticsManagement from '../components/admin/LogisticsManagement';
+import {
+  PlanningTab,
+  CertificationTab,
+  LogisticsTab,
+  mergeCooperativeSources,
+} from '../components/admin/CentralAdminTabs';
 import CentersManagement from '../components/admin/CentersManagement';
 import PerksManagement from '../components/admin/PerksManagement';
 import TrainingsManagement from '../components/admin/TrainingsManagement';
@@ -154,9 +157,11 @@ function UrgentCard({ title, count, color, actionLabel, onAction }) {
 }
 
 function OverviewControlTower({ onGoTab }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const [cooperativesOverview, setCooperativesOverview] = useState([]);
 
   const [pendingFarmers, setPendingFarmers] = useState(0);
   const [pendingOpps, setPendingOpps] = useState(0);
@@ -340,6 +345,27 @@ function OverviewControlTower({ onGoTab }) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const h = authHeaders();
+    Promise.all([
+      fetch(`${API_BASE_URL}/api/cooperatives/admin`, { headers: h }).then((r) => r.json()),
+      fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations`, { headers: h }).then((r) => r.json()),
+    ])
+      .then(([a, b]) => {
+        if (cancelled) return;
+        setCooperativesOverview(
+          mergeCooperativeSources(a.cooperatives || [], b.registrations || [])
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setCooperativesOverview([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const createInvestor = async (e) => {
     e.preventDefault();
     setInvestorSaving(true);
@@ -460,6 +486,104 @@ function OverviewControlTower({ onGoTab }) {
                 <span className="text-xs text-gray-500 shrink-0">{e.ago}</span>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Cooperative Member Management — real API data */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-brand-forest text-lg">
+              🤝 {isFr ? 'Gestion des Membres — Coopératives' : 'Cooperative Member Management'}
+            </h3>
+            <p className="text-gray-500 text-xs mt-0.5">
+              {isFr ? 'Performance et avantages par coopérative' : 'Performance and benefits by cooperative'}
+            </p>
+          </div>
+          <Link to="/cooperatives" className="text-sm text-brand-forest font-semibold hover:underline">
+            {isFr ? 'Voir tout →' : 'View all →'}
+          </Link>
+        </div>
+
+        {cooperativesOverview.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-4xl mb-3">🤝</p>
+            <p className="text-gray-500 text-sm">
+              {isFr ? 'Aucune coopérative enregistrée.' : 'No cooperatives registered yet.'}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {cooperativesOverview.slice(0, 5).map((coop) => {
+              const memberCount = coop.memberCount || coop.nombreMembres || 0;
+              const certLevel = coop.certificationStatus || 'None';
+              const certScore =
+                certLevel === 'International' ? 100 : certLevel === 'Regional' ? 66 : certLevel === 'Local' ? 33 : 0;
+              return (
+                <div key={coop._id} className="px-5 py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-brand-forest">
+                        {coop.cooperativeName || coop.nomCooperative}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        🌍 {coop.country || coop.pays} · {memberCount}{' '}
+                        {isFr ? 'membres' : 'members'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          certLevel === 'International'
+                            ? 'bg-amber-50 text-amber-700'
+                            : certLevel === 'Regional'
+                              ? 'bg-blue-50 text-blue-700'
+                              : certLevel === 'Local'
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {certLevel === 'None'
+                          ? isFr
+                            ? 'Non certifiée'
+                            : 'Not certified'
+                          : certLevel}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                      <div
+                        className="h-1.5 rounded-full bg-gradient-to-r from-green-400 to-brand-forest transition-all"
+                        style={{ width: `${certScore}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-400">{isFr ? 'Parcours cert.' : 'Cert. path'}</span>
+                  </div>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {coop.interests?.includes('Equipment Fund') && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-brand-forest/10 text-brand-forest">
+                        🔧 {isFr ? 'Équipement' : 'Equipment'}
+                      </span>
+                    )}
+                    {coop.interests?.includes('Export Program') && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">🌍 Export</span>
+                    )}
+                    {coop.interests?.includes('Diaspora Investment') && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                        💰 {isFr ? 'Diaspora' : 'Diaspora'}
+                      </span>
+                    )}
+                    {(!coop.interests || coop.interests.length === 0) && (
+                      <span className="text-xs text-gray-400">
+                        {isFr ? 'Aucun avantage sélectionné' : 'No benefits selected'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -983,6 +1107,8 @@ function DeletionRequestsPanel({ onRequestsLoaded }) {
 
 const CentralAdminDashboard = () => {
   const { t, i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+  const adminToken = localStorage.getItem('adminToken') || '';
   const [activeTab, setActiveTab] = useState('overview');
   const [expertRequestsNewCount, setExpertRequestsNewCount] = useState(0);
   const [deletionRequestsPendingCount, setDeletionRequestsPendingCount] = useState(0);
@@ -1240,9 +1366,9 @@ const CentralAdminDashboard = () => {
           {activeTab === 'expertRequests' && (
             <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} globalCountryFilter={globalCountryFilter} />
           )}
-          {activeTab === 'seasonal' && <SeasonalPlanning />}
-          {activeTab === 'certification' && <CertificationManagement />}
-          {activeTab === 'logistics' && <LogisticsManagement />}
+          {activeTab === 'seasonal' && <PlanningTab token={adminToken} isFr={isFr} />}
+          {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
+          {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'reports' && <ReportsManagement />}
           {activeTab === 'afriyield' && <AfriYieldManagement />}
           {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}
