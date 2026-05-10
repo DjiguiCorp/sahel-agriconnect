@@ -17,7 +17,7 @@ import {
 import CentersManagement from '../components/admin/CentersManagement';
 import BenefitsTab from '../components/admin/BenefitsTab';
 import TrainingsManagement from '../components/admin/TrainingsManagement';
-import IrrigationManagement from '../components/admin/IrrigationManagement';
+import IrrigationTab from '../components/admin/IrrigationTab';
 import OptimizationTab from '../components/admin/OptimizationTab';
 import AfriYieldManagement from '../components/admin/AfriYieldManagement';
 import CountryLicensesManagement from '../components/admin/CountryLicensesManagement';
@@ -1363,7 +1363,7 @@ const CentralAdminDashboard = () => {
           {activeTab === 'trainings' && <TrainingsManagement />}
           {activeTab === 'governance' && <GovernanceTab isFr={isFr} />}
           {activeTab === 'perks' && <BenefitsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'irrigation' && <IrrigationManagement />}
+          {activeTab === 'irrigation' && <IrrigationTab token={adminToken} isFr={isFr} />}
           {activeTab === 'optimization' && (
             <OptimizationTab token={adminToken} isFr={isFr} />
           )}
