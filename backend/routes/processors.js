@@ -6,6 +6,26 @@ import { countryFilter } from '../middleware/countryFilter.js';
 
 const router = express.Router();
 
+// GET /api/processors/public-stats — public summary, no auth
+router.get('/public-stats', async (req, res) => {
+  try {
+    const total = await Processor.countDocuments();
+    const certified = await Processor.countDocuments({ certifie: true });
+    const byCountry = await Processor.aggregate([
+      { $group: { _id: '$country', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]);
+    const recent = await Processor.find()
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('nom region country statut certifie typesProduits createdAt')
+      .lean();
+    res.json({ success: true, total, certified, byCountry, recent });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/processors - Inscription d'un processeur (public)
 router.post('/', validateProcessor, async (req, res) => {
   try {

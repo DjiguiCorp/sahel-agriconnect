@@ -44,17 +44,20 @@ export const API_ENDPOINTS = {
     BASE: `${API_BASE_URL}/api/farmers`,
     BY_ID: (id) => `${API_BASE_URL}/api/farmers/${id}`,
     STATS: `${API_BASE_URL}/api/farmers/stats/summary`,
+    PUBLIC_STATS: `${API_BASE_URL}/api/farmers/public-stats`,
   },
   // Processeurs
   PROCESSORS: {
     BASE: `${API_BASE_URL}/api/processors`,
     BY_REGION: (region) => `${API_BASE_URL}/api/processors?region=${region}`,
+    PUBLIC_STATS: `${API_BASE_URL}/api/processors/public-stats`,
   },
   // Coopératives
   COOPERATIVES: {
     BASE: `${API_BASE_URL}/api/cooperatives`,
     BY_REGION: (region) => `${API_BASE_URL}/api/cooperatives?region=${region}`,
     REGISTER_PLATFORM: `${API_BASE_URL}/api/cooperatives/register-platform`,
+    PUBLIC_STATS: `${API_BASE_URL}/api/cooperatives/public-stats`,
   },
   // Certifications
   CERTIFICATIONS: {

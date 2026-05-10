@@ -291,43 +291,101 @@ export default function ImpactReport() {
         </div>
       </section>
 
-      {/* Section 5 — Download Resources */}
-      <section className="section-container py-14 pt-0 pb-20">
-        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-10">{t('impact.resources.title')}</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-extrabold text-[#1a3c2e]">{t('impact.resources.overview.title')}</h3>
-            <p className="mt-2 text-gray-700 text-sm">{t('impact.resources.overview.desc')}</p>
-            <Link
-              to="/contact"
-              state={{ subject: 'Platform Overview PDF' }}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1a3c2e] text-white font-extrabold py-2.5 hover:bg-[#143326]"
-            >
-              <Download className="w-4 h-4" aria-hidden />
-              {t('impact.resources.overview.cta')}
-            </Link>
+      <section className="section-container py-16">
+        <h2 className="text-3xl font-extrabold text-[#1a3c2e] text-center mb-4">
+          {isFr ? 'Ressources & Documentation' : 'Resources & Documentation'}
+        </h2>
+        <p className="text-gray-600 text-center mb-10 max-w-2xl mx-auto">
+          {isFr
+            ? "Accédez aux informations clés de la plateforme, aux politiques de gouvernance et au cadre d'investissement."
+            : 'Access key platform information, governance policies, and the investment framework.'}
+        </p>
+        <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col">
+            <div className="w-12 h-12 rounded-xl bg-[#1a3c2e]/8 flex items-center justify-center mb-4">
+              <span className="text-2xl">📋</span>
+            </div>
+            <h3 className="text-lg font-extrabold text-[#1a3c2e] mb-2">
+              {isFr ? 'Présentation de la Plateforme' : 'Platform Overview'}
+            </h3>
+            <p className="text-gray-600 text-sm mb-5 flex-1">
+              {isFr
+                ? "Vue d'ensemble de Sahel AgriConnect et AfriYield Exchange — objectifs, fonctionnalités et impact."
+                : 'Overview of Sahel AgriConnect and AfriYield Exchange — objectives, features, and impact.'}
+            </p>
+            <div className="space-y-2">
+              <Link
+                to="/about"
+                className="block w-full text-center py-2.5 rounded-xl font-bold text-white text-sm"
+                style={{ background: '#1a3c2e' }}
+              >
+                {isFr ? 'À propos de nous' : 'About us'}
+              </Link>
+              <Link
+                to="/how-it-works"
+                className="block w-full text-center py-2.5 rounded-xl font-semibold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition"
+              >
+                {isFr ? 'Comment ça marche' : 'How it works'}
+              </Link>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-extrabold text-[#1a3c2e]">{t('impact.resources.prospectus.title')}</h3>
-            <p className="mt-2 text-gray-700 text-sm">{t('impact.resources.prospectus.desc')}</p>
-            <Link
-              to="/afri-yield/register"
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#B5850A] text-white font-extrabold py-2.5 hover:bg-[#9a7109]"
-            >
-              {t('impact.resources.prospectus.cta')}
-            </Link>
+          <div className="bg-white rounded-2xl border border-[#B5850A]/30 p-6 shadow-sm flex flex-col">
+            <div className="w-12 h-12 rounded-xl bg-[#B5850A]/10 flex items-center justify-center mb-4">
+              <span className="text-2xl">💰</span>
+            </div>
+            <h3 className="text-lg font-extrabold text-[#1a3c2e] mb-2">
+              {isFr ? "Prospectus d'Investissement" : 'Investment Prospectus'}
+            </h3>
+            <p className="text-gray-600 text-sm mb-5 flex-1">
+              {isFr
+                ? "Cadre d'investissement AfriYield Exchange, structure ROI, termes et conditions. Envoyé sur demande aux investisseurs qualifiés."
+                : 'AfriYield Exchange investment framework, ROI structure, terms and conditions. Sent on request to qualified investors.'}
+            </p>
+            <div className="space-y-2">
+              <a
+                href="mailto:info@djiguicorporation.org?subject=Demande prospectus investissement — AfriYield Exchange&body=Bonjour,%0A%0AJe souhaite recevoir le prospectus d'investissement AfriYield Exchange.%0A%0AMon profil:%0ANom: %0APays: %0AMontant envisagé: %0A%0AMerci"
+                className="block w-full text-center py-2.5 rounded-xl font-bold text-[#1a3c2e] text-sm"
+                style={{ background: '#B5850A' }}
+              >
+                {isFr ? '📧 Demander le prospectus' : '📧 Request Prospectus'}
+              </a>
+              <Link
+                to="/investor-relations"
+                className="block w-full text-center py-2.5 rounded-xl font-semibold text-sm border-2 border-[#B5850A] text-[#B5850A] hover:bg-[#B5850A]/5 transition"
+              >
+                {isFr ? 'Relations investisseurs' : 'Investor Relations'}
+              </Link>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-extrabold text-[#1a3c2e]">{t('impact.resources.governance.title')}</h3>
-            <p className="mt-2 text-gray-700 text-sm">{t('impact.resources.governance.desc')}</p>
-            <Link
-              to="/governance"
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#1a3c2e] text-[#1a3c2e] font-extrabold py-2.5 hover:bg-[#1a3c2e] hover:text-white transition"
-            >
-              {t('impact.resources.governance.cta')}
-            </Link>
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col">
+            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-4">
+              <span className="text-2xl">🔒</span>
+            </div>
+            <h3 className="text-lg font-extrabold text-[#1a3c2e] mb-2">
+              {isFr ? 'Politique de Gouvernance des Données' : 'Data Governance Policy'}
+            </h3>
+            <p className="text-gray-600 text-sm mb-5 flex-1">
+              {isFr
+                ? 'Notre cadre de souveraineté des données africaines, droits des coopératives, responsabilités admin et politique de confidentialité.'
+                : 'Our African data sovereignty framework, cooperative rights, admin responsibilities, and privacy policy.'}
+            </p>
+            <div className="space-y-2">
+              <Link
+                to="/governance"
+                className="block w-full text-center py-2.5 rounded-xl font-bold text-white text-sm"
+                style={{ background: '#1a3c2e' }}
+              >
+                {isFr ? 'Voir la politique' : 'View Policy'}
+              </Link>
+              <Link
+                to="/privacy"
+                className="block w-full text-center py-2.5 rounded-xl font-semibold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition"
+              >
+                {isFr ? 'Politique de confidentialité' : 'Privacy Policy'}
+              </Link>
+            </div>
           </div>
         </div>
       </section>

@@ -7,6 +7,36 @@ import { queueNotification, messageTemplates } from '../services/notificationSer
 
 const router = express.Router();
 
+// GET /api/farmers/public-stats — public summary stats, no auth required
+router.get('/public-stats', async (req, res) => {
+  try {
+    const total = await Farmer.countDocuments();
+    const active = await Farmer.countDocuments({ statut: 'Actif' });
+    const totalAreaResult = await Farmer.aggregate([{ $group: { _id: null, total: { $sum: '$superficie' } } }]);
+    const totalArea = totalAreaResult[0]?.total || 0;
+    const byCountry = await Farmer.aggregate([
+      { $group: { _id: '$country', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]);
+    const byCrop = await Farmer.aggregate([
+      { $unwind: '$cultures' },
+      { $group: { _id: '$cultures', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 8 },
+    ]);
+    // Get recent farmers (last 10, anonymized for privacy)
+    const recent = await Farmer.find()
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .select('nom cultures superficie region country statut createdAt nomCooperative lienCooperative')
+      .lean();
+    res.json({ success: true, total, active, totalArea, byCountry, byCrop, recent });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/farmers - Enregistrement d'un agriculteur (public)
 router.post('/', validateFarmer, async (req, res) => {
   try {

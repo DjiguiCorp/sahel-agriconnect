@@ -9,6 +9,38 @@ import { queueNotification, messageTemplates } from '../services/notificationSer
 
 const router = express.Router();
 
+// GET /api/cooperatives/public-stats — public summary, no auth
+router.get('/public-stats', async (req, res) => {
+  try {
+    const total = await CooperativePlatformRegistration.countDocuments();
+    const active = await CooperativePlatformRegistration.countDocuments({ status: 'active' });
+    const pending = await CooperativePlatformRegistration.countDocuments({ status: 'pending_payment' });
+    const byCountry = await CooperativePlatformRegistration.aggregate([
+      { $group: { _id: '$country', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]);
+    const totalMembers = await CooperativePlatformRegistration.aggregate([
+      { $group: { _id: null, total: { $sum: '$memberCount' } } },
+    ]);
+    const recent = await CooperativePlatformRegistration.find({ status: 'active' })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('cooperativeName country regionCity memberCount primaryCrops certificationStatus createdAt')
+      .lean();
+    res.json({
+      success: true,
+      total,
+      active,
+      pending,
+      byCountry,
+      totalMembers: totalMembers[0]?.total || 0,
+      recent,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/register-platform', async (req, res) => {
   try {
     const cooperative = await CooperativePlatformRegistration.create({
