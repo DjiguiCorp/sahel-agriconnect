@@ -25,10 +25,10 @@ const Header = () => {
   const [mobileAfriYieldOpen, setMobileAfriYieldOpen] = useState(false);
   const desktopOutilsRef = useRef(null);
   const desktopAfriYieldRef = useRef(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isRegistered, userName, clearUser } = useRegisteredUser();
+  const { isRegistered, userName, isCoopPendingPayment, isCooperative, clearUser } = useRegisteredUser();
 
   const navLinkClass =
     'text-lg text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
@@ -111,7 +111,11 @@ const Header = () => {
             {isRegistered && (
               <div className="flex items-center gap-3">
                 <Link to="/my-dashboard" className={navLinkClass}>
-                  {userName ? `Bonjour, ${userName.split(' ')[0]}` : 'Mon tableau de bord'}
+                  {isCoopPendingPayment
+                    ? i18n.language === 'fr'
+                      ? '⏳ Paiement en attente'
+                      : '⏳ Awaiting payment'
+                    : `${i18n.language === 'fr' ? 'Bonjour' : 'Hello'}, ${userName?.split(' ')[0] || 'Mr.'}`}
                 </Link>
                 <button
                   type="button"
@@ -266,7 +270,11 @@ const Header = () => {
               </Link>
               {isRegistered && (
                 <Link to="/my-dashboard" className={navLinkClass} onClick={closeMenu}>
-                  {userName ? `Bonjour, ${userName.split(' ')[0]}` : 'Mon tableau de bord'}
+                  {isCoopPendingPayment
+                    ? i18n.language === 'fr'
+                      ? '⏳ Paiement en attente'
+                      : '⏳ Awaiting payment'
+                    : `${i18n.language === 'fr' ? 'Bonjour' : 'Hello'}, ${userName?.split(' ')[0] || 'Mr.'}`}
                 </Link>
               )}
 

@@ -14,8 +14,8 @@ export default function Footer() {
             <h3 className="text-xl font-bold mb-3">Sahel AgriConnect</h3>
             <p className="text-gray-300 text-sm leading-relaxed mb-3">
               {isFr
-                ? 'Plateforme africaine de digitalisation agricole, connectant les producteurs aux marchés mondiaux.'
-                : 'African agricultural digitization platform, connecting producers to global markets.'}
+                ? "Infrastructure numérique souveraine pour l'agriculture africaine. Conçu et opéré par Djigui Corporation."
+                : 'Sovereign digital infrastructure for African agriculture. Designed and operated by Djigui Corporation.'}
             </p>
             <div className="flex flex-col gap-1">
               <a

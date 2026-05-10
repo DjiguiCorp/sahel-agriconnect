@@ -21,11 +21,12 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     if (!token) return;
     setLoading(true);
     Promise.all([
-      fetch(`${API_BASE_URL}/api/cooperatives`, { headers }).then((r) => r.json()),
-      fetch(`${API_BASE_URL}/api/farmers?limit=800`, { headers }).then((r) => r.json()),
+      fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations`, { headers }).then((r) => r.json()),
+      fetch(`${API_BASE_URL}/api/farmers`, { headers }).then((r) => r.json()),
     ])
       .then(([coops, farm]) => {
-        setCooperatives(Array.isArray(coops) ? coops : coops.cooperatives || []);
+        const coopList = Array.isArray(coops) ? coops : coops.cooperatives || coops.registrations || [];
+        setCooperatives(coopList);
         setFarmers(Array.isArray(farm) ? farm : farm.farmers || []);
       })
       .catch(() => {})
@@ -273,6 +274,24 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
           <h3 className="font-bold text-brand-forest mb-3">
             {isFr ? '⚡ Actions rapides admin' : '⚡ Admin Quick Actions'}
           </h3>
+          <div className="mb-2">
+            <button
+              onClick={async () => {
+                await fetch(`${API_BASE_URL}/api/cooperatives/${selectedCoop._id}`, {
+                  method: 'PUT',
+                  headers,
+                  body: JSON.stringify({ status: 'active', paymentReceived: true, paymentDate: new Date() }),
+                });
+                setCooperatives((prev) =>
+                  prev.map((c) => (c._id === selectedCoop._id ? { ...c, status: 'active' } : c))
+                );
+                setSelectedCoop((c) => ({ ...c, status: 'active' }));
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium bg-green-50 text-green-700 border-green-200 hover:bg-green-100 transition w-full justify-center"
+            >
+              💳 {isFr ? 'Confirmer paiement reçu — Activer portail' : 'Confirm Payment Received — Activate Portal'}
+            </button>
+          </div>
           <div className="grid sm:grid-cols-2 gap-2">
             {[
               {
@@ -378,6 +397,12 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
             color: 'text-yellow-700',
           },
           {
+            label: isFr ? '⏳ Paiement en attente' : '⏳ Awaiting Payment',
+            value: cooperativesForView.filter((c) => c.status === 'pending_payment' || c.paymentReceived === false).length,
+            bg: 'bg-amber-50',
+            color: 'text-amber-700',
+          },
+          {
             label: isFr ? 'Total membres' : 'Total Members',
             value: cooperativesForView.reduce((s, c) => s + (c.memberCount || c.nombreMembres || 0), 0),
             bg: 'bg-blue-50',
@@ -392,7 +417,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        {['all', 'active', 'pending'].map((f) => (
+        {['all', 'active', 'pending', 'pending_payment'].map((f) => (
           <button
             key={f}
             type="button"
@@ -409,6 +434,10 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                 ? isFr
                   ? 'Actives'
                   : 'Active'
+                : f === 'pending_payment'
+                  ? isFr
+                    ? '⏳ Paiement en attente'
+                    : '⏳ Awaiting Payment'
                 : isFr
                   ? 'En attente'
                   : 'Pending'}

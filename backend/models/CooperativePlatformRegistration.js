@@ -13,9 +13,13 @@ const cooperativePlatformRegistrationSchema = new mongoose.Schema({
   interests: [{ type: String, trim: true }],
   status: {
     type: String,
-    enum: ['pending', 'active', 'declined'],
-    default: 'pending',
+    enum: ['pending_payment', 'pending', 'active', 'declined', 'suspended'],
+    default: 'pending_payment',
   },
+  paymentReceived: { type: Boolean, default: false },
+  paymentDate: { type: Date },
+  paymentMethod: { type: String },
+  activatedAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 

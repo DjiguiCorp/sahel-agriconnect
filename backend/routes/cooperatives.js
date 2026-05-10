@@ -22,6 +22,8 @@ router.post('/register-platform', async (req, res) => {
       email: req.body.email,
       phone: req.body.phone || '',
       interests: Array.isArray(req.body.interests) ? req.body.interests : [],
+      status: 'pending_payment', // Always starts as pending_payment
+      paymentReceived: false,
     });
 
     notifyAdminNewCooperative(cooperative).catch(console.error);
@@ -87,9 +89,9 @@ router.get('/platform-registrations', authenticateToken, async (req, res) => {
     const q = {};
     if (req.query.status) q.status = req.query.status;
     const registrations = await CooperativePlatformRegistration.find(q).sort({ createdAt: -1 }).lean();
-    return res.json({ success: true, registrations });
+    res.json({ success: true, cooperatives: registrations, registrations });
   } catch (e) {
-    return res.status(500).json({ success: false, error: e.message || 'Failed' });
+    res.status(500).json({ success: false, error: e.message || 'Failed' });
   }
 });
 
@@ -193,27 +195,20 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/cooperatives/:id - Mise à jour d'une coopérative (protégée admin)
+// PUT /api/cooperatives/:id - Update platform registration (protégée admin)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const cooperative = await Cooperative.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    );
-
-    if (!cooperative) {
-      return res.status(404).json({ error: 'Coopérative non trouvée' });
+    const updateData = { ...req.body };
+    // If confirming payment, set activation timestamp
+    if (req.body.paymentReceived === true || req.body.status === 'active') {
+      updateData.activatedAt = new Date();
+      updateData.status = 'active';
+      updateData.paymentReceived = true;
     }
-
-    res.json({
-      success: true,
-      message: 'Coopérative mise à jour avec succès',
-      cooperative
-    });
-  } catch (error) {
-    console.error('Erreur mise à jour coopérative:', error);
-    res.status(500).json({ error: 'Erreur serveur lors de la mise à jour' });
+    const updated = await CooperativePlatformRegistration.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    res.json({ success: true, cooperative: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

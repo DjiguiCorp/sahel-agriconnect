@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Users, MapPin, Search, Filter, CheckCircle, ChevronRight } from 'lucide-react';
 import CooperativeInquiryModal from './CooperativeInquiryModal';
 import { API_BASE_URL } from '../config/api';
+import { AFRICAN_REGIONS } from '../data/africanRegions';
 
 const apiRoot = API_BASE_URL.replace(/\/$/, '');
 
@@ -42,20 +43,28 @@ export default function CooperativeDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const countries = useMemo(() => {
-    const set = new Set(cooperatives.map((c) => c.country || c.pays).filter(Boolean));
-    return Array.from(set).sort();
-  }, [cooperatives]);
+  const countries = useMemo(() => Object.keys(AFRICAN_REGIONS).sort(), []);
 
-  const allCrops = useMemo(() => {
-    const set = new Set();
-    cooperatives.forEach((c) => {
-      const crops =
-        c.primaryCrops || c.culturesPrincipales || c.produits || [];
-      crops.forEach((cr) => set.add(cr));
-    });
-    return Array.from(set).sort();
-  }, [cooperatives]);
+  const allCrops = useMemo(
+    () => [
+      'Shea Butter',
+      'Sesame',
+      'Cashew',
+      'Mango',
+      'Rice',
+      'Cotton',
+      'Millet',
+      'Sorghum',
+      'Maize',
+      'Groundnut',
+      'Cowpea',
+      'Yam',
+      'Cassava',
+      'Plantain',
+      'Other',
+    ],
+    []
+  );
 
   const filtered = useMemo(() => {
     return cooperatives.filter((c) => {
@@ -262,20 +271,28 @@ export default function CooperativeDashboard() {
       )}
 
       {!loading && !error && cooperatives.length === 0 && (
-        <div className="text-center py-20 bg-gray-50 rounded-3xl border border-gray-200">
-          <div className="text-6xl mb-4">🌱</div>
-          <h3 className="text-xl font-bold text-[#1a3c2e] mb-2">
-            {isFr ? 'Les premières coopératives arrivent bientôt' : 'First cooperatives coming soon'}
+        <div
+          className="text-center py-20 rounded-3xl border border-gray-200"
+          style={{ background: 'linear-gradient(135deg, #F5F0E8, #EDE8E0)' }}
+        >
+          <div className="text-7xl mb-5">🌱</div>
+          <h3 className="text-2xl font-bold text-[#1a3c2e] mb-3">
+            {isFr ? 'Le réseau coopératif se construit' : 'The cooperative network is being built'}
           </h3>
-          <p className="text-gray-500 max-w-md mx-auto mb-6">
+          <p className="text-gray-600 max-w-lg mx-auto mb-2 leading-relaxed">
             {isFr
-              ? 'Notre réseau de coopératives est en cours de vérification. Inscrivez votre coopérative dès maintenant pour être parmi les premières visibles.'
-              : 'Our cooperative network is being verified. Register your cooperative now to be among the first visible.'}
+              ? "Les coopératives vérifiées apparaîtront ici. Rejoignez le réseau maintenant et soyez parmi les premières coopératives visibles par les investisseurs diaspora et les acheteurs internationaux via AfriYield Exchange."
+              : 'Verified cooperatives will appear here. Join the network now and be among the first cooperatives visible to diaspora investors and international buyers via AfriYield Exchange.'}
+          </p>
+          <p className="text-[#B5850A] font-semibold text-sm mb-8">
+            {isFr
+              ? '199$/an · Portail activé après paiement · Accès AfriYield Exchange inclus'
+              : '$199/year · Portal activated after payment · AfriYield Exchange access included'}
           </p>
           <a
             href="/cooperative-registration"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm"
-            style={{ background: '#1a3c2e' }}
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white text-sm shadow-lg hover:opacity-90 transition"
+            style={{ background: 'linear-gradient(135deg, #1a3c2e, #2d5a3d)' }}
           >
             {isFr ? 'Inscrire ma coopérative →' : 'Register my cooperative →'}
           </a>
@@ -446,28 +463,6 @@ export default function CooperativeDashboard() {
           })}
         </div>
       )}
-
-      <div
-        className="rounded-3xl p-8 text-center"
-        style={{ background: 'linear-gradient(135deg, #F5F0E8, #EDE8E0)' }}
-      >
-        <h3 className="text-2xl font-bold text-[#1a3c2e] mb-2">
-          {isFr ? "Votre coopérative n'est pas encore listée?" : 'Your cooperative not listed yet?'}
-        </h3>
-        <p className="text-gray-600 mb-6 max-w-lg mx-auto">
-          {isFr
-            ? 'Inscrivez votre coopérative sur Sahel AgriConnect et accédez aux outils de gestion, certifications et investisseurs diaspora via AfriYield Exchange.'
-            : 'Register your cooperative on Sahel AgriConnect and access management tools, certifications, and diaspora investors via AfriYield Exchange.'}
-        </p>
-        <a
-          href="/cooperative-registration"
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition"
-          style={{ background: '#1a3c2e' }}
-        >
-          {isFr ? 'Inscrire ma coopérative' : 'Register my cooperative'}
-          <ChevronRight className="w-4 h-4" />
-        </a>
-      </div>
 
       {inquiryCoop && (
         <CooperativeInquiryModal cooperative={inquiryCoop} onClose={() => setInquiryCoop(null)} />

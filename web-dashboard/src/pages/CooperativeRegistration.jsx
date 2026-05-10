@@ -29,7 +29,7 @@ const TOTAL_STEPS = 3;
 
 export default function CooperativeRegistration() {
   const { t, i18n } = useTranslation();
-  const { registerUser } = useRegisteredUser();
+  const { registerCooperative } = useRegisteredUser();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     cooperativeName: '',
@@ -76,7 +76,8 @@ export default function CooperativeRegistration() {
         throw new Error(j?.error || 'Request failed');
       }
       if (form.email && form.leaderName) {
-        registerUser(form.email, form.leaderName);
+        // Store as cooperative with pending_payment — NOT as farmer
+        registerCooperative(form.email, form.leaderName);
       }
       setState({ loading: false, ok: true, err: '' });
     } catch (err) {
@@ -178,67 +179,103 @@ export default function CooperativeRegistration() {
           {/* SUCCESS STATE */}
           {state.ok ? (
             <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-8 md:p-12 text-center">
-              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                <Check className="w-10 h-10 text-green-600" />
+              <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6">
+                <span className="text-4xl">⏳</span>
               </div>
               <h2 className="text-2xl font-extrabold text-[#1a3c2e] mb-3">
-                {i18n.language === 'fr' ? 'Inscription reçue !' : 'Registration received!'}
-              </h2>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
                 {i18n.language === 'fr'
-                  ? 'Notre équipe activera votre compte dans les 48 heures et vous contactera par email et WhatsApp.'
-                  : 'Our team will activate your account within 48 hours and contact you by email and WhatsApp.'}
+                  ? 'Demande reçue — En attente de paiement'
+                  : 'Application received — Awaiting payment'}
+              </h2>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto text-sm leading-relaxed">
+                {i18n.language === 'fr'
+                  ? 'Votre coopérative est enregistrée. Notre équipe vous contactera dans les 48 heures avec les instructions de paiement. Votre portail sera activé après confirmation du paiement de 199$/an.'
+                  : 'Your cooperative is registered. Our team will contact you within 48 hours with payment instructions. Your portal will be activated after payment confirmation of $199/year.'}
               </p>
 
-              {/* What happens next */}
-              <div className="text-left bg-[#F5F0E8] rounded-2xl p-6 mb-6 border border-[#B5850A]/20">
+              <div className="text-left bg-[#F5F0E8] rounded-2xl p-5 mb-6 border border-[#B5850A]/20">
                 <p className="font-bold text-[#1a3c2e] mb-4 text-sm">
-                  {i18n.language === 'fr' ? '📋 Ce qui se passe ensuite :' : '📋 What happens next:'}
+                  {i18n.language === 'fr' ? '📋 Prochaines étapes :' : '📋 Next steps:'}
                 </p>
                 <div className="space-y-3">
                   {[
-                    i18n.language === 'fr'
-                      ? 'Notre équipe examine votre dossier dans les 48 heures'
-                      : 'Our team reviews your application within 48 hours',
-                    i18n.language === 'fr'
-                      ? 'Vous recevez un email de confirmation avec les prochaines étapes'
-                      : 'You receive a confirmation email with next steps',
-                    i18n.language === 'fr'
-                      ? 'Votre coopérative est activée et visible sur la plateforme'
-                      : 'Your cooperative is activated and visible on the platform',
-                    i18n.language === 'fr'
-                      ? 'Accédez aux outils de gestion, certifications et investisseurs diaspora'
-                      : 'Access management tools, certifications and diaspora investors',
-                  ].map((text, i) => (
-                    <div key={i} className="flex items-start gap-3 text-sm text-gray-700">
-                      <span className="font-bold text-[#B5850A] flex-shrink-0">{i + 1}.</span>
-                      <span>{text}</span>
+                    {
+                      icon: '1️⃣',
+                      title: i18n.language === 'fr' ? 'Email de confirmation' : 'Confirmation email',
+                      desc:
+                        i18n.language === 'fr'
+                          ? 'Vous recevez un email avec les instructions de paiement'
+                          : 'You receive an email with payment instructions',
+                    },
+                    {
+                      icon: '2️⃣',
+                      title: i18n.language === 'fr' ? 'Paiement — 199$/an' : 'Payment — $199/year',
+                      desc:
+                        i18n.language === 'fr'
+                          ? 'Virement bancaire, Mobile Money ou Western Union'
+                          : 'Bank transfer, Mobile Money, or Western Union',
+                    },
+                    {
+                      icon: '3️⃣',
+                      title: i18n.language === 'fr' ? 'Activation du portail' : 'Portal activation',
+                      desc:
+                        i18n.language === 'fr'
+                          ? 'Notre équipe active votre portail coopérative dans les 24h après réception'
+                          : 'Our team activates your cooperative portal within 24h of receipt',
+                    },
+                    {
+                      icon: '4️⃣',
+                      title: i18n.language === 'fr' ? 'Accès complet' : 'Full access',
+                      desc:
+                        i18n.language === 'fr'
+                          ? 'Gestion des membres, certifications, connexion AfriYield'
+                          : 'Member management, certifications, AfriYield connection',
+                    },
+                  ].map(({ icon, title, desc }) => (
+                    <div key={title} className="flex items-start gap-3">
+                      <span className="text-lg flex-shrink-0">{icon}</span>
+                      <div>
+                        <p className="font-semibold text-[#1a3c2e] text-sm">{title}</p>
+                        <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* CTAs using Link from react-router-dom */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  to="/my-dashboard"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm"
-                  style={{ background: '#1a3c2e' }}
-                >
-                  {i18n.language === 'fr' ? 'Mon tableau de bord' : 'My dashboard'}
-                </Link>
-                <Link
-                  to="/afri-yield"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition"
-                >
-                  AfriYield Exchange
-                </Link>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 text-left">
+                <p className="font-semibold text-[#1a3c2e] text-sm mb-2">
+                  💳 {i18n.language === 'fr' ? 'Méthodes de paiement acceptées :' : 'Accepted payment methods:'}
+                </p>
+                <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                  {['Mobile Money (Orange, Wave, MTN)', 'Virement bancaire', 'Western Union', 'MoneyGram'].map(
+                    (m) => (
+                      <span key={m} className="px-2 py-1 bg-gray-50 rounded-lg border border-gray-100">
+                        {m}
+                      </span>
+                    )
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  {i18n.language === 'fr' ? 'Contactez-nous pour les détails de paiement : ' : 'Contact us for payment details: '}
+                  <a href="mailto:info@djiguicorporation.org" className="text-[#1a3c2e] font-semibold hover:underline">
+                    info@djiguicorporation.org
+                  </a>
+                </p>
               </div>
 
-              <p className="text-xs text-gray-400 mt-6">
+              <a
+                href="mailto:info@djiguicorporation.org?subject=Paiement adhésion coopérative — Sahel AgriConnect"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm"
+                style={{ background: '#B5850A' }}
+              >
+                📧 {i18n.language === 'fr' ? 'Contacter pour payer' : 'Contact to pay'}
+              </a>
+
+              <p className="text-xs text-gray-400 mt-4">
                 {i18n.language === 'fr'
-                  ? 'Pour supprimer votre compte, contactez-nous à info@djiguicorporation.org'
-                  : 'To delete your account, contact us at info@djiguicorporation.org'}
+                  ? "Votre portail reste inactif jusqu'à réception du paiement. Aucune donnée n'est perdue."
+                  : 'Your portal remains inactive until payment is received. No data is lost.'}
               </p>
             </div>
           ) : (
