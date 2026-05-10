@@ -15,7 +15,7 @@ import {
   mergeCooperativeSources,
 } from '../components/admin/CentralAdminTabs';
 import CentersManagement from '../components/admin/CentersManagement';
-import PerksManagement from '../components/admin/PerksManagement';
+import BenefitsTab from '../components/admin/BenefitsTab';
 import TrainingsManagement from '../components/admin/TrainingsManagement';
 import IrrigationManagement from '../components/admin/IrrigationManagement';
 import ProductionOptimizationManagement from '../components/admin/ProductionOptimizationManagement';
@@ -1360,7 +1360,7 @@ const CentralAdminDashboard = () => {
           {activeTab === 'centers' && <CentersManagement globalCountryFilter={globalCountryFilter} />}
           {activeTab === 'trainings' && <TrainingsManagement />}
           {activeTab === 'governance' && <Governance />}
-          {activeTab === 'perks' && <PerksManagement />}
+          {activeTab === 'perks' && <BenefitsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'irrigation' && <IrrigationManagement />}
           {activeTab === 'optimization' && <ProductionOptimizationManagement />}
           {activeTab === 'expertRequests' && (
