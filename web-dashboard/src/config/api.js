@@ -73,6 +73,16 @@ export const API_ENDPOINTS = {
     STATS: `${API_BASE_URL}/api/farmer-needs/stats`,
     BY_ID: (id) => `${API_BASE_URL}/api/farmer-needs/${id}`,
   },
+  PRODUCE: {
+    BASE: `${API_BASE_URL}/api/produce`,
+    FARMER: (phone) => `${API_BASE_URL}/api/produce/farmer/${encodeURIComponent(phone)}`,
+    STATS: (phone) => `${API_BASE_URL}/api/produce/stats/farmer/${encodeURIComponent(phone)}`,
+    BY_ID: (id) => `${API_BASE_URL}/api/produce/${id}`,
+  },
+  SERVICE_BOOKINGS: {
+    BASE: `${API_BASE_URL}/api/service-bookings`,
+    BY_ID: (id) => `${API_BASE_URL}/api/service-bookings/${id}`,
+  },
   // Détection de maladies
   PLANT_DISEASE: `${API_BASE_URL}/api/detect-plant-disease`,
   // Health check
