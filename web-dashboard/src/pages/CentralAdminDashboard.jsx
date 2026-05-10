@@ -6,7 +6,7 @@ import CooperativesManagement from '../components/admin/CooperativesManagement';
 import CooperativesDiasporaManagement from '../components/admin/CooperativesDiasporaManagement';
 import InputsManagement from '../components/admin/InputsManagement';
 import PartnershipsManagement from '../components/admin/PartnershipsManagement';
-import ReportsManagement from '../components/admin/ReportsManagement';
+import ReportsTab from '../components/admin/ReportsManagement';
 import RealTimeFarmers from '../components/admin/RealTimeFarmers';
 import {
   PlanningTab,
@@ -1369,7 +1369,7 @@ const CentralAdminDashboard = () => {
           {activeTab === 'seasonal' && <PlanningTab token={adminToken} isFr={isFr} />}
           {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
           {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'reports' && <ReportsManagement />}
+          {activeTab === 'reports' && <ReportsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'afriyield' && <AfriYieldManagement />}
           {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}
         </div>
