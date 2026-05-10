@@ -78,6 +78,10 @@ export const API_ENDPOINTS = {
     FARMER: (phone) => `${API_BASE_URL}/api/produce/farmer/${encodeURIComponent(phone)}`,
     STATS: (phone) => `${API_BASE_URL}/api/produce/stats/farmer/${encodeURIComponent(phone)}`,
     BY_ID: (id) => `${API_BASE_URL}/api/produce/${id}`,
+    PROMOTE: (id) => `${API_BASE_URL}/api/produce/${id}/promote`,
+    ADMIN_ALL: `${API_BASE_URL}/api/produce/admin/all`,
+    COOPERATIVE: (name) =>
+      `${API_BASE_URL}/api/produce/cooperative/${encodeURIComponent(name)}`,
   },
   SERVICE_BOOKINGS: {
     BASE: `${API_BASE_URL}/api/service-bookings`,

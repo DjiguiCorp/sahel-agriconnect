@@ -38,10 +38,36 @@ router.get('/farmer/:phone', async (req, res) => {
   }
 });
 
+router.get('/cooperative/:name', authenticateToken, async (req, res) => {
+  try {
+    const listings = await ProduceListing.find({
+      cooperativeName: new RegExp(escapeRegex(req.params.name), 'i'),
+      listingType: 'cooperative_supply',
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, listings });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/admin/all', authenticateToken, async (req, res) => {
+  try {
+    const listings = await ProduceListing.find({}).sort({ createdAt: -1 });
+    res.json({ success: true, listings });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const { country, commodity, certLevel, minQty } = req.query;
-    const filter = { status: 'active' };
+    const filter = {
+      status: 'active',
+      visibility: 'marketplace',
+      cooperativeApproved: true,
+      promotedToMarketplace: true,
+    };
     if (country) filter.country = country;
     if (commodity) filter.commodity = new RegExp(escapeRegex(commodity), 'i');
     if (certLevel) filter.certificationLevel = certLevel;
@@ -59,6 +85,26 @@ router.post('/', async (req, res) => {
     res.status(201).json({ success: true, listing });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+router.put('/:id/promote', authenticateToken, async (req, res) => {
+  try {
+    const listing = await ProduceListing.findByIdAndUpdate(
+      req.params.id,
+      {
+        cooperativeApproved: true,
+        cooperativeApprovedAt: new Date(),
+        promotedToMarketplace: true,
+        promotedAt: new Date(),
+        visibility: 'marketplace',
+      },
+      { new: true }
+    );
+    if (!listing) return res.status(404).json({ error: 'Listing not found' });
+    res.json({ success: true, listing });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

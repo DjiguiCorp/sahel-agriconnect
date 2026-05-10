@@ -142,6 +142,15 @@ export default function CommodityMarketplace() {
       <section className="bg-[#1a3c2e] text-white text-center py-14 px-4 rounded-2xl mb-8">
         <h1 className="text-3xl md:text-4xl font-extrabold mb-3">{t('marketplace.title')}</h1>
         <p className="text-white/90 max-w-3xl mx-auto">{t('marketplace.subtitle')}</p>
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-sm text-white/70">
+          <span>🌱 Farmer</span>
+          <span>→</span>
+          <span>🤝 Cooperative</span>
+          <span>→</span>
+          <span>✅ Verified & Certified</span>
+          <span>→</span>
+          <span>🌍 AfriYield Exchange</span>
+        </div>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <span className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-sm font-bold">
             {t('marketplace.badges.sheaSesame')}

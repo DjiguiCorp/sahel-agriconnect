@@ -34,6 +34,16 @@ function mapFarmerQualityToCert(ql) {
   return 'None';
 }
 
+function coopSupplyStatus(l, isFr) {
+  if (l.promotedToMarketplace) {
+    return { cls: 'bg-blue-100 text-blue-700', label: isFr ? '🌍 Sur AfriYield' : '🌍 On AfriYield' };
+  }
+  if (l.cooperativeApproved) {
+    return { cls: 'bg-green-100 text-green-700', label: isFr ? '✓ Approuvé coopérative' : '✓ Coop Approved' };
+  }
+  return { cls: 'bg-yellow-100 text-yellow-700', label: isFr ? '⏳ En attente coopérative' : '⏳ Awaiting cooperative' };
+}
+
 export default function ProducerDashboard() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
@@ -190,6 +200,10 @@ export default function ProducerDashboard() {
         cooperativeName: profile?.nomCooperative || listingForm.cooperativeName,
         country,
         region,
+        visibility: 'cooperative_only',
+        listingType: 'cooperative_supply',
+        cooperativeApproved: false,
+        promotedToMarketplace: false,
       };
       if (profile?._id) body.farmerId = profile._id;
 
@@ -358,7 +372,7 @@ export default function ProducerDashboard() {
 
   const tabs = [
     { key: 'overview', label: isFr ? '🏠 Aperçu' : '🏠 Overview' },
-    { key: 'listings', label: isFr ? '🌾 Mes produits' : '🌾 My Produce' },
+    { key: 'listings', label: isFr ? '🌾 Ma production' : '🌾 My production' },
     { key: 'benefits', label: isFr ? '🎁 Avantages' : '🎁 Benefits' },
     { key: 'services', label: isFr ? '🚜 Services' : '🚜 Services' },
   ];
@@ -515,9 +529,11 @@ export default function ProducerDashboard() {
               <Plus className="w-8 h-8 text-[#1a3c2e] shrink-0" />
               <div>
                 <p className="font-semibold text-[#1a3c2e] text-sm">
-                  {isFr ? 'Lister un produit' : 'List a product'}
+                  {isFr ? 'Déclarer ma production' : 'Declare production'}
                 </p>
-                <p className="text-xs text-gray-400">{isFr ? 'Vendre ma récolte' : 'Sell my harvest'}</p>
+                <p className="text-xs text-gray-400">
+                  {isFr ? 'Pour ma coopérative' : 'For my cooperative'}
+                </p>
               </div>
             </button>
             <Link
@@ -559,7 +575,9 @@ export default function ProducerDashboard() {
                 </button>
               </div>
               <div className="space-y-2">
-                {listings.slice(0, 3).map((l) => (
+                {listings.slice(0, 3).map((l) => {
+                  const st = coopSupplyStatus(l, isFr);
+                  return (
                   <div key={l._id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{CROP_EMOJIS[l.commodity] || '🌾'}</span>
@@ -570,15 +588,12 @@ export default function ProducerDashboard() {
                         </p>
                       </div>
                     </div>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        l.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {l.status}
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${st.cls}`}>
+                      {st.label}
                     </span>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -588,17 +603,24 @@ export default function ProducerDashboard() {
       {activeTab === 'listings' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h3 className="text-xl font-bold text-[#1a3c2e]">
-              {isFr ? 'Mes produits listés' : 'My Listed Products'}
-            </h3>
+            <div>
+              <h3 className="text-xl font-bold text-[#1a3c2e]">
+                {isFr ? 'Ma production déclarée à la coopérative' : 'My Production Declared to Cooperative'}
+              </h3>
+              <p className="text-gray-500 text-sm mt-1">
+                {isFr
+                  ? 'Ces données sont visibles par votre coopérative. La coopérative décide quoi lister sur AfriYield Exchange.'
+                  : 'This data is visible to your cooperative. The cooperative decides what to list on AfriYield Exchange.'}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setShowNewListing(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold"
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold shrink-0"
               style={{ background: '#1a3c2e' }}
             >
               <Plus className="w-4 h-4" />
-              {isFr ? 'Nouvelle annonce' : 'New Listing'}
+              {isFr ? 'Déclarer une production' : 'Declare production'}
             </button>
           </div>
 
@@ -606,12 +628,12 @@ export default function ProducerDashboard() {
             <div className="text-center py-14 bg-white rounded-2xl border border-gray-200">
               <div className="text-6xl mb-3">🌾</div>
               <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">
-                {isFr ? 'Aucun produit listé' : 'No products listed'}
+                {isFr ? 'Aucune production déclarée' : 'No production declared yet'}
               </h3>
               <p className="text-gray-500 text-sm mb-4 max-w-xs mx-auto">
                 {isFr
-                  ? 'Listez votre récolte pour la vendre directement aux acheteurs locaux et internationaux.'
-                  : 'List your harvest to sell directly to local and international buyers.'}
+                  ? 'Déclarez votre production disponible à votre coopérative. Elle vérifiera et pourra promouvoir l’offre sur AfriYield Exchange.'
+                  : 'Declare your available production to your cooperative. They will verify and can promote collective supply on AfriYield Exchange.'}
               </p>
               <button
                 type="button"
@@ -619,33 +641,27 @@ export default function ProducerDashboard() {
                 className="px-5 py-2.5 rounded-xl font-bold text-white text-sm"
                 style={{ background: '#1a3c2e' }}
               >
-                + {isFr ? 'Lister mon premier produit' : 'List my first product'}
+                + {isFr ? 'Déclarer ma première production' : 'Declare my first production'}
               </button>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {listings.map((l) => (
+              {listings.map((l) => {
+                const st = coopSupplyStatus(l, isFr);
+                return (
                 <div key={l._id} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{CROP_EMOJIS[l.commodity] || '🌾'}</span>
-                      <div>
+                  <div className="flex items-start justify-between mb-3 gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-2xl shrink-0">{CROP_EMOJIS[l.commodity] || '🌾'}</span>
+                      <div className="min-w-0">
                         <p className="font-bold text-[#1a3c2e]">{l.commodity}</p>
                         <p className="text-xs text-gray-400">
                           {l.qualityGrade} Grade · {l.certificationLevel}
                         </p>
                       </div>
                     </div>
-                    <span
-                      className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                        l.status === 'active'
-                          ? 'bg-green-100 text-green-700'
-                          : l.status === 'sold'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {l.status}
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${st.cls}`}>
+                      {st.label}
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mb-3">
@@ -674,7 +690,8 @@ export default function ProducerDashboard() {
                     <span>{l.createdAt ? new Date(l.createdAt).toLocaleDateString() : '—'}</span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -686,13 +703,25 @@ export default function ProducerDashboard() {
               aria-modal="true"
             >
               <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl relative">
-                <h3 className="font-bold text-[#1a3c2e] text-xl mb-4">
-                  {isFr ? '🌾 Lister un produit' : '🌾 List a Product'}
+                <h3 className="font-bold text-[#1a3c2e] text-xl mb-1">
+                  🌾 {isFr ? 'Déclarer ma production disponible' : 'Declare Available Production'}
                 </h3>
+                <p className="text-gray-500 text-sm mb-4">
+                  {isFr
+                    ? 'Informez votre coopérative de votre production disponible. Votre coopérative vérifiera et listera sur AfriYield Exchange.'
+                    : 'Inform your cooperative of your available production. Your cooperative will verify and list on AfriYield Exchange.'}
+                </p>
                 {listingState.ok ? (
                   <div className="text-center py-6">
                     <Check className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                    <p className="font-bold text-[#1a3c2e]">{isFr ? 'Produit listé !' : 'Product listed!'}</p>
+                    <p className="font-bold text-[#1a3c2e] mb-2">
+                      {isFr ? 'Production déclarée !' : 'Production declared!'}
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                      {isFr
+                        ? "Votre coopérative a été notifiée. Elle vérifiera et ajoutera votre production à l'offre collective sur AfriYield Exchange."
+                        : 'Your cooperative has been notified. They will verify and add your production to the collective supply on AfriYield Exchange.'}
+                    </p>
                   </div>
                 ) : (
                   <form onSubmit={submitListing} className="space-y-4">
@@ -792,7 +821,7 @@ export default function ProducerDashboard() {
                         className="flex-1 rounded-xl py-3 font-bold text-white text-sm disabled:opacity-50"
                         style={{ background: '#1a3c2e' }}
                       >
-                        {listingState.loading ? '...' : isFr ? 'Publier' : 'Publish'}
+                        {listingState.loading ? '...' : isFr ? 'Déclarer à ma coopérative' : 'Submit to my cooperative'}
                       </button>
                       <button
                         type="button"

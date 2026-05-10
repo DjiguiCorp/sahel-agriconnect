@@ -27,6 +27,9 @@ export default function FarmerNeedsTab({ token, isFr }) {
   const [countryFilter, setCountryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [supplyListings, setSupplyListings] = useState([]);
+  const [supplyLoading, setSupplyLoading] = useState(false);
+  const [promotingId, setPromotingId] = useState(null);
   const { country: detectedCountry } = useGeolocation();
 
   const headers = {
@@ -63,6 +66,43 @@ export default function FarmerNeedsTab({ token, isFr }) {
   useEffect(() => {
     loadNeeds();
   }, [loadNeeds]);
+
+  const loadSupply = useCallback(async () => {
+    if (!token) return;
+    const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    setSupplyLoading(true);
+    try {
+      const r = await fetch(API_ENDPOINTS.PRODUCE.ADMIN_ALL, { headers: h });
+      const d = r.ok ? await r.json() : {};
+      setSupplyListings(Array.isArray(d.listings) ? d.listings : []);
+    } catch {
+      setSupplyListings([]);
+    }
+    setSupplyLoading(false);
+  }, [token]);
+
+  useEffect(() => {
+    loadSupply();
+  }, [loadSupply]);
+
+  const promoteListing = async (id) => {
+    if (!token) return;
+    const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    setPromotingId(id);
+    try {
+      await fetch(API_ENDPOINTS.PRODUCE.PROMOTE(id), { method: 'PUT', headers: h });
+      await loadSupply();
+    } finally {
+      setPromotingId(null);
+    }
+  };
+
+  const awaitingPromotion = supplyListings.filter(
+    (l) =>
+      l.status === 'active' &&
+      !l.promotedToMarketplace &&
+      String(l.listingType || 'cooperative_supply') === 'cooperative_supply'
+  );
 
   const updateNeed = async (id, status) => {
     await fetch(API_ENDPOINTS.FARMER_NEEDS.BY_ID(id), {
@@ -376,6 +416,90 @@ export default function FarmerNeedsTab({ token, isFr }) {
                 </a>
               )}
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-200 p-5 mt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h3 className="font-bold text-brand-forest">
+            📦{' '}
+            {isFr
+              ? 'Production déclarée — En attente de promotion AfriYield'
+              : 'Declared Production — Awaiting AfriYield Promotion'}
+          </h3>
+          <button
+            type="button"
+            onClick={() => loadSupply()}
+            disabled={supplyLoading || !token}
+            className="text-xs font-semibold text-brand-forest border border-brand-forest px-3 py-1.5 rounded-lg hover:bg-brand-forest/5 disabled:opacity-50"
+          >
+            {supplyLoading ? (isFr ? '…' : '…') : isFr ? 'Actualiser' : 'Refresh'}
+          </button>
+        </div>
+
+        {!token ? (
+          <p className="text-sm text-gray-500">{isFr ? 'Connexion requise.' : 'Sign in required.'}</p>
+        ) : supplyLoading ? (
+          <p className="text-sm text-gray-400">{isFr ? 'Chargement…' : 'Loading…'}</p>
+        ) : awaitingPromotion.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            {isFr
+              ? 'Aucune déclaration en attente de promotion sur AfriYield.'
+              : 'No declarations awaiting AfriYield promotion.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                    {isFr ? 'Agriculteur' : 'Farmer'}
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                    {isFr ? 'Produit' : 'Commodity'}
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                    {isFr ? 'Qté (kg)' : 'Qty (kg)'}
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                    {isFr ? 'Prix/kg' : '$/kg'}
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                    {isFr ? 'Coopérative' : 'Cooperative'}
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-36" aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {awaitingPromotion.map((l) => (
+                  <tr key={l._id} className="border-t border-gray-100">
+                    <td className="px-3 py-3">
+                      <p className="font-medium text-brand-forest">{l.farmerName || '—'}</p>
+                      <p className="text-xs text-gray-400">{l.farmerPhone || l.farmerEmail || ''}</p>
+                    </td>
+                    <td className="px-3 py-3">{l.commodity}</td>
+                    <td className="px-3 py-3 font-mono">{Number(l.quantityKg || 0).toLocaleString()}</td>
+                    <td className="px-3 py-3 font-mono">${l.pricePerKgUSD}</td>
+                    <td className="px-3 py-3 text-xs text-gray-600">{l.cooperativeName || '—'}</td>
+                    <td className="px-3 py-3">
+                      <button
+                        type="button"
+                        disabled={promotingId === l._id}
+                        onClick={() => promoteListing(l._id)}
+                        className="text-xs font-bold text-white bg-[#B5850A] px-3 py-1.5 rounded-lg hover:bg-[#9a7109] disabled:opacity-50"
+                      >
+                        {promotingId === l._id
+                          ? '…'
+                          : isFr
+                            ? 'Promouvoir AfriYield'
+                            : 'Promote to AfriYield'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
