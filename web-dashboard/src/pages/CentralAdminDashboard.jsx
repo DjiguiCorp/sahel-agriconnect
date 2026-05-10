@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import CooperativesManagement from '../components/admin/CooperativesManagement';
+import CooperativesTab from '../components/admin/CooperativesTab';
 import CooperativesDiasporaManagement from '../components/admin/CooperativesDiasporaManagement';
 import InputsManagement from '../components/admin/InputsManagement';
 import PartnershipsManagement from '../components/admin/PartnershipsManagement';
@@ -18,10 +18,10 @@ import CentersManagement from '../components/admin/CentersManagement';
 import BenefitsTab from '../components/admin/BenefitsTab';
 import TrainingsManagement from '../components/admin/TrainingsManagement';
 import IrrigationManagement from '../components/admin/IrrigationManagement';
-import ProductionOptimizationManagement from '../components/admin/ProductionOptimizationManagement';
+import OptimizationTab from '../components/admin/OptimizationTab';
 import AfriYieldManagement from '../components/admin/AfriYieldManagement';
 import CountryLicensesManagement from '../components/admin/CountryLicensesManagement';
-import Governance from '../pages/Governance';
+import GovernanceTab from '../components/admin/GovernanceTab';
 import Modal from '../components/Modal';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
@@ -1356,13 +1356,17 @@ const CentralAdminDashboard = () => {
             <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />
           )}
           {activeTab === 'farmers' && <RealTimeFarmers globalCountryFilter={globalCountryFilter} />}
-          {activeTab === 'cooperatives' && <CooperativesManagement globalCountryFilter={globalCountryFilter} />}
+          {activeTab === 'cooperatives' && (
+            <CooperativesTab token={adminToken} isFr={isFr} globalCountryFilter={globalCountryFilter} />
+          )}
           {activeTab === 'centers' && <CentersManagement globalCountryFilter={globalCountryFilter} />}
           {activeTab === 'trainings' && <TrainingsManagement />}
-          {activeTab === 'governance' && <Governance />}
+          {activeTab === 'governance' && <GovernanceTab isFr={isFr} />}
           {activeTab === 'perks' && <BenefitsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'irrigation' && <IrrigationManagement />}
-          {activeTab === 'optimization' && <ProductionOptimizationManagement />}
+          {activeTab === 'optimization' && (
+            <OptimizationTab token={adminToken} isFr={isFr} />
+          )}
           {activeTab === 'expertRequests' && (
             <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} globalCountryFilter={globalCountryFilter} />
           )}
