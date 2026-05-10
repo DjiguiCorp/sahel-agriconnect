@@ -9,10 +9,14 @@ router.post('/apply', async (req, res) => {
     await EquipmentFundApplication.create({
       cooperativeName: req.body.cooperativeName,
       country: req.body.country,
+      region: req.body.region || '',
       equipmentNeeded: Array.isArray(req.body.equipmentNeeded) ? req.body.equipmentNeeded : [],
       estimatedValue: Number(req.body.estimatedValue),
       farmersBenefiting: Number(req.body.farmersBenefiting),
       email: req.body.email,
+      phone: req.body.phone || '',
+      urgencyLevel: req.body.urgencyLevel || 'medium',
+      additionalNeeds: req.body.additionalNeeds || '',
     });
     res.status(201).json({ success: true });
   } catch (e) {

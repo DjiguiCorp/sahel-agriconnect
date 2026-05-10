@@ -32,6 +32,7 @@
     "soilDiagnostic": "Soil Diagnostic",
     "diseaseDetection": "Disease Detection",
     "thinkTank": "Think Tank",
+    "farmerNeeds": "My Farm Needs",
     "downloadApp": "Download App",
     "admin": "Central Admin",
     "logout": "Logout",
@@ -877,6 +878,7 @@
       "notifications": "Notifications",
       "deletions": "🗑️ Suppressions",
       "farmers": "Farmers",
+      "farmerNeeds": "Farmer Needs",
       "cooperatives": "Cooperatives",
       "centers": "Centers",
       "trainings": "Trainings",
@@ -897,6 +899,7 @@
       "notifications": "Notif.",
       "deletions": "Del.",
       "farmers": "Farm.",
+      "farmerNeeds": "Needs",
       "cooperatives": "Coop.",
       "centers": "Centers",
       "trainings": "Train.",
@@ -1451,6 +1454,47 @@
     "farmerBody": "Your farmer profile, crop data, cooperative memberships, and AI tool history will be permanently removed. If you are part of a cooperative, your cooperative administrator will be notified.",
     "cooperativeTitle": "Delete My Cooperative Account",
     "cooperativeBody": "Deleting your cooperative account will remove all member data, equipment fund records, and certification history. All member farmers must be notified at least 30 days in advance."
+  },
+  "equipmentFund": {
+    "hero": {
+      "title": "Equipment Fund — Cooperatives Buy, Farmers Rent",
+      "subtitle": "Cooperatives access equipment funded by diaspora investors via AfriYield Exchange Track A. Member farmers rent at affordable rates.",
+      "badge": "Equipment Fund"
+    },
+    "how": {
+      "title": "How it works",
+      "step1": "Cooperative applies for equipment",
+      "step2": "Diaspora investors fund via AfriYield Track A",
+      "step3": "Cooperative rents to member farmers",
+      "step4": "Rental income repays investors with ROI"
+    },
+    "categories": {
+      "title": "Equipment categories",
+      "Tractors": "Tractors",
+      "Irrigation": "Irrigation Systems",
+      "Harvesting": "Harvesting Equipment",
+      "Drying & Storage": "Drying & Storage",
+      "Processing Machinery": "Processing Machinery",
+      "Transport": "Transport Vehicles"
+    },
+    "form": {
+      "title": "Interest Form",
+      "subtitle": "Submit your cooperative's needs. Our team will contact you with documentation requirements.",
+      "cooperativeName": "Cooperative name",
+      "country": "Country",
+      "equipmentNeeded": "Equipment needed",
+      "estimatedValue": "Estimated value (USD)",
+      "farmersBenefiting": "Number of farmers who benefit",
+      "email": "Email",
+      "submit": "Submit application",
+      "success": "Application received! Our team will review and contact you within 48 hours.",
+      "error": "Something went wrong. Please try again."
+    },
+    "investor": {
+      "title": "Investors",
+      "body": "Fund equipment through AfriYield Exchange Track A. Returns are tied to cooperative rental performance and program rules.",
+      "cta": "Register as an investor"
+    }
   }
 }
 

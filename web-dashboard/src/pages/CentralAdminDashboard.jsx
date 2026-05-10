@@ -22,6 +22,7 @@ import OptimizationTab from '../components/admin/OptimizationTab';
 import AfriYieldManagement from '../components/admin/AfriYieldManagement';
 import CountryLicensesManagement from '../components/admin/CountryLicensesManagement';
 import GovernanceTab from '../components/admin/GovernanceTab';
+import FarmerNeedsTab from '../components/admin/FarmerNeedsTab';
 import Modal from '../components/Modal';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
@@ -47,6 +48,7 @@ import {
   UserPlus,
   ClipboardList,
   Trash2,
+  Wheat,
 } from 'lucide-react';
 
 const BASE_TABS = [
@@ -54,6 +56,7 @@ const BASE_TABS = [
   { id: 'notifications', labelKey: 'adminDashboard.tabs.notifications', shortKey: 'adminDashboard.tabsShort.notifications', Icon: BadgeCheck },
   { id: 'deletions', labelKey: 'adminDashboard.tabs.deletions', shortKey: 'adminDashboard.tabsShort.deletions', Icon: Trash2 },
   { id: 'farmers', labelKey: 'adminDashboard.tabs.farmers', shortKey: 'adminDashboard.tabsShort.farmers', Icon: Sprout },
+  { id: 'farmerNeeds', labelKey: 'adminDashboard.tabs.farmerNeeds', shortKey: 'adminDashboard.tabsShort.farmerNeeds', Icon: Wheat },
   { id: 'cooperatives', labelKey: 'adminDashboard.tabs.cooperatives', shortKey: 'adminDashboard.tabsShort.cooperatives', Icon: Handshake },
   { id: 'centers', labelKey: 'adminDashboard.tabs.centers', shortKey: 'adminDashboard.tabsShort.centers', Icon: Building2 },
   { id: 'trainings', labelKey: 'adminDashboard.tabs.trainings', shortKey: 'adminDashboard.tabsShort.trainings', Icon: BookOpen },
@@ -1356,6 +1359,7 @@ const CentralAdminDashboard = () => {
             <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />
           )}
           {activeTab === 'farmers' && <RealTimeFarmers globalCountryFilter={globalCountryFilter} />}
+          {activeTab === 'farmerNeeds' && <FarmerNeedsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'cooperatives' && (
             <CooperativesTab token={adminToken} isFr={isFr} globalCountryFilter={globalCountryFilter} />
           )}

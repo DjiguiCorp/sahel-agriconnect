@@ -68,6 +68,11 @@ export const API_ENDPOINTS = {
   EQUIPMENT_FUND: {
     APPLY: `${API_BASE_URL}/api/equipment-fund/apply`,
   },
+  FARMER_NEEDS: {
+    BASE: `${API_BASE_URL}/api/farmer-needs`,
+    STATS: `${API_BASE_URL}/api/farmer-needs/stats`,
+    BY_ID: (id) => `${API_BASE_URL}/api/farmer-needs/${id}`,
+  },
   // Détection de maladies
   PLANT_DISEASE: `${API_BASE_URL}/api/detect-plant-disease`,
   // Health check

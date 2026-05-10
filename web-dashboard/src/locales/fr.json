@@ -32,6 +32,7 @@
     "soilDiagnostic": "Diagnostic Sol",
     "diseaseDetection": "Détection Maladies",
     "thinkTank": "Think Tank",
+    "farmerNeeds": "Mes besoins agricoles",
     "downloadApp": "Télécharger l'app",
     "admin": "Central Admin",
     "logout": "Déconnexion",
@@ -877,6 +878,7 @@
       "notifications": "Notifications",
       "deletions": "🗑️ Suppressions",
       "farmers": "Agriculteurs",
+      "farmerNeeds": "Besoins Agriculteurs",
       "cooperatives": "Coopératives",
       "centers": "Centres",
       "trainings": "Formations",
@@ -897,6 +899,7 @@
       "notifications": "Notif.",
       "deletions": "Supp.",
       "farmers": "Agric.",
+      "farmerNeeds": "Besoins",
       "cooperatives": "Coop.",
       "centers": "Centres",
       "trainings": "Form.",
@@ -1439,6 +1442,47 @@
     "farmerBody": "Votre profil agriculteur, données de culture, adhésions aux coopératives et historique des outils IA seront définitivement supprimés. Si vous faites partie d'une coopérative, votre administrateur de coopérative sera notifié.",
     "cooperativeTitle": "Supprimer mon compte coopérative",
     "cooperativeBody": "La suppression de votre compte coopérative supprimera toutes les données des membres, les relevés du fonds d'équipement et l'historique de certification. Tous les agriculteurs membres doivent être notifiés au moins 30 jours à l'avance."
+  },
+  "equipmentFund": {
+    "hero": {
+      "title": "Fonds d'Équipement — Les Coopératives Achètent, les Agriculteurs Louent",
+      "subtitle": "Les coopératives accèdent à des équipements financés par des investisseurs diaspora via AfriYield Exchange Piste A. Les agriculteurs membres louent à des tarifs abordables.",
+      "badge": "Fonds d'équipement"
+    },
+    "how": {
+      "title": "Comment ça marche",
+      "step1": "La coopérative fait une demande d'équipement",
+      "step2": "Les investisseurs diaspora financent via AfriYield Piste A",
+      "step3": "La coopérative loue aux agriculteurs membres",
+      "step4": "Les revenus locatifs remboursent les investisseurs avec ROI"
+    },
+    "categories": {
+      "title": "Catégories d'équipements",
+      "Tractors": "Tracteurs",
+      "Irrigation": "Systèmes d'irrigation",
+      "Harvesting": "Équipements de récolte",
+      "Drying & Storage": "Séchage et stockage",
+      "Processing Machinery": "Machines de transformation",
+      "Transport": "Véhicules de transport"
+    },
+    "form": {
+      "title": "Formulaire d'intérêt",
+      "subtitle": "Soumettez les besoins de votre coopérative. Notre équipe vous contactera avec les exigences documentaires.",
+      "cooperativeName": "Nom de la coopérative",
+      "country": "Pays",
+      "equipmentNeeded": "Équipements nécessaires",
+      "estimatedValue": "Valeur estimée (USD)",
+      "farmersBenefiting": "Nombre d'agriculteurs bénéficiaires",
+      "email": "Email",
+      "submit": "Soumettre la demande",
+      "success": "Demande reçue ! Notre équipe examinera et vous contactera dans les 48 heures.",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "investor": {
+      "title": "Investisseurs",
+      "body": "Financez des équipements via AfriYield Exchange Piste A. Les retours sont liés aux performances locatives de la coopérative et aux règles du programme.",
+      "cta": "S'inscrire comme investisseur"
+    }
   }
 }
 

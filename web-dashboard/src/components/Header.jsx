@@ -5,6 +5,7 @@ import { Menu, X, Lock, ChevronDown } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
 const OUTILS_ITEMS = [
+  { to: '/farmer-needs', labelKey: 'nav.farmerNeeds', emoji: '🌾' },
   { to: '/diagnostic-sol', labelKey: 'nav.soilDiagnostic' },
   { to: '/detection-maladies', labelKey: 'nav.diseaseDetection' },
   { to: '/think-tank', labelKey: 'nav.thinkTank' },
@@ -146,7 +147,7 @@ const Header = () => {
                   aria-label="Outils agricoles"
                 >
                   <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
-                    {OUTILS_ITEMS.map(({ to, labelKey }) => (
+                    {OUTILS_ITEMS.map(({ to, labelKey, emoji }) => (
                       <Link
                         key={to}
                         to={to}
@@ -154,6 +155,7 @@ const Header = () => {
                         className="block px-4 py-2.5 text-lg text-gray-700 hover:bg-brand-iconBg hover:text-brand-forest"
                         onClick={() => setDesktopOutilsOpen(false)}
                       >
+                        {emoji ? `${emoji} ` : ''}
                         {t(labelKey)}
                       </Link>
                     ))}
@@ -283,13 +285,14 @@ const Header = () => {
                 </button>
                 {mobileOutilsOpen && (
                   <div className="mt-2 flex flex-col space-y-1 border-l border-gray-200 pl-3 ml-1">
-                    {OUTILS_ITEMS.map(({ to, labelKey }) => (
+                    {OUTILS_ITEMS.map(({ to, labelKey, emoji }) => (
                       <Link
                         key={to}
                         to={to}
                         className="py-2 text-lg text-gray-700 hover:text-brand-forest"
                         onClick={closeMenu}
                       >
+                        {emoji ? `${emoji} ` : ''}
                         {t(labelKey)}
                       </Link>
                     ))}

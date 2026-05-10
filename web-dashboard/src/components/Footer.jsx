@@ -45,6 +45,7 @@ export default function Footer() {
                 [isFr ? 'Accueil' : 'Home', '/'],
                 [isFr ? 'À propos' : 'About', '/about'],
                 ['Dashboard', '/dashboard'],
+                [isFr ? 'Mes besoins agricoles' : 'My Farm Needs', '/farmer-needs'],
                 [isFr ? 'Coopératives' : 'Cooperatives', '/cooperatives'],
                 [isFr ? 'Diaspora' : 'Diaspora', '/diaspora'],
                 [isFr ? 'Tarifs' : 'Pricing', '/pricing'],

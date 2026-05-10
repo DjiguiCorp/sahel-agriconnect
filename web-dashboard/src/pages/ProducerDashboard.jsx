@@ -51,6 +51,7 @@ function normalizeListings(profile) {
 
 export default function ProducerDashboard() {
   const { t, i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   const { registerUser } = useRegisteredUser();
   const [params, setParams] = useSearchParams();
   const initial = params.get('q') || '';
@@ -243,6 +244,21 @@ export default function ProducerDashboard() {
             )}
           </div>
         </div>
+      </section>
+
+      <section className="mb-8">
+        <Link
+          to="/farmer-needs"
+          className="block rounded-2xl border-2 border-dashed border-[#B5850A]/40 p-4 text-center hover:border-[#B5850A] hover:bg-[#B5850A]/5 transition"
+        >
+          <span className="text-2xl">🌾</span>
+          <p className="font-semibold text-[#1a3c2e] text-sm mt-2">
+            {isFr ? 'Soumettre un besoin' : 'Submit a Need'}
+          </p>
+          <p className="text-gray-400 text-xs mt-1">
+            {isFr ? 'Équipement, formation, certification...' : 'Equipment, training, certification...'}
+          </p>
+        </Link>
       </section>
 
       {/* Section B — My Listings */}
