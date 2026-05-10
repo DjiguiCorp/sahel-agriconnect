@@ -1,6 +1,7 @@
 import express from 'express';
 import Cooperative from '../models/Cooperative.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import PendingNotification from '../models/PendingNotification.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { countryFilter } from '../middleware/countryFilter.js';
 import { confirmCooperativeRegistration, notifyAdminNewCooperative } from '../services/emailService.js';
@@ -122,6 +123,53 @@ router.get('/region/:region', async (req, res) => {
   } catch (error) {
     console.error('Erreur récupération coopératives par région:', error);
     res.status(500).json({ error: 'Erreur serveur lors de la récupération' });
+  }
+});
+
+// POST /api/cooperatives/inquiry — public: farmers requesting to join a listed cooperative
+router.post('/inquiry', async (req, res) => {
+  try {
+    const {
+      cooperativeId,
+      cooperativeName,
+      applicantName,
+      phone,
+      email,
+      message,
+    } = req.body;
+
+    if (!applicantName || !phone) {
+      return res.status(400).json({ error: 'Name and phone required' });
+    }
+
+    const name = cooperativeName || '—';
+    await PendingNotification.create({
+      recipientName: 'Admin',
+      recipientEmail: process.env.ADMIN_EMAIL || 'info@djiguicorporation.org',
+      message: `🤝 DEMANDE ADHÉSION COOPÉRATIVE\nCoopérative: ${name}\nCoop ID: ${cooperativeId || '—'}\nDemandeur: ${applicantName}\nTél: ${phone}\nEmail: ${email || 'non fourni'}\nMessage: ${message || 'aucun'}`,
+      source: 'cooperative_inquiry',
+      status: 'pending',
+    });
+
+    try {
+      await notifyAdminNewCooperative({
+        cooperativeName: `[DEMANDE ADHÉSION] ${applicantName} → ${name}`,
+        leaderName: applicantName,
+        country: cooperativeId ? `Coop ID: ${cooperativeId}` : '',
+        memberCount: '—',
+        primaryCrops: message ? [String(message)] : [],
+        interests: [`Téléphone demandeur: ${phone}`],
+        email: email || 'non fourni',
+        phone,
+      });
+    } catch (e) {
+      console.error('Cooperative inquiry email:', e);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Cooperative inquiry error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
