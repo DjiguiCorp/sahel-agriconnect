@@ -8,6 +8,111 @@ import Processor from '../models/Processor.js';
 import PendingNotification from '../models/PendingNotification.js';
 import { authenticateToken } from '../middleware/auth.js';
 
+// Accepted institutional domain patterns
+const GOVERNMENT_DOMAINS = [
+  '.gov',
+  '.gouv',
+  '.gou',
+  '.gov.ml',
+  '.gov.gh',
+  '.gov.sn',
+  '.gov.ng',
+  '.gov.bf',
+  '.gov.ne',
+  '.gov.ci',
+  '.gov.tg',
+  '.gov.bj',
+  '.gov.gn',
+  '.gouv.ml',
+  '.gouv.sn',
+  '.gouv.ci',
+  '.gouv.bf',
+  '.gouv.ne',
+  '.gouv.tg',
+  '.gouv.bj',
+  '.gouv.cm',
+  '.go.ke',
+  '.gov.ke',
+  '.gov.et',
+  '.gov.rw',
+  '.gov.tz',
+  '.gov.ug',
+  '.gov.za',
+  '.gov.zm',
+  '.gov.mz',
+  'sahel-test.gov', // for testing only — remove in production
+];
+
+const NGO_DOMAINS = [
+  '.org',
+  '.ngo',
+  '.ong',
+  '.int',
+  'fao.org',
+  'wfp.org',
+  'undp.org',
+  'worldbank.org',
+  'ifad.org',
+  'usaid.gov',
+  'giz.de',
+  'afd.fr',
+  'sida.se',
+  'dfid.gov.uk',
+  'oxfam.org',
+  'care.org',
+  'africare.org',
+  'agra.org',
+];
+
+const ENTERPRISE_BLOCKED_DOMAINS = [
+  'gmail.com',
+  'yahoo.com',
+  'hotmail.com',
+  'outlook.com',
+  'aol.com',
+  'icloud.com',
+  'mail.com',
+  'protonmail.com',
+  'yandex.com',
+];
+
+function validateInstitutionalEmail(email, orgType) {
+  const e = String(email || '').toLowerCase().trim();
+  const domain = e.split('@')[1];
+  if (!domain) return { valid: false, reason: 'Invalid email format' };
+
+  if (orgType === 'government') {
+    const isGov = GOVERNMENT_DOMAINS.some((d) => domain.endsWith(d) || domain.includes(d));
+    if (!isGov) {
+      return {
+        valid: false,
+        reason: `Government accounts require an official government email (.gov, .gouv, .gov.ml etc). Received: @${domain}`,
+      };
+    }
+  }
+
+  if (orgType === 'enterprise') {
+    if (ENTERPRISE_BLOCKED_DOMAINS.includes(domain)) {
+      return {
+        valid: false,
+        reason: 'Enterprise accounts cannot use personal email providers. Please use your organization email.',
+      };
+    }
+  }
+
+  if (orgType === 'ngo') {
+    const isPersonal = ENTERPRISE_BLOCKED_DOMAINS.includes(domain);
+    if (isPersonal) {
+      return {
+        valid: false,
+        reason: 'NGO accounts cannot use personal email providers.',
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
 const router = express.Router();
 
 // Middleware: authenticate government admin
@@ -35,6 +140,14 @@ router.post('/login', async (req, res) => {
     }
     const valid = await admin.verifyPassword(password);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const emailCheck = validateInstitutionalEmail(admin.email, admin.orgType || 'government');
+    if (!emailCheck.valid && process.env.NODE_ENV === 'production') {
+      return res.status(403).json({
+        error: 'Account email does not meet institutional requirements. Contact support.',
+      });
+    }
+
     admin.lastLogin = new Date();
     await admin.save();
     const token = jwt.sign(
@@ -46,6 +159,8 @@ router.post('/login', async (req, res) => {
         role: 'country_admin',
         name: admin.name,
         organization: admin.organization,
+        orgType: admin.orgType || 'government',
+        accessTier: admin.accessTier || 'pilot',
       },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
@@ -55,8 +170,11 @@ router.post('/login', async (req, res) => {
       token,
       admin: {
         name: admin.name,
+        email: admin.email,
         country: admin.country,
         organization: admin.organization,
+        orgType: admin.orgType || 'government',
+        accessTier: admin.accessTier || 'pilot',
         permissions: admin.permissions,
       },
     });
@@ -68,21 +186,89 @@ router.post('/login', async (req, res) => {
 // POST /api/government/create-admin — platform admin creates a country admin
 router.post('/create-admin', authenticateToken, async (req, res) => {
   try {
-    const { country, countryCode, name, email, password, organization, licenseId } = req.body;
+    const {
+      country,
+      countryCode,
+      name,
+      email,
+      password,
+      organization,
+      licenseId,
+      orgType = 'government',
+    } = req.body;
+
+    const emailCheck = validateInstitutionalEmail(email, orgType);
+    if (!emailCheck.valid) {
+      return res.status(400).json({ error: emailCheck.reason });
+    }
+
     const passwordHash = await GovernmentAdmin.hashPassword(password);
     const admin = await GovernmentAdmin.create({
       country,
       countryCode,
       name,
-      email: email.toLowerCase(),
+      email: email.toLowerCase().trim(),
       passwordHash,
       organization,
       licenseId,
       status: 'active',
+      orgType: orgType || 'government',
     });
     res.status(201).json({
       success: true,
-      admin: { _id: admin._id, name: admin.name, email: admin.email, country: admin.country },
+      admin: {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        country: admin.country,
+        orgType: admin.orgType,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/government/test-create — DEV ONLY: create test accounts without email validation
+router.post('/test-create', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  try {
+    const { country = 'Mali', countryCode = 'ML', orgType = 'government' } = req.body;
+    const testData = {
+      government: {
+        email: `test.admin@agriculture.gov.ml`,
+        name: 'Test Gov Admin Mali',
+        organization: 'Ministère Agriculture Mali',
+      },
+      ngo: { email: `mali.director@testfao.org`, name: 'Test NGO Director', organization: 'FAO Mali Test' },
+      enterprise: {
+        email: `procurement@testenterprise.com`,
+        name: 'Test Enterprise',
+        organization: 'AgroTrade Test Corp',
+      },
+    };
+    const data = testData[orgType] || testData.government;
+    const passwordHash = await GovernmentAdmin.hashPassword('TestPassword123!');
+
+    await GovernmentAdmin.deleteOne({ email: data.email });
+
+    const admin = await GovernmentAdmin.create({
+      country,
+      countryCode,
+      orgType,
+      name: data.name,
+      email: data.email,
+      passwordHash,
+      organization: data.organization,
+      status: 'active',
+    });
+    res.json({
+      success: true,
+      message: 'Test account created',
+      credentials: { email: data.email, password: 'TestPassword123!', country, orgType },
+      note: 'This route is disabled in production',
     });
   } catch (err) {
     res.status(400).json({ error: err.message });

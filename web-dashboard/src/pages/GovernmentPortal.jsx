@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LogOut, Send, Plus, Search, Loader2, Check, X } from 'lucide-react';
 
@@ -28,6 +29,16 @@ function LoginScreen({ onLogin, isFr }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const orgTypeHint = urlParams.get('type') || 'government';
+
+  const portalLabels = {
+    government: { en: 'Government Portal', fr: 'Portail Gouvernemental', emoji: '🏛️' },
+    ngo: { en: 'NGO / Partner Portal', fr: 'Portail ONG / Partenaire', emoji: '🤝' },
+    enterprise: { en: 'Enterprise Portal', fr: 'Portail Entreprise', emoji: '🏢' },
+  };
+  const label = portalLabels[orgTypeHint] || portalLabels.government;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -61,7 +72,9 @@ function LoginScreen({ onLogin, isFr }) {
             <img src="/sahel-logo.png" alt="Sahel AgriConnect" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold text-white">Sahel AgriConnect</h1>
-          <p className="text-white/50 text-sm mt-1">{isFr ? 'Portail Gouvernemental' : 'Government Portal'}</p>
+          <p className="text-white/50 text-sm mt-1">
+            {label.emoji} {isFr ? label.fr : label.en}
+          </p>
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-2xl">
           <h2 className="font-bold text-[#1a3c2e] text-lg mb-5 text-center">
@@ -109,12 +122,27 @@ function LoginScreen({ onLogin, isFr }) {
               )}
             </button>
           </form>
-          <p className="text-xs text-gray-400 text-center mt-4">
-            {isFr ? 'Accès réservé aux administrateurs pays agréés.' : 'Access reserved for licensed country administrators.'}{' '}
-            <a href="/platform-licensing" className="text-[#1a3c2e] font-semibold hover:underline">
-              {isFr ? "Demander l'accès" : 'Request access'}
-            </a>
-          </p>
+          <div className="mt-6 bg-[#1a3c2e]/5 rounded-xl p-4 border border-gray-100">
+            <p className="text-gray-500 text-xs text-center mb-3">
+              {isFr
+                ? 'Première connexion? Votre mot de passe vous a été envoyé par notre équipe.'
+                : 'First time? Your password was sent by our team.'}
+            </p>
+            <div className="flex gap-2">
+              <Link
+                to="/platform-licensing?type=government"
+                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-[#1a3c2e]/70 hover:text-[#1a3c2e] border border-gray-200 hover:border-[#1a3c2e]/30 transition"
+              >
+                🏛️ {isFr ? 'Demander accès gouvernemental' : 'Request gov access'}
+              </Link>
+              <Link
+                to="/platform-licensing?type=ngo"
+                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-[#1a3c2e]/70 hover:text-[#1a3c2e] border border-gray-200 hover:border-[#1a3c2e]/30 transition"
+              >
+                🤝 {isFr ? 'Demander accès ONG' : 'Request NGO access'}
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -277,6 +305,97 @@ export default function GovernmentPortal() {
     { key: 'projects', label: isFr ? `📋 Projets (${stats?.projects ?? '—'})` : `📋 Projects (${stats?.projects ?? '—'})` },
   ];
 
+  const orgTypeKey = admin.orgType || 'government';
+
+  const bannerEmoji =
+    { government: '🏛️', ngo: '🤝', enterprise: '🏢', international_org: '🌍' }[orgTypeKey] || '🏛️';
+
+  const dashboardTitle =
+    {
+      government: isFr ? 'Tableau de bord national' : 'National Dashboard',
+      ngo: isFr ? 'Tableau de bord ONG' : 'NGO Dashboard',
+      enterprise: isFr ? 'Tableau de bord entreprise' : 'Enterprise Dashboard',
+      international_org: isFr ? 'Tableau de bord organisation internationale' : 'International Organization Dashboard',
+    }[orgTypeKey] || (isFr ? 'Tableau de bord' : 'Dashboard');
+
+  const openProjectForm = (patch) => {
+    setActiveTab('projects');
+    setTimeout(() => {
+      setShowProjectForm(true);
+      if (patch) setProjectForm((f) => ({ ...f, ...patch }));
+    }, 100);
+  };
+
+  const quickActions =
+    orgTypeKey === 'ngo' || orgTypeKey === 'international_org'
+      ? [
+          {
+            icon: '📚',
+            label: isFr ? 'Lancer un programme de formation' : 'Launch training program',
+            action: () => openProjectForm({ projectType: 'training' }),
+          },
+          {
+            icon: '🤝',
+            label: isFr ? 'Programme de partenariat coopératives' : 'Cooperative partnership program',
+            action: () => openProjectForm({ projectType: 'crop_program' }),
+          },
+          {
+            icon: '🌍',
+            label: isFr ? 'Initiative de liaison export' : 'Export liaison initiative',
+            action: () => openProjectForm({ projectType: 'export_liaison' }),
+          },
+          {
+            icon: '💰',
+            label: isFr ? 'Engagement investisseurs diaspora' : 'Diaspora investor engagement',
+            action: () => openProjectForm({ projectType: 'diaspora_initiative', targetAudience: ['diaspora'] }),
+          },
+        ]
+      : orgTypeKey === 'enterprise'
+        ? [
+            {
+              icon: '🌾',
+              label: isFr ? 'Sourcer des commodités' : 'Source commodities',
+              action: () => openProjectForm({ projectType: 'crop_program' }),
+            },
+            {
+              icon: '🤝',
+              label: isFr ? 'Connecter avec coopératives' : 'Connect with cooperatives',
+              action: () => openProjectForm({ projectType: 'export_liaison' }),
+            },
+            {
+              icon: '⭐',
+              label: isFr ? 'Programme de certification partenaires' : 'Partner certification program',
+              action: () => openProjectForm({ projectType: 'certification_push' }),
+            },
+            {
+              icon: '📈',
+              label: isFr ? "Développement chaîne d'approvisionnement" : 'Supply chain development',
+              action: () => openProjectForm({ projectType: 'business_development' }),
+            },
+          ]
+        : [
+            {
+              icon: '🌾',
+              label: isFr ? 'Lancer un programme agricole' : 'Launch crop program',
+              action: () => openProjectForm(),
+            },
+            {
+              icon: '📚',
+              label: isFr ? 'Organiser une formation' : 'Organize training',
+              action: () => openProjectForm({ projectType: 'training' }),
+            },
+            {
+              icon: '🌍',
+              label: isFr ? 'Liaison export pays' : 'Country export liaison',
+              action: () => openProjectForm({ projectType: 'export_liaison' }),
+            },
+            {
+              icon: '💰',
+              label: isFr ? 'Engager la diaspora' : 'Engage diaspora',
+              action: () => openProjectForm({ projectType: 'diaspora_initiative', targetAudience: ['diaspora'] }),
+            },
+          ];
+
   return (
     <div style={{ background: '#f8f4e3', minHeight: '100vh' }}>
       <div style={{ background: '#1a3c2e' }} className="px-6 py-4 flex items-center justify-between">
@@ -308,7 +427,7 @@ export default function GovernmentPortal() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-white">
-              {isFr ? 'Tableau de bord national —' : 'National Dashboard —'} {admin.country}
+              {bannerEmoji} {dashboardTitle} — {admin.country}
             </h1>
             <p className="text-white/70 text-sm">
               {isFr ? "Vue d'ensemble des acteurs agricoles et projets nationaux" : 'Agricultural actors overview and national projects'}
@@ -422,49 +541,7 @@ export default function GovernmentPortal() {
             <div className="bg-white rounded-2xl border border-gray-200 p-5">
               <h3 className="font-bold text-[#1a3c2e] text-lg mb-4">⚡ {isFr ? 'Actions rapides' : 'Quick Actions'}</h3>
               <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
-                {[
-                  {
-                    icon: '🌾',
-                    label: isFr ? 'Lancer un programme agricole' : 'Launch crop program',
-                    action: () => {
-                      setActiveTab('projects');
-                      setTimeout(() => setShowProjectForm(true), 100);
-                    },
-                  },
-                  {
-                    icon: '📚',
-                    label: isFr ? 'Organiser une formation' : 'Organize training',
-                    action: () => {
-                      setActiveTab('projects');
-                      setTimeout(() => {
-                        setShowProjectForm(true);
-                        setProjectForm((f) => ({ ...f, projectType: 'training' }));
-                      }, 100);
-                    },
-                  },
-                  {
-                    icon: '🌍',
-                    label: isFr ? 'Liaison export pays' : 'Country export liaison',
-                    action: () => {
-                      setActiveTab('projects');
-                      setTimeout(() => {
-                        setShowProjectForm(true);
-                        setProjectForm((f) => ({ ...f, projectType: 'export_liaison' }));
-                      }, 100);
-                    },
-                  },
-                  {
-                    icon: '💰',
-                    label: isFr ? 'Engager la diaspora' : 'Engage diaspora',
-                    action: () => {
-                      setActiveTab('projects');
-                      setTimeout(() => {
-                        setShowProjectForm(true);
-                        setProjectForm((f) => ({ ...f, projectType: 'diaspora_initiative', targetAudience: ['diaspora'] }));
-                      }, 100);
-                    },
-                  },
-                ].map(({ icon, label, action }) => (
+                {quickActions.map(({ icon, label, action }) => (
                   <button
                     key={label}
                     onClick={action}

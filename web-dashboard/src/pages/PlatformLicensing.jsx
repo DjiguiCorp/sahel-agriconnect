@@ -1,25 +1,111 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
-import { Shield, Settings, Globe, Loader2, Check } from 'lucide-react';
+import { Check, Loader2, ChevronRight } from 'lucide-react';
 import LocationSelector from '../components/LocationSelector';
 
+const ORG_TYPES = [
+  {
+    key: 'government',
+    icon: '🏛️',
+    title: 'Government / Ministry',
+    titleFr: 'Gouvernement / Ministère',
+    desc: 'National or regional ministry, agricultural agency, or government body seeking country-level platform access.',
+    descFr:
+      'Ministère national ou régional, agence agricole ou organisme gouvernemental cherchant un accès plateforme au niveau pays.',
+    requirement: 'Requires official .gov / .gouv email',
+    requirementFr: 'Nécessite un email officiel .gov / .gouv',
+    color: '#1a3c2e',
+    price: '$999/month',
+    features: [
+      'Country-scoped data access',
+      'National project broadcasts',
+      'All farmers, coops, processors visible',
+      'Data isolation by country',
+      'Optional national data center',
+    ],
+  },
+  {
+    key: 'ngo',
+    icon: '🤝',
+    title: 'NGO / International Organization',
+    titleFr: 'ONG / Organisation internationale',
+    desc: 'NGO, UN agency, development organization, or international body supporting African agriculture.',
+    descFr:
+      "ONG, agence ONU, organisation de développement ou organisme international soutenant l'agriculture africaine.",
+    requirement: 'Requires .org / .ngo or institutional email',
+    requirementFr: 'Nécessite un email .org / .ngo ou institutionnel',
+    color: '#3b82f6',
+    price: '$499/month',
+    features: [
+      'Multi-country program access',
+      'Training program management',
+      'Farmer and cooperative engagement',
+      'Impact reporting',
+      'Partnership with cooperatives',
+    ],
+  },
+  {
+    key: 'enterprise',
+    icon: '🏢',
+    title: 'Enterprise / Corporate',
+    titleFr: 'Entreprise / Corporatif',
+    desc: 'Large buyer, processor group, commodities trader, or corporate sourcing team seeking verified supply chain access.',
+    descFr:
+      "Grand acheteur, groupe de transformation, négociant en matières premières ou équipe d'approvisionnement d'entreprise.",
+    requirement: 'Requires professional business email',
+    requirementFr: "Nécessite un email professionnel d'entreprise",
+    color: '#B5850A',
+    price: '$1,499/month',
+    features: [
+      'Verified supply chain access',
+      'Direct cooperative sourcing',
+      'AfriYield Exchange priority access',
+      'Bulk commodity intelligence',
+      'Dedicated account manager',
+    ],
+  },
+];
+
 export default function PlatformLicensing() {
-  const { t } = useTranslation();
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+  const [selectedType, setSelectedType] = useState(null);
+  const [step, setStep] = useState(1);
   const [form, setForm] = useState({
+    orgType: '',
     organizationName: '',
     country: '',
+    region: '',
     contactName: '',
     email: '',
     phone: '',
-    role: t('platformLicensing.form.roles.ministry'),
+    role: '',
+    website: '',
+    description: '',
+    targetCountries: '',
+    primaryGoal: '',
   });
   const [state, setState] = useState({ loading: false, ok: false, err: '' });
 
-  const onChange = (e) => {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('type');
+    const t = ORG_TYPES.find((o) => o.key === p);
+    if (t) {
+      setSelectedType(t);
+      setForm((f) => ({ ...f, orgType: t.key }));
+      setStep(2);
+    }
+  }, []);
+
+  const selectType = (type) => {
+    setSelectedType(type);
+    setForm((f) => ({ ...f, orgType: type.key }));
+    setStep(2);
   };
+
+  const onChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -28,208 +114,366 @@ export default function PlatformLicensing() {
       const r = await fetch(API_ENDPOINTS.LICENSING.INQUIRE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, source: 'platform_licensing_page' }),
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         throw new Error(j?.error || 'Request failed');
       }
       setState({ loading: false, ok: true, err: '' });
+      setStep(3);
     } catch (err) {
-      setState({ loading: false, ok: false, err: err.message || 'Error' });
+      setState({ loading: false, ok: false, err: err.message });
     }
   };
 
-  const pillars = [
-    { Icon: Shield, key: 'sovereign' },
-    { Icon: Settings, key: 'custom' },
-    { Icon: Globe, key: 'global' },
-  ];
-
-  const roleKeys = ['ministry', 'regional', 'ngo', 'cooperative', 'other'];
-
   return (
-    <div className="bg-[#1a3c2e] text-white min-h-[60vh]">
-      {/* Hero */}
-      <section className="section-container py-16 md:py-20">
-        <div className="max-w-5xl">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">
-            {t('platformLicensing.hero.title')}
+    <div>
+      <section style={{ background: 'linear-gradient(135deg, #1a3c2e, #2d5a3d)' }} className="text-white">
+        <div className="section-container py-16 md:py-20 text-center">
+          <span className="inline-block bg-[#B5850A]/20 text-[#B5850A] text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4">
+            {isFr ? 'Accès institutionnel' : 'Institutional Access'}
+          </span>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            {isFr ? 'Licences Institutionnelles' : 'Institutional Licenses'}
           </h1>
-          <p className="mt-4 text-lg md:text-xl text-white/90 max-w-3xl">
-            {t('platformLicensing.hero.subtitle')}
+          <p className="text-white/70 text-lg max-w-2xl mx-auto">
+            {isFr
+              ? 'Gouvernements, ONG et entreprises — accédez aux données agricoles de votre territoire avec isolation complète des données et portail dédié.'
+              : 'Governments, NGOs, and enterprises — access agricultural data for your territory with complete data isolation and dedicated portal.'}
           </p>
         </div>
       </section>
 
-      {/* Three pillars */}
-      <section className="section-container pt-0 pb-14">
-        <div className="grid md:grid-cols-3 gap-6">
-          {pillars.map(({ Icon, key }) => (
-            <div key={key} className="rounded-2xl bg-white/10 border border-white/15 p-6">
-              <div className="w-12 h-12 rounded-xl bg-[#B5850A] text-[#1a3c2e] flex items-center justify-center mb-4">
-                <Icon className="w-6 h-6" aria-hidden />
-              </div>
-              <h3 className="text-xl font-bold text-white">
-                {t(`platformLicensing.pillars.${key}.title`)}
-              </h3>
-              <p className="mt-2 text-white/85">
-                {t(`platformLicensing.pillars.${key}.text`)}
-              </p>
+      <div className="section-container py-12 pb-20">
+        {step === 1 && (
+          <div>
+            <h2 className="text-2xl font-bold text-[#1a3c2e] text-center mb-3">
+              {isFr ? 'Quelle est votre organisation?' : 'What is your organization?'}
+            </h2>
+            <p className="text-gray-500 text-center mb-10">
+              {isFr
+                ? "Choisissez le type d'accès qui correspond à votre organisation."
+                : 'Choose the access type that matches your organization.'}
+            </p>
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {ORG_TYPES.map((type) => (
+                <button
+                  key={type.key}
+                  onClick={() => selectType(type)}
+                  type="button"
+                  className="rounded-2xl border-2 border-gray-200 p-6 text-left hover:border-[#1a3c2e] hover:shadow-lg transition-all bg-white group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-4xl">{type.icon}</span>
+                    <span className="text-xs font-bold px-2 py-1 rounded-full text-white" style={{ background: type.color }}>
+                      {type.price}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{isFr ? type.titleFr : type.title}</h3>
+                  <p className="text-gray-500 text-sm mb-4 leading-relaxed">{isFr ? type.descFr : type.desc}</p>
+                  <p className="text-xs font-semibold mb-4" style={{ color: type.color }}>
+                    🔒 {isFr ? type.requirementFr : type.requirement}
+                  </p>
+                  <div className="space-y-1.5">
+                    {type.features.map((f) => (
+                      <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
+                        <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: type.color }} />
+                        {f}
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    className="mt-5 flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all"
+                    style={{ color: type.color }}
+                  >
+                    {isFr ? 'Faire une demande' : 'Apply now'} <ChevronRight className="w-4 h-4" />
+                  </div>
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* Pricing card */}
-      <section className="section-container pt-0 pb-14">
-        <div className="rounded-2xl bg-white text-[#1a3c2e] p-8 md:p-10 border border-[#B5850A]/40 shadow-xl max-w-3xl">
-          <p className="text-sm font-semibold text-[#B5850A] uppercase tracking-wide">
-            {t('platformLicensing.license.badge')}
-          </p>
-          <h2 className="text-3xl md:text-4xl font-extrabold mt-2">
-            {t('platformLicensing.license.price')}
-          </h2>
-          <p className="mt-2 text-gray-600">
-            {t('platformLicensing.license.description')}
-          </p>
-          <ul className="mt-8 space-y-3 text-gray-800">
-            {t('platformLicensing.license.features', { returnObjects: true }).map((feature) => (
-              <li key={feature} className="flex gap-3 items-start">
-                <Check className="w-5 h-5 text-[#B5850A] shrink-0 mt-0.5" aria-hidden />
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* Data isolation diagram */}
-      <section className="section-container pt-0 pb-14">
-        <h2 className="text-2xl md:text-3xl font-extrabold text-white">
-          {t('platformLicensing.isolation.title')}
-        </h2>
-        <p className="mt-2 text-white/85 max-w-3xl">
-          {t('platformLicensing.isolation.subtitle')}
-        </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center md:gap-2">
-          <div className="rounded-2xl bg-white/10 border border-white/15 p-6 text-center">
-            <p className="text-sm font-semibold text-[#B5850A]">{t('platformLicensing.isolation.countryA')}</p>
-            <p className="text-sm text-white/80 mt-2">{t('platformLicensing.isolation.countryADesc')}</p>
-          </div>
-          <div className="hidden md:flex justify-center text-[#B5850A] text-2xl font-black" aria-hidden>
-            →
-          </div>
-          <div className="rounded-2xl bg-white/10 border border-white/15 p-6 text-center">
-            <p className="text-sm font-semibold text-[#B5850A]">{t('platformLicensing.isolation.countryB')}</p>
-            <p className="text-sm text-white/80 mt-2">{t('platformLicensing.isolation.countryBDesc')}</p>
-          </div>
-          <div className="hidden md:flex justify-center text-[#B5850A] text-2xl font-black" aria-hidden>
-            →
-          </div>
-          <div className="rounded-2xl bg-[#B5850A] text-[#1a3c2e] p-6 text-center shadow-xl border border-[#B5850A]">
-            <p className="text-sm font-bold">{t('platformLicensing.isolation.marketplace')}</p>
-            <p className="text-sm text-[#1a3c2e]/90 mt-2">{t('platformLicensing.isolation.marketplaceDesc')}</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Demo request form */}
-      <section className="section-container pt-0 pb-20">
-        <div className="rounded-2xl bg-white/10 border border-white/15 p-8 md:p-10 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-white">{t('platformLicensing.form.title')}</h2>
-          <p className="text-white/80 mt-2">{t('platformLicensing.form.subtitle')}</p>
-          <form onSubmit={submit} className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label className="space-y-1">
-              <span className="text-sm text-white/90">{t('platformLicensing.form.orgName')}</span>
-              <input
-                name="organizationName"
-                value={form.organizationName}
-                onChange={onChange}
-                required
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-white/45 focus:ring-2 focus:ring-[#B5850A] outline-none"
-              />
-            </label>
-            <label className="space-y-1">
-              <span className="text-sm text-white/90">{t('platformLicensing.form.country')}</span>
-              <div className="rounded-lg border border-white/20 bg-white/10 p-0.5">
-                <LocationSelector
-                  value={{ country: form.country, region: '' }}
-                  onChange={({ country }) => setForm((p) => ({ ...p, country }))}
-                  required
-                  showDetectedBanner={true}
-                  className="[&_*]:!text-white [&_label]:hidden"
-                />
-              </div>
-            </label>
-            <label className="space-y-1">
-              <span className="text-sm text-white/90">{t('platformLicensing.form.contactName')}</span>
-              <input
-                name="contactName"
-                value={form.contactName}
-                onChange={onChange}
-                required
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-white/45 focus:ring-2 focus:ring-[#B5850A] outline-none"
-              />
-            </label>
-            <label className="space-y-1">
-              <span className="text-sm text-white/90">{t('platformLicensing.form.role')}</span>
-              <select
-                name="role"
-                value={form.role}
-                onChange={onChange}
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white focus:ring-2 focus:ring-[#B5850A] outline-none"
-              >
-                {roleKeys.map((rk) => (
-                  <option key={rk} value={t(`platformLicensing.form.roles.${rk}`)} className="text-gray-900">
-                    {t(`platformLicensing.form.roles.${rk}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 sm:col-span-2">
-              <span className="text-sm text-white/90">{t('platformLicensing.form.email')}</span>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={onChange}
-                required
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-white/45 focus:ring-2 focus:ring-[#B5850A] outline-none"
-              />
-            </label>
-            <label className="space-y-1 sm:col-span-2">
-              <span className="text-sm text-white/90">{t('platformLicensing.form.phone')}</span>
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={onChange}
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-white/45 focus:ring-2 focus:ring-[#B5850A] outline-none"
-              />
-            </label>
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={state.loading}
-                className="w-full rounded-xl bg-[#B5850A] hover:bg-[#9a7109] text-[#1a3c2e] font-extrabold py-3 px-6 transition disabled:opacity-60 inline-flex items-center justify-center gap-2"
-              >
-                {state.loading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden /> : null}
-                {t('platformLicensing.form.submit')}
-              </button>
+            <div className="text-center mt-10">
+              <p className="text-gray-500 text-sm mb-2">
+                {isFr ? 'Vous avez déjà un accès institutionnel?' : 'Already have institutional access?'}
+              </p>
+              <Link to="/government-portal" className="text-[#1a3c2e] font-semibold text-sm hover:underline">
+                {isFr ? 'Accéder au portail →' : 'Access the portal →'}
+              </Link>
             </div>
-            {state.ok && (
-              <p className="sm:col-span-2 text-sm text-[#1a3c2e] bg-[#B5850A] border border-[#B5850A] rounded-lg p-3 font-medium">
-                {t('platformLicensing.form.success')}
-              </p>
-            )}
-            {state.err && (
-              <p className="sm:col-span-2 text-sm text-red-100 bg-red-500/25 border border-red-300/30 rounded-lg p-3">
-                {t('platformLicensing.form.error')}
-              </p>
-            )}
-          </form>
-        </div>
-      </section>
+          </div>
+        )}
+
+        {step === 2 && selectedType && (
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={() => setStep(1)}
+              type="button"
+              className="text-[#1a3c2e] text-sm hover:underline mb-6 flex items-center gap-1"
+            >
+              ← {isFr ? "Changer le type d'organisation" : 'Change organization type'}
+            </button>
+
+            <div
+              className="rounded-2xl p-6 mb-6 text-white"
+              style={{ background: `linear-gradient(135deg, ${selectedType.color}, ${selectedType.color}cc)` }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{selectedType.icon}</span>
+                <div>
+                  <h2 className="text-xl font-bold">{isFr ? selectedType.titleFr : selectedType.title}</h2>
+                  <p className="text-white/70 text-sm">{isFr ? selectedType.requirementFr : selectedType.requirement}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <form onSubmit={submit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {isFr ? "Nom de l'organisation" : 'Organization name'} *
+                    </label>
+                    <input
+                      name="organizationName"
+                      value={form.organizationName}
+                      onChange={onChange}
+                      required
+                      placeholder={
+                        selectedType.key === 'government'
+                          ? isFr
+                            ? "Ex: Ministère de l'Agriculture du Mali"
+                            : 'Ex: Ministry of Agriculture of Mali'
+                          : selectedType.key === 'ngo'
+                            ? 'Ex: FAO, CARE International...'
+                            : 'Ex: AgroTrade Corp Ltd'
+                      }
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {isFr
+                        ? `Email officiel (${selectedType.requirement.split('(')[1]?.replace(')', '') || selectedType.requirement})`
+                        : `Official email (${selectedType.requirement})`}{' '}
+                      *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={onChange}
+                      required
+                      placeholder={
+                        selectedType.key === 'government'
+                          ? 'ministre@agriculture.gov.ml'
+                          : selectedType.key === 'ngo'
+                            ? 'director@organization.org'
+                            : 'procurement@company.com'
+                      }
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {selectedType.key === 'government'
+                        ? isFr
+                          ? '⚠️ Seuls les emails .gov, .gouv ou équivalents sont acceptés.'
+                          : '⚠️ Only .gov, .gouv or equivalent emails are accepted.'
+                        : selectedType.key === 'ngo'
+                          ? isFr
+                            ? '⚠️ Emails personnels (Gmail, Yahoo) non acceptés.'
+                            : '⚠️ Personal emails (Gmail, Yahoo) not accepted.'
+                          : isFr
+                            ? "⚠️ Utilisez l'email de votre entreprise."
+                            : '⚠️ Use your company email.'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Votre nom' : 'Your name'} *</label>
+                    <input
+                      name="contactName"
+                      value={form.contactName}
+                      onChange={onChange}
+                      required
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Téléphone' : 'Phone'}</label>
+                    <input
+                      name="phone"
+                      value={form.phone}
+                      onChange={onChange}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {isFr ? 'Votre rôle / titre' : 'Your role / title'} *
+                    </label>
+                    <input
+                      name="role"
+                      value={form.role}
+                      onChange={onChange}
+                      required
+                      placeholder={
+                        selectedType.key === 'government'
+                          ? isFr
+                            ? 'Ex: Directeur général, Ministre...'
+                            : 'Ex: Director General, Minister...'
+                          : 'Ex: Country Director, CEO...'
+                      }
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {isFr ? 'Site web (optionnel)' : 'Website (optional)'}
+                    </label>
+                    <input
+                      name="website"
+                      value={form.website}
+                      onChange={onChange}
+                      placeholder="https://"
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <LocationSelector
+                      value={{ country: form.country, region: form.region }}
+                      onChange={({ country, region }) => setForm((p) => ({ ...p, country, region }))}
+                      required
+                      showDetectedBanner={true}
+                    />
+                  </div>
+
+                  {selectedType.key === 'ngo' && (
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {isFr ? "Pays d'intervention (multiples)" : 'Countries of operation (multiple)'}
+                      </label>
+                      <input
+                        name="targetCountries"
+                        value={form.targetCountries}
+                        onChange={onChange}
+                        placeholder={isFr ? 'Ex: Mali, Sénégal, Burkina Faso...' : 'Ex: Mali, Senegal, Burkina Faso...'}
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      />
+                    </div>
+                  )}
+
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {isFr ? "Objectif principal de votre demande d'accès" : 'Primary goal of your access request'} *
+                    </label>
+                    <textarea
+                      name="primaryGoal"
+                      value={form.primaryGoal}
+                      onChange={onChange}
+                      required
+                      rows={3}
+                      placeholder={
+                        selectedType.key === 'government'
+                          ? isFr
+                            ? 'Ex: Suivre les producteurs de karité dans notre pays, lancer un programme de certification nationale, réduire les importations alimentaires...'
+                            : 'Ex: Track shea producers in our country, launch a national certification program, reduce food imports...'
+                          : selectedType.key === 'ngo'
+                            ? isFr
+                              ? "Ex: Mettre en œuvre un programme de formation pour 500 agriculteurs, connecter les coopératives aux marchés d'exportation..."
+                              : 'Ex: Implement training program for 500 farmers, connect cooperatives to export markets...'
+                            : isFr
+                              ? 'Ex: Sourcer 100 tonnes de karité certifié USDA par trimestre, accéder aux coopératives vérifiées...'
+                              : 'Ex: Source 100 tonnes of USDA-certified shea per quarter, access verified cooperatives...'
+                      }
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] resize-none"
+                    />
+                  </div>
+                </div>
+
+                {state.err && (
+                  <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl p-3">{state.err}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={state.loading}
+                  className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50 hover:opacity-90 transition inline-flex items-center justify-center gap-2"
+                  style={{ background: selectedType.color }}
+                >
+                  {state.loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {state.loading
+                    ? isFr
+                      ? 'Envoi en cours...'
+                      : 'Sending...'
+                    : isFr
+                      ? "Soumettre ma demande d'accès"
+                      : 'Submit access request'}
+                </button>
+
+                <p className="text-xs text-gray-400 text-center">
+                  {isFr
+                    ? 'Notre équipe examinera votre demande sous 48 heures et vous contactera par email pour configurer votre accès.'
+                    : 'Our team will review your request within 48 hours and contact you by email to set up your access.'}
+                </p>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && selectedType && (
+          <div className="max-w-lg mx-auto text-center py-10">
+            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+              <Check className="w-10 h-10 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-[#1a3c2e] mb-3">{isFr ? 'Demande reçue !' : 'Request received!'}</h2>
+            <p className="text-gray-600 mb-6">
+              {isFr
+                ? `Nous avons reçu votre demande d'accès pour ${form.organizationName}. Notre équipe vous contactera à ${form.email} dans les 48 heures pour finaliser votre accès et vous envoyer vos identifiants de connexion.`
+                : `We received your access request for ${form.organizationName}. Our team will contact you at ${form.email} within 48 hours to finalize your access and send your login credentials.`}
+            </p>
+            <div className="bg-[#F5F0E8] rounded-2xl p-5 text-left mb-6 border border-[#B5850A]/20">
+              <p className="font-bold text-[#1a3c2e] mb-3 text-sm">{isFr ? '📋 Prochaines étapes :' : '📋 Next steps:'}</p>
+              {[
+                isFr
+                  ? 'Vérification de votre email institutionnel par notre équipe'
+                  : 'Verification of your institutional email by our team',
+                isFr
+                  ? 'Validation de votre organisation et de votre rôle'
+                  : 'Validation of your organization and role',
+                isFr
+                  ? 'Configuration de votre compte portail avec accès pays'
+                  : 'Configuration of your portal account with country access',
+                isFr
+                  ? 'Envoi de vos identifiants sécurisés par email'
+                  : 'Sending of your secure credentials by email',
+                isFr
+                  ? 'Appel de présentation de 30 minutes avec notre équipe'
+                  : '30-minute onboarding call with our team',
+              ].map((s, i) => (
+                <div key={i} className="flex items-start gap-2 mb-2 text-sm text-gray-600">
+                  <span className="font-bold text-[#B5850A] flex-shrink-0">{i + 1}.</span>
+                  {s}
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3 justify-center">
+              <Link
+                to="/"
+                className="px-6 py-2.5 rounded-xl font-bold text-white text-sm"
+                style={{ background: '#1a3c2e' }}
+              >
+                {isFr ? "Retour à l'accueil" : 'Back to home'}
+              </Link>
+              <Link to="/government-portal" className="px-6 py-2.5 rounded-xl font-bold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e]">
+                {isFr ? 'Accéder au portail' : 'Access portal'}
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

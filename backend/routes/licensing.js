@@ -9,10 +9,17 @@ router.post('/inquire', async (req, res) => {
     await LicensingInquiry.create({
       organizationName: req.body.organizationName,
       country: req.body.country,
+      region: req.body.region || '',
       contactName: req.body.contactName,
       email: req.body.email,
       phone: req.body.phone || '',
       role: req.body.role,
+      orgType: req.body.orgType || '',
+      website: req.body.website || '',
+      description: req.body.description || '',
+      targetCountries: req.body.targetCountries || '',
+      primaryGoal: req.body.primaryGoal || '',
+      source: req.body.source || '',
     });
     res.status(201).json({ success: true });
   } catch (e) {

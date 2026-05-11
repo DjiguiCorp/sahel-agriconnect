@@ -8,6 +8,16 @@ const schema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   passwordHash: { type: String },
   organization: { type: String },
+  orgType: {
+    type: String,
+    enum: ['government', 'ngo', 'enterprise', 'international_org'],
+    default: 'government',
+  },
+  accessTier: {
+    type: String,
+    enum: ['pilot', 'standard', 'enterprise'],
+    default: 'pilot',
+  },
   role: { type: String, default: 'country_admin' },
   licenseId: { type: mongoose.Schema.Types.ObjectId, ref: 'CountryLicense' },
   status: { type: String, enum: ['active', 'suspended', 'pending'], default: 'pending' },
