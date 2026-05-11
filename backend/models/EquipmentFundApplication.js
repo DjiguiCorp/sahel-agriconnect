@@ -5,6 +5,7 @@ const equipmentFundApplicationSchema = new mongoose.Schema({
   country: { type: String, required: true, trim: true },
   region: { type: String, trim: true, default: '' },
   equipmentNeeded: [{ type: String, trim: true }],
+  autresEquipement: { type: String, trim: true },
   estimatedValue: { type: Number, required: true, min: 0 },
   farmersBenefiting: { type: Number, required: true, min: 0 },
   email: { type: String, required: true, trim: true, lowercase: true },

@@ -40,6 +40,8 @@ const farmerSchema = new mongoose.Schema({
     type: String,
     required: true
   }],
+  autresCultures: { type: String, trim: true },
+  autresElevage: { type: String, trim: true },
   region: {
     type: String,
     required: true

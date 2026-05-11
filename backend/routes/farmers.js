@@ -29,7 +29,7 @@ router.get('/public-stats', async (req, res) => {
     const recent = await Farmer.find()
       .sort({ createdAt: -1 })
       .limit(20)
-      .select('nom cultures superficie region country statut createdAt nomCooperative lienCooperative')
+      .select('nom cultures autresCultures superficie region country statut createdAt nomCooperative lienCooperative')
       .lean();
     res.json({ success: true, total, active, totalArea, byCountry, byCrop, recent });
   } catch (err) {

@@ -55,6 +55,8 @@ const processorSchema = new mongoose.Schema({
     type: String,
     required: true
   }],
+  autresTypesProduits: { type: String, trim: true },
+  autresProduitsAcceptes: { type: String, trim: true },
   genreProprietaire: {
     type: String,
     enum: ['masculin', 'feminin', ''],

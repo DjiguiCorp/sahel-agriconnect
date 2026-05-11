@@ -1463,7 +1463,8 @@
       "Harvesting": "Équipements de récolte",
       "Drying & Storage": "Séchage et stockage",
       "Processing Machinery": "Machines de transformation",
-      "Transport": "Véhicules de transport"
+      "Transport": "Véhicules de transport",
+      "Other": "Autre (préciser)"
     },
     "form": {
       "title": "Formulaire d'intérêt",

@@ -49,6 +49,7 @@ router.post('/register-platform', async (req, res) => {
       regionCity: req.body.regionCity,
       memberCount: Number(req.body.memberCount ?? req.body.currentMembers ?? 0),
       primaryCrops: Array.isArray(req.body.primaryCrops) ? req.body.primaryCrops : [],
+      autresCrops: req.body.autresCrops || '',
       certificationStatus: req.body.certificationStatus || 'None',
       leaderName: req.body.leaderName,
       email: req.body.email,

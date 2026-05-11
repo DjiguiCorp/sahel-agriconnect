@@ -17,6 +17,7 @@ router.post('/apply', async (req, res) => {
       phone: req.body.phone || '',
       urgencyLevel: req.body.urgencyLevel || 'medium',
       additionalNeeds: req.body.additionalNeeds || '',
+      autresEquipement: req.body.autresEquipement || '',
     });
     res.status(201).json({ success: true });
   } catch (e) {

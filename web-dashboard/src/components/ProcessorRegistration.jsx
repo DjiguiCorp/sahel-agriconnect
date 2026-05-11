@@ -1,8 +1,43 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import LocationSelector from './LocationSelector';
+import OtherInput from './OtherInput';
 import { COUNTRY_CODES } from '../data/africanRegions';
 
 const ProcessorRegistration = ({ onProcessorAdded }) => {
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+
+  const PRODUIT_LABELS = {
+    'Beurre de karité': isFr ? 'Beurre de karité' : 'Shea Butter',
+    'Huile de karité': isFr ? 'Huile de karité' : 'Shea Oil',
+    'Huile de sésame': isFr ? 'Huile de sésame' : 'Sesame Oil',
+    'Farine de mil': isFr ? 'Farine de mil' : 'Millet Flour',
+    'Farine de sorgho': isFr ? 'Farine de sorgho' : 'Sorghum Flour',
+    'Farine de riz': isFr ? 'Farine de riz' : 'Rice Flour',
+    'Riz décortiqué': isFr ? 'Riz décortiqué' : 'Husked Rice',
+    'Jus de mangue': isFr ? 'Jus de mangue' : 'Mango Juice',
+    'Confiture de mangue': isFr ? 'Confiture de mangue' : 'Mango Jam',
+    'Huile de coton': isFr ? 'Huile de coton' : 'Cotton Oil',
+    Tourteau: isFr ? 'Tourteau' : 'Oilseed Cake',
+    Tahini: 'Tahini',
+    "Huile d'arachide": isFr ? "Huile d'arachide" : 'Peanut Oil',
+    Autres: isFr ? 'Autres ✏️' : 'Other ✏️',
+  };
+
+  const MATIERE_LABELS = {
+    Karité: isFr ? 'Karité' : 'Shea',
+    Sésame: isFr ? 'Sésame' : 'Sesame',
+    Arachide: isFr ? 'Arachide' : 'Peanut',
+    Mil: isFr ? 'Mil' : 'Millet',
+    Sorgho: isFr ? 'Sorgho' : 'Sorghum',
+    Riz: isFr ? 'Riz' : 'Rice',
+    Mangue: isFr ? 'Mangue' : 'Mango',
+    Cajou: isFr ? 'Cajou' : 'Cashew',
+    Coton: isFr ? 'Coton' : 'Cotton',
+    Autres: isFr ? 'Autres ✏️' : 'Other ✏️',
+  };
+
   const [formData, setFormData] = useState({
     nom: '',
     telephone: '',
@@ -13,7 +48,9 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
     localisation: '',
     capaciteMax: '',
     produitsTransformes: [],
-    produitsAcceptes: []
+    produitsAcceptes: [],
+    autresTypesProduits: '',
+    autresProduitsAcceptes: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -124,6 +161,16 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
       newErrors.produitsAcceptes = 'Sélectionnez au moins un produit accepté';
     }
 
+    if (formData.produitsTransformes.includes('Autres') && !formData.autresTypesProduits.trim()) {
+      newErrors.autresTypesProduits = isFr ? 'Précisez les autres produits' : 'Please specify other products';
+    }
+
+    if (formData.produitsAcceptes.includes('Autres') && !formData.autresProduitsAcceptes.trim()) {
+      newErrors.autresProduitsAcceptes = isFr
+        ? 'Précisez les autres matières premières'
+        : 'Please specify other raw materials';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -160,6 +207,8 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
       capaciteMax: `${formData.capaciteMax} tonnes/mois`,
       produitsTransformes: formData.produitsTransformes.join(', '),
       produitsAcceptes: formData.produitsAcceptes.join(', '),
+      autresTypesProduits: formData.autresTypesProduits || undefined,
+      autresProduitsAcceptes: formData.autresProduitsAcceptes || undefined,
       statut: 'En attente'
     };
 
@@ -185,7 +234,9 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
         localisation: '',
         capaciteMax: '',
         produitsTransformes: [],
-        produitsAcceptes: []
+        produitsAcceptes: [],
+        autresTypesProduits: '',
+        autresProduitsAcceptes: '',
       });
       setSuccess(false);
       setPartnershipSuggestion(null);
@@ -308,7 +359,9 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
 
         {/* Capacité */}
         <div>
-          <h3 className="text-xl font-semibold text-primary-green mb-4">Capacité de Transformation</h3>
+          <h3 className="text-xl font-semibold text-primary-green mb-4">
+            {isFr ? 'Capacité de traitement' : 'Processing capacity'}
+          </h3>
           
           <div>
             <label htmlFor="capaciteMax" className="block text-sm font-medium text-gray-700 mb-2">
@@ -338,11 +391,9 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
 
         {/* Produits */}
         <div>
-          <h3 className="text-xl font-semibold text-primary-green mb-4">Produits</h3>
-          
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Produits transformés <span className="text-red-500">*</span>
+              {isFr ? 'Produits fabriqués' : 'Products manufactured'} <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {produitsDisponibles.map((produit) => (
@@ -360,37 +411,64 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
                     onChange={() => handleCheckboxChange('produitsTransformes', produit)}
                     className="sr-only"
                   />
-                  <span className="text-sm font-medium">{produit}</span>
+                  <span className="text-sm font-medium">{PRODUIT_LABELS[produit] || produit}</span>
                 </label>
               ))}
             </div>
+            {(formData.produitsTransformes || []).includes('Autres') && (
+              <OtherInput
+                value={formData.autresTypesProduits}
+                onChange={(val) => setFormData((p) => ({ ...p, autresTypesProduits: val }))}
+                placeholder={
+                  isFr
+                    ? "Ex: Sirop de gingembre, Pâte d'arachide, Farine de manioc..."
+                    : 'Ex: Ginger syrup, Peanut paste, Cassava flour...'
+                }
+              />
+            )}
+            {errors.autresTypesProduits && (
+              <p className="mt-2 text-sm text-red-600">{errors.autresTypesProduits}</p>
+            )}
             {errors.produitsTransformes && <p className="mt-2 text-sm text-red-600">{errors.produitsTransformes}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Produits acceptés (matières premières) <span className="text-red-500">*</span>
+              {isFr ? 'Matières premières acceptées' : 'Accepted raw materials'}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {produitsAcceptes.map((produit) => (
+              {produitsAcceptes.map((matiere) => (
                 <label
-                  key={produit}
+                  key={matiere}
                   className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
-                    formData.produitsAcceptes.includes(produit)
+                    formData.produitsAcceptes.includes(matiere)
                       ? 'bg-primary-orange text-white border-primary-orange'
                       : 'bg-white border-gray-300 hover:border-primary-orange'
                   }`}
                 >
                   <input
                     type="checkbox"
-                    checked={formData.produitsAcceptes.includes(produit)}
-                    onChange={() => handleCheckboxChange('produitsAcceptes', produit)}
+                    checked={formData.produitsAcceptes.includes(matiere)}
+                    onChange={() => handleCheckboxChange('produitsAcceptes', matiere)}
                     className="sr-only"
                   />
-                  <span className="text-sm font-medium">{produit}</span>
+                  <span className="text-sm font-medium">{MATIERE_LABELS[matiere] || matiere}</span>
                 </label>
               ))}
             </div>
+            {formData.produitsAcceptes.includes('Autres') && (
+              <OtherInput
+                value={formData.autresProduitsAcceptes}
+                onChange={(val) => setFormData((p) => ({ ...p, autresProduitsAcceptes: val }))}
+                placeholder={
+                  isFr ? 'Ex: Fonio, Niébé, Moringa, Baobab...' : 'Ex: Fonio, Cowpea, Moringa, Baobab...'
+                }
+              />
+            )}
+            {errors.autresProduitsAcceptes && (
+              <p className="mt-2 text-sm text-red-600">{errors.autresProduitsAcceptes}</p>
+            )}
             {errors.produitsAcceptes && <p className="mt-2 text-sm text-red-600">{errors.produitsAcceptes}</p>}
           </div>
         </div>
@@ -401,7 +479,7 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
             type="submit"
             className="w-full btn-primary"
           >
-            Enregistrer le processeur
+            {isFr ? 'Enregistrer le processeur' : 'Register processor'}
           </button>
         </div>
       </form>

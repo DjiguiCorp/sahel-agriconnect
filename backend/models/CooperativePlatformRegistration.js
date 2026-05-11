@@ -6,6 +6,7 @@ const cooperativePlatformRegistrationSchema = new mongoose.Schema({
   regionCity: { type: String, required: true, trim: true },
   memberCount: { type: Number, required: true, min: 0 },
   primaryCrops: [{ type: String, trim: true }],
+  autresCrops: { type: String, trim: true },
   certificationStatus: { type: String, trim: true },
   leaderName: { type: String, required: true, trim: true },
   email: { type: String, required: true, trim: true, lowercase: true },

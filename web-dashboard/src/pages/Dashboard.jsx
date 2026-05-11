@@ -438,11 +438,25 @@ export default function Dashboard() {
                         <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">⭐ {isFr ? 'Certifié' : 'Certified'}</span>
                       )}
                     </div>
-                    {p.typesProduits && (
+                    {(p.produitsTransformes || p.typesProduits) && (
                       <div className="flex flex-wrap gap-1">
-                        {(Array.isArray(p.typesProduits) ? p.typesProduits : [p.typesProduits]).slice(0, 3).map((type) => (
-                          <span key={type} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{type}</span>
-                        ))}
+                        {(
+                          Array.isArray(p.produitsTransformes || p.typesProduits)
+                            ? p.produitsTransformes || p.typesProduits
+                            : [p.produitsTransformes || p.typesProduits]
+                        )
+                          .filter(Boolean)
+                          .slice(0, 3)
+                          .map((type) => (
+                            <span key={type} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                              {type}
+                            </span>
+                          ))}
+                        {p.autresTypesProduits && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-[#B5850A] italic">
+                            + {p.autresTypesProduits}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

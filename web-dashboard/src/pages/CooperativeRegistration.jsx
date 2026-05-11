@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe, Loader2, Check } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LocationSelector from '../components/LocationSelector';
+import OtherInput from '../components/OtherInput';
 
 const BENEFIT_KEYS = ['recruitment', 'equipment', 'certification', 'investor', 'export'];
 const BENEFIT_ICONS = [Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe];
@@ -37,6 +38,7 @@ export default function CooperativeRegistration() {
     regionCity: '',
     memberCount: '',
     primaryCrops: [],
+    autresCrops: '',
     certificationStatus: 'None',
     leaderName: '',
     email: '',
@@ -466,6 +468,17 @@ export default function CooperativeRegistration() {
                         );
                       })}
                     </div>
+                    {form.primaryCrops.includes('Other') && (
+                      <OtherInput
+                        value={form.autresCrops}
+                        onChange={(val) => setForm((p) => ({ ...p, autresCrops: val }))}
+                        placeholder={
+                          i18n.language === 'fr'
+                            ? 'Ex: Fonio, Niébé, Moringa...'
+                            : 'Ex: Fonio, Cowpea, Moringa...'
+                        }
+                      />
+                    )}
                   </div>
 
                   <div className="flex gap-3">
@@ -589,6 +602,12 @@ export default function CooperativeRegistration() {
                             {i18n.language === 'fr' ? 'Cultures:' : 'Crops:'}
                           </span>{' '}
                           <strong>{form.primaryCrops.join(', ')}</strong>
+                          {form.primaryCrops.includes('Other') && form.autresCrops && (
+                            <span className="text-[#B5850A] italic">
+                              {' '}
+                              (+ {form.autresCrops})
+                            </span>
+                          )}
                         </p>
                       )}
                     </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWebSocket } from '../context/WebSocketContext';
 import { cooperativesByRegion, processorsByRegion } from '../data/cooperativesData';
 import PlantDiseaseAnalyzer from './PlantDiseaseAnalyzer';
@@ -6,8 +7,11 @@ import LandDetection from './LandDetection';
 import { API_ENDPOINTS } from '../config/api';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LocationSelector from './LocationSelector';
+import OtherInput from './OtherInput';
 
 const FarmerRegistrationForm = ({ onFarmerAdded }) => {
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   const { emitFarmerRegistration } = useWebSocket();
   const { registerUser } = useRegisteredUser();
   const [formData, setFormData] = useState({
@@ -19,6 +23,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
     longitude: '',
     superficie: '',
     cultures: [],
+    autresCultures: '',
     // Nouveaux champs
     region: '',
     zone: '',
@@ -68,6 +73,30 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
     'Export régional (Afrique)',
     'Export international (Europe, USA, etc.)'
   ];
+
+  const CULTURE_LABELS = {
+    Riz: isFr ? 'Riz' : 'Rice',
+    Mil: isFr ? 'Mil' : 'Millet',
+    Sorgho: isFr ? 'Sorgho' : 'Sorghum',
+    'Maïs': isFr ? 'Maïs' : 'Maize',
+    Fonio: 'Fonio',
+    Sésame: isFr ? 'Sésame' : 'Sesame',
+    Coton: isFr ? 'Coton' : 'Cotton',
+    Karité: isFr ? 'Karité' : 'Shea',
+    Mangue: isFr ? 'Mangue' : 'Mango',
+    Cajou: isFr ? 'Cajou' : 'Cashew',
+    Autres: isFr ? 'Autres ✏️' : 'Other ✏️',
+  };
+
+  const OBJECTIF_LABELS = {
+    'Souveraineté alimentaire locale (priorité marché national)': isFr
+      ? 'Souveraineté alimentaire locale (priorité marché national)'
+      : 'Local food sovereignty (national market priority)',
+    'Export régional (Afrique)': isFr ? 'Export régional (Afrique)' : 'Regional export (Africa)',
+    'Export international (Europe, USA, etc.)': isFr
+      ? 'Export international (Europe, USA, etc.)'
+      : 'International export (Europe, USA, etc.)',
+  };
   const soutiensCooperative = [
     'Intrants',
     'Formation',
@@ -247,6 +276,10 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
       newErrors.cultures = 'Sélectionnez au moins une culture';
     }
 
+    if (formData.cultures.includes('Autres') && !formData.autresCultures.trim()) {
+      newErrors.autresCultures = isFr ? 'Précisez vos autres cultures' : 'Please specify your other crops';
+    }
+
     if (!formData.typeExploitation) {
       newErrors.typeExploitation = 'Sélectionnez un type d\'exploitation';
     }
@@ -347,6 +380,12 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
       },
       superficie: parseFloat(formData.superficie),
       cultures: formData.cultures,
+      autresCultures: formData.autresCultures || undefined,
+      culturesDisplay:
+        formData.cultures.includes('Autres') && formData.autresCultures
+          ? [...formData.cultures.filter((c) => c !== 'Autres'), formData.autresCultures]
+          : formData.cultures,
+      autresElevage: formData.elevageAutres || undefined,
       region: formData.region,
       typeExploitation: formData.typeExploitation,
       lienCooperative: formData.lienCooperative,
@@ -420,6 +459,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
         longitude: '',
         superficie: '',
         cultures: [],
+        autresCultures: '',
         region: '',
         typeExploitation: '',
         lienCooperative: '',
@@ -743,7 +783,11 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               <div className="flex items-start space-x-4">
                 <div className="text-4xl">🎁</div>
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">Rejoignez une Coopérative et Bénéficiez d'Avantages!</h3>
+                  <h3 className="text-2xl font-bold mb-2">
+                    {isFr
+                      ? "Rejoignez une Coopérative et Bénéficiez d'Avantages!"
+                      : 'Join a Cooperative and Unlock Benefits!'}
+                  </h3>
                   <p className="text-gray-100 mb-4">
                     Les membres de coopératives ont accès à des avantages exclusifs sans prêt :
                   </p>
@@ -779,7 +823,8 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Êtes-vous lié à une coopérative ? <span className="text-red-500">*</span>
+                {isFr ? 'Êtes-vous lié à une coopérative ?' : 'Are you linked to a cooperative?'}{' '}
+                <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <label className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg cursor-pointer transition-all ${
@@ -933,10 +978,10 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
 
           {/* Section Cultures */}
           <div className="border-b border-gray-200 pb-6">
-            <h3 className="text-xl font-semibold text-primary-green mb-4">Cultures</h3>
+            <h3 className="text-xl font-semibold text-primary-green mb-4">{isFr ? 'Cultures' : 'Crops'}</h3>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cultures cultivées <span className="text-red-500">*</span>
+                {isFr ? 'Cultures cultivées' : 'Crops grown'} <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {availableCultures.map((culture) => (
@@ -954,16 +999,29 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
                       onChange={() => handleCultureChange(culture)}
                       className="sr-only"
                     />
-                    <span className="text-sm font-medium">{culture}</span>
+                    <span className="text-sm font-medium">{CULTURE_LABELS[culture] || culture}</span>
                   </label>
                 ))}
               </div>
+              {formData.cultures.includes('Autres') && (
+                <OtherInput
+                  value={formData.autresCultures}
+                  onChange={(val) => setFormData((p) => ({ ...p, autresCultures: val }))}
+                  placeholder={
+                    isFr ? 'Ex: Fonio, Niébé, Patate douce...' : 'Ex: Fonio, Cowpea, Sweet potato...'
+                  }
+                />
+              )}
+              {errors.autresCultures && (
+                <p className="text-red-500 text-xs mt-1">{errors.autresCultures}</p>
+              )}
               {errors.cultures && <p className="mt-2 text-sm text-red-600">{errors.cultures}</p>}
             </div>
 
             {/* Analyse de maladie des plantes */}
             <div className="mt-4">
               <PlantDiseaseAnalyzer
+                openAnalyzerLabel={isFr ? 'Analyser une feuille' : 'Analyze a leaf'}
                 onDiseaseDetected={(result) => {
                   setDiseaseDetection(result);
                 }}
@@ -972,7 +1030,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
 
             <div className="mt-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Objectif de production <span className="text-red-500">*</span>
+                {isFr ? 'Objectif de production' : 'Production goal'} <span className="text-red-500">*</span>
               </label>
               <div className="space-y-2">
                 {objectifsProduction.map((objectif) => (
@@ -990,7 +1048,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
                       onChange={() => handleCheckboxChange('objectifsProduction', objectif)}
                       className="mt-1 w-4 h-4 text-primary-orange focus:ring-primary-orange"
                     />
-                    <span className="text-sm">{objectif}</span>
+                    <span className="text-sm">{OBJECTIF_LABELS[objectif] || objectif}</span>
                   </label>
                 ))}
               </div>
@@ -1174,7 +1232,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
 
           {/* Section Élevage */}
           <div className="border-b border-gray-200 pb-6">
-            <h3 className="text-xl font-semibold text-primary-green mb-4">Élevage Intégré</h3>
+            <h3 className="text-xl font-semibold text-primary-green mb-4">{isFr ? 'Élevage' : 'Livestock'}</h3>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Types d'élevage (si applicable)
@@ -1200,19 +1258,18 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
                 ))}
               </div>
               {formData.elevage.includes('Autres') && (
-                <div className="mt-4">
-                  <input
-                    type="text"
-                    name="elevageAutres"
+                <>
+                  <OtherInput
                     value={formData.elevageAutres}
-                    onChange={handleChange}
-                    placeholder="Précisez le type d'élevage"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent ${
-                      errors.elevageAutres ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    onChange={(val) => setFormData((p) => ({ ...p, elevageAutres: val }))}
+                    placeholder={
+                      isFr ? 'Ex: Dromadaires, Lapins, Porcs...' : 'Ex: Camels, Rabbits, Pigs...'
+                    }
                   />
-                  {errors.elevageAutres && <p className="mt-1 text-sm text-red-600">{errors.elevageAutres}</p>}
-                </div>
+                  {errors.elevageAutres && (
+                    <p className="mt-1 text-sm text-red-600">{errors.elevageAutres}</p>
+                  )}
+                </>
               )}
             </div>
 
@@ -1477,7 +1534,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               type="submit"
               className="w-full btn-primary"
             >
-              Enregistrer l'agriculteur
+              {isFr ? "Enregistrer l'agriculteur" : 'Register farmer'}
             </button>
           </div>
         </form>

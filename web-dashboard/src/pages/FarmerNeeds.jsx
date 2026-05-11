@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, Loader2, ArrowRight } from 'lucide-react';
 import LocationSelector from '../components/LocationSelector';
+import OtherInput from '../components/OtherInput';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import { API_ENDPOINTS } from '../config/api';
@@ -27,6 +28,7 @@ const EQUIPMENT_OPTIONS = [
   { key: 'processor', fr: 'Machine de transformation', en: 'Processing machine' },
   { key: 'transport', fr: 'Véhicule de transport', en: 'Transport vehicle' },
   { key: 'solar', fr: 'Pompe solaire', en: 'Solar pump' },
+  { key: 'other_equipment', fr: 'Autre équipement', en: 'Other equipment' },
 ];
 
 export default function FarmerNeeds() {
@@ -46,6 +48,8 @@ export default function FarmerNeeds() {
     specificEquipment: [],
     description: '',
     urgencyLevel: 'medium',
+    autresNeeds: '',
+    autresEquipment: '',
   });
   const [state, setState] = useState({ loading: false, ok: false, err: '' });
 
@@ -67,12 +71,34 @@ export default function FarmerNeeds() {
       }));
       return;
     }
+    if (form.needType === 'other' && !form.autresNeeds.trim()) {
+      setState((s) => ({
+        ...s,
+        err: isFr ? 'Précisez votre autre type de besoin.' : 'Please describe your other need type.',
+      }));
+      return;
+    }
+    if (
+      form.needType === 'equipment' &&
+      form.specificEquipment.includes('other_equipment') &&
+      !form.autresEquipment.trim()
+    ) {
+      setState((s) => ({
+        ...s,
+        err: isFr ? "Précisez l'autre équipement." : 'Please specify the other equipment.',
+      }));
+      return;
+    }
     setState({ loading: true, ok: false, err: '' });
     try {
       const r = await fetch(API_ENDPOINTS.FARMER_NEEDS.BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          autresNeeds: form.autresNeeds || undefined,
+          autresEquipment: form.autresEquipment || undefined,
+        }),
       });
       if (!r.ok) throw new Error();
       setState({ loading: false, ok: true, err: '' });
@@ -270,6 +296,17 @@ export default function FarmerNeeds() {
                       </button>
                     ))}
                   </div>
+                  {form.needType === 'other' && (
+                    <OtherInput
+                      value={form.autresNeeds}
+                      onChange={(val) => setForm((p) => ({ ...p, autresNeeds: val }))}
+                      placeholder={
+                        isFr
+                          ? 'Décrivez votre autre type de besoin...'
+                          : 'Describe your other type of need...'
+                      }
+                    />
+                  )}
                 </div>
 
                 {form.needType === 'equipment' && (
@@ -294,6 +331,17 @@ export default function FarmerNeeds() {
                         </button>
                       ))}
                     </div>
+                    {form.specificEquipment.includes('other_equipment') && (
+                      <OtherInput
+                        value={form.autresEquipment}
+                        onChange={(val) => setForm((p) => ({ ...p, autresEquipment: val }))}
+                        placeholder={
+                          isFr
+                            ? 'Ex: Décortiqueuse, Batteuse, Semoir...'
+                            : 'Ex: Thresher, Sheller, Seed drill...'
+                        }
+                      />
+                    )}
                   </div>
                 )}
 

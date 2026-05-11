@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { HandCoins, Loader2, Check, ArrowRight } from 'lucide-react';
 import LocationSelector from '../components/LocationSelector';
+import OtherInput from '../components/OtherInput';
 import { useGeolocation } from '../hooks/useGeolocation';
 
 const EQUIPMENT_KEYS = [
@@ -13,8 +14,9 @@ const EQUIPMENT_KEYS = [
   'Drying & Storage',
   'Processing Machinery',
   'Transport',
+  'Other',
 ];
-const EQUIPMENT_ICONS = ['🚜', '💧', '🌾', '🏠', '⚙️', '🚛'];
+const EQUIPMENT_ICONS = ['🚜', '💧', '🌾', '🏠', '⚙️', '🚛', '✏️'];
 
 const HOW_STEPS = ['step1', 'step2', 'step3', 'step4'];
 const HOW_ICONS = ['📋', '💰', '🚜', '📈'];
@@ -35,6 +37,7 @@ export default function EquipmentFund() {
     phone: '',
     urgencyLevel: 'medium',
     additionalNeeds: '',
+    autresEquipement: '',
   });
   const [state, setState] = useState({ loading: false, ok: false, err: '' });
 
@@ -51,6 +54,17 @@ export default function EquipmentFund() {
 
   const submit = async (e) => {
     e.preventDefault();
+    const needsOtherDetail =
+      form.equipmentNeeded.includes('Autres') ||
+      form.equipmentNeeded.includes('Other');
+    if (needsOtherDetail && !form.autresEquipement.trim()) {
+      setState({
+        loading: false,
+        ok: false,
+        err: isFr ? "Précisez l'équipement (Autre)." : 'Please specify other equipment.',
+      });
+      return;
+    }
     setState({ loading: true, ok: false, err: '' });
     try {
       const r = await fetch(API_ENDPOINTS.EQUIPMENT_FUND.APPLY, {
@@ -67,6 +81,7 @@ export default function EquipmentFund() {
           phone: form.phone,
           urgencyLevel: form.urgencyLevel,
           additionalNeeds: form.additionalNeeds,
+          autresEquipement: form.autresEquipement || undefined,
         }),
       });
       const j = await r.json().catch(() => ({}));
@@ -206,6 +221,17 @@ export default function EquipmentFund() {
                       );
                     })}
                   </div>
+                  {form.equipmentNeeded.includes('Autres') || form.equipmentNeeded.includes('Other') ? (
+                    <OtherInput
+                      value={form.autresEquipement}
+                      onChange={(val) => setForm((p) => ({ ...p, autresEquipement: val }))}
+                      placeholder={
+                        isFr
+                          ? 'Ex: Décortiqueuse, Grenier solaire, Pompe à eau...'
+                          : 'Ex: Thresher, Solar grain silo, Water pump...'
+                      }
+                    />
+                  ) : null}
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">

@@ -1475,7 +1475,8 @@
       "Harvesting": "Harvesting Equipment",
       "Drying & Storage": "Drying & Storage",
       "Processing Machinery": "Processing Machinery",
-      "Transport": "Transport Vehicles"
+      "Transport": "Transport Vehicles",
+      "Other": "Other (specify)"
     },
     "form": {
       "title": "Interest Form",

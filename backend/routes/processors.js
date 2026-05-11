@@ -18,7 +18,7 @@ router.get('/public-stats', async (req, res) => {
     const recent = await Processor.find()
       .sort({ createdAt: -1 })
       .limit(10)
-      .select('nom region country statut certifie typesProduits createdAt')
+      .select('nom region country statut certifie produitsTransformes autresTypesProduits createdAt')
       .lean();
     res.json({ success: true, total, certified, byCountry, recent });
   } catch (err) {

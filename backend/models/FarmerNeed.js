@@ -23,6 +23,8 @@ const schema = new mongoose.Schema({
     required: true,
   },
   specificEquipment: [String],
+  autresNeeds: { type: String, trim: true },
+  autresEquipment: { type: String, trim: true },
   description: String,
   urgencyLevel: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
   status: {

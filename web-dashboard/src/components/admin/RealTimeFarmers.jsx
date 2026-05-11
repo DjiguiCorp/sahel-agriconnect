@@ -201,7 +201,14 @@ const RealTimeFarmers = ({ globalCountryFilter = '' }) => {
                     </div>
                     <div>
                       <span className="text-gray-600">Cultures :</span>
-                      <p className="font-medium">{farmer.cultures}</p>
+                      <p className="font-medium">
+                        {Array.isArray(farmer.cultures)
+                          ? farmer.cultures.join(', ')
+                          : farmer.cultures}
+                        {farmer.autresCultures && (
+                          <span className="ml-1 text-[#B5850A] italic">+ {farmer.autresCultures}</span>
+                        )}
+                      </p>
                     </div>
                   </div>
                   
