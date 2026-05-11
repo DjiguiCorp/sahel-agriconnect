@@ -48,6 +48,8 @@ export default function Footer() {
                 [isFr ? 'Mes besoins agricoles' : 'My Farm Needs', '/farmer-needs'],
                 [isFr ? 'Coopératives' : 'Cooperatives', '/cooperatives'],
                 [isFr ? 'Diaspora' : 'Diaspora', '/diaspora'],
+                [isFr ? '🏛️ Portail gouvernemental' : '🏛️ Government Portal', '/government-portal'],
+                [isFr ? 'Licences pays' : 'Country Licenses', '/platform-licensing'],
                 [isFr ? 'Tarifs' : 'Pricing', '/pricing'],
                 ['Impact', '/impact'],
                 [isFr ? 'Contact' : 'Contact', '/contact'],

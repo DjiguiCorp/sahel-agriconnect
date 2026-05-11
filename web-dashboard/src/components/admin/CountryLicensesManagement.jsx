@@ -27,6 +27,7 @@ export default function CountryLicensesManagement({ token }) {
   const [activeSubTab, setActiveSubTab] = useState('overview');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(null);
+  const [showGovAdminForm, setShowGovAdminForm] = useState(null);
   const [form, setForm] = useState({
     organizationName: '',
     contactName: '',
@@ -38,6 +39,7 @@ export default function CountryLicensesManagement({ token }) {
     location: { country: '', region: '' },
   });
   const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '' });
+  const [govAdminForm, setGovAdminForm] = useState({ country: '', countryCode: '', name: '', email: '', password: '', organization: '', licenseId: '' });
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -97,6 +99,20 @@ export default function CountryLicensesManagement({ token }) {
       setAdminForm({ name: '', email: '', password: '' });
       // eslint-disable-next-line no-alert
       alert(lang === 'fr' ? 'Compte admin créé avec succès' : 'Admin account created successfully');
+    } catch {}
+  };
+
+  const createGovernmentAdmin = async () => {
+    try {
+      await fetch(`${API}/api/government/create-admin`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(govAdminForm),
+      });
+      setShowGovAdminForm(null);
+      setGovAdminForm({ country: '', countryCode: '', name: '', email: '', password: '', organization: '', licenseId: '' });
+      // eslint-disable-next-line no-alert
+      alert(lang === 'fr' ? 'Accès portail gouvernemental créé' : 'Government portal access created');
     } catch {}
   };
 
@@ -298,6 +314,27 @@ export default function CountryLicensesManagement({ token }) {
                         >
                           Email
                         </a>
+                        {l.status === 'active' ? (
+                          <button
+                            onClick={() => {
+                              // Open a modal to create GovernmentAdmin account for this license
+                              setShowGovAdminForm(l);
+                              setGovAdminForm({
+                                country: l.country,
+                                countryCode: l.countryCode || l.country,
+                                name: '',
+                                email: '',
+                                password: '',
+                                organization: l.organizationName || '',
+                                licenseId: l._id,
+                              });
+                            }}
+                            className="text-xs bg-[#B5850A] text-[#1a3c2e] px-3 py-1.5 rounded-lg font-bold"
+                            type="button"
+                          >
+                            🏛️ {lang === 'fr' ? 'Créer accès portail gouvernemental' : 'Create government portal access'}
+                          </button>
+                        ) : null}
                         {l.status === 'active' ? (
                           <button type="button" onClick={() => updateStatus(l._id, 'suspended')} className="text-xs text-red-500 hover:underline">
                             {lang === 'fr' ? 'Suspendre' : 'Suspend'}
@@ -548,6 +585,65 @@ export default function CountryLicensesManagement({ token }) {
               <button
                 type="button"
                 onClick={() => setShowAdminModal(null)}
+                className="px-5 rounded-xl text-sm text-gray-500 hover:bg-gray-100 transition border border-gray-200"
+              >
+                {lang === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE GOV ADMIN MODAL */}
+      {showGovAdminForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <h3 className="font-bold text-[#1a3c2e] text-xl mb-2">
+              {lang === 'fr' ? 'Créer accès portail gouvernemental' : 'Create government portal access'}
+            </h3>
+            <p className="text-gray-500 text-sm mb-4">
+              {lang === 'fr'
+                ? `Cet admin ne verra que les données de ${showGovAdminForm.country}.`
+                : `This admin will only see data from ${showGovAdminForm.country}.`}
+            </p>
+            <div className="space-y-3">
+              {[
+                ['name', lang === 'fr' ? 'Nom complet' : 'Full name', 'text'],
+                ['email', 'Email', 'email'],
+                ['password', lang === 'fr' ? 'Mot de passe temporaire' : 'Temporary password', 'password'],
+                ['organization', lang === 'fr' ? 'Organisation' : 'Organization', 'text'],
+              ].map(([field, label, type]) => (
+                <div key={field}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                  <input
+                    type={type}
+                    value={govAdminForm[field]}
+                    onChange={(e) => setGovAdminForm((p) => ({ ...p, [field]: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mt-3">
+              <p className="text-yellow-800 text-xs">
+                ⚠️{' '}
+                {lang === 'fr'
+                  ? "Partagez ces identifiants de manière sécurisée avec l'organisation. L'admin pays ne pourra voir que les données de son pays."
+                  : "Share these credentials securely with the organization. The country admin will only see their country's data."}
+              </p>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button
+                type="button"
+                onClick={createGovernmentAdmin}
+                className="flex-1 rounded-xl py-2.5 font-bold text-white text-sm"
+                style={{ background: '#1a3c2e' }}
+              >
+                {lang === 'fr' ? 'Créer le compte' : 'Create Account'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowGovAdminForm(null)}
                 className="px-5 rounded-xl text-sm text-gray-500 hover:bg-gray-100 transition border border-gray-200"
               >
                 {lang === 'fr' ? 'Annuler' : 'Cancel'}

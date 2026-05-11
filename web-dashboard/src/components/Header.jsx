@@ -29,6 +29,8 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isRegistered, userName, isCoopPendingPayment, isCooperative, clearUser } = useRegisteredUser();
+  const isFr = i18n.language === 'fr';
+  const hasAdminToken = Boolean(localStorage.getItem('adminToken'));
 
   const navLinkClass =
     'text-lg text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
@@ -219,6 +221,11 @@ const Header = () => {
               <Lock className="w-5 h-5 shrink-0" aria-hidden />
               <span>{t('nav.admin')}</span>
             </Link>
+            {hasAdminToken ? (
+              <Link to="/government-portal" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#1a3c2e] transition">
+                🏛️ {isFr ? 'Portail pays' : 'Country Portal'}
+              </Link>
+            ) : null}
             <button type="button" className="btn-primary text-base whitespace-nowrap" onClick={handleDownloadApp}>
               {t('nav.downloadApp')}
             </button>
@@ -355,6 +362,15 @@ const Header = () => {
                 <Lock className="w-5 h-5" aria-hidden />
                 {t('nav.admin')}
               </Link>
+              {hasAdminToken ? (
+                <Link
+                  to="/government-portal"
+                  className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#1a3c2e] transition py-2"
+                  onClick={closeMenu}
+                >
+                  🏛️ {isFr ? 'Portail pays' : 'Country Portal'}
+                </Link>
+              ) : null}
 
               {isRegistered ? (
                 <button

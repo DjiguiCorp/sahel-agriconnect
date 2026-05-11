@@ -37,6 +37,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import HowItWorks from './pages/HowItWorks';
 import InvestorRelations from './pages/InvestorRelations';
 import DeleteAccount from './pages/DeleteAccount';
+import GovernmentPortal from './pages/GovernmentPortal';
+import JoinCooperative from './pages/JoinCooperative';
 import NotFound from './pages/NotFound';
 import { useGeolocation } from './hooks/useGeolocation';
 
@@ -98,6 +100,8 @@ function App() {
             <Route path="irrigation" element={<IrrigationAssessment />} />
             <Route path="optimisation-production" element={<ProductionOptimizer />} />
             <Route path="platform-licensing" element={<PlatformLicensing />} />
+            <Route path="government-portal" element={<GovernmentPortal />} />
+            <Route path="join-cooperative/:code" element={<JoinCooperative />} />
             <Route path="cooperative-registration" element={<CooperativeRegistration />} />
             <Route path="farmer-certification" element={<FarmerCertificationProgram />} />
             <Route path="equipment-fund" element={<EquipmentFund />} />

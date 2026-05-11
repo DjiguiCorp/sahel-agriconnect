@@ -1,6 +1,122 @@
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../../config/api';
 
+function InviteFarmersSection({ coop, isFr }) {
+  const [form, setForm] = useState({
+    inviteeName: '',
+    inviteePhone: '',
+    inviteeEmail: '',
+    inviteeRegion: '',
+    message: '',
+  });
+  const [state, setState] = useState({ loading: false, ok: false, err: '' });
+  const [invitations, setInvitations] = useState([]);
+
+  useEffect(() => {
+    if (!coop?._id) return;
+    fetch(`${API_BASE_URL}/api/coop-invitations/cooperative/${coop._id}`)
+      .then((r) => r.json())
+      .then((d) => setInvitations(d.invitations || []))
+      .catch(() => {});
+  }, [coop?._id]);
+
+  const sendInvite = async () => {
+    setState({ loading: true, ok: false, err: '' });
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/coop-invitations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cooperativeId: coop._id, ...form }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Error');
+      setState({ loading: false, ok: true, err: '' });
+      setInvitations((prev) => [{ ...form, inviteCode: d.invitation.inviteCode, status: 'sent', createdAt: new Date() }, ...prev]);
+      setForm({ inviteeName: '', inviteePhone: '', inviteeEmail: '', inviteeRegion: '', message: '' });
+      setTimeout(() => setState((s) => ({ ...s, ok: false })), 3000);
+    } catch (err) {
+      setState({ loading: false, ok: false, err: err.message });
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 mt-4">
+      <h3 className="font-bold text-brand-forest mb-4">📨 {isFr ? 'Inviter des agriculteurs' : 'Invite Farmers'}</h3>
+      <div className="grid sm:grid-cols-2 gap-3 mb-4">
+        {[
+          { key: 'inviteeName', label: isFr ? "Nom de l'agriculteur" : 'Farmer name' },
+          { key: 'inviteePhone', label: isFr ? 'Téléphone WhatsApp *' : 'WhatsApp Phone *' },
+          { key: 'inviteeEmail', label: isFr ? 'Email (optionnel)' : 'Email (optional)' },
+          { key: 'inviteeRegion', label: isFr ? 'Région' : 'Region' },
+        ].map(({ key, label }) => (
+          <div key={key}>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+            <input
+              value={form[key]}
+              onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+            />
+          </div>
+        ))}
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-medium text-gray-600 mb-1">{isFr ? "Message d'invitation personnalisé" : 'Personalized invitation message'}</label>
+          <textarea
+            value={form.message}
+            onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+            rows={2}
+            placeholder={
+              isFr
+                ? 'Ex: Bonjour, nous cherchons des producteurs de karité dans votre région...'
+                : 'Ex: Hello, we are looking for shea producers in your region...'
+            }
+            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+          />
+        </div>
+      </div>
+
+      {state.err && <p className="text-red-500 text-xs mb-3">{state.err}</p>}
+      {state.ok && <p className="text-green-600 text-xs mb-3">✓ {isFr ? 'Invitation envoyée !' : 'Invitation sent!'}</p>}
+
+      <button
+        onClick={sendInvite}
+        disabled={state.loading || !form.inviteePhone}
+        className="bg-brand-forest text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+      >
+        {state.loading ? '...' : isFr ? "📨 Envoyer l'invitation" : '📨 Send Invitation'}
+      </button>
+
+      {invitations.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 mb-2">
+            {isFr ? 'Invitations envoyées' : 'Sent invitations'} ({invitations.length})
+          </p>
+          <div className="space-y-2">
+            {invitations.slice(0, 5).map((inv, i) => (
+              <div key={i} className="flex items-center justify-between text-xs text-gray-600 py-1 border-b border-gray-50">
+                <span>{inv.inviteeName || inv.inviteePhone || '—'}</span>
+                <div className="flex items-center gap-2">
+                  {inv.inviteCode && <span className="font-mono text-gray-400">{inv.inviteCode}</span>}
+                  <span
+                    className={`px-2 py-0.5 rounded-full ${
+                      inv.status === 'accepted'
+                        ? 'bg-green-100 text-green-700'
+                        : inv.status === 'declined'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                    }`}
+                  >
+                    {inv.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CooperativesTab({ token, isFr, globalCountryFilter = '' }) {
   const [cooperatives, setCooperatives] = useState([]);
   const [farmers, setFarmers] = useState([]);
@@ -352,6 +468,8 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
             )}
           </div>
         </div>
+
+        <InviteFarmersSection coop={selectedCoop} isFr={isFr} />
       </div>
     );
   }
