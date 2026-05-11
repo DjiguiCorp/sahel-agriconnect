@@ -794,44 +794,44 @@
     }
   },
   "marketplace": {
-    "title": "AfriYield Marketplace — Certified African Commodities",
-    "subtitle": "Source directly from verified African producers",
-    "badges": {
-      "sheaSesame": "Shea Butter & Sesame",
-      "certifiedSupply": "Certified Supply Chain"
-    },
+    "title": "African Produce Marketplace",
+    "subtitle": "All African crops — shea, sesame, cashew, mango, cocoa, fonio and more. Source directly from verified cooperatives or list your production.",
     "filters": {
       "all": "All",
       "shea": "Shea Butter",
       "sesame": "Sesame",
       "usdaCertified": "USDA Certified",
-      "regionalCertified": "Regional Certified",
+      "regionalCertified": "Regionally Certified",
       "availableNow": "Available Now"
     },
-    "card": {
-      "priceOnRequest": "Price on request",
-      "priceLabel": "Price",
-      "requestQuote": "Request a quote",
-      "learnMore": "Learn more",
-      "comingSoon": "Coming soon",
-      "notifyMe": "Notify me when available",
-      "availableVolume": "Available volume",
-      "perMonth": "per month"
+    "badges": {
+      "sheaSesame": "All African Produce",
+      "certifiedSupply": "Certified Supply"
     },
-    "noListings": "Listings are being verified — check back within 48 hours or register to be notified.",
+    "card": {
+      "comingSoon": "Available soon",
+      "notifyMe": "Get notified",
+      "availableVolume": "Available Volume",
+      "perMonth": "/month",
+      "priceLabel": "Price",
+      "priceOnRequest": "On request",
+      "requestQuote": "Request Quote",
+      "learnMore": "Learn More"
+    },
+    "noListings": "No listings match your filters yet. Browse the catalogue or register to be notified.",
     "quoteModal": {
       "title": "Request a Quote",
       "buyerName": "Your name",
-      "company": "Company name",
+      "company": "Company",
       "email": "Email",
       "phone": "Phone",
-      "product": "Product wanted",
-      "quantity": "Quantity needed (kg/month)",
+      "product": "Product",
+      "quantity": "Quantity (kg)",
       "delivery": "Delivery country",
-      "message": "Message or additional details",
-      "submit": "Send quote request",
-      "success": "Your quote request has been sent. The producer will contact you within 48 hours.",
-      "error": "Something went wrong. Please try again."
+      "message": "Message",
+      "submit": "Send request",
+      "success": "Quote request sent. Our team will contact you within 48 hours.",
+      "error": "An error occurred. Please try again."
     }
   },
   "adminDashboard": {

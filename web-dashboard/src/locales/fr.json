@@ -794,43 +794,43 @@
     }
   },
   "marketplace": {
-    "title": "Marketplace AfriYield — Commodités Africaines Certifiées",
-    "subtitle": "Approvisionnez-vous directement auprès de producteurs africains vérifiés",
-    "badges": {
-      "sheaSesame": "Shea Butter & Sesame",
-      "certifiedSupply": "Chaîne certifiée"
-    },
+    "title": "Marketplace de produits africains",
+    "subtitle": "Toutes les cultures africaines — karité, sésame, cajou, mangue, cacao, fonio et plus. Sourcez directement auprès de coopératives vérifiées ou listez votre production.",
     "filters": {
       "all": "Tous",
-      "shea": "Shea Butter",
+      "shea": "Beurre de karité",
       "sesame": "Sésame",
       "usdaCertified": "Certifié USDA",
       "regionalCertified": "Certifié régional",
       "availableNow": "Disponible maintenant"
     },
+    "badges": {
+      "sheaSesame": "Toute la production africaine",
+      "certifiedSupply": "Approvisionnement certifié"
+    },
     "card": {
-      "priceOnRequest": "Prix sur demande",
-      "priceLabel": "Prix",
-      "requestQuote": "Demander un devis",
-      "learnMore": "En savoir plus",
-      "comingSoon": "Disponible bientôt",
+      "comingSoon": "Bientôt disponible",
       "notifyMe": "Être notifié",
       "availableVolume": "Volume disponible",
-      "perMonth": "par mois"
+      "perMonth": "/mois",
+      "priceLabel": "Prix",
+      "priceOnRequest": "Sur demande",
+      "requestQuote": "Demander un devis",
+      "learnMore": "En savoir plus"
     },
-    "noListings": "Profils en cours de vérification — revenez sous 48h ou inscrivez-vous pour être notifié.",
+    "noListings": "Aucune annonce ne correspond à vos filtres. Parcourez le catalogue ou inscrivez-vous pour être notifié.",
     "quoteModal": {
       "title": "Demander un devis",
       "buyerName": "Votre nom",
-      "company": "Nom de l'entreprise",
+      "company": "Entreprise",
       "email": "Email",
       "phone": "Téléphone",
-      "product": "Produit souhaité",
-      "quantity": "Quantité (kg/mois)",
+      "product": "Produit",
+      "quantity": "Quantité (kg)",
       "delivery": "Pays de livraison",
-      "message": "Message ou détails supplémentaires",
+      "message": "Message",
       "submit": "Envoyer la demande",
-      "success": "Votre demande de devis a été envoyée. Le producteur vous contactera sous 48h.",
+      "success": "Demande de devis envoyée. Notre équipe vous contactera sous 48 heures.",
       "error": "Une erreur s'est produite. Veuillez réessayer."
     }
   },
