@@ -19,6 +19,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import TransactionTracker from '../components/TransactionTracker';
 
 const API = API_BASE_URL.replace(/\/$/, '');
 const EUR_RATE = 0.92;
@@ -252,9 +253,14 @@ function AccessScreen({ onAccess, t }) {
 
 /* ─── HOME TAB ──────────────────────────────────────────────────────── */
 function HomeTab({ investor, investments, notifications, t, navigate, onOpenNotifications }) {
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   const firstName = (investor?.fullName || '').split(' ')[0];
   const hasInvestments = investments && investments.length > 0;
   const mainInv = hasInvestments ? investments[0] : null;
+  const totalDeployed = (investments || []).reduce((s, i) => s + (Number(i.amountDeployed) || 0), 0);
+  const activeCount = (investments || []).filter((i) => i.status === 'active').length;
+  const completedCount = (investments || []).filter((i) => i.status === 'completed').length;
 
   const activity = [
     {
@@ -276,7 +282,6 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
 
   const unreadPreview = (notifications || []).filter((n) => !n.read).slice(0, 4);
   const previewList = (unreadPreview.length ? unreadPreview : (notifications || []).slice(0, 4)) || [];
-  const statusLabel = mainInv?.status ? String(mainInv.status) : 'active';
   const nextPayout = mainInv?.payoutSchedule?.find((p) => p?.payoutDate)?.payoutDate;
 
   return (
@@ -300,10 +305,10 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
               <>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-0">
                   {[
-                    [t('investorPortal.home.contribution'), formatUSD(mainInv.amountDeployed)],
-                    [t('investorPortal.portfolio.expectedReturn'), `+${mainInv.expectedROIPercent ?? 8}% ${t('investorPortal.portfolio.perYear')}`],
+                    [isFr ? 'Capital déployé' : 'Capital deployed', formatUSD(totalDeployed)],
+                    [isFr ? 'Deals actifs' : 'Active deals', String(activeCount)],
+                    [isFr ? 'Complétés' : 'Completed', String(completedCount)],
                     [t('investorPortal.home.nextHarvest'), nextPayout ? formatMonthYear(nextPayout) : '—'],
-                    [t('investorPortal.portfolio.status.active'), t(`investorPortal.portfolio.status.${statusLabel}`)],
                   ].map(([label, value]) => (
                     <div key={label} className="md:px-3 md:border-l md:first:border-l-0" style={{ borderColor: 'rgba(181,133,10,0.15)' }}>
                       <p className="text-xs uppercase tracking-widest" style={{ color: 'rgba(245,240,232,0.55)' }}>
@@ -468,7 +473,8 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
 }
 
 /* ─── MY FARM TAB ───────────────────────────────────────────────────── */
-function FarmTab({ investments, t, navigate }) {
+function FarmTab({ investments, investor, t, navigate }) {
+  const { i18n } = useTranslation();
   if (!investments || investments.length === 0) {
     return (
       <div className="px-4 pt-8 pb-24 flex flex-col items-center text-center">
@@ -620,6 +626,14 @@ function FarmTab({ investments, t, navigate }) {
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-6">
+        <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+          <span>🔒</span>
+          {i18n.language === 'fr' ? 'Mes transactions escrow' : 'My escrow transactions'}
+        </h3>
+        <TransactionTracker investorEmail={investor?.email} />
       </div>
 
       <button
@@ -1481,7 +1495,9 @@ export default function InvestorPortal() {
                 onOpenNotifications={() => setShowNotifications(true)}
               />
             )}
-            {activeTab === 'farm' && <FarmTab investments={investments} t={t} navigate={navigate} />}
+            {activeTab === 'farm' && (
+              <FarmTab investments={investments} investor={investor} t={t} navigate={navigate} />
+            )}
             {activeTab === 'prices' && <PricesTab onOpenPremium={() => setShowPremiumModal(true)} />}
             {activeTab === 'news' && <NewsTab t={t} onOpenPremium={() => setShowPremiumModal(true)} />}
             {activeTab === 'help' && <HelpTab investor={investor} t={t} />}

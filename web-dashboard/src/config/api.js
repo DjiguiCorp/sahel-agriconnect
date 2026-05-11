@@ -165,9 +165,20 @@ export const API_ENDPOINTS = {
   OPPORTUNITIES: {
     BASE: `${API_BASE_URL}/api/opportunities`,
     ALL: `${API_BASE_URL}/api/opportunities/all`,
+    PUBLIC_STATS: `${API_BASE_URL}/api/opportunities/public-stats`,
     BY_ID: (id) => `${API_BASE_URL}/api/opportunities/${id}`,
+    DETAIL: (id) => `${API_BASE_URL}/api/opportunities/${id}`,
     MEETING_REQUEST: (id) => `${API_BASE_URL}/api/opportunities/${id}/meeting-request`,
     MEETING_REQUESTS: `${API_BASE_URL}/api/opportunities/meeting-requests`,
+  },
+  ESCROW: {
+    BASE: `${API_BASE_URL}/api/escrow`,
+    BY_INVESTOR: (email) =>
+      `${API_BASE_URL}/api/escrow/investor/${encodeURIComponent(email)}`,
+    DETAIL: (id) => `${API_BASE_URL}/api/escrow/${id}`,
+  },
+  AFRIYIELD_SCORES: {
+    BASE: `${API_BASE_URL}/api/afriyield-scores`,
   },
   SUPPLYCHAIN: {
     BASE: `${API_BASE_URL}/api/supplychain`,

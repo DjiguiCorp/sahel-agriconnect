@@ -1,480 +1,284 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { API_ENDPOINTS } from '../config/api';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 
-const getSampleOpportunities = (t) => [
-  {
-    id: 'sample-1',
-    isFallback: true,
-    name: 'Centre Karité Premium',
-    location: t('afriYield.locations.sikasso'),
-    commodities: ['shea'],
-    tracks: ['A'],
-    certLabel: t('afriYield.certified.regional'),
-    certTone: 'blue',
-    certTier: 'regional',
-    amount: t('afriYield.seeking', {
-      amount: (25000).toLocaleString(),
-      purpose: t('afriYield.equipment.coldStorage'),
-    }),
-    description: t('afriYield.sampleDesc.coldStorage'),
-  },
-  {
-    id: 'sample-2',
-    isFallback: true,
-    name: 'Coopérative Sésame Excellence',
-    location: t('afriYield.locations.kayes'),
-    commodities: ['sesame'],
-    tracks: ['A'],
-    certLabel: t('afriYield.certified.local'),
-    certTone: 'gray',
-    certTier: 'local',
-    amount: t('afriYield.seeking', {
-      amount: (15000).toLocaleString(),
-      purpose: t('afriYield.equipment.drying'),
-    }),
-    description: t('afriYield.sampleDesc.memberFarmers', { count: 47 }),
-  },
-  {
-    id: 'sample-3',
-    isFallback: true,
-    name: 'AfriProcess Hub',
-    location: t('afriYield.locations.dakar'),
-    commodities: ['shea', 'sesame'],
-    tracks: ['B'],
-    certLabel: t('afriYield.certified.usda'),
-    certTone: 'emerald',
-    certTier: 'usda',
-    amount: t('afriYield.seeking', {
-      amount: (50000).toLocaleString(),
-      purpose: t('afriYield.equipment.branding'),
-    }),
-    description: t('afriYield.sampleDesc.exportPipeline'),
-  },
-  {
-    id: 'sample-4',
-    isFallback: true,
-    name: 'Golden Shea Cooperative',
-    location: t('afriYield.locations.korhogo'),
-    commodities: ['shea'],
-    tracks: ['A'],
-    certLabel: t('afriYield.certified.local'),
-    certTone: 'gray',
-    certTier: 'local',
-    amount: t('afriYield.seeking', {
-      amount: (20000).toLocaleString(),
-      purpose: t('afriYield.equipment.processing'),
-    }),
-    description: t('afriYield.sampleDesc.memberFarmers', { count: 28 }),
-  },
-  {
-    id: 'sample-5',
-    isFallback: true,
-    name: 'Sesame Valley Processors',
-    location: t('afriYield.locations.tamale'),
-    commodities: ['sesame'],
-    tracks: ['B'],
-    certLabel: t('afriYield.certified.regional'),
-    certTone: 'blue',
-    certTier: 'regional',
-    amount: t('afriYield.seeking', {
-      amount: (35000).toLocaleString(),
-      purpose: t('afriYield.equipment.marketDev'),
-    }),
-    description: t('afriYield.sampleDesc.buyerJapan'),
-  },
-  {
-    id: 'sample-6',
-    isFallback: true,
-    name: 'West Africa Shea Alliance',
-    location: t('afriYield.locations.thies'),
-    commodities: ['shea'],
-    tracks: ['A', 'B'],
-    certLabel: t('afriYield.certified.usda'),
-    certTone: 'amber',
-    certTier: 'international',
-    amount: t('afriYield.seeking', {
-      amount: (75000).toLocaleString(),
-      purpose: t('afriYield.equipment.supplyChain'),
-    }),
-    description: t('afriYield.sampleDesc.memberFarmers', { count: 120 }),
-  },
-];
+const API = import.meta.env.VITE_API_BASE_URL;
 
-const certStyles = {
-  gray: 'bg-gray-100 text-gray-800 border-gray-200',
-  blue: 'bg-blue-50 text-blue-900 border-blue-200',
-  emerald: 'bg-emerald-50 text-emerald-900 border-emerald-200',
-  amber: 'bg-amber-50 text-amber-900 border-amber-200',
+const TRACK_COLORS = { 'Track A': '#1a3c2e', 'Track B': '#B5850A', 'Track C': '#3b82f6', All: '#6b7280' };
+const CERT_COLORS = {
+  'International (EU/USDA)': '#B5850A',
+  'Regional (ECOWAS)': '#3b82f6',
+  Local: '#059669',
+  Pending: '#6b7280',
 };
 
-function normalizeApiOpportunity(o) {
-  const commodities = [];
-  if (o.commodity === 'Shea Butter' || o.commodity === 'Both') commodities.push('shea');
-  if (o.commodity === 'Sesame' || o.commodity === 'Both') commodities.push('sesame');
-  const tracks = [];
-  if (o.track === 'Track A' || o.track === 'Both') tracks.push('A');
-  if (o.track === 'Track B' || o.track === 'Both') tracks.push('B');
-  let certTier = 'local';
-  if (o.certificationStatus === 'Regional') certTier = 'regional';
-  if (o.certificationStatus === 'International (USDA)') certTier = 'international';
-  const certToneMap = {
-    Local: 'gray',
-    Regional: 'blue',
-    'International (USDA)': 'amber',
-  };
-  const certTone = certToneMap[o.certificationStatus] || 'gray';
-  const certLabel =
-    o.certificationStatus === 'International (USDA)'
-      ? 'International (USDA)'
-      : o.certificationStatus === 'Regional'
-        ? 'Regional Certified'
-        : o.certificationStatus === 'Local'
-          ? 'Local Certified'
-          : 'Certified';
-  const amt = Number(o.amountSought);
-  const amountLine = `Seeking $${Number.isFinite(amt) ? amt.toLocaleString() : o.amountSought} USD`;
-  return {
-    id: o._id,
-    _id: o._id,
-    isFallback: false,
-    name: o.centerName,
-    location: o.location,
-    commodities,
-    tracks,
-    certLabel,
-    certTone,
-    certTier,
-    amount: amountLine,
-    description: o.description || '',
-  };
-}
-
-function matchesFilter(filterId, opp) {
-  if (filterId === 'all') return true;
-  if (filterId === 'shea') return opp.commodities.includes('shea');
-  if (filterId === 'sesame') return opp.commodities.includes('sesame');
-  if (filterId === 'trackA') return opp.tracks.includes('A');
-  if (filterId === 'trackB') return opp.tracks.includes('B');
-  if (filterId === 'certified') return opp.certTier !== 'local';
-  return true;
-}
-
-function commodityBadge(opp, t) {
-  if (opp.commodities.length > 1) return t('afriYield.commodityBoth');
-  return opp.commodities.includes('shea') ? t('afriYield.sheaButter') : t('afriYield.sesame');
-}
-
-function trackBadge(opp, t) {
-  if (opp.tracks.includes('A') && opp.tracks.includes('B')) return t('afriYield.trackBoth');
-  return opp.tracks.includes('A') ? t('afriYield.trackAOnly') : t('afriYield.trackBOnly');
-}
-
 export default function InvestmentOpportunities() {
-  const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const filters = useMemo(
-    () => [
-      { id: 'all', label: t('afriYield.filterAll') },
-      { id: 'shea', label: t('afriYield.sheaButter') },
-      { id: 'sesame', label: t('afriYield.sesame') },
-      { id: 'trackA', label: t('afriYield.filterTrackA') },
-      { id: 'trackB', label: t('afriYield.filterTrackB') },
-      { id: 'certified', label: t('afriYield.filterCertified') },
-    ],
-    [t]
-  );
-  const [activeFilter, setActiveFilter] = useState('all');
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+
+  const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [apiRows, setApiRows] = useState([]);
-  const [useApi, setUseApi] = useState(false);
-  const [meetingOpp, setMeetingOpp] = useState(null);
-  const [meetingForm, setMeetingForm] = useState({
-    investorName: '',
-    investorEmail: '',
-    preferredDate: '',
-    message: '',
-  });
-  const [meetingSubmitting, setMeetingSubmitting] = useState(false);
-  const [meetingBanner, setMeetingBanner] = useState(null);
-  const [meetingError, setMeetingError] = useState(null);
-  const [isUsingSampleData, setIsUsingSampleData] = useState(false);
+  const [trackFilter, setTrackFilter] = useState('all');
+  const [commodityFilter, setCommodityFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('featured');
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const r = await fetch(API_ENDPOINTS.OPPORTUNITIES.BASE);
-        const data = await r.json();
-        const list = data?.opportunities ?? (Array.isArray(data) ? data : []);
-        if (!cancelled && r.ok && Array.isArray(list) && list.length > 0) {
-          setApiRows(list.map(normalizeApiOpportunity));
-          setUseApi(true);
-          setIsUsingSampleData(false);
-        } else if (!cancelled) {
-          setUseApi(false);
-          setIsUsingSampleData(true);
-        }
-      } catch {
-        if (!cancelled) {
-          setUseApi(false);
-          setIsUsingSampleData(true);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    setLoading(true);
+    fetch(`${API}/api/opportunities`)
+      .then((r) => r.json())
+      .then((d) => setOpportunities(d.opportunities || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  const sampleOpportunities = useMemo(() => getSampleOpportunities(t), [t]);
-  const sourceList = useApi && apiRows.length > 0 ? apiRows : sampleOpportunities;
-
-  const visible = useMemo(
-    () => sourceList.filter((o) => matchesFilter(activeFilter, o)),
-    [activeFilter, sourceList]
-  );
-
-  const openMeeting = (opp) => {
-    setMeetingBanner(null);
-    setMeetingError(null);
-    setMeetingForm({ investorName: '', investorEmail: '', preferredDate: '', message: '' });
-    setMeetingOpp(opp);
-  };
-
-  const submitMeeting = async (e) => {
-    e.preventDefault();
-    if (!meetingOpp || meetingOpp.isFallback || !meetingOpp._id) return;
-    setMeetingSubmitting(true);
-    setMeetingError(null);
-    try {
-      const r = await fetch(API_ENDPOINTS.OPPORTUNITIES.MEETING_REQUEST(meetingOpp._id), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          investorName: meetingForm.investorName,
-          investorEmail: meetingForm.investorEmail,
-          preferredDate: meetingForm.preferredDate,
-          message: meetingForm.message,
-          centerName: meetingOpp.name,
-        }),
-      });
-      if (!r.ok) {
-        const errBody = await r.text();
-        throw new Error(errBody || 'Request failed');
-      }
-      setMeetingBanner(t('afriYield.meetingSuccess'));
-      setMeetingForm({ investorName: '', investorEmail: '', preferredDate: '', message: '' });
-    } catch (err) {
-      setMeetingError(err.message || t('afriYield.meetingErrorGeneric'));
-    } finally {
-      setMeetingSubmitting(false);
-    }
-  };
+  const filtered = useMemo(() => {
+    let list = opportunities.filter((o) => {
+      const matchTrack = trackFilter === 'all' || o.track === trackFilter;
+      const matchCommodity =
+        !commodityFilter || o.commodity?.toLowerCase().includes(commodityFilter.toLowerCase());
+      const matchSearch =
+        !searchQuery ||
+        o.centerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        o.location?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchTrack && matchCommodity && matchSearch;
+    });
+    if (sortBy === 'featured') list = [...list].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+    else if (sortBy === 'amount_asc') list = [...list].sort((a, b) => a.amountSought - b.amountSought);
+    else if (sortBy === 'amount_desc') list = [...list].sort((a, b) => b.amountSought - a.amountSought);
+    else if (sortBy === 'roi') list = [...list].sort((a, b) => (b.expectedROIMin || 0) - (a.expectedROIMin || 0));
+    return list;
+  }, [opportunities, trackFilter, commodityFilter, searchQuery, sortBy]);
 
   return (
-    <div className="bg-brand-cream min-h-[60vh]">
-      <section className="bg-[#1a3c2e] py-14">
-        <div className="section-container text-center">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white">{t('afriYield.opportunities')}</h1>
-          <p className="mt-3 text-lg text-white/85 max-w-2xl mx-auto">{t('afriYield.browseOpportunities')}</p>
-        </div>
-      </section>
+    <div style={{ background: '#0d1f17', minHeight: '100vh' }}>
+      <div style={{ background: 'linear-gradient(135deg, #1a3c2e, #0d1f17)' }} className="px-6 py-12">
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            {isFr ? "Opportunités d'investissement" : 'Investment Opportunities'}
+          </h1>
+          <p className="text-white/40 text-sm mb-6">
+            {isFr ? 'Toutes vérifiées, sous escrow, conformes OHADA' : 'All verified, under escrow, OHADA compliant'}
+          </p>
 
-      <section className="section-container pb-20">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-24">
-            <Loader2 className="h-10 w-10 animate-spin text-[#1a3c2e]" aria-hidden />
-            <p className="text-sm font-medium text-gray-600">{t('common.loading')}</p>
-          </div>
-        ) : (
-          <>
-            {isUsingSampleData ? (
-              <div
-                className="rounded-xl p-4 mb-6 text-center"
-                style={{ background: '#fff9e6', border: '1px solid #B5850A' }}
-              >
-                <p className="text-[#1a3c2e] text-sm font-medium">
-                  {i18n.language === 'fr'
-                    ? '📋 Ces annonces sont des exemples. Les vraies opportunités vérifiées arrivent bientôt.'
-                    : '📋 These are sample listings. Real verified opportunities are coming soon.'}
-                </p>
-              </div>
-            ) : null}
-            <div className="flex flex-wrap gap-2 justify-center mb-10">
-              {filters.map((f) => (
+          <div className="flex flex-wrap gap-3">
+            <div className="flex gap-1 rounded-xl p-1" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              {['all', 'Track A', 'Track B', 'Track C'].map((t) => (
                 <button
-                  key={f.id}
+                  key={t}
                   type="button"
-                  onClick={() => setActiveFilter(f.id)}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold border transition ${
-                    activeFilter === f.id
-                      ? 'bg-[#1a3c2e] text-white border-[#1a3c2e]'
-                      : 'bg-white text-brand-forest border-gray-200 hover:border-[#B5850A]'
-                  }`}
+                  onClick={() => setTrackFilter(t)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+                  style={{
+                    background: trackFilter === t ? TRACK_COLORS[t] || '#B5850A' : 'transparent',
+                    color: trackFilter === t ? '#fff' : 'rgba(255,255,255,0.4)',
+                  }}
                 >
-                  {f.label}
+                  {t === 'all' ? (isFr ? 'Tous' : 'All') : t}
                 </button>
               ))}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {visible.map((opp) => {
-                const canOpenDetail = !opp.isFallback && Boolean(opp._id);
-                return (
-                <article
-                  key={opp.id}
-                  className={`rounded-2xl border border-gray-200 bg-white p-6 shadow-md flex flex-col ${
-                    canOpenDetail ? 'cursor-pointer transition hover:border-[#B5850A]/40 hover:shadow-lg' : ''
-                  }`}
-                  onClick={canOpenDetail ? () => navigate(`/afri-yield/opportunities/${opp._id}`) : undefined}
-                  onKeyDown={
-                    canOpenDetail
-                      ? (e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            navigate(`/afri-yield/opportunities/${opp._id}`);
-                          }
-                        }
-                      : undefined
-                  }
-                  role={canOpenDetail ? 'link' : undefined}
-                  tabIndex={canOpenDetail ? 0 : undefined}
-                >
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <span className="rounded-full bg-[#1a3c2e]/10 px-3 py-0.5 text-xs font-bold text-[#1a3c2e]">
-                      {commodityBadge(opp, t)}
-                    </span>
-                    <span className="rounded-full bg-[#B5850A]/15 px-3 py-0.5 text-xs font-bold text-[#9a7109]">
-                      {trackBadge(opp, t)}
-                    </span>
-                    <span
-                      className={`rounded-full border px-3 py-0.5 text-xs font-bold ${certStyles[opp.certTone]}`}
-                    >
-                      {opp.certLabel}
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-extrabold text-brand-forest">{opp.name}</h2>
-                  <p className="text-sm text-gray-500 mt-1">{opp.location}</p>
-                  <p className="mt-4 font-semibold text-gray-900">{opp.amount}</p>
-                  <p className="mt-2 text-gray-600 text-sm flex-1">{opp.description}</p>
-                  <div
-                    className="mt-6 flex flex-col sm:flex-row gap-3"
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => openMeeting(opp)}
-                      className="flex-1 rounded-lg bg-[#B5850A] px-4 py-3 text-sm font-bold text-white hover:bg-[#9a7109] transition"
-                    >
-                      {t('afriYield.scheduleMeeting')}
-                    </button>
-                    <Link
-                      to={`/afri-yield/invest/${opp._id || opp.id || 'sample'}`}
-                      className="flex-1 rounded-lg border-2 border-[#1a3c2e] px-4 py-3 text-sm font-bold text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition text-center"
-                    >
-                      {t('afriYield.investNow') || 'Invest Now'}
-                    </Link>
-                  </div>
-                </article>
-              );
-              })}
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 min-w-[120px]"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
+              <input
+                type="text"
+                value={commodityFilter}
+                onChange={(e) => setCommodityFilter(e.target.value)}
+                placeholder={isFr ? 'Commodité' : 'Commodity'}
+                className="flex-1 bg-transparent text-sm text-white outline-none py-2 placeholder-white/20 min-w-0"
+              />
             </div>
 
-            {visible.length === 0 ? (
-              <p className="text-center text-gray-600 py-12">{t('afriYield.noMatchFilter')}</p>
-            ) : null}
-          </>
-        )}
-      </section>
-
-      {meetingOpp ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="meeting-modal-title"
-        >
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 relative">
-            <button
-              type="button"
-              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100"
-              onClick={() => setMeetingOpp(null)}
-              aria-label={t('common.close')}
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 flex-1 min-w-[200px]"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
             >
-              <X className="h-5 w-5" />
-            </button>
-            <h2 id="meeting-modal-title" className="text-xl font-bold text-brand-forest pr-8">
-              {t('afriYield.meetingModalTitle')}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">{meetingOpp.name}</p>
+              <Search className="w-4 h-4 text-white/30 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isFr ? 'Rechercher...' : 'Search...'}
+                className="flex-1 bg-transparent text-sm text-white outline-none py-2 placeholder-white/20"
+              />
+            </div>
 
-            {meetingOpp.isFallback ? (
-              <p className="mt-4 text-sm text-gray-700">{t('afriYield.meetingFallbackHint')}</p>
-            ) : (
-              <form onSubmit={submitMeeting} className="mt-6 space-y-4">
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">{t('afriYield.investorName')} *</span>
-                  <input
-                    required
-                    value={meetingForm.investorName}
-                    onChange={(e) => setMeetingForm((p) => ({ ...p, investorName: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-[#B5850A]"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">{t('contact.email')} *</span>
-                  <input
-                    type="email"
-                    required
-                    value={meetingForm.investorEmail}
-                    onChange={(e) => setMeetingForm((p) => ({ ...p, investorEmail: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-[#B5850A]"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">{t('afriYield.preferredDate')}</span>
-                  <input
-                    type="date"
-                    value={meetingForm.preferredDate}
-                    onChange={(e) => setMeetingForm((p) => ({ ...p, preferredDate: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-[#B5850A]"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">{t('contact.message')}</span>
-                  <textarea
-                    rows={3}
-                    value={meetingForm.message}
-                    onChange={(e) => setMeetingForm((p) => ({ ...p, message: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-[#B5850A]"
-                  />
-                </label>
-                {meetingError ? (
-                  <p className="text-sm text-red-600">{meetingError}</p>
-                ) : null}
-                {meetingBanner ? (
-                  <p className="text-sm text-green-700 font-medium">{meetingBanner}</p>
-                ) : null}
-                <button
-                  type="submit"
-                  disabled={meetingSubmitting}
-                  className="w-full rounded-lg bg-[#B5850A] py-3 font-bold text-white hover:bg-[#9a7109] disabled:opacity-60 inline-flex items-center justify-center gap-2"
-                >
-                  {meetingSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                  {t('common.submit')}
-                </button>
-              </form>
-            )}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="rounded-xl px-3 py-2 text-xs font-semibold text-white outline-none"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
+              <option value="featured">{isFr ? 'En vedette' : 'Featured'}</option>
+              <option value="roi">{isFr ? 'Meilleur ROI' : 'Best ROI'}</option>
+              <option value="amount_asc">{isFr ? 'Montant ↑' : 'Amount ↑'}</option>
+              <option value="amount_desc">{isFr ? 'Montant ↓' : 'Amount ↓'}</option>
+            </select>
           </div>
         </div>
-      ) : null}
+      </div>
+
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 24px 60px' }}>
+        {loading ? (
+          <div className="text-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-white/30 mx-auto" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 rounded-2xl" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+            <p className="text-5xl mb-4">🌾</p>
+            <h3 className="text-xl font-bold text-white mb-2">
+              {isFr ? "Aucune opportunité pour l'instant" : 'No opportunities yet'}
+            </h3>
+            <p className="text-white/40 text-sm mb-6">
+              {isFr
+                ? 'Les premières opportunités vérifiées arrivent bientôt. Inscrivez-vous pour être notifié.'
+                : 'First verified opportunities coming soon. Register to be notified.'}
+            </p>
+            <Link
+              to="/afri-yield/register"
+              className="inline-block px-6 py-3 rounded-xl font-bold text-sm text-[#1a3c2e]"
+              style={{ background: '#B5850A' }}
+            >
+              {isFr ? "M'inscrire et être notifié" : 'Register and be notified'}
+            </Link>
+          </div>
+        ) : (
+          <>
+            <p className="text-white/30 text-xs mb-5">
+              {filtered.length} {isFr ? 'opportunité(s) trouvée(s)' : 'opportunity(s) found'}
+            </p>
+            <div className="grid md:grid-cols-2 gap-5">
+              {filtered.map((opp) => {
+                const fundingPct =
+                  opp.amountSought > 0
+                    ? Math.min(100, Math.round(((opp.amountRaised || 0) / opp.amountSought) * 100))
+                    : 0;
+                const trackColor = TRACK_COLORS[opp.track] || '#1a3c2e';
+                const certColor = CERT_COLORS[opp.certificationStatus] || '#6b7280';
+                return (
+                  <Link
+                    key={opp._id}
+                    to={`/afri-yield/opportunities/${opp._id}`}
+                    className="block rounded-2xl overflow-hidden transition hover:scale-[1.01]"
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: opp.featured ? `1px solid ${trackColor}60` : '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <div className="p-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            <span
+                              className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                              style={{ background: trackColor }}
+                            >
+                              {opp.track}
+                            </span>
+                            <span
+                              className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                              style={{ background: certColor + 'cc' }}
+                            >
+                              {opp.certificationStatus}
+                            </span>
+                            {opp.featured && (
+                              <span
+                                className="text-xs px-2 py-0.5 rounded-full"
+                                style={{ background: '#B5850A20', color: '#B5850A' }}
+                              >
+                                ⭐ {isFr ? 'Vedette' : 'Featured'}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="font-bold text-white text-lg">{opp.centerName}</h3>
+                          <p className="text-sm text-white/40">
+                            🌍 {opp.location}, {opp.country}
+                          </p>
+                        </div>
+                        {opp.afriyieldScore > 0 && (
+                          <div className="text-center flex-shrink-0">
+                            <p
+                              className="text-xl font-bold"
+                              style={{ color: opp.afriyieldScore >= 70 ? '#4ade80' : '#B5850A' }}
+                            >
+                              {opp.afriyieldScore}
+                            </p>
+                            <p className="text-xs text-white/30">AY Score</p>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-white/50 line-clamp-2 mb-4">{opp.description}</p>
+
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                          <p className="text-xs text-white/30 mb-1">{isFr ? 'Recherché' : 'Seeking'}</p>
+                          <p className="text-sm font-bold text-white">${(opp.amountSought || 0).toLocaleString()}</p>
+                        </div>
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                          <p className="text-xs text-white/30 mb-1">Min.</p>
+                          <p className="text-sm font-bold text-white">${(opp.minInvestment || 1000).toLocaleString()}</p>
+                        </div>
+                        <div
+                          className="rounded-lg p-2.5 text-center"
+                          style={{
+                            background: opp.expectedROIMin > 0 ? 'rgba(181,133,10,0.1)' : 'rgba(255,255,255,0.05)',
+                          }}
+                        >
+                          <p className="text-xs text-white/30 mb-1">{isFr ? 'ROI est.' : 'Est. ROI'}</p>
+                          <p
+                            className="text-sm font-bold"
+                            style={{ color: opp.expectedROIMin > 0 ? '#B5850A' : '#fff' }}
+                          >
+                            {opp.expectedROIMin > 0
+                              ? `${opp.expectedROIMin}–${opp.expectedROIMax}%`
+                              : `${opp.cycledays}j`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-xs text-white/30 mb-1">
+                          <span>{isFr ? 'Financement' : 'Funding'}</span>
+                          <span>{fundingPct}%</span>
+                        </div>
+                        <div className="w-full rounded-full h-1.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                          <div
+                            className="h-1.5 rounded-full"
+                            style={{
+                              width: `${fundingPct}%`,
+                              background: fundingPct >= 80 ? '#4ade80' : '#B5850A',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className="px-5 py-3 flex justify-between items-center"
+                      style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        {opp.insuranceCoverage && (
+                          <span className="text-xs text-white/30">🛡 {isFr ? 'Assuré' : 'Insured'}</span>
+                        )}
+                        {opp.memberFarmers > 0 && (
+                          <span className="text-xs text-white/30">👩‍🌾 {opp.memberFarmers}</span>
+                        )}
+                      </div>
+                      <span className="text-xs font-semibold" style={{ color: '#B5850A' }}>
+                        {isFr ? 'Voir le deal →' : 'View deal →'}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

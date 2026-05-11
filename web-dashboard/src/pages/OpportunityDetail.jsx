@@ -13,29 +13,39 @@ const certStyles = {
 
 function commodityLabel(o) {
   if (o.commodity === 'Both') return 'Shea + Sesame';
-  return o.commodity === 'Shea Butter' ? 'Shea Butter' : 'Sesame';
+  if (o.commodity && typeof o.commodity === 'string') return o.commodity;
+  return '—';
 }
 
 function trackLabel(o) {
   if (o.track === 'Both') return 'Track A + B';
+  if (o.track === 'All') return 'All tracks';
   return o.track || '';
 }
 
 function certToneAndLabel(o) {
+  const cert = o.certificationStatus || 'Local';
   const certToneMap = {
     Local: 'gray',
     Regional: 'blue',
+    'Regional (ECOWAS)': 'blue',
     'International (USDA)': 'amber',
+    'International (EU/USDA)': 'amber',
+    Pending: 'gray',
   };
-  const tone = certToneMap[o.certificationStatus] || 'gray';
+  const tone = certToneMap[cert] || 'gray';
   const certLabel =
-    o.certificationStatus === 'International (USDA)'
-      ? 'International (USDA)'
-      : o.certificationStatus === 'Regional'
-        ? 'Regional Certified'
-        : o.certificationStatus === 'Local'
-          ? 'Local Certified'
-          : o.certificationStatus || 'Certified';
+    cert === 'Regional'
+      ? 'Regional Certified'
+      : cert === 'Regional (ECOWAS)'
+        ? 'Regional (ECOWAS)'
+        : cert === 'International (USDA)' || cert === 'International (EU/USDA)'
+          ? cert
+          : cert === 'Local'
+            ? 'Local Certified'
+            : cert === 'Pending'
+              ? 'Pending'
+              : cert || 'Certified';
   return { tone, certLabel };
 }
 
@@ -49,7 +59,8 @@ function parseBuyers(existingBuyers) {
 
 export default function OpportunityDetail() {
   const { id } = useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [opportunity, setOpportunity] = useState(null);
@@ -178,6 +189,75 @@ export default function OpportunityDetail() {
               {certLabel}
             </span>
           </div>
+
+          {/* Trust signals row */}
+          <div className="flex flex-wrap gap-3 mt-4 mb-2">
+            {opportunity.verified && (
+              <span
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+                style={{ background: '#4ade8020', color: '#4ade80' }}
+              >
+                ✓ {isFr ? 'Vérifié AfriYield' : 'AfriYield Verified'}
+              </span>
+            )}
+            {opportunity.insuranceCoverage && (
+              <span
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+                style={{ background: '#3b82f620', color: '#3b82f6' }}
+              >
+                🛡 {isFr ? 'Assuré' : 'Insured'}
+              </span>
+            )}
+            {Number(opportunity.afriyieldScore) > 0 && (
+              <span
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+                style={{ background: '#B5850A20', color: '#B5850A' }}
+              >
+                ⭐ {isFr ? 'Score AfriYield' : 'AfriYield Score'}: {opportunity.afriyieldScore}/100
+              </span>
+            )}
+            <span
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}
+            >
+              🔒 {isFr ? 'Fonds en escrow agréé' : 'Funds in licensed escrow'}
+            </span>
+            <span
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}
+            >
+              ⚖️ {isFr ? 'Conforme OHADA' : 'OHADA Compliant'}
+            </span>
+          </div>
+
+          {/* Milestone preview */}
+          {opportunity.milestones && opportunity.milestones.length > 0 && (
+            <div
+              className="rounded-2xl p-5 mb-2"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <h3 className="font-bold text-white mb-4">{isFr ? '🔒 Jalons escrow' : '🔒 Escrow Milestones'}</h3>
+              <div className="space-y-3">
+                {opportunity.milestones.map((m, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{
+                        background:
+                          m.status === 'released' ? '#4ade80' : m.status === 'verified' ? '#B5850A' : 'rgba(255,255,255,0.1)',
+                      }}
+                    >
+                      {i + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-white">{m.label}</p>
+                    </div>
+                    <span className="text-xs text-white/40">{m.percentOfTotal != null ? `${m.percentOfTotal}%` : '—'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

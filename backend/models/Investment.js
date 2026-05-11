@@ -16,7 +16,7 @@ const investmentSchema = new mongoose.Schema({
   investorEmail: String,
   opportunityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Opportunity' },
   opportunityName: String,
-  track: { type: String, enum: ['Track A', 'Track B'] },
+  track: { type: String, enum: ['Track A', 'Track B', 'Track C', 'Both'] },
   commodity: String,
   amountDeployed: { type: Number, required: true },
   currency: { type: String, default: 'USD' },

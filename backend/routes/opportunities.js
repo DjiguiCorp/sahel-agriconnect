@@ -9,26 +9,55 @@ function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// GET /api/opportunities/public-stats
+router.get('/public-stats', async (req, res) => {
+  try {
+    const total = await Opportunity.countDocuments({ status: { $in: ['active', 'funded'] } });
+    const totalRaised = await Opportunity.aggregate([
+      { $group: { _id: null, total: { $sum: '$amountRaised' } } },
+    ]);
+    const byCommodity = await Opportunity.aggregate([
+      { $group: { _id: '$commodity', count: { $sum: 1 } } },
+    ]);
+    const byTrack = await Opportunity.aggregate([{ $group: { _id: '$track', count: { $sum: 1 } } }]);
+    res.json({
+      success: true,
+      total,
+      totalRaised: totalRaised[0]?.total || 0,
+      byCommodity,
+      byTrack,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
-    const q = { status: 'active' };
-    if (req.query.commodity) q.commodity = req.query.commodity;
-    if (req.query.track) q.track = req.query.track;
-    if (req.query.country) {
-      q.country = new RegExp(`^${escapeRegex(req.query.country.trim())}$`, 'i');
+    const { track, commodity, status, featured, country } = req.query;
+    const filter = {};
+    if (track) filter.track = track;
+    if (commodity) filter.commodity = new RegExp(escapeRegex(String(commodity).trim()), 'i');
+    if (status) {
+      filter.status = status;
+    } else {
+      filter.status = { $in: ['active', 'funded', 'in_progress'] };
     }
-    const opportunities = await Opportunity.find(q)
+    if (featured === 'true' || featured === true) filter.featured = true;
+    if (country) filter.country = new RegExp(`^${escapeRegex(String(country).trim())}$`, 'i');
+
+    const ops = await Opportunity.find(filter)
       .sort({ featured: -1, createdAt: -1 })
-      .lean();
-    res.json({ success: true, opportunities });
-  } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+      .lean({ virtuals: true });
+    res.json({ success: true, opportunities: ops });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 router.get('/all', authenticateToken, async (req, res) => {
   try {
-    const opportunities = await Opportunity.find().sort({ createdAt: -1 }).lean();
+    const opportunities = await Opportunity.find().sort({ createdAt: -1 }).lean({ virtuals: true });
     res.json({ success: true, opportunities });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
@@ -52,7 +81,7 @@ router.get('/:id', async (req, res) => {
     if (!req.params.id.match(/^[a-fA-F0-9]{24}$/)) {
       return res.status(400).json({ success: false, error: 'Invalid opportunity id' });
     }
-    const opportunity = await Opportunity.findById(req.params.id).lean();
+    const opportunity = await Opportunity.findById(req.params.id).lean({ virtuals: true });
     if (!opportunity) {
       return res.status(404).json({ success: false, error: 'Opportunity not found' });
     }

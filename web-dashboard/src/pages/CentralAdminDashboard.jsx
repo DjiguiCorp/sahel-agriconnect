@@ -19,7 +19,7 @@ import BenefitsTab from '../components/admin/BenefitsTab';
 import TrainingsManagement from '../components/admin/TrainingsManagement';
 import IrrigationTab from '../components/admin/IrrigationTab';
 import OptimizationTab from '../components/admin/OptimizationTab';
-import AfriYieldManagement from '../components/admin/AfriYieldManagement';
+import AfriYieldAdminTab from '../components/admin/AfriYieldAdminTab';
 import CountryLicensesManagement from '../components/admin/CountryLicensesManagement';
 import GovernanceTab from '../components/admin/GovernanceTab';
 import FarmerNeedsTab from '../components/admin/FarmerNeedsTab';
@@ -1378,7 +1378,7 @@ const CentralAdminDashboard = () => {
           {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
           {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'reports' && <ReportsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'afriyield' && <AfriYieldManagement />}
+          {activeTab === 'afriyield' && <AfriYieldAdminTab token={adminToken} isFr={isFr} />}
           {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}
         </div>
       </main>
