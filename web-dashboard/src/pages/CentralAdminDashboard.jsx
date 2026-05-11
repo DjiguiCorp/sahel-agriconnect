@@ -1162,6 +1162,48 @@ function AdminDeleteUserPanel({ token }) {
     setLoading(false);
   };
 
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const bulkDeleteSelected = async () => {
+    if (selectedUsers.size === 0) return;
+    if (
+      !window.confirm(
+        isFr
+          ? `Supprimer définitivement ${selectedUsers.size} compte(s) ? Irréversible.`
+          : `Permanently delete ${selectedUsers.size} account(s)? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setBulkDeleting(true);
+    try {
+      const usersPayload = [...selectedUsers].map((id) => ({ type: selectedType, id }));
+      const r = await fetch(`${API_BASE_URL}/api/deletion-requests/admin/bulk`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ users: usersPayload, reason: 'Admin bulk deletion', notify: true }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Bulk delete failed');
+      const failed = d.results?.failed || [];
+      const okIds = new Set((d.results?.success || []).map((x) => x.id));
+      setUsers((prev) => prev.filter((u) => !okIds.has(u._id)));
+      setSelectedUsers(new Set());
+      if (failed.length) {
+        // eslint-disable-next-line no-alert
+        alert(
+          isFr
+            ? `${failed.length} suppression(s) ont échoué: ${failed.map((f) => f.error).join('; ')}`
+            : `${failed.length} deletion(s) failed: ${failed.map((f) => f.error).join('; ')}`
+        );
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e.message || 'Bulk delete failed');
+    }
+    setBulkDeleting(false);
+  };
+
   const hardDelete = async () => {
     if (!confirmUser) return;
     setDeleting(true);
@@ -1286,11 +1328,23 @@ function AdminDeleteUserPanel({ token }) {
               {users.length} {(typeInfo?.label || 'user').toLowerCase()}
               {isFr ? '(s) trouvé(s)' : '(s) found'}
             </span>
-            {selectedUsers.size > 0 ? (
-              <span className="text-xs text-red-600 font-semibold">
-                {selectedUsers.size} {isFr ? 'sélectionné(s)' : 'selected'}
-              </span>
-            ) : null}
+            <div className="flex items-center gap-2">
+              {selectedUsers.size > 0 ? (
+                <>
+                  <span className="text-xs text-red-600 font-semibold">
+                    {selectedUsers.size} {isFr ? 'sélectionné(s)' : 'selected'}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={bulkDeleting}
+                    onClick={bulkDeleteSelected}
+                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {bulkDeleting ? '...' : isFr ? 'Supprimer la sélection' : 'Delete selected'}
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[720px]">
