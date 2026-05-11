@@ -91,6 +91,13 @@ export const WebSocketProvider = ({ children }) => {
     }
   };
 
+  const removeFarmerFromList = (farmerId) => {
+    if (!farmerId) return;
+    setFarmers((prev) =>
+      prev.filter((f) => String(f.id || f._id || '') !== String(farmerId))
+    );
+  };
+
   return (
     <WebSocketContext.Provider value={{
       socket,
@@ -99,6 +106,7 @@ export const WebSocketProvider = ({ children }) => {
       realTimeUpdates,
       emitFarmerRegistration,
       emitFarmerUpdate,
+      removeFarmerFromList,
       clearUpdates: () => setRealTimeUpdates([])
     }}>
       {children}

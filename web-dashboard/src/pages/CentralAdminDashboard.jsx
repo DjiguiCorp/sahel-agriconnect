@@ -55,6 +55,7 @@ const BASE_TABS = [
   { id: 'overview', labelKey: 'adminDashboard.tabs.overview', shortKey: 'adminDashboard.tabsShort.overview', Icon: ShieldAlert },
   { id: 'notifications', labelKey: 'adminDashboard.tabs.notifications', shortKey: 'adminDashboard.tabsShort.notifications', Icon: BadgeCheck },
   { id: 'deletions', labelKey: 'adminDashboard.tabs.deletions', shortKey: 'adminDashboard.tabsShort.deletions', Icon: Trash2 },
+  { id: 'deleteUsers', labelKey: 'adminDashboard.tabs.deleteUsers', shortKey: 'adminDashboard.tabsShort.deleteUsers', Icon: Trash2 },
   { id: 'farmers', labelKey: 'adminDashboard.tabs.farmers', shortKey: 'adminDashboard.tabsShort.farmers', Icon: Sprout },
   { id: 'farmerNeeds', labelKey: 'adminDashboard.tabs.farmerNeeds', shortKey: 'adminDashboard.tabsShort.farmerNeeds', Icon: Wheat },
   { id: 'cooperatives', labelKey: 'adminDashboard.tabs.cooperatives', shortKey: 'adminDashboard.tabsShort.cooperatives', Icon: Handshake },
@@ -957,6 +958,11 @@ function DeletionRequestsPanel({ onRequestsLoaded }) {
       investor: 'bg-[#fff7df] text-[#7a5b10] border-[#e9d7a7]',
       farmer: 'bg-green-50 text-green-900 border-green-200',
       cooperative: 'bg-blue-50 text-blue-900 border-blue-200',
+      processor: 'bg-sky-50 text-sky-900 border-sky-200',
+      government: 'bg-red-50 text-red-900 border-red-200',
+      ngo: 'bg-cyan-50 text-cyan-900 border-cyan-200',
+      enterprise: 'bg-amber-50 text-amber-900 border-amber-200',
+      international_org: 'bg-violet-50 text-violet-900 border-violet-200',
       diaspora_producer: 'bg-purple-50 text-purple-900 border-purple-200',
       diaspora_buyer: 'bg-indigo-50 text-indigo-900 border-indigo-200',
     };
@@ -1104,6 +1110,411 @@ function DeletionRequestsPanel({ onRequestsLoaded }) {
         </table>
         {items.length === 0 ? <p className="p-6 text-center text-gray-500">{isFr ? 'Aucune demande.' : 'No requests.'}</p> : null}
       </div>
+    </div>
+  );
+}
+
+function AdminDeleteUserPanel({ token }) {
+  const { i18n } = useTranslation();
+  const isFr = String(i18n.language || '').toLowerCase().startsWith('fr');
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+    'Accept-Language': isFr ? 'fr' : 'en',
+  };
+
+  const USER_TYPES = [
+    { key: 'farmer', label: isFr ? 'Agriculteur' : 'Farmer', emoji: '👩‍🌾', color: '#1a3c2e' },
+    { key: 'cooperative', label: isFr ? 'Coopérative' : 'Cooperative', emoji: '🤝', color: '#B5850A' },
+    { key: 'processor', label: isFr ? 'Processeur' : 'Processor', emoji: '⚙️', color: '#3b82f6' },
+    { key: 'investor', label: isFr ? 'Investisseur' : 'Investor', emoji: '💰', color: '#7c3aed' },
+    { key: 'government', label: isFr ? 'Gouvernement' : 'Government', emoji: '🏛️', color: '#dc2626' },
+    { key: 'ngo', label: 'NGO', emoji: '🤝', color: '#0891b2' },
+    { key: 'enterprise', label: isFr ? 'Entreprise' : 'Enterprise', emoji: '🏢', color: '#92400e' },
+    { key: 'diaspora_producer', label: isFr ? 'Producteur diaspora' : 'Diaspora producer', emoji: '🌍', color: '#059669' },
+    { key: 'diaspora_buyer', label: isFr ? 'Acheteur diaspora' : 'Diaspora buyer', emoji: '💼', color: '#0369a1' },
+  ];
+
+  const [selectedType, setSelectedType] = useState('farmer');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [confirmUser, setConfirmUser] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [notifyUser, setNotifyUser] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteResult, setDeleteResult] = useState(null);
+  const [selectedUsers, setSelectedUsers] = useState(new Set());
+
+  const search = async () => {
+    setLoading(true);
+    setUsers([]);
+    setSelectedUsers(new Set());
+    try {
+      const params = new URLSearchParams({ type: selectedType });
+      if (searchQuery) params.set('search', searchQuery);
+      const r = await fetch(`${API_BASE_URL}/api/deletion-requests/admin/users?${params}`, { headers });
+      const d = await r.json();
+      if (d.success) setUsers(d.users || []);
+    } catch {
+      /* ignore */
+    }
+    setLoading(false);
+  };
+
+  const hardDelete = async () => {
+    if (!confirmUser) return;
+    setDeleting(true);
+    setDeleteResult(null);
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/deletion-requests/admin/users/${selectedType}/${confirmUser._id}`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ reason: deleteReason, notify: notifyUser }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Delete failed');
+      setDeleteResult({ ok: true, message: d.message });
+      setUsers((prev) => prev.filter((u) => u._id !== confirmUser._id));
+      setSelectedUsers((prev) => {
+        const next = new Set(prev);
+        next.delete(confirmUser._id);
+        return next;
+      });
+      setTimeout(() => {
+        setConfirmUser(null);
+        setDeleteResult(null);
+        setDeleteReason('');
+      }, 2000);
+    } catch (e) {
+      setDeleteResult({ ok: false, message: e.message });
+    }
+    setDeleting(false);
+  };
+
+  const displayName = (u) =>
+    u.nom || u.name || u.fullName || u.cooperativeName || u.nomCooperative || u.organization || '—';
+  const displayEmail = (u) => u.email || u.emailContact || '—';
+  const displayStatus = (u) => u.status || u.statut || '—';
+
+  const typeInfo = USER_TYPES.find((t) => t.key === selectedType);
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-brand-forest">{isFr ? "Suppression d'utilisateurs" : 'Delete Users'}</h2>
+        <p className="text-gray-500 text-sm mt-1">
+          {isFr
+            ? "Recherchez et supprimez définitivement n'importe quel compte. Les données associées seront également supprimées. Cette action est irréversible."
+            : 'Search and permanently delete any account. Associated data will also be removed. This action is irreversible.'}
+        </p>
+      </div>
+
+      <div className="flex items-start gap-3 rounded-xl p-4 bg-red-50 border border-red-200">
+        <span className="text-xl flex-shrink-0">⚠️</span>
+        <div>
+          <p className="font-semibold text-red-700 text-sm">{isFr ? 'Suppression permanente' : 'Permanent deletion'}</p>
+          <p className="text-red-600 text-xs mt-0.5 leading-relaxed">
+            {isFr
+              ? "Les données supprimées ne peuvent pas être récupérées. Un email de notification est envoyé à l'utilisateur. Un journal d'audit est créé. Les investisseurs avec des deals actifs ne peuvent pas être supprimés."
+              : 'Deleted data cannot be recovered. A notification email is sent to the user. An audit log is created. Investors with active deals cannot be deleted.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {USER_TYPES.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => {
+              setSelectedType(t.key);
+              setUsers([]);
+              setSelectedUsers(new Set());
+            }}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border transition ${
+              selectedType === t.key ? 'text-white border-transparent' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+            }`}
+            style={selectedType === t.key ? { background: t.color } : {}}
+          >
+            {t.emoji} {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-3 flex-wrap">
+        <div className="flex-1 min-w-[200px] flex items-center gap-2 rounded-xl border border-gray-200 px-4 bg-white">
+          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && search()}
+            placeholder={
+              isFr
+                ? `Rechercher un ${(typeInfo?.label || 'utilisateur').toLowerCase()} par nom, email...`
+                : `Search ${(typeInfo?.label || 'user').toLowerCase()} by name, email...`
+            }
+            className="flex-1 py-3 text-sm outline-none bg-transparent"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={search}
+          disabled={loading}
+          className="px-5 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50"
+          style={{ background: '#1a3c2e' }}
+        >
+          {loading ? '...' : isFr ? 'Rechercher' : 'Search'}
+        </button>
+        {users.length > 0 ? (
+          <button
+            type="button"
+            onClick={search}
+            className="px-4 py-3 rounded-xl text-sm border border-gray-200 text-gray-500 hover:bg-gray-50"
+          >
+            {isFr ? 'Rafraîchir' : 'Refresh'}
+          </button>
+        ) : null}
+      </div>
+
+      {users.length > 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-600">
+              {users.length} {(typeInfo?.label || 'user').toLowerCase()}
+              {isFr ? '(s) trouvé(s)' : '(s) found'}
+            </span>
+            {selectedUsers.size > 0 ? (
+              <span className="text-xs text-red-600 font-semibold">
+                {selectedUsers.size} {isFr ? 'sélectionné(s)' : 'selected'}
+              </span>
+            ) : null}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[720px]">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.size === users.length && users.length > 0}
+                      onChange={(e) => setSelectedUsers(e.target.checked ? new Set(users.map((u) => u._id)) : new Set())}
+                      className="rounded"
+                    />
+                  </th>
+                  {[isFr ? 'Nom' : 'Name', isFr ? 'Email' : 'Email', isFr ? 'Pays' : 'Country', isFr ? 'Statut' : 'Status', isFr ? 'Inscrit' : 'Registered', 'Action'].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user, i) => (
+                  <tr key={user._id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-red-50/30 transition`}>
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.has(user._id)}
+                        onChange={(e) => {
+                          const next = new Set(selectedUsers);
+                          if (e.target.checked) next.add(user._id);
+                          else next.delete(user._id);
+                          setSelectedUsers(next);
+                        }}
+                        className="rounded"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-gray-800">{displayName(user)}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{displayEmail(user)}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{user.country || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          displayStatus(user) === 'active' || displayStatus(user) === 'Actif'
+                            ? 'bg-green-100 text-green-700'
+                            : displayStatus(user) === 'pending' || displayStatus(user) === 'pending_payment'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {displayStatus(user)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmUser(user);
+                          setDeleteReason('');
+                          setDeleteResult(null);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition text-xs font-semibold"
+                      >
+                        🗑 {isFr ? 'Supprimer' : 'Delete'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
+      {!loading && users.length === 0 && searchQuery ? (
+        <div className="text-center py-10 bg-white rounded-2xl border border-gray-200">
+          <p className="text-3xl mb-3">🔍</p>
+          <p className="text-gray-500 text-sm">
+            {isFr
+              ? `Aucun ${(typeInfo?.label || 'utilisateur').toLowerCase()} trouvé pour "${searchQuery}".`
+              : `No ${(typeInfo?.label || 'user').toLowerCase()} found for "${searchQuery}".`}
+          </p>
+        </div>
+      ) : null}
+
+      {confirmUser ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            {deleteResult?.ok ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="font-bold text-green-700 text-lg">{isFr ? 'Compte supprimé' : 'Account deleted'}</p>
+                <p className="text-gray-500 text-sm mt-1">{deleteResult.message}</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-2xl">🗑</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg">{isFr ? 'Confirmer la suppression' : 'Confirm deletion'}</h3>
+                    <p className="text-red-600 text-sm font-semibold">{isFr ? 'Action irréversible' : 'Irreversible action'}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 p-4 mb-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span>{typeInfo?.emoji}</span>
+                    <span className="font-bold text-gray-800">{displayName(confirmUser)}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{typeInfo?.label}</span>
+                  </div>
+                  <p className="text-gray-500 text-sm">{displayEmail(confirmUser)}</p>
+                  {confirmUser.country ? <p className="text-gray-400 text-xs mt-0.5">🌍 {confirmUser.country}</p> : null}
+                </div>
+
+                <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-5">
+                  <p className="text-red-700 text-xs font-semibold mb-2">{isFr ? 'Ce qui sera supprimé :' : 'What will be deleted:'}</p>
+                  <div className="space-y-1 text-xs text-red-600">
+                    <p>• {isFr ? 'Profil et toutes les données personnelles' : 'Profile and all personal data'}</p>
+                    {selectedType === 'farmer' ? (
+                      <p>• {isFr ? 'Déclarations de production associées' : 'Associated produce declarations'}</p>
+                    ) : null}
+                    {selectedType === 'cooperative' ? (
+                      <p>• {isFr ? 'Invitations envoyées, listings' : 'Sent invitations, listings'}</p>
+                    ) : null}
+                    {selectedType === 'investor' ? (
+                      <p>
+                        •{' '}
+                        {isFr
+                          ? "Historique d'investissements (deals actifs bloqués)"
+                          : 'Investment history (active deals blocked)'}
+                      </p>
+                    ) : null}
+                    <p>• {isFr ? 'Notifications en attente' : 'Pending notifications'}</p>
+                    <p>• {isFr ? "Un journal d'audit est conservé" : 'An audit log is kept'}</p>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {isFr ? 'Raison de la suppression (recommandé)' : 'Reason for deletion (recommended)'}
+                  </label>
+                  <textarea
+                    value={deleteReason}
+                    onChange={(e) => setDeleteReason(e.target.value)}
+                    rows={2}
+                    placeholder={
+                      isFr
+                        ? "Ex: Demande de l'utilisateur, violation des CGU, compte frauduleux..."
+                        : 'Ex: User request, ToS violation, fraudulent account...'
+                    }
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                  />
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer mb-5">
+                  <input
+                    type="checkbox"
+                    checked={notifyUser}
+                    onChange={(e) => setNotifyUser(e.target.checked)}
+                    className="rounded w-4 h-4 accent-red-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    {isFr ? "Envoyer un email de notification à l'utilisateur" : 'Send notification email to the user'}
+                  </span>
+                </label>
+
+                {deleteResult && !deleteResult.ok ? (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                    <p className="text-red-700 text-sm font-semibold">{deleteResult.message}</p>
+                  </div>
+                ) : null}
+
+                <div className="flex gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={hardDelete}
+                    disabled={deleting}
+                    className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm bg-red-600 hover:bg-red-700 disabled:opacity-50 transition"
+                  >
+                    {deleting ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                          <path
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8H4z"
+                            className="opacity-75"
+                          />
+                        </svg>{' '}
+                        {isFr ? 'Suppression...' : 'Deleting...'}
+                      </>
+                    ) : (
+                      <>
+                        🗑 {isFr ? 'Supprimer définitivement' : 'Delete permanently'}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmUser(null);
+                      setDeleteResult(null);
+                      setDeleteReason('');
+                    }}
+                    className="px-5 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-gray-50 transition"
+                  >
+                    {isFr ? 'Annuler' : 'Cancel'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1358,7 +1769,10 @@ const CentralAdminDashboard = () => {
           {activeTab === 'deletions' && (
             <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />
           )}
-          {activeTab === 'farmers' && <RealTimeFarmers globalCountryFilter={globalCountryFilter} />}
+          {activeTab === 'deleteUsers' && <AdminDeleteUserPanel token={adminToken} />}
+          {activeTab === 'farmers' && (
+            <RealTimeFarmers globalCountryFilter={globalCountryFilter} adminToken={adminToken} />
+          )}
           {activeTab === 'farmerNeeds' && <FarmerNeedsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'cooperatives' && (
             <CooperativesTab token={adminToken} isFr={isFr} globalCountryFilter={globalCountryFilter} />

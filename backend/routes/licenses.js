@@ -5,6 +5,7 @@ import Admin from '../models/Admin.js';
 import Farmer from '../models/Farmer.js';
 import Cooperative from '../models/Cooperative.js';
 import Processor from '../models/Processor.js';
+import GovernmentAdmin from '../models/GovernmentAdmin.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -23,7 +24,21 @@ function isValidObjectId(id) {
 router.get('/', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const licenses = await CountryLicense.find().sort({ createdAt: -1 }).lean();
-    res.json({ success: true, licenses });
+    const ids = licenses.map((l) => l._id);
+    const portalAdmins = await GovernmentAdmin.find({ licenseId: { $in: ids } })
+      .select('_id name email orgType country status licenseId')
+      .lean();
+    const byLicense = new Map();
+    for (const a of portalAdmins) {
+      const k = String(a.licenseId);
+      if (!byLicense.has(k)) byLicense.set(k, []);
+      byLicense.get(k).push(a);
+    }
+    const enriched = licenses.map((l) => ({
+      ...l,
+      portalAdmins: byLicense.get(String(l._id)) || [],
+    }));
+    res.json({ success: true, licenses: enriched });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }

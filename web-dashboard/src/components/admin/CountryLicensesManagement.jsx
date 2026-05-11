@@ -18,6 +18,12 @@ const STATUS_LABELS = {
   fr: { inquiry: 'Demande', pilot: 'Pilote', active: 'Actif', suspended: 'Suspendu', expired: 'Expiré' },
 };
 
+function portalAdminDeletePathType(orgType) {
+  if (orgType === 'ngo') return 'ngo';
+  if (orgType === 'enterprise') return 'enterprise';
+  return 'government';
+}
+
 export default function CountryLicensesManagement({ token }) {
   const { i18n } = useTranslation();
   const lang = i18n.language === 'fr' ? 'fr' : 'en';
@@ -288,6 +294,7 @@ export default function CountryLicensesManagement({ token }) {
                     lang === 'fr' ? 'Frais/mois' : 'Fee/month',
                     lang === 'fr' ? 'Statut' : 'Status',
                     lang === 'fr' ? 'Admin pays' : 'Country Admin',
+                    lang === 'fr' ? 'Comptes portail' : 'Portal accounts',
                     'Actions',
                   ].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-white font-medium text-xs uppercase">
@@ -330,6 +337,54 @@ export default function CountryLicensesManagement({ token }) {
                           <UserPlus className="w-3 h-3" />
                           {lang === 'fr' ? 'Créer' : 'Create'}
                         </button>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top max-w-[200px]">
+                      {(l.portalAdmins || []).length === 0 ? (
+                        <span className="text-xs text-gray-400">—</span>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {(l.portalAdmins || []).map((adminAccount) => (
+                            <div key={adminAccount._id} className="flex flex-wrap items-center gap-1">
+                              <span className="text-xs text-gray-700 truncate max-w-[140px]" title={adminAccount.email}>
+                                {adminAccount.name || adminAccount.email}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      lang === 'fr'
+                                        ? "Supprimer ce compte admin portail ? L'accès sera révoqué immédiatement."
+                                        : 'Delete government/NGO portal admin account? They will lose portal access immediately.'
+                                    )
+                                  ) {
+                                    const tPath = portalAdminDeletePathType(adminAccount.orgType);
+                                    fetch(`${API}/api/deletion-requests/admin/users/${tPath}/${adminAccount._id}`, {
+                                      method: 'DELETE',
+                                      headers,
+                                      body: JSON.stringify({ reason: 'License admin deletion', notify: true }),
+                                    })
+                                      .then((r) => r.json())
+                                      .then((d) => {
+                                        if (!d.success) {
+                                          // eslint-disable-next-line no-alert
+                                          alert(d.error || 'Delete failed');
+                                        } else loadData();
+                                      })
+                                      .catch(() => {
+                                        // eslint-disable-next-line no-alert
+                                        alert('Delete failed');
+                                      });
+                                  }
+                                }}
+                                className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-semibold"
+                              >
+                                🗑 {lang === 'fr' ? 'Supprimer accès' : 'Remove access'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3">

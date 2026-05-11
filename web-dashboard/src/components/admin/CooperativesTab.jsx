@@ -470,6 +470,49 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
         </div>
 
         <InviteFarmersSection coop={selectedCoop} isFr={isFr} />
+
+        <div className="mt-6 pt-5 border-t border-red-100">
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wide mb-3">
+            {isFr ? 'Zone dangereuse' : 'Danger zone'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const coopName = selectedCoop.cooperativeName || selectedCoop.nomCooperative || 'cooperative';
+              if (
+                window.confirm(
+                  isFr
+                    ? `Supprimer définitivement ${coopName} ? Les liens membres et invitations seront supprimés. Irréversible.`
+                    : `Permanently delete ${coopName}? All member links and invitations will be removed. This cannot be undone.`
+                )
+              ) {
+                fetch(`${API_BASE_URL}/api/deletion-requests/admin/users/cooperative/${selectedCoop._id}`, {
+                  method: 'DELETE',
+                  headers,
+                  body: JSON.stringify({ reason: 'Admin deletion from cooperative tab', notify: true }),
+                })
+                  .then((r) => r.json())
+                  .then((d) => {
+                    if (d.success) {
+                      setSelectedCoop(null);
+                      setCooperatives((prev) => prev.filter((c) => c._id !== selectedCoop._id));
+                      setViewMode('list');
+                    } else {
+                      // eslint-disable-next-line no-alert
+                      alert(d.error || 'Delete failed');
+                    }
+                  })
+                  .catch(() => {
+                    // eslint-disable-next-line no-alert
+                    alert('Delete failed');
+                  });
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition"
+          >
+            🗑 {isFr ? 'Supprimer cette coopérative définitivement' : 'Delete this cooperative permanently'}
+          </button>
+        </div>
       </div>
     );
   }

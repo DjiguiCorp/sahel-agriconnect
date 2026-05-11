@@ -23,7 +23,9 @@ const investmentSchema = new mongoose.Schema({
   deploymentDate: { type: Date, default: Date.now },
   expectedROIPercent: { type: Number, default: 8 },
   payoutSchedule: [payoutSchema],
-  status: { type: String, enum: ['active', 'completed', 'paused'], default: 'active' },
+  status: { type: String, enum: ['active', 'completed', 'paused', 'cancelled'], default: 'active' },
+  cancelledAt: Date,
+  cancelReason: String,
   adminNotes: String,
   createdAt: { type: Date, default: Date.now },
 });

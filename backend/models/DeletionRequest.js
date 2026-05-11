@@ -3,7 +3,18 @@ import mongoose from 'mongoose';
 const schema = new mongoose.Schema({
   userType: {
     type: String,
-    enum: ['investor', 'farmer', 'cooperative', 'diaspora_producer', 'diaspora_buyer'],
+    enum: [
+      'investor',
+      'farmer',
+      'cooperative',
+      'processor',
+      'government',
+      'ngo',
+      'enterprise',
+      'international_org',
+      'diaspora_producer',
+      'diaspora_buyer',
+    ],
     required: true,
   },
   userName: String,

@@ -1,8 +1,153 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import DeletionRequest from '../models/DeletionRequest.js';
+import Farmer from '../models/Farmer.js';
+import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import Processor from '../models/Processor.js';
+import Investor from '../models/Investor.js';
+import GovernmentAdmin from '../models/GovernmentAdmin.js';
+import DiasporaProducer from '../models/DiasporaProducer.js';
+import DiasporaBuyer from '../models/DiasporaBuyer.js';
+import Investment from '../models/Investment.js';
+import ProduceListing from '../models/ProduceListing.js';
+import CooperativeInvitation from '../models/CooperativeInvitation.js';
+import PendingNotification from '../models/PendingNotification.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+const MODEL_MAP = {
+  farmer: Farmer,
+  cooperative: CooperativePlatformRegistration,
+  processor: Processor,
+  investor: Investor,
+  government: GovernmentAdmin,
+  ngo: GovernmentAdmin,
+  enterprise: GovernmentAdmin,
+  diaspora_producer: DiasporaProducer,
+  diaspora_buyer: DiasporaBuyer,
+};
+
+async function notifyUserOfDeletion(email, name, userType, reason, isFr = false) {
+  if (!email || !process.env.RESEND_API_KEY) return;
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+      to: email,
+      subject: isFr
+        ? 'Sahel AgriConnect — Votre compte a été supprimé'
+        : 'Sahel AgriConnect — Your account has been deleted',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;">
+            <h1 style="color:#B5850A;margin:0;font-size:20px;">Sahel AgriConnect</h1>
+          </div>
+          <div style="padding:28px;background:white;border:1px solid #e0e0e0;border-radius:0 0 8px 8px;">
+            <p style="color:#333;">Bonjour ${name || 'Utilisateur'},</p>
+            <p style="color:#555;">Votre compte (${userType}) sur Sahel AgriConnect a été supprimé par notre équipe d'administration.</p>
+            ${reason ? `<p style="color:#555;"><strong>Raison :</strong> ${reason}</p>` : ''}
+            <p style="color:#555;">Toutes vos données ont été supprimées de notre système conformément à notre politique de confidentialité.</p>
+            <p style="color:#555;">Si vous pensez que cette suppression est une erreur, contactez-nous à <a href="mailto:info@djiguicorporation.org" style="color:#1a3c2e;">info@djiguicorporation.org</a>.</p>
+            <p style="color:#333;margin-top:24px;">Cordialement,<br><strong>L'équipe Sahel AgriConnect</strong></p>
+          </div>
+        </div>`,
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** Shared hard-delete logic for admin single + bulk routes */
+async function runAdminHardDelete(type, id, { reason, notify, isFr = false }) {
+  if (!MODEL_MAP[type]) {
+    return { ok: false, status: 400, error: `Unknown type: ${type}` };
+  }
+
+  const Model = MODEL_MAP[type];
+  const user = await Model.findById(id).lean();
+  if (!user) return { ok: false, status: 404, error: 'User not found' };
+
+  const email = user.email || user.emailContact;
+  const name =
+    user.nom ||
+    user.name ||
+    user.fullName ||
+    user.cooperativeName ||
+    user.nomCooperative ||
+    user.organization ||
+    'Unknown';
+
+  if (type === 'investor') {
+    const activeInvestments = await Investment.countDocuments({
+      investorEmail: email,
+      status: { $in: ['active', 'paused'] },
+    });
+    if (activeInvestments > 0) {
+      return {
+        ok: false,
+        status: 409,
+        error: `Cannot delete investor with ${activeInvestments} active investment(s). Resolve investments first or mark them as completed.`,
+        activeInvestments,
+      };
+    }
+  }
+
+  if (type === 'farmer') {
+    const oid = mongoose.Types.ObjectId.isValid(String(id)) ? new mongoose.Types.ObjectId(String(id)) : null;
+    const or = [{ farmerEmail: email }];
+    if (oid) or.push({ farmerId: oid });
+    await ProduceListing.deleteMany({ $or: or });
+    if (email) await CooperativeInvitation.deleteMany({ inviteeEmail: email });
+  }
+  if (type === 'cooperative') {
+    await CooperativeInvitation.deleteMany({ cooperativeId: id });
+    await ProduceListing.updateMany(
+      { cooperativeId: id },
+      { cooperativeId: null, cooperativeName: '[Deleted cooperative]' }
+    );
+  }
+  if (type === 'investor' && email) {
+    await Investment.updateMany(
+      { investorEmail: email },
+      { status: 'cancelled', cancelledAt: new Date(), cancelReason: 'Account deleted by admin' }
+    );
+  }
+
+  await Model.findByIdAndDelete(id);
+
+  let auditUserType = type;
+  if (Model === GovernmentAdmin && user.orgType) {
+    const ot = String(user.orgType);
+    if (['government', 'ngo', 'enterprise', 'international_org'].includes(ot)) auditUserType = ot;
+  }
+
+  await DeletionRequest.create({
+    userType: auditUserType,
+    userName: name,
+    userEmail: email || 'unknown@deleted.local',
+    reason: reason || 'Deleted by admin',
+    status: 'completed',
+    confirmedByAdmin: true,
+    adminNotes: `Hard deleted by admin on ${new Date().toISOString()}. Reason: ${reason || 'Not provided'}`,
+    scheduledDeletionDate: new Date(),
+  });
+
+  if (email) {
+    await PendingNotification.deleteMany({ recipientEmail: email });
+  }
+
+  if (notify && email) {
+    await notifyUserOfDeletion(email, name, type, reason, isFr);
+  }
+
+  return {
+    ok: true,
+    deleted: { id: String(id), type, name, email },
+    message: `${name} (${type}) deleted successfully`,
+  };
+}
 
 // POST /api/deletion-requests — submit request (public)
 router.post('/', async (req, res) => {
@@ -110,6 +255,119 @@ router.post('/', async (req, res) => {
 router.get('/', authenticateToken, async (req, res) => {
   const requests = await DeletionRequest.find().sort({ createdAt: -1 });
   res.json({ success: true, requests });
+});
+
+// GET /api/deletion-requests/admin/users — search any user type for deletion (register before /:id)
+router.get('/admin/users', authenticateToken, async (req, res) => {
+  try {
+    const { type, search } = req.query;
+    if (!type || !MODEL_MAP[type]) {
+      return res.status(400).json({
+        error:
+          'Valid type required: farmer, cooperative, processor, investor, government, ngo, enterprise, diaspora_producer, diaspora_buyer',
+      });
+    }
+
+    const Model = MODEL_MAP[type];
+    const searchRegex = search ? new RegExp(String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
+
+    let query = {};
+    if (searchRegex) {
+      if (type === 'farmer') {
+        query = {
+          $or: [{ nom: searchRegex }, { email: searchRegex }, { telephone: searchRegex }],
+        };
+      } else if (type === 'cooperative') {
+        query = {
+          $or: [
+            { cooperativeName: searchRegex },
+            { nomCooperative: searchRegex },
+            { email: searchRegex },
+            { leaderName: searchRegex },
+          ],
+        };
+      } else if (type === 'government' || type === 'ngo' || type === 'enterprise') {
+        query = {
+          orgType: type,
+          $or: [{ name: searchRegex }, { email: searchRegex }, { organization: searchRegex }],
+        };
+      } else {
+        query = {
+          $or: [{ name: searchRegex }, { email: searchRegex }, { fullName: searchRegex }, { nom: searchRegex }],
+        };
+      }
+    } else if (type === 'government' || type === 'ngo' || type === 'enterprise') {
+      query = { orgType: type };
+    }
+
+    const users = await Model.find(query)
+      .select(
+        '_id nom name fullName email emailContact cooperativeName nomCooperative leaderName organization country status statut orgType createdAt'
+      )
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    res.json({ success: true, users, type });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/deletion-requests/admin/bulk — delete multiple users at once
+router.delete('/admin/bulk', authenticateToken, async (req, res) => {
+  try {
+    const { users: userList, reason, notify = true } = req.body || {};
+    if (!Array.isArray(userList) || userList.length === 0) {
+      return res.status(400).json({ error: 'users array required' });
+    }
+    if (userList.length > 20) {
+      return res.status(400).json({ error: 'Maximum 20 users per bulk delete' });
+    }
+
+    const results = { success: [], failed: [] };
+    for (const { type, id } of userList) {
+      try {
+        const r = await runAdminHardDelete(type, id, { reason, notify });
+        if (r.ok) results.success.push({ id, type });
+        else results.failed.push({ id, type, error: r.error, status: r.status });
+      } catch (e) {
+        results.failed.push({ id, type, error: e.message });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/deletion-requests/admin/users/:type/:id — hard delete a user
+router.delete('/admin/users/:type/:id', authenticateToken, async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const { reason, notify = true } = req.body || {};
+
+    const isFr = String(req.headers['accept-language'] || '')
+      .toLowerCase()
+      .startsWith('fr');
+
+    const result = await runAdminHardDelete(type, id, { reason, notify, isFr });
+    if (!result.ok) {
+      return res.status(result.status || 400).json({
+        error: result.error,
+        activeInvestments: result.activeInvestments,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: result.message,
+      deleted: result.deleted,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // PUT /api/deletion-requests/:id — update status — admin only

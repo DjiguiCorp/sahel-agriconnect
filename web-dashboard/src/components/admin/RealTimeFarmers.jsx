@@ -3,9 +3,10 @@ import { useWebSocket } from '../../context/WebSocketContext';
 import { useTranslation } from 'react-i18next';
 import { COUNTRY_LIST } from '../../data/africanRegions';
 import { useGeolocation } from '../../hooks/useGeolocation';
+import { API_BASE_URL } from '../../config/api';
 
-const RealTimeFarmers = ({ globalCountryFilter = '' }) => {
-  const { farmers, realTimeUpdates, isConnected, clearUpdates } = useWebSocket();
+const RealTimeFarmers = ({ globalCountryFilter = '', adminToken = '' }) => {
+  const { farmers, realTimeUpdates, isConnected, clearUpdates, removeFarmerFromList } = useWebSocket();
   const { i18n } = useTranslation();
   const { country: detectedCountry, detected } = useGeolocation();
   const [filter, setFilter] = useState('all');
@@ -35,6 +36,15 @@ const RealTimeFarmers = ({ globalCountryFilter = '' }) => {
     stockage: farmers.filter(f => f.accesStockage === 'non'),
     energie: farmers.filter(f => f.accesElectricite === 'non' || f.accesElectricite === 'partiel')
   };
+
+  const isFr = String(i18n.language || '').toLowerCase().startsWith('fr');
+  const deleteHeaders = useMemo(
+    () => ({
+      'Content-Type': 'application/json',
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+    }),
+    [adminToken]
+  );
 
   const filteredFarmers = useMemo(() => {
     const byCategory =
@@ -182,8 +192,8 @@ const RealTimeFarmers = ({ globalCountryFilter = '' }) => {
           </div>
         ) : (
           filteredFarmers.map((farmer) => (
-            <div key={farmer.id} className="card">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between">
+            <div key={farmer.id || farmer._id} className="card">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-primary-green mb-2">{farmer.nom}</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
@@ -244,6 +254,48 @@ const RealTimeFarmers = ({ globalCountryFilter = '' }) => {
                     )}
                   </div>
                 </div>
+                {adminToken && (farmer._id || farmer.id) ? (
+                  <div className="flex flex-shrink-0 items-start">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const fid = farmer._id || farmer.id;
+                        if (
+                          window.confirm(
+                            isFr
+                              ? `Supprimer ${farmer.nom} ? Irréversible.`
+                              : `Delete ${farmer.nom}? This cannot be undone.`
+                          )
+                        ) {
+                          fetch(`${API_BASE_URL}/api/deletion-requests/admin/users/farmer/${fid}`, {
+                            method: 'DELETE',
+                            headers: deleteHeaders,
+                            body: JSON.stringify({
+                              reason: 'Admin deletion from farmer tab',
+                              notify: true,
+                            }),
+                          })
+                            .then((r) => r.json())
+                            .then((d) => {
+                              if (d.success) {
+                                removeFarmerFromList(fid);
+                              } else {
+                                // eslint-disable-next-line no-alert
+                                alert(d.error || 'Delete failed');
+                              }
+                            })
+                            .catch(() => {
+                              // eslint-disable-next-line no-alert
+                              alert('Delete failed');
+                            });
+                        }
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition"
+                    >
+                      🗑 {isFr ? 'Supprimer' : 'Delete'}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           ))
