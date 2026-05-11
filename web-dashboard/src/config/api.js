@@ -58,6 +58,17 @@ export const API_ENDPOINTS = {
     BY_REGION: (region) => `${API_BASE_URL}/api/cooperatives?region=${region}`,
     REGISTER_PLATFORM: `${API_BASE_URL}/api/cooperatives/register-platform`,
     PUBLIC_STATS: `${API_BASE_URL}/api/cooperatives/public-stats`,
+    LOGIN: `${API_BASE_URL}/api/cooperatives/login`,
+    MY_PORTAL: `${API_BASE_URL}/api/cooperatives/my-portal`,
+  },
+  VERIFY: {
+    SEND: `${API_BASE_URL}/api/verify/send`,
+    CONFIRM: `${API_BASE_URL}/api/verify/confirm`,
+  },
+  NOTIFICATIONS: {
+    BASE: `${API_BASE_URL}/api/notifications`,
+    STATS: `${API_BASE_URL}/api/notifications/stats`,
+    PROCESS: `${API_BASE_URL}/api/notifications/process`,
   },
   // Certifications
   CERTIFICATIONS: {

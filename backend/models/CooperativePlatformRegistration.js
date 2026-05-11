@@ -21,6 +21,10 @@ const cooperativePlatformRegistrationSchema = new mongoose.Schema({
   paymentDate: { type: Date },
   paymentMethod: { type: String },
   activatedAt: { type: Date },
+  emailVerified: { type: Boolean, default: false },
+  verifiedAt: Date,
+  passwordHash: { type: String },
+  tempPassword: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

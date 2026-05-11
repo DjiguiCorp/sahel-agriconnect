@@ -41,19 +41,34 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4 text-white">{isFr ? 'Plateforme' : 'Platform'}</h4>
             <ul className="space-y-2 text-sm">
-              {[
-                [isFr ? 'Accueil' : 'Home', '/'],
-                [isFr ? 'À propos' : 'About', '/about'],
-                ['Dashboard', '/dashboard'],
-                [isFr ? 'Mes besoins agricoles' : 'My Farm Needs', '/farmer-needs'],
-                [isFr ? 'Coopératives' : 'Cooperatives', '/cooperatives'],
-                [isFr ? 'Diaspora' : 'Diaspora', '/diaspora'],
-                [isFr ? '🏛️ Portail gouvernemental' : '🏛️ Government Portal', '/government-portal'],
-                [isFr ? 'Licences pays' : 'Country Licenses', '/platform-licensing'],
-                [isFr ? 'Tarifs' : 'Pricing', '/pricing'],
-                ['Impact', '/impact'],
-                [isFr ? 'Contact' : 'Contact', '/contact'],
-              ].map(([label, to]) => (
+              {(isFr
+                ? [
+                    ['Accueil', '/'],
+                    ['À propos', '/about'],
+                    ['Comment ça marche', '/how-it-works'],
+                    ['Impact', '/impact'],
+                    ['Dashboard', '/dashboard'],
+                    ['Mon dashboard', '/my-dashboard'],
+                    ['Portail coopérative', '/cooperative-portal'],
+                    ['Portail gouvernemental', '/government-portal'],
+                    ['Licences institutionnelles', '/platform-licensing'],
+                    ['Contact', '/contact'],
+                    ['Tarifs', '/pricing'],
+                  ]
+                : [
+                    ['Home', '/'],
+                    ['About', '/about'],
+                    ['How it works', '/how-it-works'],
+                    ['Impact', '/impact'],
+                    ['Dashboard', '/dashboard'],
+                    ['My dashboard', '/my-dashboard'],
+                    ['Cooperative portal', '/cooperative-portal'],
+                    ['Government portal', '/government-portal'],
+                    ['Institutional licenses', '/platform-licensing'],
+                    ['Contact', '/contact'],
+                    ['Prices', '/pricing'],
+                  ]
+              ).map(([label, to]) => (
                 <li key={to}>
                   <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
                     {label}

@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 // Mock heavy dependencies that need browser APIs or network
-vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: () => false }));
 vi.mock('../lib/analytics', () => ({ captureEvent: vi.fn(), AnalyticsEvents: {} }));
 vi.mock('../config/api', () => ({
   API_BASE_URL: 'http://localhost:3001',

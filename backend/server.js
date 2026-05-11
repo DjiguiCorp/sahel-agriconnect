@@ -1,6 +1,9 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -36,7 +39,8 @@ import scoresRouter from './routes/afriyieldScores.js';
 import governmentRouter from './routes/government.js';
 import coopInvitationsRouter from './routes/cooperativeInvitations.js';
 import supplychainRouter from './routes/supplychain.js';
-import notificationsRouter from './routes/notifications.js';
+import notificationsRouter, { processQueue } from './routes/notifications.js';
+import verificationRouter from './routes/verification.js';
 import investorNotificationsRouter from './routes/investorNotifications.js';
 import deletionRequestsRouter from './routes/deletionRequests.js';
 import swaggerUi from 'swagger-ui-express';
@@ -50,46 +54,33 @@ const httpServer = createServer(app);
 export { app };
 
 // Configuration CORS - Permet toutes les origines Vercel
-const getVercelOrigins = () => {
-  if (!process.env.FRONTEND_URL) return [];
-  const baseUrl = process.env.FRONTEND_URL.replace(/\/$/, '');
-  return [baseUrl];
-};
-
-const allowedOrigins = [
-  ...getVercelOrigins(),
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL,
+  'https://sahel-agriconnect.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
-  'http://127.0.0.1:3000'
-];
+  'http://127.0.0.1:3000',
+].filter(Boolean);
 
-// Configuration CORS - Permissive pour toutes les origines Vercel
-app.use(cors({
-  origin: function (origin, callback) {
-    // Permettre les requêtes sans origin (mobile, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Permettre toutes les origines Vercel (y compris sous-domaines)
-    if (origin.includes('vercel.app')) return callback(null, true);
-    
-    // Permettre localhost en développement
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) return callback(null, true);
-    
-    // Vérifier la liste des origines autorisées
-    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
-    
-    // Permettre par défaut (pour compatibilité mobile)
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Content-Length', 'Content-Type'],
-  maxAge: 86400, // 24 hours
-  preflightContinue: false,
-  optionsSuccessStatus: 200
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowed =
+        ALLOWED_ORIGINS.some((o) => origin === o || origin.startsWith(o)) || /\.vercel\.app$/i.test(origin);
+      if (allowed) return callback(null, true);
+      callback(new Error(`CORS blocked: ${origin}`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Content-Length', 'Content-Type'],
+    maxAge: 86400,
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
+  })
+);
 
 // Handle preflight requests explicitly (safety net)
 app.options('*', cors());
@@ -103,13 +94,12 @@ const io = new Server(httpServer, {
         return callback(null, true);
       }
       // En production, permettre Vercel et localhost
-      if (!origin || origin.includes('vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      if (!origin) return callback(null, true);
+      const allowed = ALLOWED_ORIGINS.some((o) => origin === o || origin.startsWith(o));
+      if (allowed || origin.includes('localhost') || origin.includes('127.0.0.1')) {
         return callback(null, true);
       }
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        return callback(null, true);
-      }
-      callback(null, true); // Permettre pour mobile
+      callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
@@ -117,6 +107,20 @@ const io = new Server(httpServer, {
 });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(mongoSanitize());
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts. Try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/government/login', loginLimiter);
+app.use('/api/investors/login', loginLimiter);
+app.use('/api/cooperatives/login', loginLimiter);
 
 // API Documentation — available at /api/docs
 app.use(
@@ -168,6 +172,7 @@ app.use('/api/government', governmentRouter);
 app.use('/api/coop-invitations', coopInvitationsRouter);
 app.use('/api/supplychain', supplychainRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/verify', verificationRouter);
 app.use('/api/investor-notifications', investorNotificationsRouter);
 app.use('/api/deletion-requests', deletionRequestsRouter);
 
@@ -305,6 +310,24 @@ const connectDB = async () => {
   }
 };
 
+const QUEUE_INTERVAL = 5 * 60 * 1000;
+async function startQueueProcessor() {
+  console.log('📬 Notification queue processor started');
+  try {
+    const startup = await processQueue(50);
+    console.log(`📬 Startup queue flush: ${startup.sent} sent, ${startup.failed} failed, ${startup.skipped} skipped`);
+  } catch (e) {
+    console.error('📬 Queue startup error:', e.message);
+  }
+  setInterval(async () => {
+    try {
+      await processQueue(30);
+    } catch (e) {
+      console.error('📬 Queue interval error:', e.message);
+    }
+  }, QUEUE_INTERVAL);
+}
+
 // Socket.io - Gestion des connexions
 io.on('connection', (socket) => {
   console.log('🔌 Client WebSocket connecté:', socket.id);
@@ -323,6 +346,9 @@ const PORT = process.env.PORT || 3001;
 const startServer = async () => {
   await connectDB();
   if (process.env.NODE_ENV !== 'test') {
+    setTimeout(() => {
+      startQueueProcessor().catch((e) => console.error('📬 Queue processor failed to start:', e.message));
+    }, 3000);
     httpServer.listen(PORT, () => {
       console.log(`🚀 Serveur démarré sur le port ${PORT}`);
       console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);

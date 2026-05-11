@@ -23,6 +23,7 @@ const schema = new mongoose.Schema({
   countryCode: String,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'GovernmentAdmin' },
   createdByName: String,
+  createdByEmail: String,
   organization: String,
 
   title: { type: String, required: true },

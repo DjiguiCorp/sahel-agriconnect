@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const schema = new mongoose.Schema({
   farmerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Farmer' },
+  cooperativeId: { type: mongoose.Schema.Types.ObjectId, ref: 'CooperativePlatformRegistration' },
   farmerName: String,
   farmerPhone: String,
   farmerEmail: String,

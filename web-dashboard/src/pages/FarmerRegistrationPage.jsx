@@ -108,11 +108,7 @@ export default function FarmerRegistrationPage() {
       });
     } catch (e) {
       console.error(e);
-      setSubmitError(
-        e.message?.includes('row-level security')
-          ? 'Accès refusé par la base de données. Vérifiez les politiques RLS dans Supabase.'
-          : e.message || 'Une erreur est survenue. Réessayez plus tard.'
-      );
+      setSubmitError(e.message || 'Une erreur est survenue. Réessayez plus tard.');
     } finally {
       setSubmitting(false);
     }

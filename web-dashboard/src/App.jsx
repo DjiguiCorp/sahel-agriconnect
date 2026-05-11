@@ -38,6 +38,7 @@ import HowItWorks from './pages/HowItWorks';
 import InvestorRelations from './pages/InvestorRelations';
 import DeleteAccount from './pages/DeleteAccount';
 import GovernmentPortal from './pages/GovernmentPortal';
+import CooperativePortal from './pages/CooperativePortal';
 import JoinCooperative from './pages/JoinCooperative';
 import NotFound from './pages/NotFound';
 import { useGeolocation } from './hooks/useGeolocation';
@@ -101,6 +102,7 @@ function App() {
             <Route path="optimisation-production" element={<ProductionOptimizer />} />
             <Route path="platform-licensing" element={<PlatformLicensing />} />
             <Route path="government-portal" element={<GovernmentPortal />} />
+            <Route path="cooperative-portal" element={<CooperativePortal />} />
             <Route path="join-cooperative/:code" element={<JoinCooperative />} />
             <Route path="cooperative-registration" element={<CooperativeRegistration />} />
             <Route path="farmer-certification" element={<FarmerCertificationProgram />} />

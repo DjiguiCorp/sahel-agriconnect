@@ -122,9 +122,27 @@ const authGov = async (req, res, next) => {
     if (!token) return res.status(401).json({ error: 'No token' });
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.role !== 'country_admin') return res.status(403).json({ error: 'Not a government admin' });
-    req.govAdmin = decoded;
+
+    const govAdmin = await GovernmentAdmin.findById(decoded.id).lean();
+    if (!govAdmin) return res.status(401).json({ error: 'Account not found' });
+    if (govAdmin.status !== 'active') {
+      return res.status(403).json({ error: 'Account suspended or pending. Contact support.' });
+    }
+
+    req.govAdmin = {
+      id: govAdmin._id,
+      email: govAdmin.email,
+      country: govAdmin.country,
+      countryCode: govAdmin.countryCode,
+      name: govAdmin.name,
+      organization: govAdmin.organization,
+      orgType: govAdmin.orgType,
+    };
     next();
-  } catch {
+  } catch (e) {
+    if (e.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Session expired. Please log in again.' });
+    }
     res.status(401).json({ error: 'Invalid token' });
   }
 };
@@ -376,6 +394,7 @@ router.post('/projects', authGov, async (req, res) => {
       countryCode: req.govAdmin.countryCode,
       createdBy: req.govAdmin.id,
       createdByName: req.govAdmin.name,
+      createdByEmail: req.govAdmin.email,
       organization: req.govAdmin.organization,
     });
     res.status(201).json({ success: true, project });

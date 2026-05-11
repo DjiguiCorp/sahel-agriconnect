@@ -1,13 +1,16 @@
 import mongoose from 'mongoose';
+
 const pendingNotificationSchema = new mongoose.Schema({
   recipientName: String,
   recipientPhone: String,
   recipientEmail: String,
-  message: String,
-  channel: { type: String, enum: ['whatsapp', 'sms', 'email'], default: 'whatsapp' },
+  message: { type: String, required: true },
+  channel: { type: String, enum: ['email', 'whatsapp', 'sms'], default: 'email' },
   source: String,
   status: { type: String, enum: ['pending', 'sent', 'failed'], default: 'pending' },
-  createdAt: { type: Date, default: Date.now }
+  sentAt: Date,
+  error: String,
+  createdAt: { type: Date, default: Date.now },
 });
-export default mongoose.model('PendingNotification', pendingNotificationSchema);
 
+export default mongoose.model('PendingNotification', pendingNotificationSchema);

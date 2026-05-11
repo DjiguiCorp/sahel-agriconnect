@@ -17,6 +17,9 @@ const farmerSchema = new mongoose.Schema({
     lowercase: true,
     default: ''
   },
+  emailVerified: { type: Boolean, default: false },
+  verifiedAt: Date,
+  cooperativeId: { type: mongoose.Schema.Types.ObjectId, ref: 'CooperativePlatformRegistration' },
   latitude: {
     type: String,
     required: true

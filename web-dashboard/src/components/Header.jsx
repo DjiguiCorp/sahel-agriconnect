@@ -28,7 +28,7 @@ const Header = () => {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isRegistered, userName, isCoopPendingPayment, isCooperative, clearUser } = useRegisteredUser();
+  const { isRegistered, userName, isCoopPendingPayment, isCooperative, isCoopActive, clearUser } = useRegisteredUser();
   const isFr = i18n.language === 'fr';
   const hasAdminToken = Boolean(localStorage.getItem('adminToken'));
 
@@ -110,6 +110,14 @@ const Header = () => {
             <Link to="/dashboard" className={navLinkClass}>
               {t('nav.dashboard')}
             </Link>
+            {isCoopActive && (
+              <Link
+                to="/cooperative-portal"
+                className="flex items-center gap-1.5 text-sm font-semibold text-[#B5850A] hover:text-[#1a3c2e] transition"
+              >
+                🤝 {isFr ? 'Mon portail' : 'My portal'}
+              </Link>
+            )}
             {isRegistered && (
               <div className="flex items-center gap-3">
                 <Link to="/my-dashboard" className={navLinkClass}>
@@ -275,6 +283,15 @@ const Header = () => {
               <Link to="/dashboard" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.dashboard')}
               </Link>
+              {isCoopActive && (
+                <Link
+                  to="/cooperative-portal"
+                  className="flex items-center gap-1.5 text-lg font-semibold text-[#B5850A] hover:text-[#1a3c2e] py-2"
+                  onClick={closeMenu}
+                >
+                  🤝 {isFr ? 'Mon portail' : 'My portal'}
+                </Link>
+              )}
               {isRegistered && (
                 <Link to="/my-dashboard" className={navLinkClass} onClick={closeMenu}>
                   {isCoopPendingPayment

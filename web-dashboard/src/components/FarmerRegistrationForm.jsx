@@ -48,6 +48,10 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
 
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
+  const [verifyStep, setVerifyStep] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [recommendedSolutions, setRecommendedSolutions] = useState(null);
   const [diseaseDetection, setDiseaseDetection] = useState(null);
   const [landDetection, setLandDetection] = useState(null);
@@ -320,9 +324,50 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const sendOtp = async (email) => {
+    try {
+      await fetch(API_ENDPOINTS.VERIFY.SEND, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, purpose: 'farmer_verify', name: formData.nom }),
+      });
+    } catch {
+      /* ignore */
+    }
+    setVerifyStep(true);
+  };
+
+  const confirmOtp = async () => {
+    const email = (formData.email || formData.courriel || '').trim();
+    if (!otp || otp.length !== 6) {
+      setOtpError(isFr ? 'Entrez le code à 6 chiffres' : 'Enter the 6-digit code');
+      return;
+    }
+    setVerifying(true);
+    setOtpError('');
+    try {
+      const r = await fetch(API_ENDPOINTS.VERIFY.CONFIRM, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: otp, purpose: 'farmer_verify' }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setVerifyStep(false);
+      setSuccess(true);
+      registerUser(email || formData.telephone, formData.nom);
+    } catch (e) {
+      setOtpError(e.message);
+    }
+    setVerifying(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccess(false);
+    setVerifyStep(false);
+    setOtp('');
+    setOtpError('');
     setRecommendedSolutions(null);
     setErrors({});
 
@@ -434,19 +479,16 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
         onFarmerAdded(savedFarmer);
       }
 
-      // Message de succès
-      setSuccess(true);
-      registerUser(formData.email || formData.courriel || formData.telephone, formData.nom);
+      const email = (formData.email || formData.courriel || '').trim();
+      if (email) {
+        await sendOtp(email);
+      } else {
+        setSuccess(true);
+        registerUser(formData.telephone, formData.nom);
+      }
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement:', error);
       setErrors({ submit: error.message || 'Erreur lors de l\'enregistrement. Veuillez réessayer.' });
-      // En cas d'erreur, on peut quand même émettre via WebSocket en mode simulation
-      emitFarmerRegistration(newFarmer);
-      if (onFarmerAdded) {
-        onFarmerAdded(newFarmer);
-      }
-      setSuccess(true); // Afficher le succès même en cas d'erreur réseau (mode dégradé)
-      registerUser(formData.email || formData.courriel || formData.telephone, formData.nom);
     }
 
     // Réinitialiser le formulaire après 3 secondes (garder les solutions visibles)
@@ -478,6 +520,9 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
         besoinCollecte: ''
       });
       setSuccess(false);
+      setVerifyStep(false);
+      setOtp('');
+      setOtpError('');
       setRecommendedSolutions(null);
     }, 10000);
   };
@@ -504,20 +549,66 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
           </div>
         </div>
 
-        {success && (
+        {verifyStep && (
+          <div className="text-center py-8 mb-6 border border-gray-200 rounded-xl bg-white">
+            <div className="w-16 h-16 rounded-full bg-[#1a3c2e]/10 flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">📧</span>
+            </div>
+            <h3 className="text-xl font-bold text-[#1a3c2e] mb-2">{isFr ? 'Vérifiez votre email' : 'Verify your email'}</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              {isFr
+                ? `Un code à 6 chiffres a été envoyé à ${formData.email || formData.courriel || ''}.`
+                : `A 6-digit code was sent to ${formData.email || formData.courriel || ''}.`}
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => {
+                setOtp(e.target.value.replace(/\D/g, ''));
+                setOtpError('');
+              }}
+              className="text-3xl font-mono text-center tracking-widest w-48 border-2 border-[#1a3c2e]/30 rounded-2xl py-4 mb-2 mx-auto block outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+              placeholder="000000"
+            />
+            {otpError && <p className="text-red-500 text-sm mb-3">{otpError}</p>}
+            <button
+              type="button"
+              onClick={confirmOtp}
+              disabled={verifying || otp.length !== 6}
+              className="px-8 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50 mb-3"
+              style={{ background: '#1a3c2e' }}
+            >
+              {verifying ? '...' : isFr ? 'Confirmer le code' : 'Confirm code'}
+            </button>
+            <p className="text-xs text-gray-400">
+              {isFr ? 'Pas reçu ?' : "Didn't receive it?"}{' '}
+              <button
+                type="button"
+                onClick={() => sendOtp((formData.email || formData.courriel || '').trim())}
+                className="text-[#1a3c2e] font-semibold hover:underline"
+              >
+                {isFr ? 'Renvoyer le code' : 'Resend code'}
+              </button>
+            </p>
+          </div>
+        )}
+
+        {success && !verifyStep && (
           <div className="mb-6 p-4 bg-green-100 border-l-4 border-green-500 rounded text-green-800">
             <p className="font-semibold">✅ Agriculteur enregistré avec succès !</p>
             <p className="text-sm mt-1">Consultez les solutions recommandées ci-dessous.</p>
           </div>
         )}
 
-        {Object.keys(errors).length > 0 && !success && (
+        {Object.keys(errors).length > 0 && !success && !verifyStep && (
           <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 rounded text-red-800">
             <p className="font-semibold">⚠️ Veuillez remplir tous les champs obligatoires.</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className={`space-y-8 ${verifyStep ? 'hidden' : ''}`}>
           {/* Section Informations de Base */}
           <div className="border-b border-gray-200 pb-6">
             <h3 className="text-xl font-semibold text-primary-green mb-4">Informations de Base</h3>

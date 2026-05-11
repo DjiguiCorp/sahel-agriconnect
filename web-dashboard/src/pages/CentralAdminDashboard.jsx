@@ -738,7 +738,7 @@ function NotificationsPanel() {
     setLoading(true);
     setErr('');
     try {
-      const r = await fetch(`${API_BASE_URL}/api/notifications`, { headers: authHeaders() });
+      const r = await fetch(`${API_BASE_URL}/api/notifications?status=all&limit=200`, { headers: authHeaders() });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || 'Failed');
       setItems(Array.isArray(j?.notifications) ? j.notifications : []);
@@ -756,7 +756,7 @@ function NotificationsPanel() {
 
   const markSent = async (id) => {
     try {
-      const r = await fetch(`${API_BASE_URL}/api/notifications/${id}/status`, {
+      const r = await fetch(`${API_BASE_URL}/api/notifications/item/${id}/status`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({ status: 'sent' }),
@@ -772,7 +772,7 @@ function NotificationsPanel() {
   const dispatchSms = async (id) => {
     setSending((prev) => ({ ...prev, [id]: true }));
     try {
-      const r = await fetch(`${API_BASE_URL}/api/notifications/${id}/send`, {
+      const r = await fetch(`${API_BASE_URL}/api/notifications/item/${id}/dispatch`, {
         method: 'POST',
         headers: authHeaders(),
       });
@@ -790,12 +790,12 @@ function NotificationsPanel() {
     if (!window.confirm('Envoyer tous les SMS en attente ?')) return;
     setSendingAll(true);
     try {
-      const r = await fetch(`${API_BASE_URL}/api/notifications/send-all`, {
+      const r = await fetch(`${API_BASE_URL}/api/notifications/process?limit=100`, {
         method: 'POST',
         headers: authHeaders(),
       });
       const j = await r.json().catch(() => ({}));
-      alert(`Envoyés: ${j.sent || 0} | Échoués: ${j.failed || 0}`);
+      alert(`Envoyés: ${j.sent || 0} | Échoués: ${j.failed || 0} | Ignorés: ${j.skipped || 0}`);
       await load();
     } catch (e) {
       alert(e.message || 'Bulk send failed');

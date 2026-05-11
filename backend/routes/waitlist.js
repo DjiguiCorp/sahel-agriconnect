@@ -3,7 +3,7 @@ import Waitlist from '../models/Waitlist.js';
 const router = express.Router();
 router.post('/', async (req, res) => {
   try {
-    await Waitlist.create({ email: req.body.email });
+    await Waitlist.create({ email: req.body.email, source: req.body.source || '' });
     res.json({ success: true });
   } catch (e) {
     res.json({ success: false });
