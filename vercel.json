@@ -2,6 +2,18 @@
   "redirects": [
     {
       "source": "/(.*)",
+      "destination": "https://sahelagriconnect.com/afri-yield",
+      "permanent": true,
+      "has": [{ "type": "host", "value": "afriyieldexchange.com" }]
+    },
+    {
+      "source": "/(.*)",
+      "destination": "https://sahelagriconnect.com/afri-yield",
+      "permanent": true,
+      "has": [{ "type": "host", "value": "www.afriyieldexchange.com" }]
+    },
+    {
+      "source": "/(.*)",
       "destination": "https://sahelagriconnect.com/$1",
       "permanent": true
     }
