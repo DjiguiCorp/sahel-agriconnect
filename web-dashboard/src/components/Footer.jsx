@@ -134,7 +134,10 @@ export default function Footer() {
             © {new Date().getFullYear()} Djigui Corporation.{' '}
             {isFr ? 'Tous droits réservés.' : 'All rights reserved.'}
           </p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <Link to="/admin/login" className="text-xs text-gray-500 hover:text-white transition">
+              {isFr ? 'Admin' : 'Admin'}
+            </Link>
             <Link to="/terms" className="text-xs text-gray-500 hover:text-white transition">
               {isFr ? 'Conditions' : 'Terms'}
             </Link>

@@ -8,6 +8,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LocationSelector from './LocationSelector';
 import OtherInput from './OtherInput';
+import FormWizard from './FormWizard';
 
 const FarmerRegistrationForm = ({ onFarmerAdded }) => {
   const { i18n } = useTranslation();
@@ -608,8 +609,22 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className={`space-y-8 ${verifyStep ? 'hidden' : ''}`}>
-          {/* Section Informations de Base */}
+                <form
+          id="farmer-registration-form"
+          onSubmit={handleSubmit}
+          className={verifyStep ? 'hidden' : ''}
+        >
+          <FormWizard
+            onComplete={() =>
+              document.getElementById('farmer-registration-form')?.requestSubmit()
+            }
+            steps={[
+              {
+                title: isFr ? 'Informations personnelles' : 'Personal Info',
+                subtitle: isFr ? 'Nom, téléphone, email, pays et région' : 'Name, phone, email, country and region',
+                content: (
+                  <div className="space-y-6 border-b border-gray-200 pb-6">
+                    {/* Section Informations de Base */}
           <div className="border-b border-gray-200 pb-6">
             <h3 className="text-xl font-semibold text-primary-green mb-4">Informations de Base</h3>
             
@@ -670,7 +685,32 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
 
-            {/* Localisation GPS */}
+            {/* Région / Zone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Région / Zone <span className="text-red-500">*</span>
+              </label>
+              <LocationSelector
+                value={{
+                  country: formData.pays || formData.country || '',
+                  region: formData.region || formData.zone || '',
+                }}
+                onChange={({ country, region }) => {
+                  setFormData((p) => ({ ...p, pays: country, region, zone: region }));
+                }}
+                required
+                showDetectedBanner={true}
+              />
+              {errors.region && <p className="mt-1 text-sm text-red-600">{errors.region}</p>}
+            </div>
+          </div>
+                  </div>
+                ),
+              },
+              {
+                title: isFr ? 'Exploitation' : 'Farm Details',
+                subtitle: isFr ? 'GPS, superficie, cultures, besoins' : 'GPS, land size, crops, infrastructure',
+                content: <div className="space-y-8">{/* Localisation GPS */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Localisation GPS <span className="text-red-500">*</span>
@@ -749,85 +789,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               {errors.superficie && <p className="mt-1 text-sm text-red-600">{errors.superficie}</p>}
             </div>
 
-            {/* Région / Zone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Région / Zone <span className="text-red-500">*</span>
-              </label>
-              <LocationSelector
-                value={{
-                  country: formData.pays || formData.country || '',
-                  region: formData.region || formData.zone || '',
-                }}
-                onChange={({ country, region }) => {
-                  setFormData((p) => ({ ...p, pays: country, region, zone: region }));
-                }}
-                required
-                showDetectedBanner={true}
-              />
-              {errors.region && <p className="mt-1 text-sm text-red-600">{errors.region}</p>}
-            </div>
-          </div>
-
-          {/* Section Coopératives Locales - Enhanced */}
-          {formData.region && availableCooperatives.length > 0 && (
-            <div className="border-b border-gray-200 pb-6">
-              <div className="mb-6 p-5 bg-gradient-to-r from-primary-orange to-primary-lightorange rounded-lg text-white">
-                <div className="flex items-start space-x-3">
-                  <span className="text-3xl">🤝</span>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">Coopératives Disponibles dans Votre Région</h3>
-                    <p className="text-sm text-gray-100">
-                      Rejoignez une coopérative locale et bénéficiez d'avantages immédiats sans prêt!
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                {availableCooperatives.map((coop) => (
-                  <div key={coop.id} className="p-5 border-2 border-primary-green rounded-lg hover:shadow-lg transition-all bg-white">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-bold text-lg text-primary-green">{coop.nom}</h4>
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Disponible</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">🌾 Produits :</span> {coop.produits.join(', ')}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">📊 Capacité :</span> {coop.capacite}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-700 mb-3">
-                          <span className="font-medium">📞 Contact :</span> {coop.contact}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">✅ Équipements partagés</span>
-                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">✅ Formations gratuites</span>
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">✅ Intrants réduits</span>
-                          <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">✅ Sans prêt</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded">
-                <p className="text-sm text-green-800">
-                  <strong>💡 Avantage :</strong> En rejoignant une coopérative, vous accédez automatiquement à tous ces avantages. 
-                  Contactez directement la coopérative de votre choix pour vous inscrire!
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Section Type d'Exploitation */}
+            {/* Section Type d'Exploitation */}
           <div className="border-b border-gray-200 pb-6">
             <h3 className="text-xl font-semibold text-primary-green mb-4">Type d'Exploitation</h3>
             <div>
@@ -866,205 +828,6 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               </div>
               {errors.typeExploitation && <p className="mt-2 text-sm text-red-600">{errors.typeExploitation}</p>}
             </div>
-          </div>
-
-          {/* Section Coopérative - Enhanced with Incentives */}
-          <div className="border-b border-gray-200 pb-6">
-            <div className="mb-6 p-6 bg-gradient-to-r from-primary-green to-primary-lightgreen rounded-lg text-white">
-              <div className="flex items-start space-x-4">
-                <div className="text-4xl">🎁</div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">
-                    {isFr
-                      ? "Rejoignez une Coopérative et Bénéficiez d'Avantages!"
-                      : 'Join a Cooperative and Unlock Benefits!'}
-                  </h3>
-                  <p className="text-gray-100 mb-4">
-                    Les membres de coopératives ont accès à des avantages exclusifs sans prêt :
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl">✅</span>
-                      <span className="text-sm">Équipements partagés (tracteurs, séchoirs)</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl">✅</span>
-                      <span className="text-sm">Formations gratuites en techniques agricoles</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl">✅</span>
-                      <span className="text-sm">Intrants et fertilisants à prix réduits</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl">✅</span>
-                      <span className="text-sm">Accès au financement coopératif</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl">✅</span>
-                      <span className="text-sm">Commercialisation facilitée</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl">✅</span>
-                      <span className="text-sm">Support logistique et transport</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                {isFr ? 'Êtes-vous lié à une coopérative ?' : 'Are you linked to a cooperative?'}{' '}
-                <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <label className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  formData.lienCooperative === 'oui'
-                    ? 'border-primary-green bg-green-50 shadow-md'
-                    : 'border-gray-300 hover:border-primary-orange hover:bg-gray-50'
-                }`}>
-                  <input
-                    type="radio"
-                    name="lienCooperative"
-                    value="oui"
-                    checked={formData.lienCooperative === 'oui'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <span className="text-4xl mb-2">✅</span>
-                  <span className="font-bold text-lg text-gray-900">Oui</span>
-                  <span className="text-sm text-gray-600 mt-1 text-center">Je suis membre d'une coopérative</span>
-                </label>
-                <label className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  formData.lienCooperative === 'non'
-                    ? 'border-gray-400 bg-gray-50'
-                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                }`}>
-                  <input
-                    type="radio"
-                    name="lienCooperative"
-                    value="non"
-                    checked={formData.lienCooperative === 'non'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <span className="text-4xl mb-2">❌</span>
-                  <span className="font-bold text-lg text-gray-900">Non</span>
-                  <span className="text-sm text-gray-600 mt-1 text-center">Pas encore membre</span>
-                </label>
-              </div>
-              {errors.lienCooperative && <p className="mt-2 text-sm text-red-600">{errors.lienCooperative}</p>}
-            </div>
-
-            {formData.lienCooperative === 'oui' && (
-              <div className="space-y-4 mt-4 p-6 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-primary-green rounded-lg shadow-md">
-                <div className="flex items-center space-x-2 mb-4">
-                  <span className="text-2xl">🎉</span>
-                  <h4 className="text-lg font-bold text-primary-green">Félicitations! Accédez aux Avantages Coopératifs</h4>
-                </div>
-                <div>
-                  <label htmlFor="nomCooperative" className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom de la coopérative <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="nomCooperative"
-                    name="nomCooperative"
-                    value={formData.nomCooperative}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent ${
-                      errors.nomCooperative ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Ex: Coopérative Agricole de Ségou"
-                  />
-                  {errors.nomCooperative && <p className="mt-1 text-sm text-red-600">{errors.nomCooperative}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="roleCooperative" className="block text-sm font-medium text-gray-700 mb-2">
-                    Rôle dans la coopérative <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="roleCooperative"
-                    name="roleCooperative"
-                    value={formData.roleCooperative}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent ${
-                      errors.roleCooperative ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Sélectionnez votre rôle</option>
-                    <option value="membre">Membre</option>
-                    <option value="dirigeant">Dirigeant</option>
-                    <option value="tresorier">Trésorier</option>
-                    <option value="secretaire">Secrétaire</option>
-                    <option value="autre">Autre</option>
-                  </select>
-                  {errors.roleCooperative && <p className="mt-1 text-sm text-red-600">{errors.roleCooperative}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Quels avantages souhaitez-vous recevoir de votre coopérative ? <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {soutiensCooperative.map((soutien) => {
-                      const icons = {
-                        'Intrants': '🌱',
-                        'Formation': '📚',
-                        'Financement': '💰',
-                        'Logistique': '🚚',
-                        'Commercialisation': '📦',
-                        'Autres': '➕'
-                      };
-                      return (
-                        <label
-                          key={soutien}
-                          className={`flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                            formData.soutienCooperative.includes(soutien)
-                              ? 'bg-primary-green text-white border-primary-green shadow-md transform scale-105'
-                              : 'bg-white border-gray-300 hover:border-primary-orange hover:shadow'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.soutienCooperative.includes(soutien)}
-                            onChange={() => handleCheckboxChange('soutienCooperative', soutien)}
-                            className="sr-only"
-                          />
-                          <span className="text-2xl">{icons[soutien] || '✓'}</span>
-                          <span className="text-sm font-medium">{soutien}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  {errors.soutienCooperative && <p className="mt-2 text-sm text-red-600">{errors.soutienCooperative}</p>}
-                  <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                    <p className="text-sm text-yellow-800">
-                      <strong>💡 Note :</strong> Tous ces avantages sont disponibles sans prêt. Votre coopérative vous accompagne avec des ressources partagées et des formations gratuites.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {formData.lienCooperative === 'non' && (
-              <div className="mt-4 p-6 bg-blue-50 border-2 border-blue-300 rounded-lg">
-                <div className="flex items-start space-x-3">
-                  <span className="text-3xl">💡</span>
-                  <div>
-                    <h4 className="font-bold text-primary-blue mb-2">Rejoignez une Coopérative!</h4>
-                    <p className="text-sm text-gray-700 mb-3">
-                      Les membres de coopératives bénéficient d'avantages exclusifs : équipements partagés, formations gratuites, 
-                      intrants à prix réduits, financement coopératif, et bien plus encore - tout sans prêt!
-                    </p>
-                    <p className="text-sm font-medium text-primary-green">
-                      Contactez une coopérative dans votre région pour en savoir plus.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Section Cultures */}
@@ -1109,16 +872,6 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               {errors.cultures && <p className="mt-2 text-sm text-red-600">{errors.cultures}</p>}
             </div>
 
-            {/* Analyse de maladie des plantes */}
-            <div className="mt-4">
-              <PlantDiseaseAnalyzer
-                openAnalyzerLabel={isFr ? 'Analyser une feuille' : 'Analyze a leaf'}
-                onDiseaseDetected={(result) => {
-                  setDiseaseDetection(result);
-                }}
-              />
-            </div>
-
             <div className="mt-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {isFr ? 'Objectif de production' : 'Production goal'} <span className="text-red-500">*</span>
@@ -1145,94 +898,9 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               </div>
               {errors.objectifsProduction && <p className="mt-2 text-sm text-red-600">{errors.objectifsProduction}</p>}
             </div>
-
-            {/* Message sur l'inspection saisonnière */}
-            {formData.objectifsProduction.length > 0 && (
-              <div className="mt-4 space-y-4">
-                <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
-                  <p className="text-sm text-yellow-800">
-                    <strong>📋 Inspection Saisonnière :</strong> Votre produit sera inspecté pour respecter les normes 
-                    du marché choisi. Planifiez avec votre coopérative pour la date d'inspection proposée pour 
-                    certification (3 niveaux qualité : local, régional, international).
-                  </p>
-                </div>
-
-                {/* Sélection du niveau de qualité */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Niveau de qualité cible
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <label
-                      className={`flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        qualityLevel === 'local'
-                          ? 'border-primary-green bg-primary-green/10'
-                          : 'border-gray-300 hover:border-primary-orange'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="qualityLevel"
-                        value="local"
-                        checked={qualityLevel === 'local'}
-                        onChange={(e) => setQualityLevel(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="text-2xl mb-2">⭐</div>
-                      <span className="font-semibold text-gray-900">Local</span>
-                      <span className="text-xs text-gray-600 mt-1 text-center">
-                        Marché national, normes de base
-                      </span>
-                    </label>
-                    <label
-                      className={`flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        qualityLevel === 'regional'
-                          ? 'border-primary-orange bg-primary-orange/10'
-                          : 'border-gray-300 hover:border-primary-orange'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="qualityLevel"
-                        value="regional"
-                        checked={qualityLevel === 'regional'}
-                        onChange={(e) => setQualityLevel(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="text-2xl mb-2">⭐⭐</div>
-                      <span className="font-semibold text-gray-900">Régional</span>
-                      <span className="text-xs text-gray-600 mt-1 text-center">
-                        Export Afrique, certification requise
-                      </span>
-                    </label>
-                    <label
-                      className={`flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        qualityLevel === 'international'
-                          ? 'border-primary-blue bg-primary-blue/10'
-                          : 'border-gray-300 hover:border-primary-orange'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="qualityLevel"
-                        value="international"
-                        checked={qualityLevel === 'international'}
-                        onChange={(e) => setQualityLevel(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="text-2xl mb-2">⭐⭐⭐</div>
-                      <span className="font-semibold text-gray-900">International</span>
-                      <span className="text-xs text-gray-600 mt-1 text-center">
-                        Export Europe/USA, traçabilité complète
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Section Connexion aux Centres de Transformation */}
+            {/* Section Connexion aux Centres de Transformation */}
           <div className="border-b border-gray-200 pb-6">
             <h3 className="text-xl font-semibold text-primary-green mb-4">
               Connexion aux Centres de Transformation
@@ -1618,16 +1286,388 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
               )}
             </div>
           </div>
+                </div>
+              },
+              {
+                title: isFr ? 'Coopérative' : 'Cooperative',
+                subtitle: isFr ? 'Coopératives régionales et adhésion' : 'Regional cooperatives and membership',
+                content: <div className="space-y-8">{/* Section Coopératives Locales - Enhanced */}
+          {formData.region && availableCooperatives.length > 0 && (
+            <div className="border-b border-gray-200 pb-6">
+              <div className="mb-6 p-5 bg-gradient-to-r from-primary-orange to-primary-lightorange rounded-lg text-white">
+                <div className="flex items-start space-x-3">
+                  <span className="text-3xl">🤝</span>
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">Coopératives Disponibles dans Votre Région</h3>
+                    <p className="text-sm text-gray-100">
+                      Rejoignez une coopérative locale et bénéficiez d'avantages immédiats sans prêt!
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {availableCooperatives.map((coop) => (
+                  <div key={coop.id} className="p-5 border-2 border-primary-green rounded-lg hover:shadow-lg transition-all bg-white">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-bold text-lg text-primary-green">{coop.nom}</h4>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Disponible</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">🌾 Produits :</span> {coop.produits.join(', ')}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">📊 Capacité :</span> {coop.capacite}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-3">
+                          <span className="font-medium">📞 Contact :</span> {coop.contact}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">✅ Équipements partagés</span>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">✅ Formations gratuites</span>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">✅ Intrants réduits</span>
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">✅ Sans prêt</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                <p className="text-sm text-green-800">
+                  <strong>💡 Avantage :</strong> En rejoignant une coopérative, vous accédez automatiquement à tous ces avantages. 
+                  Contactez directement la coopérative de votre choix pour vous inscrire!
+                </p>
+              </div>
+            </div>
+          )}
 
-          {/* Bouton de soumission */}
-          <div className="pt-4">
-            <button
-              type="submit"
-              className="w-full btn-primary"
-            >
-              {isFr ? "Enregistrer l'agriculteur" : 'Register farmer'}
-            </button>
+          {/* Section Coopérative - Enhanced with Incentives */}
+          <div className="border-b border-gray-200 pb-6">
+            <div className="mb-6 p-6 bg-gradient-to-r from-primary-green to-primary-lightgreen rounded-lg text-white">
+              <div className="flex items-start space-x-4">
+                <div className="text-4xl">🎁</div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-2">
+                    {isFr
+                      ? "Rejoignez une Coopérative et Bénéficiez d'Avantages!"
+                      : 'Join a Cooperative and Unlock Benefits!'}
+                  </h3>
+                  <p className="text-gray-100 mb-4">
+                    Les membres de coopératives ont accès à des avantages exclusifs sans prêt :
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Équipements partagés (tracteurs, séchoirs)</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Formations gratuites en techniques agricoles</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Intrants et fertilisants à prix réduits</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Accès au financement coopératif</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Commercialisation facilitée</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">✅</span>
+                      <span className="text-sm">Support logistique et transport</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                {isFr ? 'Êtes-vous lié à une coopérative ?' : 'Are you linked to a cooperative?'}{' '}
+                <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <label className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                  formData.lienCooperative === 'oui'
+                    ? 'border-primary-green bg-green-50 shadow-md'
+                    : 'border-gray-300 hover:border-primary-orange hover:bg-gray-50'
+                }`}>
+                  <input
+                    type="radio"
+                    name="lienCooperative"
+                    value="oui"
+                    checked={formData.lienCooperative === 'oui'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <span className="text-4xl mb-2">✅</span>
+                  <span className="font-bold text-lg text-gray-900">Oui</span>
+                  <span className="text-sm text-gray-600 mt-1 text-center">Je suis membre d'une coopérative</span>
+                </label>
+                <label className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                  formData.lienCooperative === 'non'
+                    ? 'border-gray-400 bg-gray-50'
+                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                }`}>
+                  <input
+                    type="radio"
+                    name="lienCooperative"
+                    value="non"
+                    checked={formData.lienCooperative === 'non'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <span className="text-4xl mb-2">❌</span>
+                  <span className="font-bold text-lg text-gray-900">Non</span>
+                  <span className="text-sm text-gray-600 mt-1 text-center">Pas encore membre</span>
+                </label>
+              </div>
+              {errors.lienCooperative && <p className="mt-2 text-sm text-red-600">{errors.lienCooperative}</p>}
+            </div>
+
+            {formData.lienCooperative === 'oui' && (
+              <div className="space-y-4 mt-4 p-6 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-primary-green rounded-lg shadow-md">
+                <div className="flex items-center space-x-2 mb-4">
+                  <span className="text-2xl">🎉</span>
+                  <h4 className="text-lg font-bold text-primary-green">Félicitations! Accédez aux Avantages Coopératifs</h4>
+                </div>
+                <div>
+                  <label htmlFor="nomCooperative" className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom de la coopérative <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="nomCooperative"
+                    name="nomCooperative"
+                    value={formData.nomCooperative}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent ${
+                      errors.nomCooperative ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Ex: Coopérative Agricole de Ségou"
+                  />
+                  {errors.nomCooperative && <p className="mt-1 text-sm text-red-600">{errors.nomCooperative}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="roleCooperative" className="block text-sm font-medium text-gray-700 mb-2">
+                    Rôle dans la coopérative <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="roleCooperative"
+                    name="roleCooperative"
+                    value={formData.roleCooperative}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent ${
+                      errors.roleCooperative ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Sélectionnez votre rôle</option>
+                    <option value="membre">Membre</option>
+                    <option value="dirigeant">Dirigeant</option>
+                    <option value="tresorier">Trésorier</option>
+                    <option value="secretaire">Secrétaire</option>
+                    <option value="autre">Autre</option>
+                  </select>
+                  {errors.roleCooperative && <p className="mt-1 text-sm text-red-600">{errors.roleCooperative}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Quels avantages souhaitez-vous recevoir de votre coopérative ? <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {soutiensCooperative.map((soutien) => {
+                      const icons = {
+                        'Intrants': '🌱',
+                        'Formation': '📚',
+                        'Financement': '💰',
+                        'Logistique': '🚚',
+                        'Commercialisation': '📦',
+                        'Autres': '➕'
+                      };
+                      return (
+                        <label
+                          key={soutien}
+                          className={`flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            formData.soutienCooperative.includes(soutien)
+                              ? 'bg-primary-green text-white border-primary-green shadow-md transform scale-105'
+                              : 'bg-white border-gray-300 hover:border-primary-orange hover:shadow'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.soutienCooperative.includes(soutien)}
+                            onChange={() => handleCheckboxChange('soutienCooperative', soutien)}
+                            className="sr-only"
+                          />
+                          <span className="text-2xl">{icons[soutien] || '✓'}</span>
+                          <span className="text-sm font-medium">{soutien}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {errors.soutienCooperative && <p className="mt-2 text-sm text-red-600">{errors.soutienCooperative}</p>}
+                  <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                    <p className="text-sm text-yellow-800">
+                      <strong>💡 Note :</strong> Tous ces avantages sont disponibles sans prêt. Votre coopérative vous accompagne avec des ressources partagées et des formations gratuites.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {formData.lienCooperative === 'non' && (
+              <div className="mt-4 p-6 bg-blue-50 border-2 border-blue-300 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <span className="text-3xl">💡</span>
+                  <div>
+                    <h4 className="font-bold text-primary-blue mb-2">Rejoignez une Coopérative!</h4>
+                    <p className="text-sm text-gray-700 mb-3">
+                      Les membres de coopératives bénéficient d'avantages exclusifs : équipements partagés, formations gratuites, 
+                      intrants à prix réduits, financement coopératif, et bien plus encore - tout sans prêt!
+                    </p>
+                    <p className="text-sm font-medium text-primary-green">
+                      Contactez une coopérative dans votre région pour en savoir plus.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+                </div>
+              },
+              {
+                title: isFr ? 'Documents & certification' : 'Documents & certification',
+                subtitle: isFr ? 'Analyse et niveau de qualité' : 'Analysis and quality level',
+                content: (
+                  <div className="space-y-6 border-b border-gray-200 pb-6">
+{/* Analyse de maladie des plantes */}
+            <div className="mt-4">
+              <PlantDiseaseAnalyzer
+                openAnalyzerLabel={isFr ? 'Analyser une feuille' : 'Analyze a leaf'}
+                onDiseaseDetected={(result) => {
+                  setDiseaseDetection(result);
+                }}
+              />
+            </div>
+{/* Message sur l'inspection saisonnière */}
+            {formData.objectifsProduction.length > 0 && (
+              <div className="mt-4 space-y-4">
+                <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                  <p className="text-sm text-yellow-800">
+                    <strong>📋 Inspection Saisonnière :</strong> Votre produit sera inspecté pour respecter les normes 
+                    du marché choisi. Planifiez avec votre coopérative pour la date d'inspection proposée pour 
+                    certification (3 niveaux qualité : local, régional, international).
+                  </p>
+                </div>
+
+                {/* Sélection du niveau de qualité */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Niveau de qualité cible
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <label
+                      className={`flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        qualityLevel === 'local'
+                          ? 'border-primary-green bg-primary-green/10'
+                          : 'border-gray-300 hover:border-primary-orange'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="qualityLevel"
+                        value="local"
+                        checked={qualityLevel === 'local'}
+                        onChange={(e) => setQualityLevel(e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="text-2xl mb-2">⭐</div>
+                      <span className="font-semibold text-gray-900">Local</span>
+                      <span className="text-xs text-gray-600 mt-1 text-center">
+                        Marché national, normes de base
+                      </span>
+                    </label>
+                    <label
+                      className={`flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        qualityLevel === 'regional'
+                          ? 'border-primary-orange bg-primary-orange/10'
+                          : 'border-gray-300 hover:border-primary-orange'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="qualityLevel"
+                        value="regional"
+                        checked={qualityLevel === 'regional'}
+                        onChange={(e) => setQualityLevel(e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="text-2xl mb-2">⭐⭐</div>
+                      <span className="font-semibold text-gray-900">Régional</span>
+                      <span className="text-xs text-gray-600 mt-1 text-center">
+                        Export Afrique, certification requise
+                      </span>
+                    </label>
+                    <label
+                      className={`flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        qualityLevel === 'international'
+                          ? 'border-primary-blue bg-primary-blue/10'
+                          : 'border-gray-300 hover:border-primary-orange'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="qualityLevel"
+                        value="international"
+                        checked={qualityLevel === 'international'}
+                        onChange={(e) => setQualityLevel(e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="text-2xl mb-2">⭐⭐⭐</div>
+                      <span className="font-semibold text-gray-900">International</span>
+                      <span className="text-xs text-gray-600 mt-1 text-center">
+                        Export Europe/USA, traçabilité complète
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+                ),
+              },
+              {
+                title: isFr ? 'Vérification & envoi' : 'Review & Submit',
+                subtitle: isFr ? 'Vérifiez vos informations' : 'Verify your information',
+                content: (
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 space-y-2 text-sm text-gray-700">
+            <p className="font-semibold text-[#1a3c2e]">{isFr ? 'Résumé' : 'Summary'}</p>
+            <p><span className="font-medium">{isFr ? 'Nom' : 'Name'}:</span> {formData.nom || '—'}</p>
+            <p><span className="font-medium">Email:</span> {formData.email || '—'}</p>
+            <p><span className="font-medium">{isFr ? 'Téléphone' : 'Phone'}:</span> {formData.telephone || '—'}</p>
+            <p><span className="font-medium">{isFr ? 'Région' : 'Region'}:</span> {formData.region || '—'} · {formData.pays || '—'}</p>
+            <p><span className="font-medium">GPS:</span> {formData.latitude || '—'}, {formData.longitude || '—'}</p>
+            <p><span className="font-medium">{isFr ? 'Superficie (ha)' : 'Land (ha)'}:</span> {formData.superficie || '—'}</p>
+            <p className="text-xs text-gray-500 pt-2">{isFr ? "Cliquez sur Soumettre pour finaliser l'enregistrement." : 'Click Submit to complete registration.'}</p>
+          </div>
+                ),
+              },
+            ]}
+          />
         </form>
       </div>
 

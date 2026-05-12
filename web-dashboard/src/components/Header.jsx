@@ -1,72 +1,94 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Menu, X, Lock, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 
-const OUTILS_ITEMS = [
-  { to: '/farmer-needs', labelKey: 'nav.farmerNeeds', emoji: '🌾' },
+const TOOLS_ITEMS = [
   { to: '/diagnostic-sol', labelKey: 'nav.soilDiagnostic' },
   { to: '/detection-maladies', labelKey: 'nav.diseaseDetection' },
   { to: '/think-tank', labelKey: 'nav.thinkTank' },
 ];
 
-const AFRIYIELD_ITEMS = [
-  { to: '/afri-yield', labelKey: 'nav.afriYieldOverview' },
-  { to: '/afri-yield/opportunities', labelKey: 'nav.opportunities' },
-  { to: '/how-it-works', labelKey: 'nav.howItWorks' },
-];
-
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [desktopOutilsOpen, setDesktopOutilsOpen] = useState(false);
-  const [mobileOutilsOpen, setMobileOutilsOpen] = useState(false);
-  const [desktopAfriYieldOpen, setDesktopAfriYieldOpen] = useState(false);
-  const [mobileAfriYieldOpen, setMobileAfriYieldOpen] = useState(false);
-  const desktopOutilsRef = useRef(null);
-  const desktopAfriYieldRef = useRef(null);
+  const [desktopPlatformOpen, setDesktopPlatformOpen] = useState(false);
+  const [desktopToolsOpen, setDesktopToolsOpen] = useState(false);
+  const [mobilePlatformOpen, setMobilePlatformOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const desktopPlatformRef = useRef(null);
+  const desktopToolsRef = useRef(null);
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isRegistered, userName, isCoopPendingPayment, isCooperative, isCoopActive, clearUser } = useRegisteredUser();
+  const { isRegistered, userName, isCoopPendingPayment, isCoopActive, clearUser } = useRegisteredUser();
   const isFr = i18n.language === 'fr';
   const hasAdminToken = Boolean(localStorage.getItem('adminToken'));
+
+  const platformItems = useMemo(
+    () => [
+      { to: '/dashboard', label: t('nav.dashboard') },
+      ...(isRegistered
+        ? [
+            {
+              to: '/my-dashboard',
+              label: isCoopPendingPayment
+                ? isFr
+                  ? '⏳ Paiement en attente'
+                  : '⏳ Awaiting payment'
+                : isFr
+                  ? 'Mon tableau de bord'
+                  : 'My dashboard',
+            },
+          ]
+        : []),
+      ...(isCoopActive
+        ? [{ to: '/cooperative-portal', label: isFr ? 'Portail coopérative' : 'Cooperative portal' }]
+        : []),
+      { to: '/afri-yield/marketplace', label: 'Marketplace' },
+      { to: '/trace', label: isFr ? 'Traçabilité' : 'Traceability' },
+      ...(hasAdminToken
+        ? [{ to: '/government-portal', label: isFr ? 'Portail pays' : 'Country portal' }]
+        : []),
+    ],
+    [t, isRegistered, isCoopPendingPayment, isCoopActive, hasAdminToken, isFr]
+  );
 
   const navLinkClass =
     'text-lg text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
 
   const closeMenu = () => {
     setIsMenuOpen(false);
-    setMobileOutilsOpen(false);
-    setMobileAfriYieldOpen(false);
+    setMobilePlatformOpen(false);
+    setMobileToolsOpen(false);
   };
 
   useEffect(() => {
-    setDesktopOutilsOpen(false);
-    setDesktopAfriYieldOpen(false);
+    setDesktopPlatformOpen(false);
+    setDesktopToolsOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!desktopOutilsOpen) return;
+    if (!desktopPlatformOpen) return;
     const handleMouseDown = (e) => {
-      if (desktopOutilsRef.current && !desktopOutilsRef.current.contains(e.target)) {
-        setDesktopOutilsOpen(false);
+      if (desktopPlatformRef.current && !desktopPlatformRef.current.contains(e.target)) {
+        setDesktopPlatformOpen(false);
       }
     };
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
-  }, [desktopOutilsOpen]);
+  }, [desktopPlatformOpen]);
 
   useEffect(() => {
-    if (!desktopAfriYieldOpen) return;
+    if (!desktopToolsOpen) return;
     const handleMouseDown = (e) => {
-      if (desktopAfriYieldRef.current && !desktopAfriYieldRef.current.contains(e.target)) {
-        setDesktopAfriYieldOpen(false);
+      if (desktopToolsRef.current && !desktopToolsRef.current.contains(e.target)) {
+        setDesktopToolsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
-  }, [desktopAfriYieldOpen]);
+  }, [desktopToolsOpen]);
 
   const handleDownloadApp = (e) => {
     e.preventDefault();
@@ -80,6 +102,9 @@ const Header = () => {
       document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' });
     }, 150);
   };
+
+  const platformLabel = isFr ? 'Plateforme' : 'Platform';
+  const toolsLabel = isFr ? 'Outils' : 'Tools';
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-md">
@@ -96,159 +121,130 @@ const Header = () => {
             </span>
           </Link>
 
-          {/* Desktop (≥ md, 768px) */}
           <div className="hidden md:flex items-center flex-wrap justify-end gap-x-3 gap-y-2 lg:gap-x-4">
             <Link to="/" className={navLinkClass}>
               {t('nav.home')}
             </Link>
-            <Link to="/about" className={navLinkClass}>
-              {t('nav.about')}
-            </Link>
-            <Link to="/impact" className={navLinkClass}>
-              {t('nav.impact')}
-            </Link>
-            <Link to="/dashboard" className={navLinkClass}>
-              {t('nav.dashboard')}
-            </Link>
-            {isCoopActive && (
-              <Link
-                to="/cooperative-portal"
-                className="flex items-center gap-1.5 text-sm font-semibold text-[#B5850A] hover:text-[#1a3c2e] transition"
+
+            <div
+              ref={desktopPlatformRef}
+              className="relative"
+              onMouseEnter={() => setDesktopPlatformOpen(true)}
+              onMouseLeave={() => setDesktopPlatformOpen(false)}
+            >
+              <button
+                type="button"
+                className={`${navLinkClass} inline-flex items-center gap-1 rounded-md md:py-0`}
+                aria-expanded={desktopPlatformOpen}
+                aria-haspopup="true"
+                onClick={() => setDesktopPlatformOpen((o) => !o)}
               >
-                🤝 {isFr ? 'Mon portail' : 'My portal'}
-              </Link>
-            )}
+                {platformLabel}
+                <ChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+              </button>
+              {desktopPlatformOpen && (
+                <div
+                  className="absolute left-0 top-full z-[100] min-w-[14rem] pt-1"
+                  role="menu"
+                  aria-label={platformLabel}
+                >
+                  <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
+                    {platformItems.map(({ to, label }) => (
+                      <Link
+                        key={to + label}
+                        to={to}
+                        role="menuitem"
+                        className="block px-4 py-2.5 text-lg text-gray-700 hover:bg-brand-iconBg hover:text-brand-forest"
+                        onClick={() => setDesktopPlatformOpen(false)}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div
+              ref={desktopToolsRef}
+              className="relative"
+              onMouseEnter={() => setDesktopToolsOpen(true)}
+              onMouseLeave={() => setDesktopToolsOpen(false)}
+            >
+              <button
+                type="button"
+                className={`${navLinkClass} inline-flex items-center gap-1 rounded-md md:py-0`}
+                aria-expanded={desktopToolsOpen}
+                aria-haspopup="true"
+                onClick={() => setDesktopToolsOpen((o) => !o)}
+              >
+                {toolsLabel}
+                <ChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+              </button>
+              {desktopToolsOpen && (
+                <div
+                  className="absolute left-0 top-full z-[100] min-w-[14rem] pt-1"
+                  role="menu"
+                  aria-label={toolsLabel}
+                >
+                  <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
+                    {TOOLS_ITEMS.map(({ to, labelKey }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        role="menuitem"
+                        className="block px-4 py-2.5 text-lg text-gray-700 hover:bg-brand-iconBg hover:text-brand-forest"
+                        onClick={() => setDesktopToolsOpen(false)}
+                      >
+                        {t(labelKey)}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Link
+              to="/afri-yield"
+              className="text-lg font-semibold py-2 md:py-0 text-[#B5850A] hover:text-[#9a7109] transition-colors"
+            >
+              {isFr ? 'Investir' : 'Invest'}
+            </Link>
+
             {isRegistered && (
               <div className="flex items-center gap-3">
-                <Link to="/my-dashboard" className={navLinkClass}>
-                  {isCoopPendingPayment
-                    ? i18n.language === 'fr'
-                      ? '⏳ Paiement en attente'
-                      : '⏳ Awaiting payment'
-                    : `${i18n.language === 'fr' ? 'Bonjour' : 'Hello'}, ${userName?.split(' ')[0] || 'Mr.'}`}
-                </Link>
+                <span className="text-sm text-gray-500 max-w-[10rem] truncate" title={userName || ''}>
+                  {isFr ? 'Bonjour' : 'Hi'}{' '}
+                  {userName?.split(' ')[0] || ''}
+                </span>
                 <button
                   type="button"
                   onClick={clearUser}
                   className="text-xs text-gray-400 hover:text-gray-600 transition"
-                  title="Se déconnecter"
+                  title={isFr ? 'Se déconnecter' : 'Sign out'}
                 >
                   ×
                 </button>
               </div>
             )}
 
-            <div
-              ref={desktopOutilsRef}
-              className="relative"
-              onMouseEnter={() => setDesktopOutilsOpen(true)}
-              onMouseLeave={() => setDesktopOutilsOpen(false)}
-            >
-              <button
-                type="button"
-                className={`${navLinkClass} inline-flex items-center gap-1 rounded-md md:py-0`}
-                aria-expanded={desktopOutilsOpen}
-                aria-haspopup="true"
-                onClick={() => setDesktopOutilsOpen((o) => !o)}
-              >
-                Outils Agricoles
-                <ChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-              </button>
-              {desktopOutilsOpen && (
-                <div
-                  className="absolute left-0 top-full z-[100] min-w-[14rem] pt-1"
-                  role="menu"
-                  aria-label="Outils agricoles"
-                >
-                  <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
-                    {OUTILS_ITEMS.map(({ to, labelKey, emoji }) => (
-                      <Link
-                        key={to}
-                        to={to}
-                        role="menuitem"
-                        className="block px-4 py-2.5 text-lg text-gray-700 hover:bg-brand-iconBg hover:text-brand-forest"
-                        onClick={() => setDesktopOutilsOpen(false)}
-                      >
-                        {emoji ? `${emoji} ` : ''}
-                        {t(labelKey)}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <Link to="/inscription" className="btn-primary text-base whitespace-nowrap">
+              {isFr ? 'Rejoindre' : 'Join'}
+            </Link>
 
-            <Link to="/contact" className={navLinkClass}>
-              {t('nav.contact')}
-            </Link>
-            <Link to="/pricing" className={navLinkClass}>
-              Tarifs
-            </Link>
-            <div
-              ref={desktopAfriYieldRef}
-              className="relative"
-              onMouseEnter={() => setDesktopAfriYieldOpen(true)}
-              onMouseLeave={() => setDesktopAfriYieldOpen(false)}
+            <button
+              type="button"
+              className="text-sm font-medium text-gray-500 hover:text-brand-forest whitespace-nowrap"
+              onClick={handleDownloadApp}
             >
-              <button
-                type="button"
-                className="text-lg font-medium py-2 md:py-0 text-[#B5850A] hover:text-[#9a7109] transition-colors inline-flex items-center gap-2 rounded-md"
-                aria-expanded={desktopAfriYieldOpen}
-                aria-haspopup="true"
-                onClick={() => setDesktopAfriYieldOpen((o) => !o)}
-              >
-                <span>{t('nav.afriYieldMenu')}</span>
-                <ChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                <span className="text-[10px] font-bold tracking-wide text-white bg-[#B5850A] px-1.5 py-0.5 rounded leading-none">
-                  NEW
-                </span>
-              </button>
-              {desktopAfriYieldOpen && (
-                <div className="absolute right-0 top-full z-[100] min-w-[14rem] pt-1" role="menu" aria-label="AfriYield">
-                  <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
-                    {AFRIYIELD_ITEMS.map(({ to, labelKey }) => (
-                      <Link
-                        key={to}
-                        to={to}
-                        role="menuitem"
-                        className="block px-4 py-2.5 text-lg text-gray-700 hover:bg-brand-iconBg hover:text-brand-forest"
-                        onClick={() => setDesktopAfriYieldOpen(false)}
-                      >
-                        {t(labelKey)}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <Link
-              to="/admin/login"
-              className="text-lg text-gray-600 hover:text-brand-forest transition-colors font-medium flex items-center gap-1.5"
-              title="Espace Administrateur"
-            >
-              <Lock className="w-5 h-5 shrink-0" aria-hidden />
-              <span>{t('nav.admin')}</span>
-            </Link>
-            {hasAdminToken ? (
-              <Link to="/government-portal" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#1a3c2e] transition">
-                🏛️ {isFr ? 'Portail pays' : 'Country Portal'}
-              </Link>
-            ) : null}
-            <button type="button" className="btn-primary text-base whitespace-nowrap" onClick={handleDownloadApp}>
               {t('nav.downloadApp')}
             </button>
           </div>
 
-          {/* Mobile (&lt; md) : CTA toujours visible + menu hamburger */}
           <div className="flex md:hidden items-center gap-2 shrink-0">
-            <button
-              type="button"
-              className="btn-primary text-sm py-2.5 px-3 whitespace-nowrap"
-              onClick={handleDownloadApp}
-              aria-label={t('nav.downloadApp')}
-            >
-              {t('nav.downloadApp')}
-            </button>
+            <Link to="/inscription" className="btn-primary text-sm py-2.5 px-3 whitespace-nowrap">
+              {isFr ? 'Rejoindre' : 'Join'}
+            </Link>
             <button
               type="button"
               className="p-2.5 rounded-lg text-brand-forest hover:bg-brand-iconBg border border-transparent hover:border-brand-sage/30"
@@ -262,7 +258,6 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Panneau mobile */}
         {isMenuOpen && (
           <div
             id="mobile-navigation"
@@ -274,57 +269,58 @@ const Header = () => {
               <Link to="/" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.home')}
               </Link>
-              <Link to="/about" className={navLinkClass} onClick={closeMenu}>
-                {t('nav.about')}
-              </Link>
-              <Link to="/impact" className={navLinkClass} onClick={closeMenu}>
-                {t('nav.impact')}
-              </Link>
-              <Link to="/dashboard" className={navLinkClass} onClick={closeMenu}>
-                {t('nav.dashboard')}
-              </Link>
-              {isCoopActive && (
-                <Link
-                  to="/cooperative-portal"
-                  className="flex items-center gap-1.5 text-lg font-semibold text-[#B5850A] hover:text-[#1a3c2e] py-2"
-                  onClick={closeMenu}
-                >
-                  🤝 {isFr ? 'Mon portail' : 'My portal'}
-                </Link>
-              )}
-              {isRegistered && (
-                <Link to="/my-dashboard" className={navLinkClass} onClick={closeMenu}>
-                  {isCoopPendingPayment
-                    ? i18n.language === 'fr'
-                      ? '⏳ Paiement en attente'
-                      : '⏳ Awaiting payment'
-                    : `${i18n.language === 'fr' ? 'Bonjour' : 'Hello'}, ${userName?.split(' ')[0] || 'Mr.'}`}
-                </Link>
-              )}
 
               <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-1">
                 <button
                   type="button"
                   className={`${navLinkClass} flex w-full items-center justify-between text-left`}
-                  aria-expanded={mobileOutilsOpen}
-                  onClick={() => setMobileOutilsOpen((o) => !o)}
+                  aria-expanded={mobilePlatformOpen}
+                  onClick={() => setMobilePlatformOpen((o) => !o)}
                 >
-                  <span>Outils Agricoles</span>
+                  <span>{platformLabel}</span>
                   <ChevronDown
-                    className={`h-5 w-5 shrink-0 transition-transform ${mobileOutilsOpen ? 'rotate-180' : ''}`}
+                    className={`h-5 w-5 shrink-0 transition-transform ${mobilePlatformOpen ? 'rotate-180' : ''}`}
                     aria-hidden
                   />
                 </button>
-                {mobileOutilsOpen && (
+                {mobilePlatformOpen && (
                   <div className="mt-2 flex flex-col space-y-1 border-l border-gray-200 pl-3 ml-1">
-                    {OUTILS_ITEMS.map(({ to, labelKey, emoji }) => (
+                    {platformItems.map(({ to, label }) => (
+                      <Link
+                        key={to + label}
+                        to={to}
+                        className="py-2 text-lg text-gray-700 hover:text-brand-forest"
+                        onClick={closeMenu}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-1">
+                <button
+                  type="button"
+                  className={`${navLinkClass} flex w-full items-center justify-between text-left`}
+                  aria-expanded={mobileToolsOpen}
+                  onClick={() => setMobileToolsOpen((o) => !o)}
+                >
+                  <span>{toolsLabel}</span>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 transition-transform ${mobileToolsOpen ? 'rotate-180' : ''}`}
+                    aria-hidden
+                  />
+                </button>
+                {mobileToolsOpen && (
+                  <div className="mt-2 flex flex-col space-y-1 border-l border-gray-200 pl-3 ml-1">
+                    {TOOLS_ITEMS.map(({ to, labelKey }) => (
                       <Link
                         key={to}
                         to={to}
                         className="py-2 text-lg text-gray-700 hover:text-brand-forest"
                         onClick={closeMenu}
                       >
-                        {emoji ? `${emoji} ` : ''}
                         {t(labelKey)}
                       </Link>
                     ))}
@@ -332,62 +328,17 @@ const Header = () => {
                 )}
               </div>
 
-              <Link to="/contact" className={navLinkClass} onClick={closeMenu}>
-                {t('nav.contact')}
-              </Link>
-              <Link to="/pricing" className={navLinkClass} onClick={closeMenu}>
-                Tarifs
-              </Link>
-              <div className="border-l-2 border-[#B5850A]/40 pl-3 ml-1 mt-1">
-                <button
-                  type="button"
-                  className={`${navLinkClass} flex w-full items-center justify-between text-left text-[#B5850A]`}
-                  aria-expanded={mobileAfriYieldOpen}
-                  onClick={() => setMobileAfriYieldOpen((o) => !o)}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    {t('nav.afriYieldMenu')}
-                    <span className="text-[10px] font-bold tracking-wide text-white bg-[#B5850A] px-1.5 py-0.5 rounded leading-none">
-                      NEW
-                    </span>
-                  </span>
-                  <ChevronDown
-                    className={`h-5 w-5 shrink-0 transition-transform ${mobileAfriYieldOpen ? 'rotate-180' : ''}`}
-                    aria-hidden
-                  />
-                </button>
-                {mobileAfriYieldOpen && (
-                  <div className="mt-2 flex flex-col space-y-1 border-l border-[#B5850A]/30 pl-3 ml-1">
-                    {AFRIYIELD_ITEMS.map(({ to, labelKey }) => (
-                      <Link
-                        key={to}
-                        to={to}
-                        className="py-2 text-lg text-gray-700 hover:text-[#9a7109]"
-                        onClick={closeMenu}
-                      >
-                        {t(labelKey)}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
               <Link
-                to="/admin/login"
-                className="flex items-center gap-2 text-lg text-gray-700 hover:text-brand-forest font-medium py-2"
+                to="/afri-yield"
+                className={`${navLinkClass} text-[#B5850A] font-semibold`}
                 onClick={closeMenu}
               >
-                <Lock className="w-5 h-5" aria-hidden />
-                {t('nav.admin')}
+                {isFr ? 'Investir' : 'Invest'}
               </Link>
-              {hasAdminToken ? (
-                <Link
-                  to="/government-portal"
-                  className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#1a3c2e] transition py-2"
-                  onClick={closeMenu}
-                >
-                  🏛️ {isFr ? 'Portail pays' : 'Country Portal'}
-                </Link>
-              ) : null}
+
+              <button type="button" className={`${navLinkClass} text-left`} onClick={handleDownloadApp}>
+                {t('nav.downloadApp')}
+              </button>
 
               {isRegistered ? (
                 <button
@@ -398,7 +349,7 @@ const Header = () => {
                   }}
                   className="text-left text-sm text-gray-500 hover:text-gray-700 transition pt-3"
                 >
-                  Se déconnecter
+                  {isFr ? 'Se déconnecter' : 'Sign out'}
                 </button>
               ) : null}
             </div>

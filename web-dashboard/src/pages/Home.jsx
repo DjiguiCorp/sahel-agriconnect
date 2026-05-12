@@ -126,9 +126,66 @@ const Home = () => {
     },
   ];
 
+  const roleCards = [
+    {
+      emoji: '👩‍🌾',
+      title: isFr ? 'Agriculteur' : 'Farmer',
+      desc: isFr ? 'Enregistrez votre exploitation, accédez aux outils et formations' : 'Register your farm, access tools and training',
+      to: '/dashboard',
+    },
+    {
+      emoji: '🤝',
+      title: isFr ? 'Coopérative' : 'Cooperative',
+      desc: isFr ? 'Gérez vos membres, demandez des financements' : 'Manage members, request financing',
+      to: '/cooperative-registration',
+    },
+    {
+      emoji: '🏭',
+      title: isFr ? 'Transformateur' : 'Processor',
+      desc: isFr ? 'Certifiez votre centre, connectez-vous aux acheteurs diaspora' : 'Certify your center, connect to diaspora buyers',
+      to: '/dashboard',
+    },
+    {
+      emoji: '💰',
+      title: isFr ? 'Investisseur Diaspora' : 'Diaspora Investor',
+      desc: isFr ? 'Investissez dans l\'agriculture africaine via AfriYield' : 'Invest in African agriculture via AfriYield',
+      to: '/afri-yield',
+    },
+    {
+      emoji: '🏛️',
+      title: isFr ? 'Gouvernement' : 'Government',
+      desc: isFr ? 'Suivi des politiques agricoles et données nationales' : 'Monitor agricultural policies and national data',
+      to: '/government-portal',
+    },
+  ];
+
   return (
     <div>
       <Hero />
+
+      <section className="py-12 bg-gray-50">
+        <div className="max-w-5xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-[#1a3c2e] text-center mb-2">
+            {isFr ? 'Qui êtes-vous ?' : 'Who are you?'}
+          </h2>
+          <p className="text-gray-500 text-sm text-center mb-8">
+            {isFr ? 'Choisissez votre profil pour commencer' : 'Choose your profile to get started'}
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {roleCards.map((card) => (
+              <Link
+                key={card.title}
+                to={card.to}
+                className="flex flex-col items-center text-center p-5 rounded-2xl bg-white border-2 border-transparent hover:border-[#1a3c2e] shadow-sm hover:shadow-md transition group"
+              >
+                <span className="text-3xl mb-3">{card.emoji}</span>
+                <span className="font-bold text-[#1a3c2e] text-sm mb-1">{card.title}</span>
+                <span className="text-xs text-gray-500 leading-tight">{card.desc}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section className="section-container py-16">
         <div className="text-center mb-12">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Shield, TrendingUp, Globe, ChevronRight, ArrowRight, Check, Star, Lock } from 'lucide-react';
 
@@ -8,10 +8,45 @@ const API = import.meta.env.VITE_API_BASE_URL;
 export default function AfriYieldExchange() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
   const [email, setEmail] = useState('');
   const [emailDone, setEmailDone] = useState(false);
+  const [kycOpen, setKycOpen] = useState(false);
+  const [kycData, setKycData] = useState({ fullName: '', country: '', idNumber: '', notUSPerson: false });
+  const [kycLoading, setKycLoading] = useState(false);
+
+  const handleKycSubmit = async (e) => {
+    e.preventDefault();
+    setKycLoading(true);
+    try {
+      const res = await fetch(`${API}/api/investors/kyc-check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(kycData),
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        /* non-JSON */
+      }
+      const status = data?.status;
+      if (status === 'approved' || status === 'pending_review') {
+        setKycOpen(false);
+        navigate('/afri-yield/opportunities');
+        return;
+      }
+      setKycOpen(false);
+      navigate('/afri-yield/opportunities');
+    } catch {
+      setKycOpen(false);
+      navigate('/afri-yield/opportunities');
+    } finally {
+      setKycLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch(`${API}/api/opportunities/public-stats`)
@@ -283,16 +318,30 @@ export default function AfriYieldExchange() {
                   )}
                 </div>
                 <div className="px-5 pb-5">
-                  <Link
-                    to="/afri-yield/opportunities"
-                    className="block w-full text-center py-3 rounded-xl font-bold text-sm transition hover:opacity-90"
-                    style={{
-                      background: track.color,
-                      color: track.id === 'A' ? '#fff' : track.id === 'C' ? '#fff' : '#1a3c2e',
-                    }}
-                  >
-                    {isFr ? `Voir les deals Track ${track.id}` : `Browse Track ${track.id} Deals`}
-                  </Link>
+                  {track.id === 'B' ? (
+                    <button
+                      type="button"
+                      onClick={() => setKycOpen(true)}
+                      className="block w-full text-center py-3 rounded-xl font-bold text-sm transition hover:opacity-90"
+                      style={{
+                        background: track.color,
+                        color: '#1a3c2e',
+                      }}
+                    >
+                      {isFr ? `Voir les deals Track ${track.id}` : `Browse Track ${track.id} Deals`}
+                    </button>
+                  ) : (
+                    <Link
+                      to="/afri-yield/opportunities"
+                      className="block w-full text-center py-3 rounded-xl font-bold text-sm transition hover:opacity-90"
+                      style={{
+                        background: track.color,
+                        color: track.id === 'A' ? '#fff' : track.id === 'C' ? '#fff' : '#1a3c2e',
+                      }}
+                    >
+                      {isFr ? `Voir les deals Track ${track.id}` : `Browse Track ${track.id} Deals`}
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}
@@ -494,6 +543,86 @@ export default function AfriYieldExchange() {
           </div>
         </div>
       </section>
+
+      {kycOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-[#1a3c2e] mb-1">
+              {isFr ? 'Vérification identité requise' : 'Identity Verification Required'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-5">
+              {isFr
+                ? 'Conformité OHADA — requis avant tout investissement Track B'
+                : 'OHADA Compliance — required before any Track B investment'}
+            </p>
+            <form onSubmit={handleKycSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                  {isFr ? 'Nom complet (tel que sur votre pièce d\'identité)' : 'Full legal name (as on ID)'}
+                </label>
+                <input
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                  value={kycData.fullName}
+                  onChange={(e) => setKycData((d) => ({ ...d, fullName: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                  {isFr ? 'Pays de résidence' : 'Country of residence'}
+                </label>
+                <input
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                  value={kycData.country}
+                  onChange={(e) => setKycData((d) => ({ ...d, country: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                  {isFr ? 'Numéro passeport ou pièce d\'identité nationale' : 'Passport or national ID number'}
+                </label>
+                <input
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                  value={kycData.idNumber}
+                  onChange={(e) => setKycData((d) => ({ ...d, idNumber: e.target.value }))}
+                />
+              </div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  required
+                  checked={kycData.notUSPerson}
+                  onChange={(e) => setKycData((d) => ({ ...d, notUSPerson: e.target.checked }))}
+                  className="mt-0.5"
+                />
+                <span className="text-xs text-gray-600">
+                  {isFr
+                    ? 'Je confirme que je ne suis pas une "US Person" au sens de la réglementation SEC.'
+                    : 'I confirm I am not a "US Person" as defined by SEC regulation.'}
+                </span>
+              </label>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setKycOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-semibold text-gray-600"
+                >
+                  {isFr ? 'Annuler' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={kycLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-[#B5850A] text-white text-sm font-semibold disabled:opacity-60"
+                >
+                  {kycLoading ? '...' : isFr ? 'Soumettre' : 'Submit'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
