@@ -135,9 +135,6 @@ export default function Footer() {
             {isFr ? 'Tous droits réservés.' : 'All rights reserved.'}
           </p>
           <div className="flex flex-wrap gap-4 items-center">
-            <Link to="/admin/login" className="text-xs text-gray-500 hover:text-white transition">
-              {isFr ? 'Admin' : 'Admin'}
-            </Link>
             <Link to="/terms" className="text-xs text-gray-500 hover:text-white transition">
               {isFr ? 'Conditions' : 'Terms'}
             </Link>
@@ -148,6 +145,16 @@ export default function Footer() {
               {isFr ? 'Relations investisseurs' : 'Investor Relations'}
             </Link>
           </div>
+        </div>
+
+        {/* Discreet admin access — bottom of Footer.jsx */}
+        <div className="mt-4 pt-4 border-t border-gray-700 text-center pb-6">
+          <Link
+            to="/admin/login"
+            className="text-xs text-gray-600 hover:text-gray-400 transition"
+          >
+            {isFr ? 'Accès administrateur' : 'Administrator access'}
+          </Link>
         </div>
       </div>
     </footer>

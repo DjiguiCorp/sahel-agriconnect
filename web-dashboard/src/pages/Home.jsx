@@ -9,10 +9,6 @@ import {
   Banknote,
   Factory,
   Star,
-  Handshake,
-  Landmark,
-  Users,
-  Microscope,
   Camera,
   Smartphone,
   Calendar,
@@ -66,63 +62,6 @@ const Home = () => {
       text: isFr
         ? 'Support pour certification locale, régionale et internationale (FDA/USDA)'
         : 'Support for local, regional, and international certification (FDA/USDA)',
-    },
-  ];
-
-  const keyFeatures = [
-    {
-      Icon: Users,
-      title: isFr ? 'Enregistrement agriculteurs' : 'Farmer registration',
-      text: isFr
-        ? 'Formulaire complet avec géolocalisation GPS, détection satellite des terres, et analyse de maladies des plantes.'
-        : 'Full form with GPS geolocation, satellite land detection, and plant disease analysis.',
-      to: '/dashboard',
-      link: isFr ? 'Accéder au Dashboard →' : 'Go to Dashboard →',
-    },
-    {
-      Icon: Handshake,
-      title: isFr ? 'Gestion coopératives' : 'Cooperative management',
-      text: isFr
-        ? 'Liste complète des coopératives, demandes de financement, et gestion des équipements partagés.'
-        : 'Full cooperative listings, funding requests, and shared equipment management.',
-      to: '/cooperatives',
-      link: isFr ? 'Voir les coopératives →' : 'View cooperatives →',
-    },
-    {
-      Icon: Globe,
-      title: isFr ? 'Partenariat diaspora' : 'Diaspora partnership',
-      text: isFr
-        ? 'Connexion entreprises diaspora (USA) avec centres de transformation locaux. Matching automatique par produits.'
-        : 'Connect USA diaspora businesses with local processing centers. Product-based matching.',
-      to: '/diaspora',
-      link: isFr ? 'Rejoindre la diaspora →' : 'Join the diaspora →',
-    },
-    {
-      Icon: Factory,
-      title: isFr ? 'Centres de transformation' : 'Processing centers',
-      text: isFr
-        ? 'Liste des centres avec certification (local/régional/FDA-USDA), demande de certification, représentation aux USA.'
-        : 'Centers with certification (local/regional/FDA-USDA), certification requests, US representation.',
-      to: '/centres-transformation',
-      link: isFr ? 'Voir les centres →' : 'View centers →',
-    },
-    {
-      Icon: BarChart3,
-      title: isFr ? 'Dashboard administratif' : 'Admin dashboard',
-      text: isFr
-        ? 'Vue temps réel des agriculteurs, gestion des coopératives, suivi des demandes et statistiques complètes.'
-        : 'Real-time farmer view, cooperative management, request tracking, and full statistics.',
-      to: '/admin/login',
-      link: isFr ? 'Accéder au dashboard →' : 'Open admin dashboard →',
-    },
-    {
-      Icon: Microscope,
-      title: isFr ? 'Outils agricoles' : 'Agricultural tools',
-      text: isFr
-        ? 'Diagnostic du sol, détection de maladies, Think Tank Solutions avec recommandations personnalisées.'
-        : 'Soil diagnostics, disease detection, Think Tank Solutions with tailored recommendations.',
-      to: '/diagnostic-sol',
-      link: isFr ? 'Utiliser les outils →' : 'Use the tools →',
     },
   ];
 
@@ -213,32 +152,67 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="bg-gray-100/80 py-16">
-        <div className="section-container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">
-              {isFr ? 'Fonctionnalités clés' : 'Key features'}
-            </h2>
-            <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-              {isFr
-                ? 'Une plateforme complète pour transformer l\'agriculture en Afrique de l\'Ouest et au-delà'
-                : 'A full platform to transform agriculture across West Africa and beyond'}
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            {keyFeatures.map(({ Icon, title, text, to, link }) => (
-              <div key={title} className="card">
-                <div className="flex items-start gap-4">
-                  <IconCircle className="mt-0.5">
-                    <Icon strokeWidth={1.75} />
-                  </IconCircle>
-                  <div>
-                    <h3 className="text-xl font-semibold text-brand-forest mb-2">{title}</h3>
-                    <p className="text-gray-600 mb-4">{text}</p>
-                    <Link to={to} className="text-brand-sage hover:text-brand-forest font-medium underline-offset-2 hover:underline">
-                      {link}
-                    </Link>
-                  </div>
+      {/* Fonctionnalités clés — platform-wide capabilities, not role links */}
+      <section className="py-14 bg-white">
+        <div className="max-w-5xl mx-auto px-4">
+          <h2 className="text-3xl font-bold text-[#1a3c2e] text-center mb-3">
+            {isFr ? 'Ce qui rend la plateforme unique' : 'What makes the platform unique'}
+          </h2>
+          <p className="text-gray-500 text-center text-sm mb-10 max-w-xl mx-auto">
+            {isFr
+              ? "Une infrastructure agricole complète, souveraine et sécurisée — construite pour l'Afrique de l'Ouest."
+              : 'A complete, sovereign, and secure agricultural infrastructure — built for West Africa.'}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                icon: '📍',
+                title: isFr ? 'Géolocalisation GPS satellite' : 'GPS Satellite Geolocation',
+                desc: isFr
+                  ? 'Chaque exploitation est géolocalisée avec détection automatique des terres par satellite.'
+                  : 'Every farm is geolocated with automatic satellite land detection.',
+              },
+              {
+                icon: '🔒',
+                title: isFr ? 'Escrow sécurisé OHADA' : 'OHADA Secured Escrow',
+                desc: isFr
+                  ? 'Les fonds sont protégés par un agent d\'escrow agréé. Libération en 3 jalons vérifiés.'
+                  : 'Funds protected by a licensed escrow agent. Released in 3 verified milestones.',
+              },
+              {
+                icon: '📱',
+                title: isFr ? 'Alertes WhatsApp & SMS' : 'WhatsApp & SMS Alerts',
+                desc: isFr
+                  ? 'Notifications en temps réel via WhatsApp et SMS — le canal principal en Afrique de l\'Ouest.'
+                  : 'Real-time notifications via WhatsApp and SMS — the primary channel in West Africa.',
+              },
+              {
+                icon: '🌐',
+                title: isFr ? 'Multilingue' : 'Multilingual',
+                desc: isFr
+                  ? 'Français, anglais, bambara, fulfulde et mooré — la plateforme parle la langue de vos utilisateurs.'
+                  : 'French, English, Bambara, Fulfulde, and Mooré — the platform speaks your users\' language.',
+              },
+              {
+                icon: '📊',
+                title: isFr ? 'Traçabilité complète' : 'Full Traceability',
+                desc: isFr
+                  ? 'Suivi de la production à la consommation pour certification qualité locale, régionale et FDA/USDA.'
+                  : 'Track from production to consumption for local, regional, and FDA/USDA quality certification.',
+              },
+              {
+                icon: '🤖',
+                title: isFr ? 'Outils IA agricoles' : 'Agricultural AI Tools',
+                desc: isFr
+                  ? 'Diagnostic sol, détection de maladies des plantes par photo, et optimisation de production par IA.'
+                  : 'Soil diagnostics, plant disease detection by photo, and AI-powered production optimization.',
+              },
+            ].map((f) => (
+              <div key={f.title} className="rounded-2xl border border-gray-100 bg-gray-50 p-6 flex gap-4 items-start">
+                <span className="text-2xl mt-0.5">{f.icon}</span>
+                <div>
+                  <h3 className="font-bold text-[#1a3c2e] text-sm mb-1">{f.title}</h3>
+                  <p className="text-gray-500 text-xs leading-relaxed">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -246,42 +220,70 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="section-container py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">Partenaires potentiels</h2>
-          <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-            Rejoignez un écosystème en croissance pour transformer l&apos;agriculture en Afrique de l&apos;Ouest et
-            au-delà
+      {/* Partenaires potentiels */}
+      <section className="py-14 bg-[#f5f0e8]">
+        <div className="max-w-5xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold text-[#1a3c2e] mb-3">
+            {isFr ? 'Partenaires & Institutions' : 'Partners & Institutions'}
+          </h2>
+          <p className="text-gray-600 mb-10 max-w-xl mx-auto text-sm">
+            {isFr
+              ? "Sahel AgriConnect est développé et soutenu par des institutions engagées dans la transformation agricole souveraine de l'Afrique."
+              : 'Sahel AgriConnect is built and supported by institutions committed to sovereign agricultural transformation in Africa.'}
           </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            {
-              Icon: Handshake,
-              title: 'Alliance des États du Sahel (AES)',
-              text: 'Coordination transfrontalière pour la transformation agricole régionale',
-            },
-            {
-              Icon: Globe,
-              title: 'Diaspora',
-              text: "Restaurants et détaillants USA connectés aux producteurs d'Afrique de l'Ouest et au-delà",
-            },
-            {
-              Icon: Landmark,
-              title: 'Ministères',
-              text: "Ministères de l'Agriculture pour suivi des politiques et statistiques",
-            },
-          ].map(({ Icon, title, text }) => (
-            <div key={title} className="card text-center">
-              <div className="mb-4 flex justify-center">
-                <IconCircle className="h-14 w-14 [&_svg]:h-7 [&_svg]:w-7">
-                  <Icon strokeWidth={1.75} />
-                </IconCircle>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Djigui Corporation */}
+            <div className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100 flex flex-col items-center text-center">
+              <div className="w-14 h-14 rounded-xl bg-[#1a3c2e] flex items-center justify-center mb-4">
+                <span className="text-white font-bold text-xl">DC</span>
               </div>
-              <h3 className="text-xl font-semibold text-brand-forest mb-3">{title}</h3>
-              <p className="text-gray-600">{text}</p>
+              <h3 className="font-bold text-[#1a3c2e] mb-2">Djigui Corporation</h3>
+              <p className="text-gray-500 text-sm">
+                {isFr
+                  ? "Structure porteuse du projet. Facilitation des investissements diaspora, conformité OHADA, et représentation USA."
+                  : 'Project vehicle. Diaspora investment facilitation, OHADA compliance, and US representation.'}
+              </p>
+              <span className="mt-4 text-xs font-semibold text-[#B5850A] bg-[#fff7df] px-3 py-1 rounded-full">
+                {isFr ? 'Fondateur' : 'Founding Partner'}
+              </span>
             </div>
-          ))}
+
+            {/* US University */}
+            <div className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100 flex flex-col items-center text-center">
+              <div className="w-14 h-14 rounded-xl bg-[#1a3c2e] flex items-center justify-center mb-4">
+                <span className="text-white font-bold text-xl">🎓</span>
+              </div>
+              <h3 className="font-bold text-[#1a3c2e] mb-2">
+                {isFr ? 'Partenaire Universitaire USA' : 'US University Partner'}
+              </h3>
+              <p className="text-gray-500 text-sm">
+                {isFr
+                  ? "Recherche agronomique, certification qualité, et transfert de technologie vers les coopératives d'Afrique de l'Ouest."
+                  : 'Agronomic research, quality certification, and technology transfer to West African cooperatives.'}
+              </p>
+              <span className="mt-4 text-xs font-semibold text-[#1a3c2e] bg-green-50 px-3 py-1 rounded-full">
+                {isFr ? 'Partenaire Recherche' : 'Research Partner'}
+              </span>
+            </div>
+
+            {/* Diaspora Network */}
+            <div className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100 flex flex-col items-center text-center">
+              <div className="w-14 h-14 rounded-xl bg-[#B5850A] flex items-center justify-center mb-4">
+                <span className="text-white font-bold text-xl">🌍</span>
+              </div>
+              <h3 className="font-bold text-[#1a3c2e] mb-2">
+                {isFr ? 'Réseau Diaspora USA' : 'Diaspora Network USA'}
+              </h3>
+              <p className="text-gray-500 text-sm">
+                {isFr
+                  ? "Restaurants, détaillants et investisseurs de la diaspora ouest-africaine aux États-Unis connectés aux producteurs locaux."
+                  : 'West African diaspora restaurants, retailers, and investors in the US connected to local producers.'}
+              </p>
+              <span className="mt-4 text-xs font-semibold text-[#B5850A] bg-[#fff7df] px-3 py-1 rounded-full">
+                {isFr ? 'Réseau Commercial' : 'Trade Network'}
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
