@@ -5,6 +5,8 @@ import { useState } from 'react';
 
 const TIER_KEYS = ['farmerBasic', 'producerPro', 'transformationCenter', 'enterprise'];
 const TIER_PRICES = ['', '$32', '$109', '$999'];
+const TIER_FLW_AMOUNTS = [0, 32, 109, 999]; // USD per month
+const FLW_PUBLIC_KEY = import.meta.env.VITE_FLW_PUBLIC_KEY;
 const TIER_ICONS = [Sprout, Factory, Building2, Landmark];
 const TIER_LINKS = ['/dashboard', '/contact', '/contact', '/platform-licensing'];
 const TIER_VARIANTS = ['outline', 'gold', 'gold', 'gold'];
@@ -13,9 +15,126 @@ const TIER_POPULAR = [false, true, false, false];
 export default function Pricing() {
   const { t } = useTranslation();
   const [openFaq, setOpenFaq] = useState(null);
+  const [subscribeModalOpen, setSubscribeModalOpen] = useState(false);
+  const [pendingTierIndex, setPendingTierIndex] = useState(null);
+  const [pendingTierName, setPendingTierName] = useState('');
+  const [paymentEmail, setPaymentEmail] = useState('');
+
+  const openSubscribeModal = (tierIndex, tierName) => {
+    const amount = TIER_FLW_AMOUNTS[tierIndex];
+    if (!amount) return;
+    setPendingTierIndex(tierIndex);
+    setPendingTierName(tierName);
+    setPaymentEmail('');
+    setSubscribeModalOpen(true);
+  };
+
+  const closeSubscribeModal = () => {
+    setSubscribeModalOpen(false);
+    setPendingTierIndex(null);
+    setPendingTierName('');
+    setPaymentEmail('');
+  };
+
+  const startFlutterwaveCheckout = () => {
+    const email = paymentEmail.trim();
+    if (!email || pendingTierIndex == null) return;
+    if (!FLW_PUBLIC_KEY || FLW_PUBLIC_KEY === 'your_flutterwave_public_key_here') {
+      // eslint-disable-next-line no-alert
+      alert(t('pricing.flwMissingKey', 'Set VITE_FLW_PUBLIC_KEY in your environment to enable payments.'));
+      return;
+    }
+    if (typeof window.FlutterwaveCheckout !== 'function') {
+      // eslint-disable-next-line no-alert
+      alert(t('pricing.flwScriptMissing', 'Payment script failed to load. Please refresh and try again.'));
+      return;
+    }
+
+    const amount = TIER_FLW_AMOUNTS[pendingTierIndex];
+    if (!amount) return;
+
+    const tierNameSnapshot = pendingTierName;
+
+    window.FlutterwaveCheckout({
+      public_key: FLW_PUBLIC_KEY,
+      tx_ref: `SAC-${tierNameSnapshot}-${Date.now()}`,
+      amount,
+      currency: 'USD',
+      payment_options: 'card,mobilemoney,ussd',
+      customer: {
+        email,
+        name: email.split('@')[0],
+      },
+      customizations: {
+        title: 'Sahel AgriConnect',
+        description: `${tierNameSnapshot} — Monthly Subscription`,
+        logo: 'https://sahelagriconnect.com/logo.png',
+      },
+      callback: (response) => {
+        if (response.status === 'successful') {
+          // eslint-disable-next-line no-alert
+          alert(
+            `✅ Payment successful! Transaction ID: ${response.transaction_id}. Welcome to ${tierNameSnapshot}.`
+          );
+          // TODO: call your backend to activate the subscription
+          // fetch(`${API}/api/subscriptions/activate`, { method: 'POST', body: JSON.stringify({ tx_ref: response.tx_ref, tier: tierNameSnapshot, email }) })
+        }
+      },
+      onclose: () => {},
+    });
+
+    closeSubscribeModal();
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
+
+      {subscribeModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="subscribe-modal-title"
+        >
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-200">
+            <h2 id="subscribe-modal-title" className="text-lg font-bold text-[#1a3c2e] mb-1">
+              {t('pricing.subscribeTitle', 'Subscribe')}
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              {pendingTierName} — {t('pricing.subscribeEmailHint', 'Enter your email to continue to secure checkout.')}
+            </p>
+            <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="payment-email">
+              Email
+            </label>
+            <input
+              id="payment-email"
+              type="email"
+              autoComplete="email"
+              value={paymentEmail}
+              onChange={(e) => setPaymentEmail(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm mb-4 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+              placeholder="you@example.com"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={closeSubscribeModal}
+                className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                {t('common.cancel', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={startFlutterwaveCheckout}
+                disabled={!paymentEmail.trim()}
+                className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1a3c2e] text-white hover:bg-[#143326] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t('pricing.continueToPay', 'Continue to payment')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <div className="text-center mb-14">
@@ -74,18 +193,26 @@ export default function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link
-                to={TIER_LINKS[i]}
-                className={`w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm transition ${
-                  isEnterprise
-                    ? 'bg-[#B5850A] text-white hover:bg-[#9a7009]'
-                    : isGold
-                    ? 'bg-[#1a3c2e] text-white hover:bg-[#143326]'
-                    : 'border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e] hover:text-white'
-                }`}
-              >
-                {t(`pricing.tiers.${key}.cta`)}
-              </Link>
+              {TIER_PRICES[i] ? (
+                <button
+                  type="button"
+                  onClick={() => openSubscribeModal(i, t(`pricing.tiers.${key}.name`))}
+                  className={`w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm transition cursor-pointer ${
+                    isEnterprise
+                      ? 'bg-[#B5850A] text-white hover:bg-[#9a7009]'
+                      : 'bg-[#1a3c2e] text-white hover:bg-[#143326]'
+                  }`}
+                >
+                  {t(`pricing.tiers.${key}.cta`)}
+                </button>
+              ) : (
+                <Link
+                  to={TIER_LINKS[i]}
+                  className="w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e] hover:text-white transition"
+                >
+                  {t(`pricing.tiers.${key}.cta`)}
+                </Link>
+              )}
             </div>
           );
         })}
