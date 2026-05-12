@@ -298,14 +298,81 @@ async function ensureAdminAccount() {
   }
 }
 
+function normalizeMongoUri(raw) {
+  if (raw == null || raw === '') return null;
+  let uri = String(raw).trim();
+  if (
+    (uri.startsWith('"') && uri.endsWith('"')) ||
+    (uri.startsWith("'") && uri.endsWith("'"))
+  ) {
+    uri = uri.slice(1, -1).trim();
+  }
+  return uri || null;
+}
+
+/** True on Render and other production hosts — never use local Mongo fallback. */
+function isHostedRuntime() {
+  return process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+}
+
+function resolveMongoUri() {
+  const raw = process.env.MONGO_URI || process.env.MONGODB_URI;
+  const uri = normalizeMongoUri(raw);
+  if (uri) {
+    if (isHostedRuntime() && /localhost|127\.0\.0\.1|::1/i.test(uri)) {
+      console.error(
+        '❌ MONGO_URI points to this machine (localhost). On Render you must use a remote URI such as mongodb+srv://… from MongoDB Atlas.'
+      );
+      return null;
+    }
+    return uri;
+  }
+  if (isHostedRuntime()) {
+    return null;
+  }
+  return 'mongodb://127.0.0.1:27017/sahel-agriconnect';
+}
+
+function logMongoConnectHints(message) {
+  const m = (message || '').toLowerCase();
+  if (m.includes('bad auth') || m.includes('authentication failed')) {
+    console.error(
+      '💡 Atlas rejected credentials. After a password change, copy a fresh connection string from Atlas → Connect → Drivers. Special characters in the password (# @ : / ? &) must be percent-encoded in the URI.'
+    );
+  }
+  if (m.includes('enotfound') || m.includes('querytxt')) {
+    console.error('💡 Check the hostname in MONGO_URI (typo or wrong cluster URL).');
+  }
+  if (m.includes('timed out') || m.includes('etimedout')) {
+    console.error(
+      '💡 Network timeout: in Atlas → Network Access, allow Render (often 0.0.0.0/0 for dev) or verify the cluster is running.'
+    );
+  }
+  if (m.includes('econnrefused') && (m.includes('127.0.0.1') || m.includes('::1'))) {
+    console.error(
+      '💡 The app tried localhost:27017 — MONGO_URI is missing or not visible to this service. Confirm the key name and that you saved + redeployed.'
+    );
+  }
+}
+
 // Connexion MongoDB
 const connectDB = async () => {
+  const mongoUri = resolveMongoUri();
+  if (!mongoUri) {
+    console.error(
+      '❌ Set MONGO_URI or MONGODB_URI to your Atlas connection string (Render → Environment → add variable → redeploy). Render has no MongoDB on localhost; empty NODE_ENV still sets RENDER=true here.'
+    );
+    process.exit(1);
+  }
   try {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sahel-agriconnect');
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 15_000,
+    });
     console.log('✅ MongoDB connecté avec succès');
     await ensureAdminAccount();
   } catch (error) {
     console.error('❌ Erreur de connexion MongoDB:', error.message);
+    logMongoConnectHints(error.message);
     process.exit(1);
   }
 };
@@ -349,7 +416,7 @@ const startServer = async () => {
     setTimeout(() => {
       startQueueProcessor().catch((e) => console.error('📬 Queue processor failed to start:', e.message));
     }, 3000);
-    httpServer.listen(PORT, () => {
+    httpServer.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Serveur démarré sur le port ${PORT}`);
       console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);
       console.log(`🌐 API disponible sur http://localhost:${PORT}/api`);
@@ -358,7 +425,10 @@ const startServer = async () => {
 };
 
 if (process.env.NODE_ENV !== 'test') {
-  startServer();
+  startServer().catch((err) => {
+    console.error('❌ Fatal startup error:', err?.message || err);
+    process.exit(1);
+  });
 }
 
 export { io };
