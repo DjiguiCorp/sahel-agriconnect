@@ -55,12 +55,10 @@ export { app };
 
 // Configuration CORS - Permet toutes les origines Vercel
 const ALLOWED_ORIGINS = [
-  process.env.FRONTEND_URL,
-  'https://sahel-agriconnect.vercel.app',
+  'https://sahelagriconnect.com',
+  'https://www.sahelagriconnect.com',
+  'https://sahel-agriconnect.vercel.app', // keep during transition
   'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:3000',
 ].filter(Boolean);
 
 app.use(
