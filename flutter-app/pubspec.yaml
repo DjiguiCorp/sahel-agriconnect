@@ -1,0 +1,81 @@
+name: sahel_agriconnect
+description: Sahel AgriConnect & AfriYield Exchange — African Agricultural Platform
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # HTTP & API
+  http: ^1.2.0
+  dio: ^5.4.0
+
+  # State management
+  provider: ^6.1.1
+  shared_preferences: ^2.2.2
+
+  # Navigation
+  go_router: ^13.2.0
+
+  # UI & Design
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  lottie: ^3.1.0
+
+  # Animations
+  flutter_animate: ^4.5.0
+  animated_text_kit: ^4.2.2
+
+  # Icons
+  phosphor_flutter: ^2.0.1
+
+  # Camera & AI tools
+  image_picker: ^1.0.7
+  camera: ^0.10.5+9
+
+  # Charts
+  fl_chart: ^0.67.0
+
+  # Firebase & push
+  firebase_core: ^2.27.0
+  firebase_messaging: ^14.7.20
+  flutter_local_notifications: ^17.1.0
+
+  # Auth & biometrics
+  local_auth: ^2.2.0
+
+  # Utilities
+  intl: ^0.20.2
+  url_launcher: ^6.2.5
+  share_plus: ^8.0.2
+  connectivity_plus: ^6.0.3
+  flutter_secure_storage: ^9.0.0
+  jwt_decoder: ^2.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/images/
+    - assets/animations/
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700

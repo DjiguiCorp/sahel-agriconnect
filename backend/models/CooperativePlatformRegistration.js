@@ -26,6 +26,8 @@ const cooperativePlatformRegistrationSchema = new mongoose.Schema({
   passwordHash: { type: String },
   tempPassword: { type: String },
   createdAt: { type: Date, default: Date.now },
+  fcmToken: { type: String },
+  fcmUpdatedAt: Date,
 });
 
 const CooperativePlatformRegistration = mongoose.model(

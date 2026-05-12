@@ -60,6 +60,28 @@ export async function dispatchNotification(notification) {
     }
   }
 
+  if (notification.fcmToken && process.env.FIREBASE_SERVER_KEY) {
+    try {
+      await fetch('https://fcm.googleapis.com/fcm/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `key=${process.env.FIREBASE_SERVER_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: notification.fcmToken,
+          notification: {
+            title: 'Sahel AgriConnect',
+            body: String(notification.message || '').split('\n')[0],
+          },
+          data: { source: String(notification.source || '') },
+        }),
+      });
+    } catch (_) {
+      /* optional push failure */
+    }
+  }
+
   await PendingNotification.findByIdAndUpdate(notification._id, {
     status: sent ? 'sent' : 'failed',
     sentAt: sent ? new Date() : undefined,

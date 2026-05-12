@@ -164,7 +164,9 @@ const farmerSchema = new mongoose.Schema({
     titre: String,
     description: String,
     details: [String]
-  }]
+  }],
+  fcmToken: { type: String },
+  fcmUpdatedAt: Date,
 }, {
   timestamps: true
 });

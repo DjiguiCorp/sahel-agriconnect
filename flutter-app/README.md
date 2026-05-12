@@ -2,6 +2,25 @@
 
 Application mobile Flutter avec support multi-langues pour Sahel AgriConnect.
 
+## Fondation (structure actuelle)
+
+- **Point d’entrée :** `lib/main.dart` (Hive + `ProviderScope` + `SahelAgriConnectApp`).
+- **App shell :** `lib/app.dart` (thème, `go_router`, l10n).
+- **Cœur :** `lib/core/` — thème, router, constantes (`API_BASE_URL` via `--dart-define`), client Dio, offline (Hive + file d’attente + sync), connectivité, stockage.
+- **Fonctionnalités :** `lib/features/*` — dossiers `models/`, `providers/`, `screens/` (écrans listés ci‑dessous sont des **squelettes** : `Scaffold` + texte, prêts à être remplacés).
+- **Partagé :** `lib/shared/widgets/` et `lib/shared/models/user_role.dart`.
+
+Depuis ce dossier :
+
+```bash
+flutter pub get
+flutter run --dart-define=API_BASE_URL=https://votre-api.example.com
+```
+
+Les polices **Inter** ne sont pas incluses dans le dépôt (évite les échecs de build sans fichiers `.ttf`). Ajoutez les fichiers décrits dans `assets/fonts/README.txt` puis réactivez la section `fonts:` dans `pubspec.yaml` si besoin.
+
+> Sur cette machine, la commande `flutter` n’était pas disponible dans le PATH ; exécutez `flutter pub get` localement après installation du SDK Flutter.
+
 ## 🌍 Langues Supportées
 
 - **Français (fr)** - Langue principale

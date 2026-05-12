@@ -10,6 +10,7 @@ const pendingNotificationSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'sent', 'failed'], default: 'pending' },
   sentAt: Date,
   error: String,
+  fcmToken: String,
   createdAt: { type: Date, default: Date.now },
 });
 

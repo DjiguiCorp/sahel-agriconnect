@@ -1,7 +1,10 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
-import { authenticateToken } from '../middleware/auth.js';
+import Investor from '../models/Investor.js';
+import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import GovernmentAdmin from '../models/GovernmentAdmin.js';
+import { authenticateToken, authenticateAnyUser } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -64,6 +67,71 @@ router.get('/verify', authenticateToken, (req, res) => {
       countryCode: req.admin.countryCode ?? null
     }
   });
+});
+
+// POST /api/auth/mobile-handoff-token — short-lived token for web redirect from mobile
+router.post('/mobile-handoff-token', authenticateAnyUser, async (req, res) => {
+  try {
+    const { action } = req.body || {};
+    const mu = req.mobileUser;
+    let userId = mu.id;
+    if (mu.role === 'investor') {
+      const inv = await Investor.findOne({ email: mu.email }).select('_id').lean();
+      userId = inv?._id?.toString() || mu.email;
+    }
+    const handoffToken = jwt.sign(
+      {
+        userId,
+        email: mu.email,
+        role: mu.role,
+        action: action || 'generic',
+        type: 'mobile_handoff',
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+    res.json({ success: true, handoffToken });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/auth/fcm-token — register Firebase Cloud Messaging device token
+router.post('/fcm-token', authenticateAnyUser, async (req, res) => {
+  try {
+    const { fcmToken } = req.body || {};
+    if (!fcmToken) {
+      return res.status(400).json({ error: 'fcmToken required' });
+    }
+    const mu = req.mobileUser;
+    const now = new Date();
+
+    if (mu.role === 'investor') {
+      await Investor.findOneAndUpdate(
+        { email: mu.email },
+        { fcmToken, fcmUpdatedAt: now }
+      );
+      return res.json({ success: true });
+    }
+    if (mu.role === 'cooperative_leader') {
+      await CooperativePlatformRegistration.findByIdAndUpdate(mu.id, {
+        fcmToken,
+        fcmUpdatedAt: now,
+      });
+      return res.json({ success: true });
+    }
+    if (mu.role === 'country_admin') {
+      await GovernmentAdmin.findByIdAndUpdate(mu.id, {
+        fcmToken,
+        fcmUpdatedAt: now,
+      });
+      return res.json({ success: true });
+    }
+
+    return res.status(400).json({ error: 'Unsupported role' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 export default router;

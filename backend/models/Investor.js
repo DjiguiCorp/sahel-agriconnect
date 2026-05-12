@@ -49,6 +49,8 @@ const investorSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  fcmToken: { type: String },
+  fcmUpdatedAt: Date,
 });
 
 const Investor = mongoose.model('Investor', investorSchema);

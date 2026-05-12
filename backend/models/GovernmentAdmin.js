@@ -32,6 +32,8 @@ const schema = new mongoose.Schema({
   lastLogin: Date,
   dataCenter: { type: String, default: 'shared' },
   createdAt: { type: Date, default: Date.now },
+  fcmToken: { type: String },
+  fcmUpdatedAt: Date,
 });
 
 schema.methods.verifyPassword = async function (pw) {
