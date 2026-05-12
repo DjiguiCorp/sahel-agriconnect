@@ -64,7 +64,7 @@ router.put('/:id/milestone', authenticateToken, async (req, res) => {
       await PendingNotification.create({
         recipientEmail: tx.investorEmail,
         recipientName: tx.investorName,
-        message: `✅ Milestone ${milestoneNumber} verified for your AfriYield investment in ${tx.supplierName}. Funds released. Track your transaction at afriyieldexchange.com`,
+        message: `✅ Milestone ${milestoneNumber} verified for your AfriYield investment in ${tx.supplierName}. Funds released. Track your transaction at sahelagriconnect.com/afri-yield`,
         source: 'escrow_milestone',
         status: 'pending',
       });

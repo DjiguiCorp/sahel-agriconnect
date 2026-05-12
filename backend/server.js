@@ -57,7 +57,9 @@ export { app };
 const ALLOWED_ORIGINS = [
   'https://sahelagriconnect.com',
   'https://www.sahelagriconnect.com',
-  'https://sahel-agriconnect.vercel.app', // keep during transition
+  'https://afriyieldexchange.com',
+  'https://www.afriyieldexchange.com',
+  'https://sahel-agriconnect.vercel.app',
   'http://localhost:5173',
 ].filter(Boolean);
 

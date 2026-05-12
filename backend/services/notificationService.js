@@ -8,7 +8,7 @@ export const messageTemplates = {
   expertRequestReceived: (name) =>
     `🔬 Bonjour ${name}! Votre demande d'expert a été reçue. Un spécialiste vous contactera bientôt. Sahel AgriConnect`,
   investorWelcome: (name) =>
-    `💰 Bienvenue ${name} sur AfriYield Exchange! Notre équipe vous contactera dans les 24h. 🌍 afriyieldexchange.com`,
+    `💰 Bienvenue ${name} sur AfriYield Exchange! Notre équipe vous contactera dans les 24h. 🌍 sahelagriconnect.com/afri-yield`,
   certificationReceived: (name) =>
     `🏅 Bonjour ${name}! Votre demande de certification export a été reçue. Sahel AgriConnect`,
   profileActivated: (name) =>
