@@ -1,24 +1,30 @@
+import { useState, useEffect } from 'react';
 import Hero from '../components/Hero';
 import IconCircle from '../components/IconCircle';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  Wheat,
-  BarChart3,
-  Globe,
-  Banknote,
-  Factory,
-  Star,
-  Camera,
-  Smartphone,
-  Calendar,
-  CheckCircle,
-  TrendingUp,
-} from 'lucide-react';
+import { Wheat, BarChart3, Globe, Banknote, Factory, Star } from 'lucide-react';
 
 const Home = () => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
+  const [farmerStats, setFarmerStats] = useState(null);
+  const [coopStats, setCoopStats] = useState(null);
+  const [processorStats, setProcessorStats] = useState(null);
+
+  useEffect(() => {
+    const API = import.meta.env.VITE_API_BASE_URL;
+    if (!API) return;
+    Promise.allSettled([
+      fetch(`${API}/api/farmers/public-stats`).then((r) => (r.ok ? r.json() : Promise.reject())),
+      fetch(`${API}/api/cooperatives/public-stats`).then((r) => (r.ok ? r.json() : Promise.reject())),
+      fetch(`${API}/api/processors/public-stats`).then((r) => (r.ok ? r.json() : Promise.reject())),
+    ]).then(([farmers, coops, processors]) => {
+      if (farmers.status === 'fulfilled') setFarmerStats(farmers.value);
+      if (coops.status === 'fulfilled') setCoopStats(coops.value);
+      if (processors.status === 'fulfilled') setProcessorStats(processors.value);
+    });
+  }, []);
 
   const problemCards = [
     {
@@ -287,98 +293,154 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="bg-brand-forest text-white py-16">
-        <div className="section-container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('home.projectTitle')}</h2>
-            <p className="text-lg text-white/90 max-w-3xl mx-auto">{t('home.projectDescription')}</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 mb-16">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center">
-              <div className="w-16 h-16 bg-brand-sage rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-white" aria-hidden />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">{t('home.objectives.foodSovereignty.title')}</h3>
-              <p className="text-white/90 text-sm">{t('home.objectives.foodSovereignty.description')}</p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center">
-              <div className="w-16 h-16 bg-brand-amber rounded-full flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-8 h-8 text-brand-forest" aria-hidden />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">{t('home.objectives.valorization.title')}</h3>
-              <p className="text-white/90 text-sm">{t('home.objectives.valorization.description')}</p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center">
-              <div className="w-16 h-16 bg-brand-cream/90 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-brand-forest" aria-hidden />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">{t('home.objectives.period.title')}</h3>
-              <p className="text-white/90 text-sm">{t('home.objectives.period.description')}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section-container py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-brand-forest mb-4">Aperçu de la plateforme</h2>
-          <p className="text-lg text-gray-700 max-w-3xl mx-auto">Découvrez les fonctionnalités de Sahel AgriConnect</p>
-        </div>
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="card bg-brand-cream/50 flex items-center justify-center min-h-[300px]">
-            <div className="text-center px-4">
-              <div className="flex justify-center mb-4">
-                <IconCircle className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8">
-                  <Camera strokeWidth={1.5} />
-                </IconCircle>
-              </div>
-              <p className="text-gray-600 font-medium">Capture dashboard administrateur</p>
-              <p className="text-gray-400 text-sm mt-2">À venir</p>
-            </div>
-          </div>
-          <div className="card bg-brand-cream/50 flex items-center justify-center min-h-[300px]">
-            <div className="text-center px-4">
-              <div className="flex justify-center mb-4">
-                <IconCircle className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8">
-                  <Smartphone strokeWidth={1.5} />
-                </IconCircle>
-              </div>
-              <p className="text-gray-600 font-medium">Application mobile</p>
-              <p className="text-gray-400 text-sm mt-2">À venir</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="rejoindre" className="section-container py-16">
-        <div className="rounded-2xl bg-gradient-to-br from-brand-amber to-brand-amberDeep p-10 md:p-12 text-center text-brand-forest shadow-xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('home.cta.title')}</h2>
-          <p className="text-lg mb-8 text-brand-forest/90 max-w-2xl mx-auto">
-            Que vous soyez agriculteur, coopérative, investisseur ou partenaire, participez à la transformation de
-            l&apos;agriculture en Afrique de l&apos;Ouest et au-delà.
+      {/* Mission & Stats Section */}
+      <section className="bg-[#1a3c2e] py-16 px-4">
+        <div className="max-w-5xl mx-auto text-center">
+          <span className="inline-block text-xs font-bold tracking-widest text-[#B5850A] uppercase mb-4">
+            {isFr ? 'Notre Mission' : 'Our Mission'}
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            {isFr
+              ? "Construire la souveraineté alimentaire de l'Afrique de l'Ouest"
+              : "Building West Africa's food sovereignty"}
+          </h2>
+          <p className="text-gray-300 max-w-2xl mx-auto text-sm leading-relaxed mb-12">
+            {isFr
+              ? "Sahel AgriConnect connecte les agriculteurs, coopératives et investisseurs dans un écosystème numérique souverain — conçu en Afrique, pour l'Afrique."
+              : 'Sahel AgriConnect connects farmers, cooperatives, and investors in a sovereign digital ecosystem — designed in Africa, for Africa.'}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
-            <Link
-              to="/contact"
-              className="inline-flex justify-center rounded-lg bg-white px-6 py-3 font-semibold text-brand-forest shadow hover:bg-brand-cream transition"
-            >
-              S&apos;inscrire maintenant
-            </Link>
-            <Link
-              to="/admin/login"
-              className="inline-flex justify-center rounded-lg bg-brand-forest px-6 py-3 font-semibold text-white shadow hover:bg-brand-forest/90 transition"
-            >
-              Voir le dashboard admin
-            </Link>
-            <Link
-              to="/inscription"
-              className="inline-flex justify-center rounded-lg border-2 border-brand-forest bg-transparent px-6 py-3 font-semibold text-brand-forest hover:bg-brand-forest/10 transition"
-            >
-              {isFr ? "S'inscrire comme agriculteur" : 'Register as a farmer'}
-            </Link>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-14">
+            {[
+              {
+                value: farmerStats?.total ?? '—',
+                label: isFr ? 'Agriculteurs enregistrés' : 'Registered Farmers',
+                icon: '👩‍🌾',
+              },
+              {
+                value: coopStats?.active ?? coopStats?.total ?? '—',
+                label: isFr ? 'Coopératives actives' : 'Active Cooperatives',
+                icon: '🤝',
+              },
+              {
+                value: processorStats?.total ?? '—',
+                label: isFr ? 'Centres de transformation' : 'Processing Centers',
+                icon: '🏭',
+              },
+              {
+                value: '17',
+                label: isFr ? 'Pays zone OHADA' : 'OHADA Zone Countries',
+                icon: '🌍',
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center">
+                <span className="text-2xl mb-1">{stat.icon}</span>
+                <span className="text-3xl font-bold text-[#B5850A]">{stat.value}</span>
+                <span className="text-xs text-gray-400 mt-1 text-center">{stat.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              {
+                icon: '✅',
+                title: isFr ? 'Souveraineté alimentaire' : 'Food Sovereignty',
+                desc: isFr
+                  ? "Autonomie alimentaire pour l'Afrique de l'Ouest grâce à une agriculture numérique, résiliente et durable."
+                  : 'Food autonomy for West Africa through digital, resilient, and sustainable agriculture.',
+              },
+              {
+                icon: '📈',
+                title: isFr ? 'Valorisation économique' : 'Economic Value',
+                desc: isFr
+                  ? 'Connexion directe aux marchés locaux, régionaux et USA — financement sans prêt via la diaspora.'
+                  : 'Direct connection to local, regional, and US markets — non-loan financing via the diaspora.',
+              },
+              {
+                icon: '🌱',
+                title: isFr ? 'Richesse générationnelle' : 'Generational Wealth',
+                desc: isFr
+                  ? "Chaînes de valeur durables qui préservent les savoirs locaux et construisent un patrimoine pour les générations futures."
+                  : 'Sustainable value chains that preserve local knowledge and build assets for future generations.',
+              },
+            ].map((p) => (
+              <div
+                key={p.title}
+                className="bg-white/5 rounded-2xl p-6 text-left border border-white/10 hover:border-[#B5850A]/50 transition"
+              >
+                <span className="text-2xl mb-3 block">{p.icon}</span>
+                <h3 className="text-white font-bold mb-2">{p.title}</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">{p.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section id="rejoindre" className="py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="rounded-3xl overflow-hidden grid md:grid-cols-2">
+            <div className="bg-[#1a3c2e] p-10 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-bold tracking-widest text-[#B5850A] uppercase">
+                  {isFr ? 'Agriculteurs & Coopératives' : 'Farmers & Cooperatives'}
+                </span>
+                <h3 className="text-2xl font-bold text-white mt-3 mb-3">
+                  {isFr ? 'Rejoignez la plateforme' : 'Join the platform'}
+                </h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  {isFr
+                    ? 'Enregistrez votre exploitation, accédez aux financements, aux outils IA et aux marchés régionaux.'
+                    : 'Register your farm, access financing, AI tools, and regional markets.'}
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 mt-8">
+                <Link
+                  to="/dashboard"
+                  className="w-full text-center py-3 px-5 rounded-xl bg-[#B5850A] text-white font-bold text-sm hover:bg-[#9a7009] transition"
+                >
+                  {isFr ? "S'inscrire comme agriculteur" : 'Register as a Farmer'}
+                </Link>
+                <Link
+                  to="/cooperative-registration"
+                  className="w-full text-center py-3 px-5 rounded-xl border border-white/30 text-white font-semibold text-sm hover:bg-white/10 transition"
+                >
+                  {isFr ? 'Inscrire ma coopérative' : 'Register my Cooperative'}
+                </Link>
+              </div>
+            </div>
+
+            <div className="bg-[#B5850A] p-10 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-bold tracking-widest text-[#1a3c2e] uppercase">
+                  {isFr ? 'Investisseurs Diaspora' : 'Diaspora Investors'}
+                </span>
+                <h3 className="text-2xl font-bold text-[#1a3c2e] mt-3 mb-3">
+                  {isFr ? "Investissez dans l'agriculture africaine" : 'Invest in African agriculture'}
+                </h3>
+                <p className="text-[#1a3c2e]/80 text-sm leading-relaxed">
+                  {isFr
+                    ? 'Transformez vos transferts diaspora en capital agricole productif. Escrow sécurisé. Conformité OHADA. ROI 12–30%.'
+                    : 'Turn your diaspora transfers into productive agricultural capital. Secured escrow. OHADA compliance. 12–30% ROI.'}
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 mt-8">
+                <Link
+                  to="/afri-yield"
+                  className="w-full text-center py-3 px-5 rounded-xl bg-[#1a3c2e] text-white font-bold text-sm hover:bg-[#143326] transition"
+                >
+                  {isFr ? 'Découvrir AfriYield Exchange' : 'Explore AfriYield Exchange'}
+                </Link>
+                <Link
+                  to="/afri-yield/register"
+                  className="w-full text-center py-3 px-5 rounded-xl border border-[#1a3c2e]/30 text-[#1a3c2e] font-semibold text-sm hover:bg-[#1a3c2e]/10 transition"
+                >
+                  {isFr ? "S'inscrire comme investisseur" : 'Register as an Investor'}
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
