@@ -8,39 +8,71 @@ import Processor from '../models/Processor.js';
 import PendingNotification from '../models/PendingNotification.js';
 import { authenticateToken } from '../middleware/auth.js';
 
-// Accepted institutional domain patterns
+// Accepted institutional domain patterns — covers all 54 African countries.
 const GOVERNMENT_DOMAINS = [
+  // Generic
   '.gov',
   '.gouv',
   '.gou',
-  '.gov.ml',
-  '.gov.gh',
-  '.gov.sn',
-  '.gov.ng',
-  '.gov.bf',
-  '.gov.ne',
-  '.gov.ci',
-  '.gov.tg',
-  '.gov.bj',
+  // West Africa — francophone
+  '.gov.ml', '.gouv.ml',
+  '.gov.sn', '.gouv.sn',
+  '.gov.ci', '.gouv.ci',
+  '.gov.bf', '.gouv.bf',
+  '.gov.ne', '.gouv.ne',
+  '.gov.tg', '.gouv.tg',
+  '.gov.bj', '.gouv.bj',
   '.gov.gn',
-  '.gouv.ml',
-  '.gouv.sn',
-  '.gouv.ci',
-  '.gouv.bf',
-  '.gouv.ne',
-  '.gouv.tg',
-  '.gouv.bj',
-  '.gouv.cm',
-  '.go.ke',
-  '.gov.ke',
+  '.gov.gw',  // Guinea-Bissau
+  '.gov.mr',  // Mauritania
+  '.gov.cv',  // Cape Verde
+  // West Africa — anglophone
+  '.gov.gh',
+  '.gov.ng',
+  '.gov.sl',  // Sierra Leone
+  '.gov.lr',  // Liberia
+  '.gov.gm',  // Gambia
+  // Central Africa
+  '.gouv.cm', '.gov.cm',
+  '.gov.cd', '.gouv.cd',  // DRC
+  '.gov.cg',  // Congo (Brazzaville)
+  '.gov.ga',  // Gabon
+  '.gov.td',  // Chad
+  '.gov.st',  // São Tomé
+  // East Africa
+  '.go.ke', '.gov.ke',
   '.gov.et',
   '.gov.rw',
   '.gov.tz',
   '.gov.ug',
+  '.gov.bi',  // Burundi
+  '.gov.so',  // Somalia
+  '.gov.dj',  // Djibouti
+  '.gov.er',  // Eritrea
+  '.gov.sd',  // Sudan
+  '.gov.ss',  // South Sudan
+  '.gov.km',  // Comoros
+  '.gov.sc',  // Seychelles
+  // Southern Africa
   '.gov.za',
   '.gov.zm',
   '.gov.mz',
-  'sahel-test.gov', // for testing only — remove in production
+  '.gov.mw',  // Malawi
+  '.gov.zw',  // Zimbabwe
+  '.gov.bw',  // Botswana
+  '.gov.na',  // Namibia
+  '.gov.ls',  // Lesotho
+  '.gov.sz',  // Eswatini
+  '.gov.ao',  // Angola
+  '.gov.mg',  // Madagascar
+  // North Africa
+  '.gov.eg',
+  '.gov.ly',
+  '.gov.tn',
+  '.gov.dz',
+  '.gov.ma',
+  // Testing only — remove in production
+  'sahel-test.gov',
 ];
 
 const NGO_DOMAINS = [
@@ -293,24 +325,50 @@ router.post('/test-create', async (req, res) => {
   }
 });
 
-// GET /api/government/dashboard — country stats overview
+// GET /api/government/dashboard — country-scoped stats overview
+// All data is filtered by req.govAdmin.country so each government / NGO /
+// enterprise user only sees data for their own territory.
 router.get('/dashboard', authGov, async (req, res) => {
   try {
     const country = req.govAdmin.country;
-    const [farmers, cooperatives, processors, projects] = await Promise.all([
-      Farmer.countDocuments({ $or: [{ country }, { pays: country }] }),
-      CooperativePlatformRegistration.countDocuments({ country }),
-      Processor.countDocuments({ country }),
-      NationalProject.countDocuments({ country }),
+    const countryFilter = { country };
+    const farmerFilter = { $or: [{ country }, { pays: country }] };
+
+    const [
+      farmers,
+      cooperatives,
+      processors,
+      projects,
+      activeProjects,
+      totalResponses,
+      recentNotifications,
+      recentProjects,
+    ] = await Promise.all([
+      Farmer.countDocuments(farmerFilter),
+      CooperativePlatformRegistration.countDocuments(countryFilter),
+      Processor.countDocuments(countryFilter),
+      NationalProject.countDocuments(countryFilter),
+      NationalProject.countDocuments({ ...countryFilter, status: 'active' }),
+      NationalProject.aggregate([
+        { $match: countryFilter },
+        { $project: { responseCount: { $size: '$responses' } } },
+        { $group: { _id: null, total: { $sum: '$responseCount' } } },
+      ]),
+      PendingNotification.find({ status: 'pending' })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean(),
+      NationalProject.find(countryFilter)
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
     ]);
-    const activeProjects = await NationalProject.countDocuments({ country, status: 'active' });
-    const totalResponses = await NationalProject.aggregate([
-      { $match: { country } },
-      { $project: { responseCount: { $size: '$responses' } } },
-      { $group: { _id: null, total: { $sum: '$responseCount' } } },
-    ]);
+
     res.json({
       success: true,
+      country,
+      countryCode: req.govAdmin.countryCode,
+      orgRole: req.govAdmin.orgType,
       stats: {
         farmers,
         cooperatives,
@@ -319,6 +377,8 @@ router.get('/dashboard', authGov, async (req, res) => {
         activeProjects,
         totalResponses: totalResponses[0]?.total || 0,
       },
+      recentNotifications,
+      projects: recentProjects,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
