@@ -89,6 +89,33 @@ function countryFlag(country) {
   return '🌍';
 }
 
+function produceListingToOpportunityCard(l) {
+  const qty = Number(l.quantityKg) || 0;
+  const perKg = Number(l.pricePerKgUsd ?? l.pricePerKgUSD ?? 0) || 0;
+  const c = String(l.certification || '').toLowerCase();
+  const certificationStatus =
+    c === 'international'
+      ? 'International (EU/USDA)'
+      : c === 'regional'
+        ? 'Regional (ECOWAS)'
+        : 'Local';
+  return {
+    _id: l._id,
+    commodity: l.commodity,
+    centerName: l.cooperative || '',
+    location: l.region,
+    country: l.country,
+    certificationStatus,
+    amountSought: Math.max(1, Math.round(qty * perKg)),
+    amountRaised: 0,
+    minInvestment: 250,
+    expectedROIMin: 12,
+    expectedROIMax: 22,
+    cycledays: 90,
+    __fromProduce: true,
+  };
+}
+
 export default function CommodityMarketplace() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
@@ -117,10 +144,19 @@ export default function CommodityMarketplace() {
 
   useEffect(() => {
     const base = API || '';
-    fetch(`${base}/api/opportunities`)
-      .then((r) => r.json())
-      .then((d) => setItems(d.opportunities || []))
-      .catch(() => {})
+    if (!base) {
+      setLoading(false);
+      return;
+    }
+    Promise.all([
+      fetch(`${base}/api/opportunities`).then((r) => r.json()).catch(() => ({})),
+      fetch(`${base}/api/marketplace/prices`).then((r) => r.json()).catch(() => ({})),
+    ])
+      .then(([opp, price]) => {
+        const fromOpps = opp.opportunities || [];
+        const fromProduce = (price.listings || []).map(produceListingToOpportunityCard);
+        setItems([...fromProduce, ...fromOpps]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -175,7 +211,7 @@ export default function CommodityMarketplace() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          opportunityId: quoteTarget._id,
+          ...(quoteTarget.__fromProduce ? {} : { opportunityId: quoteTarget._id }),
           ...quoteForm,
           productWanted: quoteForm.productWanted || quoteTarget.commodity,
           quantityKg: Number(quoteForm.quantityKg) || undefined,
