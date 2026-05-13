@@ -43,6 +43,7 @@ import notificationsRouter, { processQueue } from './routes/notifications.js';
 import verificationRouter from './routes/verification.js';
 import investorNotificationsRouter from './routes/investorNotifications.js';
 import deletionRequestsRouter from './routes/deletionRequests.js';
+import paymentsRouter from './routes/payments.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger.js';
 
@@ -105,6 +106,12 @@ const io = new Server(httpServer, {
     credentials: true
   }
 });
+// Stripe webhook needs the raw body to verify signatures.
+// Mount BEFORE express.json() so it runs first for this exact path.
+app.use(
+  '/api/payments/stripe/webhook',
+  express.raw({ type: 'application/json' })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
@@ -166,32 +173,8 @@ app.use('/api/diaspora', diasporaRouter);
 app.use('/api/marketplace', marketplaceRouter);
 app.use('/api/waitlist', waitlistRouter);
 
-app.post('/api/payments/verify', async (req, res) => {
-  try {
-    const { tx_ref, transaction_id } = req.body;
-    if (!tx_ref || !transaction_id) {
-      return res.status(400).json({
-        success: false,
-        error: 'tx_ref and transaction_id required',
-      });
-    }
-    const flwRes = await fetch(
-      `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.VITE_FLW_SECRET_KEY}`,
-        },
-      }
-    );
-    const flwData = await flwRes.json();
-    if (flwData.data?.status === 'successful') {
-      return res.json({ success: true, data: flwData.data });
-    }
-    return res.status(400).json({ success: false, error: 'Transaction not verified' });
-  } catch (e) {
-    return res.status(500).json({ success: false, error: e.message });
-  }
-});
+// Stripe (subscriptions) + Orange Money + MTN MoMo
+app.use('/api/payments', paymentsRouter);
 
 app.use('/api/investments', investmentsRouter);
 app.use('/api/escrow', escrowRouter);

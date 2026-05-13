@@ -1,16 +1,30 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sprout, Factory, Building2, Landmark, Check, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const TIER_KEYS = ['farmerBasic', 'producerPro', 'transformationCenter', 'enterprise'];
 const TIER_PRICES = ['', '$32', '$109', '$999'];
-const TIER_FLW_AMOUNTS = [0, 32, 109, 999]; // USD per month
-const FLW_PUBLIC_KEY = import.meta.env.VITE_FLW_PUBLIC_KEY;
+const TIER_AMOUNTS_USD = [0, 32, 109, 999];
 const TIER_ICONS = [Sprout, Factory, Building2, Landmark];
 const TIER_LINKS = ['/dashboard', '/contact', '/contact', '/platform-licensing'];
 const TIER_VARIANTS = ['outline', 'gold', 'gold', 'gold'];
 const TIER_POPULAR = [false, true, false, false];
+
+// USD → XOF (rough; real conversion happens at the gateway)
+const USD_TO_XOF = 620;
+
+const isAfricanLocale = () => {
+  if (typeof navigator === 'undefined') return false;
+  const lang = navigator.language || '';
+  return lang.startsWith('fr') || lang.includes('ML') || lang.includes('BF') || lang.includes('NE');
+};
+
+const getPaymentMethod = (tierIndex) => {
+  if (tierIndex === 0) return 'free';
+  if (tierIndex === 3) return 'stripe'; // enterprise always Stripe
+  return isAfricanLocale() ? 'mobile_money' : 'stripe';
+};
 
 export default function Pricing() {
   const { t } = useTranslation();
@@ -19,15 +33,25 @@ export default function Pricing() {
   const [pendingTierIndex, setPendingTierIndex] = useState(null);
   const [pendingTierName, setPendingTierName] = useState('');
   const [paymentEmail, setPaymentEmail] = useState('');
-  const [flwError, setFlwError] = useState('');
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState('orange');
+  const [loading, setLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+
+  const detectedMethod = useMemo(
+    () => (pendingTierIndex == null ? null : getPaymentMethod(pendingTierIndex)),
+    [pendingTierIndex]
+  );
 
   const openSubscribeModal = (tierIndex, tierName) => {
-    const amount = TIER_FLW_AMOUNTS[tierIndex];
+    const amount = TIER_AMOUNTS_USD[tierIndex];
     if (!amount) return;
     setPendingTierIndex(tierIndex);
     setPendingTierName(tierName);
     setPaymentEmail('');
-    setFlwError('');
+    setPaymentPhone('');
+    setSelectedMethod('orange');
+    setPaymentError('');
     setSubscribeModalOpen(true);
   };
 
@@ -36,69 +60,122 @@ export default function Pricing() {
     setPendingTierIndex(null);
     setPendingTierName('');
     setPaymentEmail('');
-    setFlwError('');
+    setPaymentPhone('');
+    setPaymentError('');
+    setLoading(false);
   };
 
-  const startFlutterwaveCheckout = () => {
+  const handlePayment = async () => {
+    if (pendingTierIndex == null) return;
+    const method = getPaymentMethod(pendingTierIndex);
+    const amount = TIER_AMOUNTS_USD[pendingTierIndex];
+    const tierName = pendingTierName;
     const email = paymentEmail.trim();
-    if (!email || pendingTierIndex == null) return;
-    setFlwError('');
-    if (!FLW_PUBLIC_KEY || FLW_PUBLIC_KEY === 'your_flutterwave_public_key_here') {
-      setFlwError('Payment system is being configured. Contact us to subscribe.');
+    const phone = paymentPhone.trim();
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+
+    if (method === 'free') {
+      closeSubscribeModal();
       return;
     }
-    if (typeof window.FlutterwaveCheckout !== 'function') {
-      setFlwError('Payment failed to load. Please refresh and try again.');
+    if (!email) {
+      setPaymentError('Please enter your email.');
+      return;
+    }
+    if (method === 'mobile_money' && selectedMethod !== 'stripe' && !phone) {
+      setPaymentError('Please enter your mobile money phone number.');
       return;
     }
 
-    const amount = TIER_FLW_AMOUNTS[pendingTierIndex];
-    if (!amount) return;
+    setLoading(true);
+    setPaymentError('');
 
-    const tierNameSnapshot = pendingTierName;
+    try {
+      // Stripe — enterprise OR diaspora / non-African user
+      if (method === 'stripe' || selectedMethod === 'stripe') {
+        const res = await fetch(`${apiBase}/api/payments/stripe/create-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            tierKey: TIER_KEYS[pendingTierIndex],
+            tierName,
+            amountUsd: amount,
+          }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          setPaymentError(data.error || 'Stripe checkout failed');
+        }
+        return;
+      }
 
-    window.FlutterwaveCheckout({
-      public_key: FLW_PUBLIC_KEY,
-      tx_ref: `SAC-${tierNameSnapshot}-${Date.now()}`,
-      amount,
-      currency: 'USD',
-      payment_options: 'card,mobilemoney,ussd',
-      customer: {
-        email,
-        name: email.split('@')[0],
-      },
-      customizations: {
-        title: 'Sahel AgriConnect',
-        description: `${tierNameSnapshot} — Monthly Subscription`,
-        logo: 'https://sahelagriconnect.com/logo.png',
-      },
-      callback: async (response) => {
-        if (response.status === 'successful') {
-          await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/waitlist`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email,
-              source: `pricing_${tierNameSnapshot}`,
-              txRef: response.tx_ref,
-              amount,
-              currency: 'USD',
-            }),
-          }).catch(() => {});
+      // Orange Money Web Pay
+      if (selectedMethod === 'orange') {
+        const amountXof = Math.round(amount * USD_TO_XOF);
+        const res = await fetch(`${apiBase}/api/payments/orange/initiate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            phone,
+            amount: amountXof,
+            currency: 'XOF',
+            tierName,
+            orderId: `SAC-${TIER_KEYS[pendingTierIndex]}-${Date.now()}`,
+          }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          setPaymentError(data.error || 'Orange Money initiation failed');
+        }
+        return;
+      }
+
+      // MTN MoMo Collections — request to pay
+      if (selectedMethod === 'mtn') {
+        const amountXof = Math.round(amount * USD_TO_XOF);
+        const res = await fetch(`${apiBase}/api/payments/mtn/request-to-pay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            phone,
+            amount: amountXof,
+            currency: 'XOF',
+            tierName,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
           closeSubscribeModal();
           // eslint-disable-next-line no-alert
-          alert(`Thank you! Your ${tierNameSnapshot} subscription is active.`);
+          alert(
+            data.message ||
+              'Payment request sent to your phone. Approve it in the MTN MoMo app.'
+          );
+        } else {
+          setPaymentError(data.error || 'MTN MoMo request failed');
         }
-      },
-      onclose: () => {},
-    });
-
-    closeSubscribeModal();
+        return;
+      }
+    } catch (e) {
+      setPaymentError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const showPhoneField =
+    detectedMethod === 'mobile_money' && selectedMethod !== 'stripe';
+  const showMethodPicker = detectedMethod === 'mobile_money';
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
-
       {subscribeModalOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
@@ -113,6 +190,7 @@ export default function Pricing() {
             <p className="text-sm text-gray-600 mb-4">
               {pendingTierName} — {t('pricing.subscribeEmailHint', 'Enter your email to continue to secure checkout.')}
             </p>
+
             <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="payment-email">
               Email
             </label>
@@ -122,9 +200,80 @@ export default function Pricing() {
               autoComplete="email"
               value={paymentEmail}
               onChange={(e) => setPaymentEmail(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm mb-4 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm mb-3 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
               placeholder="you@example.com"
             />
+
+            {showMethodPicker && (
+              <>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  {t('pricing.payMethod', 'Payment method')}
+                </label>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMethod('orange')}
+                    className={`py-2 rounded-xl text-sm font-semibold border ${
+                      selectedMethod === 'orange'
+                        ? 'border-[#FF7900] bg-[#FFF4EB] text-[#7A3A00]'
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    🟠 Orange Money
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMethod('mtn')}
+                    className={`py-2 rounded-xl text-sm font-semibold border ${
+                      selectedMethod === 'mtn'
+                        ? 'border-[#FFCC00] bg-[#FFF8DB] text-[#665100]'
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    🟡 MTN MoMo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMethod('stripe')}
+                    className={`py-2 rounded-xl text-sm font-semibold border ${
+                      selectedMethod === 'stripe'
+                        ? 'border-[#1a3c2e] bg-[#EAF1ED] text-[#1a3c2e]'
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    💳 Card
+                  </button>
+                </div>
+              </>
+            )}
+
+            {showPhoneField && (
+              <>
+                <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="payment-phone">
+                  Mobile money number
+                </label>
+                <input
+                  id="payment-phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={paymentPhone}
+                  onChange={(e) => setPaymentPhone(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm mb-3 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                  placeholder="+223 XX XX XX XX"
+                />
+              </>
+            )}
+
+            {detectedMethod === 'stripe' && (
+              <p className="text-xs text-gray-500 mb-3">
+                {t(
+                  'pricing.stripeHint',
+                  'You will be redirected to Stripe to complete payment securely.'
+                )}
+              </p>
+            )}
+
             <div className="flex flex-col gap-2">
               <div className="flex gap-2 justify-end">
                 <button
@@ -136,15 +285,17 @@ export default function Pricing() {
                 </button>
                 <button
                   type="button"
-                  onClick={startFlutterwaveCheckout}
-                  disabled={!paymentEmail.trim()}
+                  onClick={handlePayment}
+                  disabled={loading || !paymentEmail.trim() || (showPhoneField && !paymentPhone.trim())}
                   className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1a3c2e] text-white hover:bg-[#143326] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {t('pricing.continueToPay', 'Continue to payment')}
+                  {loading
+                    ? t('pricing.processing', 'Processing…')
+                    : t('pricing.payNow', 'Pay now')}
                 </button>
               </div>
-              {flwError && (
-                <p className="text-sm text-red-600 mt-2 text-center">{flwError}</p>
+              {paymentError && (
+                <p className="text-sm text-red-600 mt-2 text-center">{paymentError}</p>
               )}
             </div>
           </div>
@@ -167,7 +318,6 @@ export default function Pricing() {
           const Icon = TIER_ICONS[i];
           const isEnterprise = key === 'enterprise';
           const isPopular = TIER_POPULAR[i];
-          const isGold = TIER_VARIANTS[i] === 'gold';
           return (
             <div
               key={key}
