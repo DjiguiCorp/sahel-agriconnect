@@ -1,7 +1,20 @@
 import 'package:dio/dio.dart';
 
+/// All REST calls go through Dio (no `http` package): 15s timeouts, interceptors
+/// for slow / dropped rural links, and JSON maps with `success: false` on errors.
 class ApiService {
-  static const baseUrl = 'https://sahel-agriconnect.onrender.com';
+  /// Production default. Override at compile time, e.g.:
+  /// `flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3001`
+  /// Android emulator → host machine: `http://10.0.2.2:3001`
+  static const String _defaultBaseUrl = 'https://sahelagriconnect.onrender.com';
+
+  static String get baseUrl {
+    const fromEnv = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    final t = fromEnv.trim();
+    if (t.isEmpty) return _defaultBaseUrl;
+    return t.replaceAll(RegExp(r'/$'), '');
+  }
+
   static const _timeout = Duration(seconds: 15);
 
   static final _dio = Dio(
