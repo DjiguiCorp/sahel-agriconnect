@@ -13,6 +13,7 @@ import 'firebase_options.dart';
 import 'navigation/session_nav.dart';
 import 'screens/age_gate_screen.dart';
 import 'services/notification_service.dart';
+import 'services/offline_queue.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +52,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: authState),
         ChangeNotifierProvider.value(value: ageGate),
+        ChangeNotifierProvider(create: (_) => OfflineQueue()),
       ],
       child: const SahelApp(),
     ),

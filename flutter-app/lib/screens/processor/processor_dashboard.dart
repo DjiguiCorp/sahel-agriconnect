@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/auth_state.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
+import '../../widgets/offline_banner.dart';
 import '../shared/webview_screen.dart';
 
 class ProcessorDashboard extends StatefulWidget {
@@ -49,6 +50,7 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
+          const OfflineBanner(),
           Container(
             color: AppColors.forestGreen,
             child: SafeArea(

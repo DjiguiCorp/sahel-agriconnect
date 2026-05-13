@@ -7,6 +7,7 @@ import '../../core/auth_state.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/offline_banner.dart';
 import '../../widgets/web_action_tile.dart';
 
 typedef _OppCardBuilder = Widget Function({
@@ -159,6 +160,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
       backgroundColor: AppColors.darkBg,
       body: Column(
         children: [
+          const OfflineBanner(),
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(

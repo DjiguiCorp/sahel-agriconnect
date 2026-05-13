@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/offline_banner.dart';
 import '../../widgets/web_action_tile.dart';
 
 class GovernmentDashboard extends StatefulWidget {
@@ -31,6 +32,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
       backgroundColor: AppColors.darkBg,
       body: Column(
         children: [
+          const OfflineBanner(),
           // Dark green header
           Container(
             decoration: const BoxDecoration(

@@ -7,6 +7,8 @@ import '../../core/auth_state.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/offline_queue.dart';
+import '../../widgets/offline_banner.dart';
 import '../../widgets/web_action_tile.dart';
 import '../shared/webview_screen.dart';
 
@@ -140,6 +142,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
+          const OfflineBanner(),
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -735,7 +738,37 @@ class _ProduceTab extends StatelessWidget {
         ListTile(
           leading: const Icon(Icons.add_circle_outline, color: AppColors.forestGreen),
           title: const Text('Declare new produce'),
-          onTap: () => context.go('/farmer'),
+          onTap: () async {
+            final queue = context.read<OfflineQueue>();
+            final auth = context.read<AuthState>();
+            if (!queue.isOnline) {
+              await queue.enqueue(
+                path: '/api/produce',
+                body: {
+                  'farmerEmail': auth.displayEmail,
+                  'declared': true,
+                },
+                label: 'Produce declaration',
+                token: auth.token,
+              );
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Saved offline — will sync when connected'),
+                  backgroundColor: Color(0xFF3B6D11),
+                ),
+              );
+            } else {
+              await Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const InAppWebViewScreen(
+                    title: 'Declare produce',
+                    url: 'https://sahelagriconnect.com/dashboard',
+                  ),
+                ),
+              );
+            }
+          },
         ),
       ],
     );

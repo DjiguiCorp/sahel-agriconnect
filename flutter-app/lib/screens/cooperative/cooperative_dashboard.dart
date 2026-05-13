@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/offline_banner.dart';
 import '../../widgets/web_action_tile.dart';
 
 class CooperativeDashboard extends StatefulWidget {
@@ -31,6 +32,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
+          const OfflineBanner(),
           // Gold header
           Container(
             decoration: const BoxDecoration(
