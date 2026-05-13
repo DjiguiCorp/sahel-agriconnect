@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/auth_state.dart';
 import '../../core/theme.dart';
+import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/web_action_tile.dart';
 
@@ -14,6 +17,11 @@ class FarmerDashboard extends StatefulWidget {
 
 class _FarmerDashboardState extends State<FarmerDashboard> {
   int _tab = 0;
+  Map<String, dynamic>? _farmer;
+  bool _loadingFarmer = true;
+
+  List<String> get _cultures =>
+      (_farmer?['cultures'] as List?)?.map((e) => e.toString()).toList() ?? [];
 
   static const tools = [
     {
@@ -43,7 +51,44 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadFarmer();
+  }
+
+  Future<void> _loadFarmer() async {
+    final auth = context.read<AuthState>();
+    final token = auth.token;
+    final email = auth.displayEmail;
+    if (email.isEmpty) {
+      if (mounted) setState(() => _loadingFarmer = false);
+      return;
+    }
+    try {
+      final res = await ApiService.get(
+        '/api/farmers?email=${Uri.encodeComponent(email)}',
+        token: token,
+      );
+      final f = res['farmer'];
+      final map = f is Map ? Map<String, dynamic>.from(f) : null;
+      if (mounted) {
+        setState(() {
+          _farmer = map;
+          _loadingFarmer = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingFarmer = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final displayName = auth.displayName.isNotEmpty
+        ? auth.displayName
+        : (_farmer?['nom'] ?? 'Farmer').toString();
+
     return Scaffold(
       backgroundColor: AppColors.cream,
       body: Column(
@@ -72,9 +117,9 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
-                      'Amadou Coulibaly',
-                      style: TextStyle(
+                    Text(
+                      displayName,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -83,11 +128,26 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        _statCard('12 ha', 'Total area'),
+                        _statCard(
+                          _farmer != null
+                              ? '${_farmer!['superficie'] ?? '—'} ha'
+                              : '—',
+                          'Total area',
+                        ),
                         const SizedBox(width: 10),
-                        _statCard('3', 'Crops listed'),
+                        _statCard(
+                          _farmer != null
+                              ? '${(_farmer!['cultures'] as List?)?.length ?? 0}'
+                              : '—',
+                          'Crops listed',
+                        ),
                         const SizedBox(width: 10),
-                        _statCard('68%', 'Benefits'),
+                        _statCard(
+                          _farmer?['statut'] == 'Actif'
+                              ? 'Active'
+                              : (_farmer?['statut'] ?? '—').toString(),
+                          'Status',
+                        ),
                       ],
                     ),
                   ],
@@ -184,21 +244,43 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                   ),
                   child: Column(
                     children: [
-                      _produceRow(
-                        'Shea Butter · 200 kg',
-                        'Declared to cooperative',
-                        'Pending',
-                        Colors.amber.shade700,
-                        Colors.amber.shade50,
-                      ),
-                      const Divider(height: 1, color: Color(0xFFf0f0f0)),
-                      _produceRow(
-                        'Sesame · 80 kg',
-                        'Cooperative approved',
-                        'Approved',
-                        Colors.green.shade700,
-                        Colors.green.shade50,
-                      ),
+                      if (_loadingFarmer)
+                        const Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (_cultures.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            'No crops declared yet',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 13,
+                            ),
+                          ),
+                        )
+                      else
+                        ..._cultures.asMap().entries.map(
+                              (e) => Column(
+                                children: [
+                                  if (e.key > 0)
+                                    const Divider(
+                                      height: 1,
+                                      color: Color(0xFFf0f0f0),
+                                    ),
+                                  _produceRow(
+                                    '${e.value} · declared',
+                                    'Crop on file',
+                                    'On file',
+                                    Colors.blue.shade700,
+                                    Colors.blue.shade50,
+                                  ),
+                                ],
+                              ),
+                            ),
                     ],
                   ),
                 ).animate(delay: 200.ms).fadeIn(duration: 300.ms),
