@@ -43,3 +43,21 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Build outputs
+build/
+*.apk
+*.aab
+*.ipa
+
+# Signing — never commit these
+android/key.properties
+*.jks
+*.keystore
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# macOS and Linux builds not needed for mobile store
+linux/
+macos/
+windows/
