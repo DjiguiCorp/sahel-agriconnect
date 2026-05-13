@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/auth_state.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -19,11 +21,29 @@ class CooperativeDashboard extends StatefulWidget {
 class _CooperativeDashboardState extends State<CooperativeDashboard> {
   int _tab = 0;
   late Future<Map<String, dynamic>> _portalFuture;
+  String _portalEndpoint = '/api/cooperatives/public-stats';
 
   @override
   void initState() {
     super.initState();
-    _portalFuture = ApiService.getCoopPublicStats();
+    _portalFuture = _load();
+  }
+
+  Future<Map<String, dynamic>> _load() async {
+    final auth = context.read<AuthState>();
+    final token = auth.token;
+    if (token != null && token.isNotEmpty) {
+      final country = auth.displayCountry;
+      _portalEndpoint = country.isNotEmpty
+          ? '/api/cooperatives/my-portal?country=$country'
+          : '/api/cooperatives/my-portal';
+      return ApiService.getCoopPortal(
+        token,
+        country: country.isNotEmpty ? country : null,
+      );
+    }
+    _portalEndpoint = '/api/cooperatives/public-stats';
+    return ApiService.getCoopPublicStats();
   }
 
   @override
@@ -123,9 +143,9 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'GET /api/cooperatives/public-stats',
-                            style: TextStyle(
+                          Text(
+                            'GET $_portalEndpoint',
+                            style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppColors.forestGreen,
                             ),

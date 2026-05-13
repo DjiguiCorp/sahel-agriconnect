@@ -35,6 +35,24 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscure = true;
   bool _loading = false;
   String _error = '';
+  String _selectedCountry = '';
+
+  static const _countries = [
+    'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi',
+    'Cabo Verde', 'Cameroon', 'Central African Republic', 'Chad', 'Comoros',
+    'Congo', "Côte d'Ivoire", 'Democratic Republic of the Congo',
+    'Djibouti', 'Egypt', 'Equatorial Guinea', 'Eritrea', 'Eswatini',
+    'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea', 'Guinea-Bissau',
+    'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali',
+    'Mauritania', 'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger',
+    'Nigeria', 'Rwanda', 'São Tomé and Príncipe', 'Senegal', 'Seychelles',
+    'Sierra Leone', 'Somalia', 'South Africa', 'South Sudan', 'Sudan',
+    'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe',
+  ];
+
+  bool get _needsCountry =>
+      widget.role == AuthRole.government ||
+      widget.role == AuthRole.cooperative;
 
   late final _LoginRoleConfig _config = _roleConfig[widget.role]!;
 
@@ -106,6 +124,10 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _error = 'Please enter your email and password');
       return;
     }
+    if (_needsCountry && _selectedCountry.isEmpty) {
+      setState(() => _error = 'Please select your country');
+      return;
+    }
     setState(() {
       _loading = true;
       _error = '';
@@ -114,6 +136,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final res = await ApiService.post(_config.loginEndpoint, {
         'email': email,
         'password': password,
+        if (_needsCountry && _selectedCountry.isNotEmpty)
+          'country': _selectedCountry,
       });
       if (res['success'] == false) {
         throw Exception(res['error']?.toString() ?? 'Login failed');
@@ -276,6 +300,57 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           'Requires official .gov or .gouv email',
                           style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                        ),
+                      ],
+                      if (_needsCountry) ...[
+                        const SizedBox(height: 14),
+                        _label(
+                          widget.role == AuthRole.government
+                              ? 'Country / Pays'
+                              : 'Cooperative country',
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.grey.shade200,
+                              width: 0.5,
+                            ),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedCountry.isEmpty
+                                  ? null
+                                  : _selectedCountry,
+                              hint: Text(
+                                widget.role == AuthRole.government
+                                    ? 'Your country / Votre pays'
+                                    : 'Cooperative country',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFAAAAAA),
+                                ),
+                              ),
+                              isExpanded: true,
+                              icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded),
+                              items: _countries
+                                  .map((c) => DropdownMenuItem<String>(
+                                        value: c,
+                                        child: Text(c),
+                                      ))
+                                  .toList(),
+                              onChanged: (v) {
+                                if (v != null) {
+                                  setState(() => _selectedCountry = v);
+                                }
+                              },
+                            ),
+                          ),
                         ),
                       ],
                       const SizedBox(height: 16),

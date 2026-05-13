@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/auth_state.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -19,11 +21,29 @@ class GovernmentDashboard extends StatefulWidget {
 class _GovernmentDashboardState extends State<GovernmentDashboard> {
   int _tab = 0;
   late Future<Map<String, dynamic>> _statsFuture;
+  String _statsEndpoint = '/api/farmers/public-stats';
 
   @override
   void initState() {
     super.initState();
-    _statsFuture = ApiService.getPublicStats();
+    _statsFuture = _load();
+  }
+
+  Future<Map<String, dynamic>> _load() async {
+    final auth = context.read<AuthState>();
+    final token = auth.token;
+    if (token != null && token.isNotEmpty) {
+      final country = auth.displayCountry;
+      _statsEndpoint = country.isNotEmpty
+          ? '/api/government/dashboard?country=$country'
+          : '/api/government/dashboard';
+      return ApiService.getGovDashboard(
+        token,
+        country: country.isNotEmpty ? country : null,
+      );
+    }
+    _statsEndpoint = '/api/farmers/public-stats';
+    return ApiService.getPublicStats();
   }
 
   @override
@@ -124,9 +144,9 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'GET /api/farmers/public-stats',
-                            style: TextStyle(
+                          Text(
+                            'GET $_statsEndpoint',
+                            style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppColors.gold,
                             ),

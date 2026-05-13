@@ -29,8 +29,16 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
   Future<void> _load() async {
     final auth = context.read<AuthState>();
     final token = auth.token;
+    if (token == null || token.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    final country = auth.displayCountry;
     try {
-      final res = await ApiService.get('/api/processors/my-portal', token: token);
+      final res = await ApiService.getProcessorPortal(
+        token,
+        country: country.isNotEmpty ? country : null,
+      );
       if (!mounted) return;
       final raw = res['processor'];
       final map = raw is Map ? Map<String, dynamic>.from(raw) : null;

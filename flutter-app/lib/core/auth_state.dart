@@ -33,6 +33,7 @@ class AuthState extends ChangeNotifier {
 
   String get displayEmail => _user?['email']?.toString() ?? '';
   String get displayCountry => _user?['country']?.toString() ?? '';
+  String get countryCode => _user?['countryCode']?.toString() ?? '';
 
   /// Restores JWT from secure storage (called from [main] before [runApp]).
   Future<void> restoreSession() async {

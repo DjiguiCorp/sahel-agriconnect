@@ -29,6 +29,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   final _nameCtrl = TextEditingController();
   final _regionCtrl = TextEditingController();
   String _selectedCrop = 'Shea Butter';
+  String _selectedCountry = '';
   String? _pendingRegistrationId;
 
   bool _loading = false;
@@ -44,6 +45,19 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     'Sorghum',
     'Cotton',
     'Other',
+  ];
+
+  static const _countries = [
+    'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi',
+    'Cabo Verde', 'Cameroon', 'Central African Republic', 'Chad', 'Comoros',
+    'Congo', "Côte d'Ivoire", 'Democratic Republic of the Congo',
+    'Djibouti', 'Egypt', 'Equatorial Guinea', 'Eritrea', 'Eswatini',
+    'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea', 'Guinea-Bissau',
+    'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali',
+    'Mauritania', 'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger',
+    'Nigeria', 'Rwanda', 'São Tomé and Príncipe', 'Senegal', 'Seychelles',
+    'Sierra Leone', 'Somalia', 'South Africa', 'South Sudan', 'Sudan',
+    'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe',
   ];
 
   @override
@@ -186,6 +200,10 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       setState(() => _error = 'Please enter your name');
       return;
     }
+    if (_selectedCountry.isEmpty) {
+      setState(() => _error = 'Please select your country');
+      return;
+    }
     if (_pendingRegistrationId == null || _pendingRegistrationId!.isEmpty) {
       setState(() => _error = 'Session expired. Please start again.');
       return;
@@ -201,6 +219,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         'nom': _nameCtrl.text.trim(),
         'email': _contactIsEmail ? contact : null,
         'telephone': !_contactIsEmail ? contact : null,
+        'country': _selectedCountry,
         'region': _regionCtrl.text.trim(),
         'cultures': [_selectedCrop],
         'statut': 'Actif',
@@ -653,11 +672,54 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
             'Amadou Diallo',
           ),
           const SizedBox(height: 14),
+          Text(
+            'Country *',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F4E3),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _selectedCountry.isEmpty
+                    ? Colors.orange.shade300
+                    : Colors.transparent,
+                width: 0.5,
+              ),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedCountry.isEmpty ? null : _selectedCountry,
+                hint: const Text(
+                  'Country / Pays *',
+                  style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+                ),
+                isExpanded: true,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                items: _countries
+                    .map((c) => DropdownMenuItem<String>(
+                          value: c,
+                          child: Text(c, style: const TextStyle(fontSize: 14)),
+                        ))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _selectedCountry = v);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           _field(
             'Region / Village',
             _regionCtrl,
             Icons.location_on_outlined,
-            'e.g. Ségou, Mali',
+            'Region / Village',
           ),
           const SizedBox(height: 14),
           Text(

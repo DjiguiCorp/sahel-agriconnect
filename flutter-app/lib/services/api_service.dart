@@ -154,8 +154,14 @@ class ApiService {
   ) =>
       post('/api/cooperatives/login', {'email': email, 'password': password});
 
-  static Future<Map<String, dynamic>> getCoopPortal(String token) =>
-      get('/api/cooperatives/my-portal', token: token);
+  static Future<Map<String, dynamic>> getCoopPortal(
+    String token, {
+    String? country,
+  }) =>
+      get(
+        '/api/cooperatives/my-portal${_countryQuery(country)}',
+        token: token,
+      );
 
   static Future<Map<String, dynamic>> getCoopPublicStats() =>
       get('/api/cooperatives/public-stats');
@@ -163,19 +169,41 @@ class ApiService {
   // ── Government ────────────────────────────────────────────
   static Future<Map<String, dynamic>> govLogin(
     String email,
-    String password,
-  ) =>
-      post('/api/government/login', {'email': email, 'password': password});
+    String password, {
+    String? country,
+  }) =>
+      post('/api/government/login', {
+        'email': email,
+        'password': password,
+        if (country != null && country.isNotEmpty) 'country': country,
+      });
 
-  static Future<Map<String, dynamic>> getGovDashboard(String token) =>
-      get('/api/government/dashboard', token: token);
+  static Future<Map<String, dynamic>> getGovDashboard(
+    String token, {
+    String? country,
+  }) =>
+      get(
+        '/api/government/dashboard${_countryQuery(country)}',
+        token: token,
+      );
 
   // ── Processors ────────────────────────────────────────────
   static Future<Map<String, dynamic>> processorSession(String email) =>
       post('/api/processors/session', {'email': email});
 
-  static Future<Map<String, dynamic>> getProcessorPortal(String token) =>
-      get('/api/processors/my-portal', token: token);
+  static Future<Map<String, dynamic>> getProcessorPortal(
+    String token, {
+    String? country,
+  }) =>
+      get(
+        '/api/processors/my-portal${_countryQuery(country)}',
+        token: token,
+      );
+
+  static String _countryQuery(String? country) {
+    if (country == null || country.isEmpty) return '';
+    return '?country=${Uri.encodeComponent(country)}';
+  }
 
   // ── Marketplace ───────────────────────────────────────────
   static Future<Map<String, dynamic>> getMarketplacePrices() =>
