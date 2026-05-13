@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
 import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
 
 typedef _LoginRoleConfig = ({
   String title,
@@ -139,18 +140,25 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       await context.read<AuthState>().setSession(widget.role, token, merged);
       if (!mounted) return;
-      switch (widget.role) {
-        case AuthRole.investor:
-          context.go('/investor');
-        case AuthRole.cooperative:
-          context.go('/cooperative');
-        case AuthRole.government:
-          context.go('/government');
-        case AuthRole.processor:
-          context.go('/processor');
-        default:
-          context.go('/role');
+
+      if (widget.role == AuthRole.investor) {
+        final bioPassed = await AuthService.authenticateWithBiometrics(
+          reason: 'Verify your identity to access AfriYield Exchange',
+        );
+        if (!bioPassed) {
+          if (!mounted) return;
+          await context.read<AuthState>().logout();
+          if (!mounted) return;
+          setState(() {
+            _loading = false;
+            _error = 'Biometric verification failed. Please try again.';
+          });
+          return;
+        }
       }
+
+      if (!mounted) return;
+      context.go(_dashboardRoute(widget.role));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -361,6 +369,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                         ),
                       ),
+                      if (widget.role == AuthRole.investor) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.fingerprint, size: 14, color: Colors.grey.shade600),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Biometric verification required',
+                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       Center(
                         child: TextButton(
@@ -459,4 +481,19 @@ class _LoginScreenState extends State<LoginScreen> {
         prefixIcon: Icon(icon, color: Colors.grey[400]),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       );
+
+  String _dashboardRoute(AuthRole role) {
+    switch (role) {
+      case AuthRole.investor:
+        return '/investor';
+      case AuthRole.cooperative:
+        return '/cooperative';
+      case AuthRole.government:
+        return '/government';
+      case AuthRole.processor:
+        return '/processor';
+      default:
+        return '/role';
+    }
+  }
 }
