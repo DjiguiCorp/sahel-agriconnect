@@ -1,7 +1,13 @@
 import 'package:dio/dio.dart';
 
-/// All REST calls go through Dio (no `http` package): 15s timeouts, interceptors
-/// for slow / dropped rural links, and JSON maps with `success: false` on errors.
+/// All REST calls go through Dio (no `http` package).
+///
+/// - 45s timeout so Render's free-tier cold starts have room to wake up.
+/// - One automatic retry on connection timeout / connection error, with a
+///   3-second backoff (covers the typical Render wakeup window).
+/// - Failures are funneled through [_friendlyError] so callers always get
+///   `{success: false, error: '<human readable>'}` instead of raw stack
+///   traces like `Exception: DioException [connect timeout]...`.
 class ApiService {
   /// Production default. Override at compile time, e.g.:
   /// `flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3001`
@@ -15,7 +21,7 @@ class ApiService {
     return t.replaceAll(RegExp(r'/$'), '');
   }
 
-  static const _timeout = Duration(seconds: 15);
+  static const _timeout = Duration(seconds: 45);
 
   static final _dio = Dio(
     BaseOptions(
@@ -25,60 +31,20 @@ class ApiService {
       sendTimeout: _timeout,
       headers: const {'Content-Type': 'application/json'},
     ),
-  )..interceptors.add(
-      InterceptorsWrapper(
-        onError: (DioException e, handler) {
-          if (e.type == DioExceptionType.connectionTimeout ||
-              e.type == DioExceptionType.receiveTimeout ||
-              e.type == DioExceptionType.sendTimeout) {
-            return handler.resolve(
-              Response(
-                requestOptions: e.requestOptions,
-                data: {
-                  'success': false,
-                  'error': 'Connection timeout — check your internet',
-                },
-                statusCode: 408,
-              ),
-            );
-          }
-          if (e.type == DioExceptionType.connectionError) {
-            return handler.resolve(
-              Response(
-                requestOptions: e.requestOptions,
-                data: {
-                  'success': false,
-                  'error': 'No internet connection',
-                },
-                statusCode: 503,
-              ),
-            );
-          }
-          handler.next(e);
-        },
-      ),
-    );
+  );
 
   static Map<String, dynamic> _decode(dynamic data) {
+    if (data == null) return <String, dynamic>{};
     if (data is Map<String, dynamic>) return data;
     if (data is Map) return Map<String, dynamic>.from(data);
     return {'data': data};
   }
 
-  static Map<String, dynamic> _failureFromDio(DioException e) {
-    final raw = e.response?.data;
-    if (raw != null) {
-      final m = Map<String, dynamic>.from(_decode(raw));
-      m.putIfAbsent('success', () => false);
-      return m;
-    }
-    return {
-      'success': false,
-      'error': e.message ?? 'Request failed',
-    };
-  }
-
-  static Future<Map<String, dynamic>> get(String path, {String? token}) async {
+  static Future<Map<String, dynamic>> get(
+    String path, {
+    String? token,
+    int retries = 1,
+  }) async {
     try {
       final res = await _dio.get(
         path,
@@ -88,9 +54,18 @@ class ApiService {
       );
       return _decode(res.data);
     } on DioException catch (e) {
-      return _failureFromDio(e);
-    } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      if (retries > 0 &&
+          (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.connectionError)) {
+        await Future.delayed(const Duration(seconds: 3));
+        return get(path, token: token, retries: retries - 1);
+      }
+      return _decode(e.response?.data)
+        ..putIfAbsent('success', () => false)
+        ..putIfAbsent('error', () => _friendlyError(e));
+    } catch (_) {
+      return {'success': false, 'error': _friendlyError(null)};
     }
   }
 
@@ -98,6 +73,7 @@ class ApiService {
     String path,
     Map<String, dynamic> body, {
     String? token,
+    int retries = 1,
   }) async {
     try {
       final res = await _dio.post(
@@ -109,9 +85,42 @@ class ApiService {
       );
       return _decode(res.data);
     } on DioException catch (e) {
-      return _failureFromDio(e);
-    } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      if (retries > 0 &&
+          (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.connectionError)) {
+        await Future.delayed(const Duration(seconds: 3));
+        return post(path, body, token: token, retries: retries - 1);
+      }
+      return _decode(e.response?.data)
+        ..putIfAbsent('success', () => false)
+        ..putIfAbsent('error', () => _friendlyError(e));
+    } catch (_) {
+      return {'success': false, 'error': _friendlyError(null)};
+    }
+  }
+
+  /// Translates a Dio exception (or null for unknown failures) into a
+  /// short, user-facing message. Callers display this directly without
+  /// any `Exception:` or `DioException` prefixes.
+  static String _friendlyError(DioException? e) {
+    if (e == null) return 'An unexpected error occurred. Please try again.';
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return 'Server is starting up — please wait a moment and try again.';
+      case DioExceptionType.connectionError:
+        return 'No internet connection. Please check your network.';
+      default:
+        final status = e.response?.statusCode;
+        if (status == 404) return 'Account not found. Please check your details.';
+        if (status == 401) return 'Invalid credentials. Please try again.';
+        if (status == 400) return 'Invalid request. Please check your input.';
+        if (status != null && status >= 500) {
+          return 'Server error. Please try again in a moment.';
+        }
+        return e.message ?? 'Request failed. Please try again.';
     }
   }
 

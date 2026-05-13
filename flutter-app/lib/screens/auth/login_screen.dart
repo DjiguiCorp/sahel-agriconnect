@@ -198,7 +198,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = e
+            .toString()
+            .replaceAll('Exception: ', '')
+            .replaceAll('DioException', '')
+            .trim();
       });
     }
     if (mounted) setState(() => _loading = false);
@@ -466,6 +470,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
+                        ),
+                      ),
+                      Visibility(
+                        visible: _loading,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            lp.t(
+                              'Connecting to server — this may take up to 30 seconds on first launch.',
+                              'Connexion au serveur — cela peut prendre jusqu\'à 30 secondes au premier lancement.',
+                            ),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[400],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                         ),
                       ),
                       if (widget.role == AuthRole.investor) ...[
