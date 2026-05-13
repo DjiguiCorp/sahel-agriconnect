@@ -432,6 +432,26 @@ const startServer = async () => {
       console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);
       console.log(`🌐 API disponible sur http://localhost:${PORT}/api`);
     });
+
+    // Self-ping keepalive — prevents Render free tier from sleeping
+    // Pings every 14 minutes (Render sleeps after 15 minutes of inactivity).
+    // NOTE: this keeps the service awake 24/7, consuming ~744h/month of the
+    // 750h free-tier quota. Prefer an external uptime monitor
+    // (cron-job.org / UptimeRobot) if quota headroom matters.
+    // Set BACKEND_URL in Render's environment to the real deployed URL.
+    if (process.env.NODE_ENV !== 'test') {
+      const BACKEND_URL = process.env.BACKEND_URL ||
+        'https://sahel-agriconnect.onrender.com';
+
+      setInterval(async () => {
+        try {
+          await fetch(`${BACKEND_URL}/api/health`);
+          console.log('💓 Keepalive ping sent');
+        } catch (e) {
+          console.warn('Keepalive ping failed:', e.message);
+        }
+      }, 14 * 60 * 1000); // 14 minutes
+    }
   }
 };
 
