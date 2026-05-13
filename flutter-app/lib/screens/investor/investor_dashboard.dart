@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/auth_state.dart';
 import '../../core/theme.dart';
+import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/web_action_tile.dart';
+
+typedef _OppCardBuilder = Widget Function({
+  required String title,
+  required String subtitle,
+  required double progress,
+  required int delay,
+  required String opportunityId,
+});
 
 class InvestorDashboard extends StatefulWidget {
   const InvestorDashboard({super.key});
@@ -14,14 +26,139 @@ class InvestorDashboard extends StatefulWidget {
 
 class _InvestorDashboardState extends State<InvestorDashboard> {
   int _tab = 0;
+  List<Map<String, dynamic>> _investments = [];
+  List<Map<String, dynamic>> _opportunities = [];
+  bool _loading = true;
+
+  double get _totalDeployed => _investments.fold<double>(
+        0,
+        (s, i) =>
+            s +
+            (num.tryParse(i['amountDeployed']?.toString() ?? '0') ?? 0)
+                .toDouble(),
+      );
+
+  double get _avgRoi => _investments.isEmpty
+      ? 0
+      : _investments.fold<double>(
+            0,
+            (s, i) =>
+                s +
+                (num.tryParse(i['expectedROIPercent']?.toString() ?? '0') ?? 0)
+                    .toDouble(),
+          ) /
+          _investments.length;
+
+  String get _nextPayout {
+    final dates = <DateTime>[];
+    for (final i in _investments) {
+      final raw = i['payoutSchedule'];
+      if (raw is! List) continue;
+      for (final p in raw) {
+        if (p is! Map) continue;
+        final m = Map<String, dynamic>.from(p);
+        if (m['status']?.toString() != 'scheduled') continue;
+        final d = DateTime.tryParse(m['payoutDate']?.toString() ?? '');
+        if (d != null) dates.add(d);
+      }
+    }
+    dates.sort();
+    if (dates.isEmpty) return '—';
+    final d = dates.first;
+    return '${_monthAbbr(d.month)} ${d.day}';
+  }
+
+  String _monthAbbr(int m) {
+    final idx = (m.clamp(1, 12) as num).toInt() - 1;
+    return const [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ][idx];
+  }
+
+  String _formatEuroThousands(double v) {
+    final s = v.round().toString();
+    return s.replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final auth = context.read<AuthState>();
+    final token = auth.token;
+    final email = auth.displayEmail;
+    try {
+      final results = await Future.wait([
+        if (email.isNotEmpty)
+          ApiService.get(
+            '/api/investments/investor/${Uri.encodeComponent(email)}',
+            token: token,
+          )
+        else
+          Future.value(<String, dynamic>{}),
+        ApiService.getOpportunities(token: token),
+      ]);
+      if (!mounted) return;
+      final invRaw = results[0]['investments'];
+      final invList = <Map<String, dynamic>>[];
+      if (invRaw is List) {
+        for (final e in invRaw) {
+          if (e is Map) invList.add(Map<String, dynamic>.from(e));
+        }
+      }
+      final oppRaw = results[1]['opportunities'];
+      final oppList = <Map<String, dynamic>>[];
+      if (oppRaw is List) {
+        for (final e in oppRaw) {
+          if (e is Map) oppList.add(Map<String, dynamic>.from(e));
+        }
+      }
+      setState(() {
+        _investments = invList;
+        _opportunities = oppList;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  double _fundedFraction(Map<String, dynamic> opp) {
+    final sought = num.tryParse(opp['amountSought']?.toString() ?? '0') ?? 0;
+    final raised = num.tryParse(opp['amountRaised']?.toString() ?? '0') ?? 0;
+    if (sought <= 0) return 0;
+    return (raised / sought.toDouble()).clamp(0.0, 1.0);
+  }
+
+  String _oppTitle(Map<String, dynamic> opp) =>
+      opp['centerName']?.toString() ?? opp['title']?.toString() ?? 'Opportunity';
+
+  String _oppSubtitle(Map<String, dynamic> opp) =>
+      opp['commodity']?.toString() ?? '';
+
+  String _oppId(Map<String, dynamic> opp) =>
+      opp['_id']?.toString() ?? opp['id']?.toString() ?? '';
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final balanceLabel = _loading
+        ? '...'
+        : '€ ${_formatEuroThousands(_totalDeployed)}';
+    final premiumLabel =
+        (auth.user?['status'] ?? 'Standard').toString();
+
     return Scaffold(
       backgroundColor: AppColors.darkBg,
       body: Column(
         children: [
-          // Header gradient
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -49,9 +186,9 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      '€ 128,400',
-                      style: TextStyle(
+                    Text(
+                      balanceLabel,
+                      style: const TextStyle(
                         color: AppColors.gold,
                         fontSize: 32,
                         fontWeight: FontWeight.w800,
@@ -69,11 +206,14 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        _statCard('12.4%', 'Avg return'),
+                        _statCard(
+                          '${_avgRoi.toStringAsFixed(1)}%',
+                          'Avg return',
+                        ),
                         const SizedBox(width: 10),
-                        _statCard('Mar 28', 'Next payout'),
+                        _statCard(_nextPayout, 'Next payout'),
                         const SizedBox(width: 10),
-                        _statCard('Gold', 'Premium status'),
+                        _statCard(premiumLabel, 'Premium status'),
                       ],
                     ),
                   ],
@@ -81,93 +221,42 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
               ),
             ),
           ),
-
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Text(
-                  'Opportunities',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.gold,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 12),
-                _opportunityCard(
-                  title: 'Shea cooperative · Mali',
-                  subtitle: 'Equipment & traceability',
-                  progress: 0.72,
-                  delay: 0,
-                  opportunityId: 'shea-mali',
-                ),
-                const SizedBox(height: 10),
-                _opportunityCard(
-                  title: 'Irrigation cluster · Burkina',
-                  subtitle: 'Climate-smart water',
-                  progress: 0.41,
-                  delay: 80,
-                  opportunityId: 'irrigation-bf',
-                ),
-                const SizedBox(height: 10),
-                _opportunityCard(
-                  title: 'Export logistics hub',
-                  subtitle: 'Regional aggregation',
-                  progress: 0.88,
-                  delay: 160,
-                  opportunityId: 'logistics-hub',
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Account & security',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.gold,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: const Column(
-                    children: [
-                      WebActionTile(
-                        title: 'Delete my account',
-                        description:
-                            'Permanently remove your data from the platform',
-                        action: 'delete-account',
-                        icon: Icons.delete_outline,
-                        isDangerous: true,
-                        titleColor: Colors.white,
-                        subtitleColor: Colors.white70,
-                      ),
-                      Divider(height: 1, color: Color(0x22FFFFFF)),
-                      WebActionTile(
-                        title: 'Change password',
-                        description:
-                            'Update your login credentials securely',
-                        action: 'account/security',
-                        icon: Icons.lock_outline,
-                        titleColor: Colors.white,
-                        subtitleColor: Colors.white70,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
+          Expanded(child: _buildTab(_tab)),
           _bottomNav(),
         ],
       ),
     );
+  }
+
+  Widget _buildTab(int tab) {
+    switch (tab) {
+      case 1:
+        return _DealsTab(
+          opportunities: _opportunities,
+          loading: _loading,
+          opportunityCard: _opportunityCard,
+          fundedFraction: _fundedFraction,
+          oppTitle: _oppTitle,
+          oppSubtitle: _oppSubtitle,
+          oppId: _oppId,
+        );
+      case 2:
+        return _ActivityTab(investments: _investments);
+      case 3:
+        return const _AlertsTab();
+      case 4:
+        return const _InvestorProfileTab();
+      default:
+        return _PortfolioTab(
+          opportunities: _opportunities.take(3).toList(),
+          loading: _loading,
+          opportunityCard: _opportunityCard,
+          fundedFraction: _fundedFraction,
+          oppTitle: _oppTitle,
+          oppSubtitle: _oppSubtitle,
+          oppId: _oppId,
+        );
+    }
   }
 
   Widget _statCard(String value, String label) => Expanded(
@@ -338,4 +427,403 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
           ),
         ),
       );
+}
+
+class _PortfolioTab extends StatelessWidget {
+  const _PortfolioTab({
+    required this.opportunities,
+    required this.loading,
+    required this.opportunityCard,
+    required this.fundedFraction,
+    required this.oppTitle,
+    required this.oppSubtitle,
+    required this.oppId,
+  });
+
+  final List<Map<String, dynamic>> opportunities;
+  final bool loading;
+  final _OppCardBuilder opportunityCard;
+  final double Function(Map<String, dynamic>) fundedFraction;
+  final String Function(Map<String, dynamic>) oppTitle;
+  final String Function(Map<String, dynamic>) oppSubtitle;
+  final String Function(Map<String, dynamic>) oppId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          'Opportunities',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.gold,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: 12),
+        if (loading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: CircularProgressIndicator(color: Color(0xFFB5850A)),
+            ),
+          )
+        else if (opportunities.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Text(
+              'No open opportunities at this time.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4),
+                fontSize: 13,
+              ),
+            ),
+          )
+        else
+          ...opportunities.asMap().entries.map((e) {
+            final opp = e.value;
+            final funded = fundedFraction(opp);
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: e.key < opportunities.length - 1 ? 10 : 0,
+              ),
+              child: opportunityCard(
+                title: oppTitle(opp),
+                subtitle: oppSubtitle(opp),
+                progress: funded.clamp(0.0, 1.0),
+                delay: e.key * 80,
+                opportunityId: oppId(opp),
+              ),
+            );
+          }),
+        const SizedBox(height: 24),
+        Text(
+          'Account & security',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.gold,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 0.5,
+            ),
+          ),
+          child: const Column(
+            children: [
+              WebActionTile(
+                title: 'Delete my account',
+                description:
+                    'Permanently remove your data from the platform',
+                action: 'delete-account',
+                icon: Icons.delete_outline,
+                isDangerous: true,
+                titleColor: Colors.white,
+                subtitleColor: Colors.white70,
+              ),
+              Divider(height: 1, color: Color(0x22FFFFFF)),
+              WebActionTile(
+                title: 'Change password',
+                description:
+                    'Update your login credentials securely',
+                action: 'account/security',
+                icon: Icons.lock_outline,
+                titleColor: Colors.white,
+                subtitleColor: Colors.white70,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DealsTab extends StatelessWidget {
+  const _DealsTab({
+    required this.opportunities,
+    required this.loading,
+    required this.opportunityCard,
+    required this.fundedFraction,
+    required this.oppTitle,
+    required this.oppSubtitle,
+    required this.oppId,
+  });
+
+  final List<Map<String, dynamic>> opportunities;
+  final bool loading;
+  final _OppCardBuilder opportunityCard;
+  final double Function(Map<String, dynamic>) fundedFraction;
+  final String Function(Map<String, dynamic>) oppTitle;
+  final String Function(Map<String, dynamic>) oppSubtitle;
+  final String Function(Map<String, dynamic>) oppId;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFB5850A)),
+      );
+    }
+    if (opportunities.isEmpty) {
+      return Center(
+        child: Text(
+          'No open opportunities right now.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: opportunities.length,
+      itemBuilder: (ctx, i) {
+        final opp = opportunities[i];
+        final funded = fundedFraction(opp);
+        return Padding(
+          padding: EdgeInsets.only(bottom: i < opportunities.length - 1 ? 12 : 0),
+          child: opportunityCard(
+            title: oppTitle(opp),
+            subtitle: oppSubtitle(opp),
+            progress: funded.clamp(0.0, 1.0),
+            delay: i * 60,
+            opportunityId: oppId(opp),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ActivityTab extends StatelessWidget {
+  const _ActivityTab({required this.investments});
+
+  final List<Map<String, dynamic>> investments;
+
+  @override
+  Widget build(BuildContext context) {
+    if (investments.isEmpty) {
+      return Center(
+        child: Text(
+          'No investment activity yet.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: investments.length,
+      itemBuilder: (ctx, i) {
+        final inv = investments[i];
+        final name = inv['investorName']?.toString() ?? 'Investment';
+        final amt = num.tryParse(inv['amountDeployed']?.toString() ?? '0') ?? 0;
+        final cur = inv['currency']?.toString() ?? 'EUR';
+        final schedule = inv['payoutSchedule'];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '€ ${amt.toStringAsFixed(0)} deployed · $cur',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 12,
+                ),
+              ),
+              if (schedule is List && schedule.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ...schedule.map((p) {
+                  if (p is! Map) return const SizedBox.shrink();
+                  final m = Map<String, dynamic>.from(p);
+                  final status = m['status']?.toString() ?? '';
+                  final dateStr = m['payoutDate']?.toString() ?? '';
+                  final isPaid = status == 'paid';
+                  final isScheduled = status == 'scheduled';
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            dateStr,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isPaid
+                                ? Colors.green.withValues(alpha: 0.2)
+                                : isScheduled
+                                    ? Colors.amber.withValues(alpha: 0.2)
+                                    : Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            status,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isPaid
+                                  ? Colors.greenAccent
+                                  : isScheduled
+                                      ? Colors.amber.shade200
+                                      : Colors.white70,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AlertsTab extends StatelessWidget {
+  const _AlertsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.notifications_none,
+            size: 48,
+            color: Colors.white.withValues(alpha: 0.24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Price alerts coming soon',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              "You'll be notified here when shea or sesame prices move.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4),
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InvestorProfileTab extends StatelessWidget {
+  const _InvestorProfileTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final initial = auth.displayName.isNotEmpty
+        ? auth.displayName[0].toUpperCase()
+        : '?';
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        ListTile(
+          leading: CircleAvatar(
+            backgroundColor: AppColors.gold.withValues(alpha: 0.3),
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          title: Text(
+            auth.displayName.isNotEmpty ? auth.displayName : 'Investor',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            auth.displayEmail,
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+          ),
+        ),
+        Divider(color: Colors.white.withValues(alpha: 0.12)),
+        ListTile(
+          leading: Icon(Icons.edit_outlined, color: Colors.white.withValues(alpha: 0.8)),
+          title: const Text('Edit profile', style: TextStyle(color: Colors.white)),
+          onTap: () => context.go('/profile/edit'),
+        ),
+        ListTile(
+          leading: Icon(Icons.language, color: Colors.white.withValues(alpha: 0.8)),
+          title: const Text('Language', style: TextStyle(color: Colors.white)),
+          onTap: () => context.go('/profile/language'),
+        ),
+        ListTile(
+          leading: Icon(Icons.notifications_outlined, color: Colors.white.withValues(alpha: 0.8)),
+          title: const Text('Notifications', style: TextStyle(color: Colors.white)),
+          onTap: () => context.go('/profile/notifications'),
+        ),
+        ListTile(
+          leading: Icon(Icons.help_outline, color: Colors.white.withValues(alpha: 0.8)),
+          title: const Text('Help', style: TextStyle(color: Colors.white)),
+          onTap: () => context.go('/help'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.logout, color: Color(0xFFFF6B6B)),
+          title: const Text('Sign out', style: TextStyle(color: Color(0xFFFF6B6B))),
+          onTap: () async {
+            await context.read<AuthState>().logout();
+            if (context.mounted) context.go('/role');
+          },
+        ),
+      ],
+    );
+  }
 }
