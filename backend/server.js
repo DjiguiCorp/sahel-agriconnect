@@ -165,6 +165,34 @@ app.use('/api/experts', expertsRouter);
 app.use('/api/diaspora', diasporaRouter);
 app.use('/api/marketplace', marketplaceRouter);
 app.use('/api/waitlist', waitlistRouter);
+
+app.post('/api/payments/verify', async (req, res) => {
+  try {
+    const { tx_ref, transaction_id } = req.body;
+    if (!tx_ref || !transaction_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'tx_ref and transaction_id required',
+      });
+    }
+    const flwRes = await fetch(
+      `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.VITE_FLW_SECRET_KEY}`,
+        },
+      }
+    );
+    const flwData = await flwRes.json();
+    if (flwData.data?.status === 'successful') {
+      return res.json({ success: true, data: flwData.data });
+    }
+    return res.status(400).json({ success: false, error: 'Transaction not verified' });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 app.use('/api/investments', investmentsRouter);
 app.use('/api/escrow', escrowRouter);
 app.use('/api/afriyield-scores', scoresRouter);

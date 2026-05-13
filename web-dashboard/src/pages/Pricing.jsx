@@ -19,6 +19,7 @@ export default function Pricing() {
   const [pendingTierIndex, setPendingTierIndex] = useState(null);
   const [pendingTierName, setPendingTierName] = useState('');
   const [paymentEmail, setPaymentEmail] = useState('');
+  const [flwError, setFlwError] = useState('');
 
   const openSubscribeModal = (tierIndex, tierName) => {
     const amount = TIER_FLW_AMOUNTS[tierIndex];
@@ -26,6 +27,7 @@ export default function Pricing() {
     setPendingTierIndex(tierIndex);
     setPendingTierName(tierName);
     setPaymentEmail('');
+    setFlwError('');
     setSubscribeModalOpen(true);
   };
 
@@ -34,19 +36,19 @@ export default function Pricing() {
     setPendingTierIndex(null);
     setPendingTierName('');
     setPaymentEmail('');
+    setFlwError('');
   };
 
   const startFlutterwaveCheckout = () => {
     const email = paymentEmail.trim();
     if (!email || pendingTierIndex == null) return;
+    setFlwError('');
     if (!FLW_PUBLIC_KEY || FLW_PUBLIC_KEY === 'your_flutterwave_public_key_here') {
-      // eslint-disable-next-line no-alert
-      alert(t('pricing.flwMissingKey', 'Set VITE_FLW_PUBLIC_KEY in your environment to enable payments.'));
+      setFlwError('Payment system is being configured. Contact us to subscribe.');
       return;
     }
     if (typeof window.FlutterwaveCheckout !== 'function') {
-      // eslint-disable-next-line no-alert
-      alert(t('pricing.flwScriptMissing', 'Payment script failed to load. Please refresh and try again.'));
+      setFlwError('Payment failed to load. Please refresh and try again.');
       return;
     }
 
@@ -70,14 +72,22 @@ export default function Pricing() {
         description: `${tierNameSnapshot} — Monthly Subscription`,
         logo: 'https://sahelagriconnect.com/logo.png',
       },
-      callback: (response) => {
+      callback: async (response) => {
         if (response.status === 'successful') {
+          await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/waitlist`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              source: `pricing_${tierNameSnapshot}`,
+              txRef: response.tx_ref,
+              amount,
+              currency: 'USD',
+            }),
+          }).catch(() => {});
+          closeSubscribeModal();
           // eslint-disable-next-line no-alert
-          alert(
-            `✅ Payment successful! Transaction ID: ${response.transaction_id}. Welcome to ${tierNameSnapshot}.`
-          );
-          // TODO: call your backend to activate the subscription
-          // fetch(`${API}/api/subscriptions/activate`, { method: 'POST', body: JSON.stringify({ tx_ref: response.tx_ref, tier: tierNameSnapshot, email }) })
+          alert(`Thank you! Your ${tierNameSnapshot} subscription is active.`);
         }
       },
       onclose: () => {},
@@ -115,22 +125,27 @@ export default function Pricing() {
               className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm mb-4 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
               placeholder="you@example.com"
             />
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={closeSubscribeModal}
-                className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50"
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={startFlutterwaveCheckout}
-                disabled={!paymentEmail.trim()}
-                className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1a3c2e] text-white hover:bg-[#143326] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t('pricing.continueToPay', 'Continue to payment')}
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={closeSubscribeModal}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50"
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={startFlutterwaveCheckout}
+                  disabled={!paymentEmail.trim()}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1a3c2e] text-white hover:bg-[#143326] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('pricing.continueToPay', 'Continue to payment')}
+                </button>
+              </div>
+              {flwError && (
+                <p className="text-sm text-red-600 mt-2 text-center">{flwError}</p>
+              )}
             </div>
           </div>
         </div>

@@ -21,6 +21,7 @@ import '../screens/shared/language_screen.dart';
 import '../screens/shared/notification_settings_screen.dart';
 import '../screens/shared/notifications_screen.dart';
 import '../screens/shared/profile_screen.dart';
+import '../screens/shared/webview_screen.dart';
 import '../screens/splash_screen.dart';
 
 final GlobalKey<NavigatorState> _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -133,6 +134,16 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
           builder: (_, __) => const NotificationsScreen(),
         ),
         GoRoute(path: '/help', builder: (_, __) => const HelpScreen()),
+        GoRoute(
+          path: '/webview',
+          builder: (context, state) {
+            final uri = state.uri;
+            final title = uri.queryParameters['title'] ?? 'Web';
+            final url = uri.queryParameters['url'] ??
+                'https://sahelagriconnect.com';
+            return InAppWebViewScreen(title: title, url: url);
+          },
+        ),
         GoRoute(path: '/about-app', builder: (_, __) => const AboutAppScreen()),
       ],
     );
@@ -144,6 +155,7 @@ bool _isProfileOrSupportPath(String loc) {
   if (loc == '/notifications' || loc.startsWith('/notifications/')) return true;
   if (loc == '/help' || loc.startsWith('/help/')) return true;
   if (loc == '/about-app') return true;
+  if (loc == '/webview') return true;
   return false;
 }
 

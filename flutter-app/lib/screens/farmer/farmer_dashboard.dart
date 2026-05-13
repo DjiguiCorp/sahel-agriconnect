@@ -31,24 +31,32 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       'title': 'Soil diagnosis',
       'desc': 'Analyze your soil',
       'bg': Color(0xFFEAF3DE),
+      'url': 'https://sahelagriconnect.com/diagnostic-sol',
+      'webTitle': 'Soil Diagnostic',
     },
     {
       'icon': '🔬',
       'title': 'Disease detect',
       'desc': 'Photo analysis',
       'bg': Color(0xFFFEF3C7),
+      'url': 'https://sahelagriconnect.com/detection-maladies',
+      'webTitle': 'Disease Detection',
     },
     {
       'icon': '🧠',
       'title': 'Think Tank',
       'desc': 'AI advisor',
       'bg': Color(0xFFEDE9FE),
+      'url': 'https://sahelagriconnect.com/think-tank',
+      'webTitle': 'AI Advisor',
     },
     {
       'icon': '💧',
       'title': 'Irrigation',
       'desc': 'Water planning',
       'bg': Color(0xFFE0F2FE),
+      'url': 'https://sahelagriconnect.com/irrigation',
+      'webTitle': 'Irrigation Planning',
     },
   ];
 
@@ -332,7 +340,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       );
 }
 
-Widget _farmerToolGrid(List<Map<String, Object>> tools) {
+Widget _farmerToolGrid(BuildContext context, List<Map<String, Object>> tools) {
   return GridView.builder(
     shrinkWrap: true,
     physics: const NeverScrollableScrollPhysics(),
@@ -343,50 +351,66 @@ Widget _farmerToolGrid(List<Map<String, Object>> tools) {
       childAspectRatio: 1.6,
     ),
     itemCount: tools.length,
-    itemBuilder: (ctx, i) => Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    itemBuilder: (ctx, i) => Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.forestGreen.withValues(alpha: 0.08),
-          width: 0.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: tools[i]['bg'] as Color,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                tools[i]['icon'] as String,
-                style: const TextStyle(fontSize: 18),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => InAppWebViewScreen(
+                title: tools[i]['webTitle'] as String,
+                url: tools[i]['url'] as String,
               ),
             ),
-          ),
-          const Spacer(),
-          Text(
-            tools[i]['title'] as String,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.forestGreen,
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.forestGreen.withValues(alpha: 0.08),
+              width: 0.5,
             ),
           ),
-          Text(
-            tools[i]['desc'] as String,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[500],
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: tools[i]['bg'] as Color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    tools[i]['icon'] as String,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                tools[i]['title'] as String,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.forestGreen,
+                ),
+              ),
+              Text(
+                tools[i]['desc'] as String,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[500],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     )
         .animate(delay: Duration(milliseconds: 80 * i))
@@ -424,7 +448,7 @@ class _HomeTab extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 12),
-        _farmerToolGrid(tools),
+        _farmerToolGrid(context, tools),
         const SizedBox(height: 20),
         Text(
           'My produce pipeline',
@@ -619,7 +643,7 @@ class _AiToolsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _farmerToolGrid(tools),
+        _farmerToolGrid(context, tools),
         const SizedBox(height: 24),
         Text(
           'More tools',
