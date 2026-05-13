@@ -114,7 +114,7 @@ class AgeGateScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Minimum age: 18 years',
+                              'Investment access',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -123,7 +123,7 @@ class AgeGateScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'You must be 18 or older to download and use this application.',
+                              'Only adults 18+ may view offers, commitments, and financial information on AfriYield Exchange.',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.55),
                                 fontSize: 12,

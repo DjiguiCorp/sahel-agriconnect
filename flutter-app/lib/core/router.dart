@@ -51,10 +51,7 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
           if (authState.isLoggedIn && authState.role == AuthRole.investor) {
             return '/investor';
           }
-          if (!authState.isLoggedIn) {
-            return '/login/investor';
-          }
-          return _dashboardRoute(authState.role);
+          return '/login/investor';
         }
 
         final loggedIn = authState.isLoggedIn;
