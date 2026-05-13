@@ -60,7 +60,7 @@ class AgeGateScreen extends StatelessWidget {
                 const SizedBox(height: 28),
 
                 const Text(
-                  'Before you continue',
+                  'AfriYield Exchange',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -68,10 +68,23 @@ class AgeGateScreen extends StatelessWidget {
                   ),
                 ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.2),
 
+                const SizedBox(height: 8),
+
+                Text(
+                  'Investment portal',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.gold.withValues(alpha: 0.95),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ).animate(delay: 250.ms).fadeIn(),
+
                 const SizedBox(height: 14),
 
                 Text(
-                  'Sahel AgriConnect is designed for agricultural professionals, diaspora investors, and institutional users.',
+                  'AfriYield Exchange is an investment platform. You must be 18 or older to access investment opportunities and financial data.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.6),
@@ -135,7 +148,7 @@ class AgeGateScreen extends StatelessWidget {
                       if (context.mounted) {
                         context.read<AgeGateRefresh>().onAcceptedFromPrefs();
                       }
-                      if (context.mounted) context.go('/');
+                      if (context.mounted) context.go('/login/investor');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.gold,

@@ -33,18 +33,29 @@ late GoRouter appRouter;
 GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
   appRouter = GoRouter(
       navigatorKey: _rootKey,
-      initialLocation: ageGate.accepted ? '/' : '/age-gate',
+      initialLocation: '/',
       refreshListenable: Listenable.merge([authState, ageGate]),
       redirect: (context, state) {
         final loc = state.matchedLocation;
 
-        if (!ageGate.accepted) {
-          if (loc != '/age-gate') return '/age-gate';
-          return null;
-        }
-        if (loc == '/age-gate') return '/';
-
         if (authState.loading) return '/';
+
+        // Investor age gate — only gates investor routes
+        final isInvestorPath = loc.startsWith('/investor') ||
+            loc.startsWith('/login/investor');
+        if (isInvestorPath && !ageGate.accepted) {
+          return '/age-gate';
+        }
+        // After age gate is accepted, return investor to their intended path
+        if (loc == '/age-gate' && ageGate.accepted) {
+          if (authState.isLoggedIn && authState.role == AuthRole.investor) {
+            return '/investor';
+          }
+          if (!authState.isLoggedIn) {
+            return '/login/investor';
+          }
+          return _dashboardRoute(authState.role);
+        }
 
         final loggedIn = authState.isLoggedIn;
 
