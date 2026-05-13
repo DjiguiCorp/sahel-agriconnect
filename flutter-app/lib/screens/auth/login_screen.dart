@@ -8,6 +8,7 @@ import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/country_picker.dart';
 
 typedef _LoginRoleConfig = ({
   String title,
@@ -37,19 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String _error = '';
   String _selectedCountry = '';
-
-  static const _countries = [
-    'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi',
-    'Cabo Verde', 'Cameroon', 'Central African Republic', 'Chad', 'Comoros',
-    'Congo', "Côte d'Ivoire", 'Democratic Republic of the Congo',
-    'Djibouti', 'Egypt', 'Equatorial Guinea', 'Eritrea', 'Eswatini',
-    'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea', 'Guinea-Bissau',
-    'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali',
-    'Mauritania', 'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger',
-    'Nigeria', 'Rwanda', 'São Tomé and Príncipe', 'Senegal', 'Seychelles',
-    'Sierra Leone', 'Somalia', 'South Africa', 'South Sudan', 'Sudan',
-    'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe',
-  ];
 
   bool get _needsCountry =>
       widget.role == AuthRole.government ||
@@ -335,50 +323,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                         ),
                         const SizedBox(height: 8),
-                        Container(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: Colors.grey.shade200,
-                              width: 0.5,
-                            ),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedCountry.isEmpty
-                                  ? null
-                                  : _selectedCountry,
-                              hint: Text(
-                                widget.role == AuthRole.government
-                                    ? lp.t('Your country', 'Votre pays')
-                                    : lp.t(
-                                        'Cooperative country',
-                                        'Pays de la coopérative',
-                                      ),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFFAAAAAA),
+                        CountryDropdown(
+                          value: _selectedCountry,
+                          hint: widget.role == AuthRole.government
+                              ? lp.t('Select country', 'Sélectionner le pays')
+                              : lp.t(
+                                  'Select country',
+                                  'Sélectionner le pays',
                                 ),
-                              ),
-                              isExpanded: true,
-                              icon: const Icon(
-                                  Icons.keyboard_arrow_down_rounded),
-                              items: _countries
-                                  .map((c) => DropdownMenuItem<String>(
-                                        value: c,
-                                        child: Text(c),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) {
-                                if (v != null) {
-                                  setState(() => _selectedCountry = v);
-                                }
-                              },
-                            ),
-                          ),
+                          onChanged: (v) =>
+                              setState(() => _selectedCountry = v ?? ''),
                         ),
                       ],
                       const SizedBox(height: 16),

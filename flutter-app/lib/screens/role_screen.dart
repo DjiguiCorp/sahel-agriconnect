@@ -129,6 +129,20 @@ class RoleScreen extends StatelessWidget {
                       letterSpacing: -0.5,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isFr
+                        ? 'Produire ensemble. Vendre plus loin. Gagner plus.'
+                        : 'Produce together. Sell further. Earn more.',
+                    style: const TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 0.3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     isFr

@@ -31,6 +31,9 @@ const Hero = () => {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
             Sahel AgriConnect
           </h1>
+          <p className="text-xl md:text-2xl font-semibold italic mt-4 mb-4 text-brand-amber tracking-wide">
+            {t('home.hero.tagline')}
+          </p>
           <p className="text-xl md:text-2xl mb-3 text-brand-cream/95 font-medium">
             {t('home.hero.subtitle')}
           </p>
