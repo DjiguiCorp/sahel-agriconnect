@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "predev": "kill-port 3001 || node -e \"process.exit(0)\"",
     "dev": "nodemon server.js",
     "test": "cross-env NODE_ENV=test node --test --experimental-vm-modules tests/smoke.test.js",
     "test:watch": "cross-env NODE_ENV=test node --test --watch tests/smoke.test.js",
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
+    "kill-port": "^2.0.1",
     "mongodb-memory-server": "^8.12.2",
     "nodemon": "^3.0.2",
     "supertest": "^7.2.2"
