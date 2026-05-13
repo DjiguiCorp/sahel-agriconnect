@@ -2,7 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import Processor from '../models/Processor.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateAnyUser, authenticateToken } from '../middleware/auth.js';
 import { validateProcessor } from '../middleware/validation.js';
 import { countryFilter } from '../middleware/countryFilter.js';
 
@@ -107,6 +107,32 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/processors/my-portal — logged-in processor (mobile JWT)
+router.get('/my-portal', authenticateAnyUser, async (req, res) => {
+  try {
+    if (req.mobileUser?.role !== 'processor') {
+      return res.status(403).json({ success: false, error: 'Processor access required' });
+    }
+    const p = await Processor.findById(req.mobileUser.id).lean();
+    if (!p) {
+      return res.status(404).json({ success: false, error: 'Not found' });
+    }
+    const location = [p.region, p.country].filter(Boolean).join(', ');
+    res.json({
+      success: true,
+      processor: {
+        name: p.nom,
+        location: location || p.localisation || '',
+        activeLots: 0,
+        certifiedBatches: 0,
+        capacity: p.capaciteMax != null ? `${p.capaciteMax} t` : '—',
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
   }
 });
 
