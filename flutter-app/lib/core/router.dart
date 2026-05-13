@@ -155,7 +155,6 @@ bool _isProfileOrSupportPath(String loc) {
   if (loc == '/notifications' || loc.startsWith('/notifications/')) return true;
   if (loc == '/help' || loc.startsWith('/help/')) return true;
   if (loc == '/about-app') return true;
-  if (loc == '/webview') return true;
   return false;
 }
 
@@ -186,6 +185,7 @@ String _loginPathFor(String loc) {
 }
 
 bool _routeMismatch(AuthRole role, String loc) {
+  if (loc == '/webview') return false;
   if (_isProfileOrSupportPath(loc)) return false;
   switch (role) {
     case AuthRole.farmer:
