@@ -36,6 +36,10 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   bool _loading = false;
   String _error = '';
 
+  String _savedEmail = '';
+  String _savedName = '';
+  bool _checkingSession = true;
+
   static const _crops = [
     'Shea Butter',
     'Sesame',
@@ -60,6 +64,27 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     'Sierra Leone', 'Somalia', 'South Africa', 'South Sudan', 'Sudan',
     'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSavedSession();
+  }
+
+  Future<void> _checkSavedSession() async {
+    final auth = context.read<AuthState>();
+    final email = await auth.getSavedFarmerEmail();
+    final name = await auth.getSavedFarmerName();
+    if (!mounted) return;
+    setState(() {
+      _savedEmail = email ?? '';
+      _savedName = name ?? '';
+      _checkingSession = false;
+      if (_savedEmail.isNotEmpty) {
+        _emailCtrl.text = _savedEmail;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -417,22 +442,92 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       key: const ValueKey<String>('identity'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          lp.t('Welcome', 'Bienvenue'),
-          style: const TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1a3c2e),
+        if (_checkingSession)
+          const Center(child: CircularProgressIndicator())
+        else if (_savedName.isNotEmpty) ...[
+          Text(
+            lp.t('Welcome back', 'Bon retour'),
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1a3c2e),
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          lp.t(
-            'Enter your email or phone number to continue',
-            'Entrez votre email ou numéro de téléphone pour continuer',
+          const SizedBox(height: 6),
+          Text(
+            lp.t(
+              'Good to see you again, $_savedName',
+              'Heureux de vous revoir, $_savedName',
+            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
-          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-        ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF3DE),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.person_outline,
+                  size: 16,
+                  color: Color(0xFF3B6D11),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    _savedEmail,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF3B6D11),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          TextButton(
+            onPressed: () => setState(() {
+              _savedName = '';
+              _savedEmail = '';
+              _emailCtrl.clear();
+            }),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              lp.t(
+                'Not you? Use a different account',
+                'Pas vous ? Utiliser un autre compte',
+              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+            ),
+          ),
+        ] else ...[
+          Text(
+            lp.t('Welcome', 'Bienvenue'),
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1a3c2e),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            lp.t(
+              'Enter your email or phone number to continue',
+              'Entrez votre email ou numéro de téléphone pour continuer',
+            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          ),
+        ],
         const SizedBox(height: 28),
         Text(
           lp.t('Email or phone number', 'Email ou numéro de téléphone'),

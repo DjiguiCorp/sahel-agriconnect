@@ -40,18 +40,17 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
 
         if (authState.loading) return '/';
 
-        // Investor age gate — only gates investor routes
-        final isInvestorPath = loc.startsWith('/investor') ||
-            loc.startsWith('/login/investor');
+        // Age gate — investor routes only
+        final isInvestorPath =
+            loc.startsWith('/investor') || loc == '/login/investor';
         if (isInvestorPath && !ageGate.accepted) {
           return '/age-gate';
         }
-        // After age gate is accepted, return investor to their intended path
-        if (loc == '/age-gate' && ageGate.accepted) {
-          if (authState.isLoggedIn && authState.role == AuthRole.investor) {
-            return '/investor';
-          }
-          return '/login/investor';
+        if (loc == '/age-gate') {
+          if (!ageGate.accepted) return null;
+          return authState.isLoggedIn
+              ? _dashboardRoute(authState.role)
+              : '/login/investor';
         }
 
         final loggedIn = authState.isLoggedIn;
@@ -94,6 +93,10 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
         GoRoute(
           path: '/login/government',
           builder: (_, __) => const LoginScreen(role: AuthRole.government),
+        ),
+        GoRoute(
+          path: '/login/ngo',
+          builder: (_, __) => const LoginScreen(role: AuthRole.ngo),
         ),
         GoRoute(
           path: '/login/processor',
@@ -189,12 +192,15 @@ String _loginPathFor(String loc) {
   if (loc.startsWith('/cooperative')) return '/login/cooperative';
   if (loc.startsWith('/government')) return '/login/government';
   if (loc.startsWith('/processor')) return '/login/processor';
+  if (loc == '/login/ngo') return '/login/ngo';
   return '/role';
 }
 
 bool _routeMismatch(AuthRole role, String loc) {
   if (loc == '/webview') return false;
   if (_isProfileOrSupportPath(loc)) return false;
+  // NGO shares the government dashboard.
+  if (role == AuthRole.ngo && loc.startsWith('/government')) return false;
   switch (role) {
     case AuthRole.farmer:
       return !(loc.startsWith('/farmer'));
@@ -203,6 +209,8 @@ bool _routeMismatch(AuthRole role, String loc) {
     case AuthRole.cooperative:
       return !(loc.startsWith('/cooperative'));
     case AuthRole.government:
+      return !(loc.startsWith('/government'));
+    case AuthRole.ngo:
       return !(loc.startsWith('/government'));
     case AuthRole.processor:
       return !(loc.startsWith('/farmer') || loc.startsWith('/processor'));
@@ -220,6 +228,8 @@ String _dashboardRoute(AuthRole role) {
     case AuthRole.cooperative:
       return '/cooperative';
     case AuthRole.government:
+      return '/government';
+    case AuthRole.ngo:
       return '/government';
     case AuthRole.processor:
       return '/farmer';

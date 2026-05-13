@@ -71,13 +71,13 @@ class RoleScreen extends StatelessWidget {
       accent: Color(0xFF185FA5),
     ),
     RoleOption(
-      emoji: '🤝',
+      emoji: '🌍',
       titleEn: 'NGO / Partner',
       titleFr: 'ONG / Partenaire',
       descEn: 'Partner programs',
       descFr: 'Programmes partenaires',
-      route: '/login/government',
-      accent: Color(0xFF0F6E56),
+      route: '/login/ngo',
+      accent: Color(0xFF1D9E75),
     ),
     RoleOption(
       emoji: '⚙️',

@@ -4,7 +4,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 
 import '../services/auth_service.dart';
 
-enum AuthRole { none, farmer, investor, cooperative, government, processor }
+enum AuthRole { none, farmer, investor, cooperative, government, ngo, processor }
 
 class AuthState extends ChangeNotifier {
   static const _storage = FlutterSecureStorage(
@@ -110,4 +110,10 @@ class AuthState extends ChangeNotifier {
   }
 
   Future<String?> getFarmerEmail() => _storage.read(key: 'farmer_email');
+
+  /// Returning-user lookup helpers for the farmer welcome-back screen.
+  Future<String?> getSavedFarmerEmail() async =>
+      _storage.read(key: 'farmer_email');
+  Future<String?> getSavedFarmerName() async =>
+      _storage.read(key: 'farmer_name');
 }

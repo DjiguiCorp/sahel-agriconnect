@@ -296,6 +296,56 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /api/cooperatives/session — email-only mobile session
+// Mirrors the web platform's first-access flow: a registered, active
+// cooperative can sign in by email alone. Returns a JWT shaped like the
+// password login above so the existing `authCoop` middleware accepts it.
+router.post('/session', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').toLowerCase().trim();
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email required' });
+    }
+    const coop = await CooperativePlatformRegistration.findOne({ email });
+    if (!coop) {
+      return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    }
+    if (coop.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        error: 'Portal not yet activated. Contact support.',
+      });
+    }
+    const token = jwt.sign(
+      {
+        role: 'cooperative_leader',
+        coopId: coop._id,
+        email: coop.email,
+        country: coop.country,
+        name: coop.cooperativeName,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    res.json({
+      success: true,
+      token,
+      cooperative: {
+        _id: coop._id,
+        cooperativeName: coop.cooperativeName,
+        country: coop.country,
+        email: coop.email,
+        leaderName: coop.leaderName,
+        memberCount: coop.memberCount,
+        primaryCrops: coop.primaryCrops,
+        certificationStatus: coop.certificationStatus,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // POST /api/cooperatives/set-password — cooperative sets own password (first login from temp)
 router.post('/set-password', authCoop, async (req, res) => {
   try {

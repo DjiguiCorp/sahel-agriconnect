@@ -43,6 +43,11 @@ class _LoginScreenState extends State<LoginScreen> {
       widget.role == AuthRole.government ||
       widget.role == AuthRole.cooperative;
 
+  /// Cooperatives sign in by email only on mobile (no password) to match the
+  /// web platform's first-access flow. The server returns a JWT after
+  /// verifying the cooperative is registered and active.
+  bool get _isPasswordless => widget.role == AuthRole.cooperative;
+
   late final _LoginRoleConfig _config = _roleConfig[widget.role]!;
 
   static final Map<AuthRole, _LoginRoleConfig> _roleConfig = {
@@ -63,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
       emoji: '🤝',
       color: const Color(0xFFB5850A),
       bg: const [Color(0xFF1a3c2e), Color(0xFF2d5a3d)],
-      loginEndpoint: '/api/cooperatives/login',
+      loginEndpoint: '/api/cooperatives/lookup',
       canSelfRegister: false,
       registerUrl: 'https://sahelagriconnect.com/cooperative-registration',
       hint: 'cooperative@email.com',
@@ -78,6 +83,17 @@ class _LoginScreenState extends State<LoginScreen> {
       canSelfRegister: false,
       registerUrl: 'https://sahelagriconnect.com/platform-licensing',
       hint: 'minister@agriculture.gov.ml',
+    ),
+    AuthRole.ngo: (
+      title: 'NGO / Partner',
+      subtitle: 'Partner programs',
+      emoji: '🌍',
+      color: const Color(0xFF1D9E75),
+      bg: const [Color(0xFF0d2e1a), Color(0xFF1a3c2e)],
+      loginEndpoint: '/api/government/login',
+      canSelfRegister: false,
+      registerUrl: 'https://sahelagriconnect.com/contact',
+      hint: 'contact@ngo.org',
     ),
     AuthRole.processor: (
       title: 'Processor portal',
@@ -196,6 +212,75 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
+  Future<void> _loginCooperativeByEmail() async {
+    final lp = context.read<LanguageProvider>();
+    final email = _emailCtrl.text.trim().toLowerCase();
+    if (email.isEmpty) {
+      setState(() => _error = lp.t(
+            'Please enter your cooperative email',
+            'Veuillez entrer l\'email de votre coopérative',
+          ));
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      // 1. Confirm the cooperative exists (existing public lookup endpoint).
+      final res = await ApiService.get(
+        '/api/cooperatives?email=${Uri.encodeComponent(email)}',
+        token: null,
+      );
+      if (res['cooperative'] == null && res['success'] != true) {
+        throw Exception(lp.t(
+          'Cooperative not found. Request access below.',
+          'Coopérative non trouvée. Demandez l\'accès ci-dessous.',
+        ));
+      }
+
+      // 2. Exchange the email for a session JWT.
+      final sessionRes = await ApiService.post(
+        '/api/cooperatives/session',
+        {'email': email},
+      );
+      if (sessionRes['success'] == false) {
+        throw Exception(sessionRes['error']?.toString() ?? 'Login failed');
+      }
+      final token = sessionRes['token'] as String?;
+      if (token == null || token.isEmpty) {
+        throw Exception(lp.t(
+          'Cooperative not found. Request access below.',
+          'Coopérative non trouvée. Demandez l\'accès ci-dessous.',
+        ));
+      }
+
+      final coopData = sessionRes['cooperative'] is Map
+          ? Map<String, dynamic>.from(sessionRes['cooperative'] as Map)
+          : <String, dynamic>{};
+      final raw = JwtDecoder.decode(token);
+      final merged = Map<String, dynamic>.from(raw as Map)..addAll(coopData);
+
+      if (!mounted) return;
+      await context
+          .read<AuthState>()
+          .setSession(AuthRole.cooperative, token, merged);
+      if (!mounted) return;
+      context.go('/cooperative');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e
+            .toString()
+            .replaceAll('Exception: ', '')
+            .replaceAll('DioException', '')
+            .trim();
+      });
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
@@ -283,7 +368,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 'Use your institutional email to sign in',
                                 'Utilisez votre email institutionnel pour vous connecter',
                               )
-                            : lp.t('Welcome back', 'Bon retour'),
+                            : widget.role == AuthRole.cooperative
+                                ? lp.t(
+                                    'Sign in with your cooperative email — no password needed',
+                                    'Connectez-vous avec l\'email de votre coopérative — aucun mot de passe requis',
+                                  )
+                                : lp.t('Welcome back', 'Bon retour'),
                         style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                       ),
                       const SizedBox(height: 28),
@@ -335,31 +425,41 @@ class _LoginScreenState extends State<LoginScreen> {
                               setState(() => _selectedCountry = v ?? ''),
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      _label(lp.t('Password', 'Mot de passe')),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _passwordCtrl,
-                        obscureText: _obscure,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _login(),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF1a3c2e),
-                        ),
-                        decoration: _inputDecoration(
-                          '••••••••',
-                          Icons.lock_outline_rounded,
-                        ).copyWith(
-                          suffixIcon: GestureDetector(
-                            onTap: () => setState(() => _obscure = !_obscure),
-                            child: Icon(
-                              _obscure
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey[400],
+                      Visibility(
+                        visible: !_isPasswordless,
+                        maintainState: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 16),
+                            _label(lp.t('Password', 'Mot de passe')),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _passwordCtrl,
+                              obscureText: _obscure,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => _login(),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF1a3c2e),
+                              ),
+                              decoration: _inputDecoration(
+                                '••••••••',
+                                Icons.lock_outline_rounded,
+                              ).copyWith(
+                                suffixIcon: GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _obscure = !_obscure),
+                                  child: Icon(
+                                    _obscure
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: Colors.grey[400],
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                       if (_error.isNotEmpty) ...[
@@ -399,7 +499,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: _loading ? null : _login,
+                          onPressed: _loading
+                              ? null
+                              : (widget.role == AuthRole.cooperative
+                                  ? _loginCooperativeByEmail
+                                  : _login),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _config.color,
                             foregroundColor: Colors.white,
@@ -462,20 +566,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                       const SizedBox(height: 16),
-                      Center(
-                        child: TextButton(
-                          onPressed: () => _openUrl(
-                            'https://sahelagriconnect.com/account/reset-password',
-                          ),
-                          child: Text(
-                            lp.t('Forgot password?', 'Mot de passe oublié ?'),
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 13,
+                      if (!_isPasswordless)
+                        Center(
+                          child: TextButton(
+                            onPressed: () => _openUrl(
+                              'https://sahelagriconnect.com/account/reset-password',
+                            ),
+                            child: Text(
+                              lp.t(
+                                'Forgot password?',
+                                'Mot de passe oublié ?',
+                              ),
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -553,6 +661,8 @@ class _LoginScreenState extends State<LoginScreen> {
         return lp.t('AfriYield Exchange', 'AfriYield Exchange');
       case AuthRole.government:
         return lp.t('Government / NGO', 'Gouvernement / ONG');
+      case AuthRole.ngo:
+        return lp.t('NGO / Partner', 'ONG / Partenaire');
       case AuthRole.processor:
         return lp.t('Processor portal', 'Portail processeur');
       default:
@@ -594,6 +704,8 @@ class _LoginScreenState extends State<LoginScreen> {
       case AuthRole.cooperative:
         return '/cooperative';
       case AuthRole.government:
+        return '/government';
+      case AuthRole.ngo:
         return '/government';
       case AuthRole.processor:
         return '/processor';
