@@ -16,7 +16,7 @@ const cooperativeSchema = new mongoose.Schema({
   },
   country: {
     type: String,
-    default: 'Mali'
+    default: ''
   },
   countryCode: {
     type: String,

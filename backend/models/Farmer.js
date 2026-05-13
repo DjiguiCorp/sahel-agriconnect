@@ -51,7 +51,7 @@ const farmerSchema = new mongoose.Schema({
   },
   country: {
     type: String,
-    default: 'Mali' // default for existing records
+    default: ''
   },
   countryCode: {
     type: String,
