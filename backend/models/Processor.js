@@ -16,6 +16,11 @@ const processorSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  passwordHash: {
+    type: String,
+    select: false,
+    default: '',
+  },
   region: {
     type: String,
     required: true

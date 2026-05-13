@@ -1,0 +1,20 @@
+import 'package:flutter/material.dart';
+
+/// Placeholder until full edit profile is implemented.
+class EditProfileScreen extends StatelessWidget {
+  const EditProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F4E3),
+      appBar: AppBar(
+        title: const Text('Edit profile'),
+        backgroundColor: const Color(0xFF1a3c2e),
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: const Center(child: Text('Coming soon')),
+    );
+  }
+}

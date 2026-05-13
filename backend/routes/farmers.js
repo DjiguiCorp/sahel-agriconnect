@@ -1,5 +1,7 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import Farmer from '../models/Farmer.js';
+import VerificationCode from '../models/VerificationCode.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateFarmer, validateFarmerUpdate } from '../middleware/validation.js';
 import { countryFilter } from '../middleware/countryFilter.js';
@@ -34,6 +36,145 @@ router.get('/public-stats', async (req, res) => {
     res.json({ success: true, total, active, totalArea, byCountry, byCrop, recent });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/farmers/session — mobile app session (JWT) by registered email
+router.post('/session', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').toLowerCase().trim();
+    if (!email) return res.status(400).json({ error: 'email required' });
+
+    const farmer = await Farmer.findOne({ email }).lean();
+    if (!farmer) return res.status(404).json({ success: false, error: 'Not found' });
+
+    const token = jwt.sign(
+      {
+        role: 'farmer',
+        id: farmer._id.toString(),
+        email: farmer.email || email,
+        nom: farmer.nom,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      farmer: {
+        nom: farmer.nom,
+        email: farmer.email,
+        country: farmer.country,
+        region: farmer.region,
+        statut: farmer.statut,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+function normalizePhone(p) {
+  return String(p || '').trim().replace(/\s+/g, '');
+}
+
+// POST /api/farmers/register-mobile — complete signup after OTP (requires pendingRegistrationId)
+router.post('/register-mobile', async (req, res) => {
+  try {
+    const pendingRegistrationId = String(req.body?.pendingRegistrationId || '').trim();
+    const nom = String(req.body?.nom || '').trim();
+    const email = req.body?.email ? String(req.body.email).toLowerCase().trim() : '';
+    const telephone = req.body?.telephone ? String(req.body.telephone).trim() : '';
+    const region = req.body?.region ? String(req.body.region).trim() : 'Unknown';
+    const cultures = Array.isArray(req.body?.cultures) ? req.body.cultures : [];
+    const statutRaw = String(req.body?.statut || 'Actif');
+    const statut = statutRaw === 'Actif' ? 'Actif' : 'En attente';
+
+    if (!pendingRegistrationId) {
+      return res.status(400).json({ success: false, error: 'pendingRegistrationId required' });
+    }
+    if (nom.length < 2) {
+      return res.status(400).json({ success: false, error: 'nom required' });
+    }
+    if (!email && !telephone) {
+      return res.status(400).json({ success: false, error: 'email or telephone required' });
+    }
+
+    const v = await VerificationCode.findById(pendingRegistrationId);
+    if (!v || !v.used || v.purpose !== 'farmer_verify' || v.registrationUsed) {
+      return res.status(400).json({ success: false, error: 'Invalid or expired verification' });
+    }
+    const verifiedAt = new Date(v.updatedAt || v.createdAt).getTime();
+    if (Date.now() - verifiedAt > 45 * 60 * 1000) {
+      return res.status(400).json({ success: false, error: 'Verification expired' });
+    }
+
+    const contactOk =
+      (email && v.email && v.email === email) ||
+      (telephone &&
+        v.phone &&
+        normalizePhone(v.phone) === normalizePhone(telephone));
+    if (!contactOk) {
+      return res.status(400).json({ success: false, error: 'Contact mismatch' });
+    }
+
+    const dupQ = email ? { email } : { telephone };
+    const existing = await Farmer.findOne(dupQ).lean();
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'Account already exists' });
+    }
+
+    const farmer = new Farmer({
+      nom,
+      telephone: telephone || `pending-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      email: email || '',
+      region,
+      latitude: '0',
+      longitude: '0',
+      superficie: 0,
+      cultures: cultures.length ? cultures.map(String) : ['Other'],
+      typeExploitation: 'Familiale',
+      objectifsProduction: ['Souveraineté alimentaire locale'],
+      accesElectricite: 'Partiel',
+      accesStockage: 'Non',
+      statut,
+      emailVerified: true,
+      verifiedAt: new Date(),
+    });
+    await farmer.save();
+
+    v.registrationUsed = true;
+    await v.save();
+
+    const lean = farmer.toObject();
+    const token = jwt.sign(
+      {
+        role: 'farmer',
+        id: farmer._id.toString(),
+        email: lean.email || email,
+        nom: lean.nom,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' },
+    );
+
+    res.status(201).json({
+      success: true,
+      token,
+      farmer: {
+        id: farmer._id.toString(),
+        nom: lean.nom,
+        email: lean.email,
+        telephone: lean.telephone,
+        country: lean.country,
+        region: lean.region,
+        statut: lean.statut,
+      },
+    });
+  } catch (err) {
+    console.error('register-mobile:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

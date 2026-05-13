@@ -1,4 +1,6 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import Processor from '../models/Processor.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateProcessor } from '../middleware/validation.js';
@@ -23,6 +25,88 @@ router.get('/public-stats', async (req, res) => {
     res.json({ success: true, total, certified, byCountry, recent });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/processors/session — mobile app session (JWT) by registered email
+router.post('/session', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').toLowerCase().trim();
+    if (!email) return res.status(400).json({ error: 'email required' });
+
+    const p = await Processor.findOne({ email }).lean();
+    if (!p) return res.status(404).json({ success: false, error: 'Not found' });
+
+    const token = jwt.sign(
+      {
+        role: 'processor',
+        id: p._id.toString(),
+        email: p.email || email,
+        name: p.nom,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      processor: {
+        nom: p.nom,
+        email: p.email,
+        country: p.country,
+        region: p.region,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/processors/login — email + password (password optional until passwordHash is set)
+router.post('/login', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').toLowerCase().trim();
+    const password = String(req.body?.password || '');
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'email and password required' });
+    }
+
+    const p = await Processor.findOne({ email }).select('+passwordHash').lean();
+    if (!p) {
+      return res.status(404).json({ success: false, error: 'Not found' });
+    }
+
+    if (p.passwordHash) {
+      const ok = await bcrypt.compare(password, p.passwordHash);
+      if (!ok) {
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      }
+    }
+
+    const token = jwt.sign(
+      {
+        role: 'processor',
+        id: p._id.toString(),
+        email: p.email || email,
+        name: p.nom,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' },
+    );
+
+    return res.json({
+      success: true,
+      token,
+      processor: {
+        nom: p.nom,
+        email: p.email,
+        country: p.country,
+        region: p.region,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

@@ -44,7 +44,7 @@ class _RoleScreenState extends State<RoleScreen> {
       titleFr: 'Agriculteur',
       descEn: 'Declare produce, AI tools',
       descFr: 'Déclarer vos cultures, outils IA',
-      route: '/farmer',
+      route: '/login/farmer',
       accent: Color(0xFF3B6D11),
     ),
     RoleOption(
@@ -53,7 +53,7 @@ class _RoleScreenState extends State<RoleScreen> {
       titleFr: 'Investisseur',
       descEn: 'AfriYield Exchange',
       descFr: 'AfriYield Exchange',
-      route: '/investor',
+      route: '/login/investor',
       accent: Color(0xFFB5850A),
       isHighlighted: true,
     ),
@@ -63,7 +63,7 @@ class _RoleScreenState extends State<RoleScreen> {
       titleFr: 'Coopérative',
       descEn: 'Manage members & supply',
       descFr: 'Membres et productions',
-      route: '/cooperative',
+      route: '/login/cooperative',
       accent: Color(0xFFB5850A),
     ),
     RoleOption(
@@ -72,7 +72,7 @@ class _RoleScreenState extends State<RoleScreen> {
       titleFr: 'Gouvernement',
       descEn: 'National dashboard',
       descFr: 'Tableau de bord national',
-      route: '/government',
+      route: '/login/government',
       accent: Color(0xFF185FA5),
     ),
     RoleOption(
@@ -81,7 +81,7 @@ class _RoleScreenState extends State<RoleScreen> {
       titleFr: 'ONG / Partenaire',
       descEn: 'Partner programs',
       descFr: 'Programmes partenaires',
-      route: '/government',
+      route: '/login/government',
       accent: Color(0xFF0F6E56),
     ),
     RoleOption(
@@ -90,7 +90,7 @@ class _RoleScreenState extends State<RoleScreen> {
       titleFr: 'Processeur',
       descEn: 'Transformation center',
       descFr: 'Centre de transformation',
-      route: '/processor',
+      route: '/login/processor',
       accent: Color(0xFF3B6D11),
     ),
   ];

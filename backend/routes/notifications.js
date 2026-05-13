@@ -1,7 +1,8 @@
 import express from 'express';
 import { Resend } from 'resend';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, authenticateAnyUser } from '../middleware/auth.js';
 import PendingNotification from '../models/PendingNotification.js';
+import InvestorNotification from '../models/InvestorNotification.js';
 import { sendSms } from '../services/smsService.js';
 
 const router = express.Router();
@@ -111,6 +112,43 @@ export async function processQueue(limit = 30) {
   }
   return results;
 }
+
+function mapInvestorNotifType(type) {
+  const m = {
+    payout: 'milestone_released',
+    opportunity: 'new_opportunity',
+    commodity: 'price_alerts',
+    update: 'national_project',
+    welcome: 'training',
+  };
+  return m[type] || 'training';
+}
+
+// GET /api/notifications/my — mobile inbox (JWT)
+router.get('/my', authenticateAnyUser, async (req, res) => {
+  try {
+    const mu = req.mobileUser;
+    let notifications = [];
+
+    if (mu.role === 'investor' && mu.email) {
+      const notes = await InvestorNotification.find({ investorEmail: mu.email })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
+      notifications = notes.map((n) => ({
+        _id: n._id,
+        message: n.message || n.title || '',
+        read: n.read === true,
+        createdAt: n.createdAt,
+        source: mapInvestorNotifType(n.type),
+      }));
+    }
+
+    res.json({ success: true, notifications });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 // GET /api/notifications — admin: view queue
 router.get('/', authenticateToken, async (req, res) => {

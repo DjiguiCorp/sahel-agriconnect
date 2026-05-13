@@ -1,0 +1,788 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/auth_state.dart';
+import '../../core/theme.dart';
+import '../../services/api_service.dart';
+
+enum FarmerAuthStep { identity, otp, register }
+
+class FarmerAuthScreen extends StatefulWidget {
+  const FarmerAuthScreen({super.key});
+
+  @override
+  State<FarmerAuthScreen> createState() => _FarmerAuthScreenState();
+}
+
+class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
+  FarmerAuthStep _step = FarmerAuthStep.identity;
+
+  final _emailCtrl = TextEditingController();
+
+  final List<TextEditingController> _otpCtrl =
+      List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _otpFocus = List.generate(6, (_) => FocusNode());
+
+  final _nameCtrl = TextEditingController();
+  final _regionCtrl = TextEditingController();
+  String _selectedCrop = 'Shea Butter';
+  String? _pendingRegistrationId;
+
+  bool _loading = false;
+  String _error = '';
+
+  static const _crops = [
+    'Shea Butter',
+    'Sesame',
+    'Cashew',
+    'Mango',
+    'Rice',
+    'Millet',
+    'Sorghum',
+    'Cotton',
+    'Other',
+  ];
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    for (final c in _otpCtrl) {
+      c.dispose();
+    }
+    for (final f in _otpFocus) {
+      f.dispose();
+    }
+    _nameCtrl.dispose();
+    _regionCtrl.dispose();
+    super.dispose();
+  }
+
+  String get _otpCode => _otpCtrl.map((c) => c.text).join();
+
+  String get _contact => _emailCtrl.text.trim();
+
+  bool get _contactIsEmail => _contact.contains('@');
+
+  Future<void> _sendOtp() async {
+    final contact = _contact;
+    if (contact.isEmpty) {
+      setState(() => _error = 'Please enter your email or phone number');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+      _pendingRegistrationId = null;
+    });
+    try {
+      final res = await ApiService.post('/api/verify/send', {
+        'email': _contactIsEmail ? contact : null,
+        'phone': !_contactIsEmail ? contact : null,
+        'purpose': 'farmer_verify',
+      });
+      if (res['error'] != null) {
+        throw Exception(res['error'].toString());
+      }
+      if (res['success'] == false) {
+        throw Exception(res['error']?.toString() ?? 'Request failed');
+      }
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _step = FarmerAuthStep.otp;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  Map<String, dynamic> _sessionUserFrom(String token, Map<String, dynamic>? apiUser) {
+    final raw = JwtDecoder.decode(token);
+    final payload = Map<String, dynamic>.from(raw as Map);
+    final merged = Map<String, dynamic>.from(payload);
+    if (apiUser != null && apiUser.isNotEmpty) {
+      merged.addAll(apiUser);
+    }
+    return merged;
+  }
+
+  Future<void> _verifyOtp() async {
+    if (_otpCode.length < 6) {
+      setState(() => _error = 'Please enter all 6 digits');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      final contact = _contact;
+      final res = await ApiService.post('/api/verify/confirm', {
+        'email': _contactIsEmail ? contact : null,
+        'phone': !_contactIsEmail ? contact : null,
+        'code': _otpCode,
+        'purpose': 'farmer_verify',
+      });
+      if (res['error'] != null) {
+        throw Exception(res['error'].toString());
+      }
+      if (res['success'] == false) {
+        throw Exception(res['error']?.toString() ?? 'Verification failed');
+      }
+
+      if (res['isNewUser'] == true) {
+        final pending = res['pendingRegistrationId']?.toString();
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _step = FarmerAuthStep.register;
+          _pendingRegistrationId = pending;
+        });
+        return;
+      }
+
+      final token = res['token'] as String?;
+      if (token != null && token.isNotEmpty) {
+        final apiUser = res['user'];
+        final userMap = apiUser is Map
+            ? Map<String, dynamic>.from(apiUser)
+            : <String, dynamic>{};
+        final merged = _sessionUserFrom(token, userMap);
+        if (!mounted) return;
+        final auth = context.read<AuthState>();
+        await auth.saveFarmerIdentity(
+          userMap['email']?.toString() ?? (_contactIsEmail ? contact : ''),
+          userMap['nom']?.toString() ?? '',
+        );
+        await auth.setSession(AuthRole.farmer, token, merged);
+        if (!mounted) return;
+        context.go('/farmer');
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Unexpected response from server';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Invalid code. Please try again.';
+      });
+    }
+  }
+
+  Future<void> _register() async {
+    if (_nameCtrl.text.trim().isEmpty) {
+      setState(() => _error = 'Please enter your name');
+      return;
+    }
+    if (_pendingRegistrationId == null || _pendingRegistrationId!.isEmpty) {
+      setState(() => _error = 'Session expired. Please start again.');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      final contact = _contact;
+      final res = await ApiService.post('/api/farmers/register-mobile', {
+        'pendingRegistrationId': _pendingRegistrationId,
+        'nom': _nameCtrl.text.trim(),
+        'email': _contactIsEmail ? contact : null,
+        'telephone': !_contactIsEmail ? contact : null,
+        'region': _regionCtrl.text.trim(),
+        'cultures': [_selectedCrop],
+        'statut': 'Actif',
+      });
+      if (res['error'] != null) {
+        throw Exception(res['error'].toString());
+      }
+      if (res['success'] == false) {
+        throw Exception(res['error']?.toString() ?? 'Registration failed');
+      }
+      final token = res['token'] as String?;
+      if (token != null && token.isNotEmpty) {
+        final farmer = res['farmer'];
+        final farmerMap = farmer is Map
+            ? Map<String, dynamic>.from(farmer)
+            : <String, dynamic>{};
+        final merged = _sessionUserFrom(token, farmerMap);
+        if (!mounted) return;
+        final auth = context.read<AuthState>();
+        await auth.saveFarmerIdentity(
+          farmerMap['email']?.toString() ?? (_contactIsEmail ? contact : ''),
+          _nameCtrl.text.trim(),
+        );
+        await auth.setSession(AuthRole.farmer, token, merged);
+        if (!mounted) return;
+        context.go('/farmer');
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'No token returned';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1a3c2e),
+              Color(0xFF2d5a3d),
+              Color(0xFF0d1f17),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        if (_step == FarmerAuthStep.identity) {
+                          context.go('/role');
+                        } else {
+                          setState(() {
+                            _step = FarmerAuthStep.identity;
+                            _error = '';
+                          });
+                        }
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Farmer portal',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const Text(
+                            'Sahel AgriConnect',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.gold.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.gold.withValues(alpha: 0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: const Text(
+                        '🌾 Farmer',
+                        style: TextStyle(
+                          color: AppColors.gold,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _buildStep(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep() {
+    switch (_step) {
+      case FarmerAuthStep.identity:
+        return _buildIdentityStep();
+      case FarmerAuthStep.otp:
+        return _buildOtpStep();
+      case FarmerAuthStep.register:
+        return _buildRegisterStep();
+    }
+  }
+
+  Widget _buildIdentityStep() {
+    return Column(
+      key: const ValueKey<String>('identity'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Welcome',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1a3c2e),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Enter your email or phone number to continue',
+          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+        ),
+        const SizedBox(height: 28),
+        Text(
+          'Email or phone number',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _emailCtrl,
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(fontSize: 15, color: Color(0xFF1a3c2e)),
+          decoration: InputDecoration(
+            hintText: 'e.g. your@email.com or +223...',
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            filled: true,
+            fillColor: const Color(0xFFF8F4E3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFF1a3c2e), width: 1.5),
+            ),
+            prefixIcon: Icon(Icons.alternate_email_rounded, color: Colors.grey[400]),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+        if (_error.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFCEBEB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              _error,
+              style: const TextStyle(color: Color(0xFFA32D2D), fontSize: 12),
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _loading ? null : _sendOtp,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1a3c2e),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 0,
+            ),
+            child: _loading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Send verification code',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+          ),
+        ),
+        const Spacer(),
+        Center(
+          child: Text(
+            "We'll send a 6-digit code to verify your identity.\nNo password needed.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 12,
+              height: 1.6,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOtpStep() {
+    return Column(
+      key: const ValueKey<String>('otp'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Enter your code',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1a3c2e),
+          ),
+        ),
+        const SizedBox(height: 6),
+        RichText(
+          text: TextSpan(
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            children: [
+              const TextSpan(text: 'We sent a 6-digit code to '),
+              TextSpan(
+                text: _contact,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1a3c2e),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 36),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(6, (i) => _otpBox(i)),
+        ),
+        if (_error.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFCEBEB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              _error,
+              style: const TextStyle(color: Color(0xFFA32D2D), fontSize: 12),
+            ),
+          ),
+        ],
+        const SizedBox(height: 28),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _loading ? null : _verifyOtp,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1a3c2e),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 0,
+            ),
+            child: _loading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Verify code',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: TextButton(
+            onPressed: _loading ? null : _sendOtp,
+            child: Text(
+              "Didn't receive it? Resend",
+              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _otpBox(int index) => SizedBox(
+        width: 46,
+        height: 54,
+        child: TextField(
+          controller: _otpCtrl[index],
+          focusNode: _otpFocus[index],
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          maxLength: 1,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1a3c2e),
+          ),
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: InputDecoration(
+            counterText: '',
+            filled: true,
+            fillColor: const Color(0xFFF8F4E3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF1a3c2e), width: 2),
+            ),
+          ),
+          onChanged: (val) {
+            if (val.isNotEmpty && index < 5) {
+              _otpFocus[index + 1].requestFocus();
+            }
+            if (val.isEmpty && index > 0) {
+              _otpFocus[index - 1].requestFocus();
+            }
+            setState(() => _error = '');
+          },
+        ),
+      );
+
+  Widget _buildRegisterStep() {
+    return SingleChildScrollView(
+      key: const ValueKey<String>('register'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF3DE),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'New account',
+              style: TextStyle(
+                color: Color(0xFF3B6D11),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Tell us about yourself',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1a3c2e),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "We'll set up your farmer profile",
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          ),
+          const SizedBox(height: 24),
+          _field(
+            'Full name *',
+            _nameCtrl,
+            Icons.person_outline_rounded,
+            'Amadou Diallo',
+          ),
+          const SizedBox(height: 14),
+          _field(
+            'Region / Village',
+            _regionCtrl,
+            Icons.location_on_outlined,
+            'e.g. Ségou, Mali',
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Main crop',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F4E3),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedCrop,
+                isExpanded: true,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                items: _crops
+                    .map(
+                      (c) => DropdownMenuItem<String>(
+                        value: c,
+                        child: Text(c),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _selectedCrop = v);
+                },
+              ),
+            ),
+          ),
+          if (_error.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFCEBEB),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _error,
+                style: const TextStyle(color: Color(0xFFA32D2D), fontSize: 12),
+              ),
+            ),
+          ],
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _loading ? null : _register,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1a3c2e),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+              ),
+              child: _loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Create my account',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _field(
+    String label,
+    TextEditingController ctrl,
+    IconData icon,
+    String hint,
+  ) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: ctrl,
+            style: const TextStyle(fontSize: 15, color: Color(0xFF1a3c2e)),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+              filled: true,
+              fillColor: const Color(0xFFF8F4E3),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFF1a3c2e), width: 1.5),
+              ),
+              prefixIcon: Icon(icon, color: Colors.grey[400]),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+          ),
+        ],
+      );
+}

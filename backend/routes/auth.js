@@ -4,6 +4,8 @@ import Admin from '../models/Admin.js';
 import Investor from '../models/Investor.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import GovernmentAdmin from '../models/GovernmentAdmin.js';
+import Farmer from '../models/Farmer.js';
+import Processor from '../models/Processor.js';
 import { authenticateToken, authenticateAnyUser } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -79,6 +81,7 @@ router.post('/mobile-handoff-token', authenticateAnyUser, async (req, res) => {
       const inv = await Investor.findOne({ email: mu.email }).select('_id').lean();
       userId = inv?._id?.toString() || mu.email;
     }
+    if (!userId) userId = mu.email;
     const handoffToken = jwt.sign(
       {
         userId,
@@ -125,6 +128,14 @@ router.post('/fcm-token', authenticateAnyUser, async (req, res) => {
         fcmToken,
         fcmUpdatedAt: now,
       });
+      return res.json({ success: true });
+    }
+    if (mu.role === 'farmer' && mu.id) {
+      await Farmer.findByIdAndUpdate(mu.id, { fcmToken, fcmUpdatedAt: now });
+      return res.json({ success: true });
+    }
+    if (mu.role === 'processor' && mu.id) {
+      await Processor.findByIdAndUpdate(mu.id, { fcmToken, fcmUpdatedAt: now });
       return res.json({ success: true });
     }
 

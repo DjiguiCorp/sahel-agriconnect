@@ -71,6 +71,24 @@ export const authenticateAnyUser = async (req, res, next) => {
       return next();
     }
 
+    if (decoded.role === 'farmer' && decoded.id) {
+      req.mobileUser = {
+        role: 'farmer',
+        id: decoded.id,
+        email: decoded.email,
+      };
+      return next();
+    }
+
+    if (decoded.role === 'processor' && decoded.id) {
+      req.mobileUser = {
+        role: 'processor',
+        id: decoded.id,
+        email: decoded.email,
+      };
+      return next();
+    }
+
     return res.status(403).json({ error: 'Rôle non pris en charge pour cette opération' });
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

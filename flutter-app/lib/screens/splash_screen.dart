@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../core/auth_state.dart';
 import '../core/theme.dart';
 import '../core/glass.dart';
 
@@ -16,8 +18,11 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 2800), () {
-      if (mounted) context.go('/role');
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 2800));
+      if (!mounted) return;
+      final auth = context.read<AuthState>();
+      if (!auth.isLoggedIn) context.go('/role');
     });
   }
 

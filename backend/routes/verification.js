@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 import VerificationCode from '../models/VerificationCode.js';
 import Farmer from '../models/Farmer.js';
@@ -18,6 +19,10 @@ function generateCode() {
 
 function expiresIn(minutes = 15) {
   return new Date(Date.now() + minutes * 60 * 1000);
+}
+
+function normalizePhone(p) {
+  return String(p || '').trim().replace(/\s+/g, '');
 }
 
 function codeEmail(code, purpose, name = '') {
@@ -46,73 +51,164 @@ function codeEmail(code, purpose, name = '') {
   </div>`;
 }
 
-// POST /api/verify/send — send OTP to email
+function farmerSummary(farmer) {
+  if (!farmer) return null;
+  return {
+    id: farmer._id?.toString(),
+    nom: farmer.nom,
+    email: farmer.email || '',
+    telephone: farmer.telephone,
+    country: farmer.country,
+    region: farmer.region,
+    statut: farmer.statut,
+  };
+}
+
+// POST /api/verify/send — send OTP to email or (dev) log for phone
 router.post('/send', async (req, res) => {
   try {
-    const { email, purpose, name } = req.body;
-    if (!email || !purpose) return res.status(400).json({ error: 'Email and purpose required' });
+    const purpose = String(req.body?.purpose || '').trim();
+    const emailRaw = req.body?.email ? String(req.body.email).toLowerCase().trim() : '';
+    const phoneRaw = req.body?.phone ? normalizePhone(req.body.phone) : '';
+    const name = req.body?.name ? String(req.body.name).trim() : '';
+
+    if (!purpose) return res.status(400).json({ error: 'purpose required' });
+    if (!emailRaw && !phoneRaw) {
+      return res.status(400).json({ error: 'Email or phone required' });
+    }
+
+    const email = emailRaw || '';
+    const phone = phoneRaw || '';
+
+    const farmerQuery = email ? { email } : { telephone: phone };
+    const existing = await Farmer.findOne(farmerQuery).lean();
+    const isNewUser = !existing;
 
     const code = generateCode();
-    await VerificationCode.updateMany({ email: email.toLowerCase(), purpose, used: false }, { used: true });
+    const invalidateQ = { purpose, used: false };
+    if (email) invalidateQ.email = email;
+    if (phone) invalidateQ.phone = phone;
+    await VerificationCode.updateMany(invalidateQ, { used: true });
 
     await VerificationCode.create({
-      email: email.toLowerCase().trim(),
+      email,
+      phone,
       code,
       purpose,
       expiresAt: expiresIn(15),
     });
 
     const resend = getResend();
-    if (resend) {
+    if (emailRaw && resend) {
       await resend.emails.send({
         from: FROM,
-        to: email,
+        to: emailRaw,
         subject: `${code} — Code de vérification Sahel AgriConnect`,
         html: codeEmail(code, purpose, name),
       });
-    } else {
-      console.log(`[DEV] OTP for ${email}: ${code}`);
+    } else if (emailRaw) {
+      console.log(`[DEV] OTP email ${emailRaw}: ${code}`);
     }
 
-    res.json({ success: true, message: 'Verification code sent' });
+    if (phoneRaw) {
+      console.log(`[DEV] OTP SMS ${phoneRaw}: ${code} (configure SMS provider for production)`);
+    }
+
+    res.json({
+      success: true,
+      message: 'Verification code sent',
+      isNewUser,
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// POST /api/verify/confirm — validate OTP
+// POST /api/verify/confirm — validate OTP (farmer_verify issues JWT when farmer exists)
 router.post('/confirm', async (req, res) => {
   try {
-    const { email, code, purpose } = req.body;
-    if (!email || !code || !purpose) return res.status(400).json({ error: 'Email, code and purpose required' });
+    const purpose = String(req.body?.purpose || '').trim();
+    const email = req.body?.email ? String(req.body.email).toLowerCase().trim() : '';
+    const phone = req.body?.phone ? normalizePhone(req.body.phone) : '';
+    const code = String(req.body?.code ?? '').trim();
 
-    const record = await VerificationCode.findOne({
-      email: email.toLowerCase().trim(),
-      code: String(code).trim(),
+    if (!purpose || !code) {
+      return res.status(400).json({ error: 'purpose and code required' });
+    }
+    if (!email && !phone) {
+      return res.status(400).json({ error: 'Email or phone required' });
+    }
+
+    const q = {
+      code,
       purpose,
       used: false,
       expiresAt: { $gt: new Date() },
-    });
+    };
+    if (email) q.email = email;
+    if (phone) q.phone = phone;
 
-    if (!record) return res.status(400).json({ error: 'Invalid or expired code. Please request a new one.' });
+    const record = await VerificationCode.findOne(q);
+
+    if (!record) {
+      return res.status(400).json({
+        error: 'Invalid or expired code. Please request a new one.',
+      });
+    }
 
     record.used = true;
     await record.save();
 
     if (purpose === 'farmer_verify') {
-      await Farmer.findOneAndUpdate(
-        { email: email.toLowerCase().trim() },
-        { emailVerified: true, verifiedAt: new Date() }
+      const farmerQuery = email ? { email } : { telephone: phone };
+      const farmer = await Farmer.findOne(farmerQuery).lean();
+
+      if (email) {
+        await Farmer.findOneAndUpdate(
+          { email },
+          { emailVerified: true, verifiedAt: new Date() },
+        );
+      }
+
+      if (!farmer) {
+        return res.json({
+          success: true,
+          verified: true,
+          isNewUser: true,
+          pendingRegistrationId: record._id.toString(),
+        });
+      }
+
+      const token = jwt.sign(
+        {
+          role: 'farmer',
+          id: farmer._id.toString(),
+          email: farmer.email || email,
+          nom: farmer.nom,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '30d' },
       );
-    }
-    if (purpose === 'coop_verify') {
-      await CooperativePlatformRegistration.findOneAndUpdate(
-        { email: email.toLowerCase().trim() },
-        { emailVerified: true, verifiedAt: new Date() }
-      );
+
+      return res.json({
+        success: true,
+        verified: true,
+        isNewUser: false,
+        token,
+        user: farmerSummary(farmer),
+      });
     }
 
-    res.json({ success: true, verified: true });
+    if (purpose === 'coop_verify') {
+      if (email) {
+        await CooperativePlatformRegistration.findOneAndUpdate(
+          { email: email.toLowerCase().trim() },
+          { emailVerified: true, verifiedAt: new Date() },
+        );
+      }
+    }
+
+    return res.json({ success: true, verified: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -42,13 +42,19 @@ class ApiService {
   static Future<Map<String, dynamic>> getPublicStats() =>
       get('/api/farmers/public-stats');
 
-  static Future<Map<String, dynamic>> farmerLogin(String email) =>
-      post('/api/farmers/lookup', {'email': email});
+  static Future<Map<String, dynamic>> farmerLookup(String email) =>
+      get('/api/farmers?email=${Uri.encodeComponent(email)}');
+
+  static Future<Map<String, dynamic>> farmerSession(String email) =>
+      post('/api/farmers/session', {'email': email});
 
   // Investors
-  static Future<Map<String, dynamic>> investorLogin(
-          String email, String password) =>
-      post('/api/investors/login', {'email': email, 'password': password});
+  static Future<Map<String, dynamic>> investorLogin(String email,
+          [String password = '']) =>
+      post('/api/investors/login', {
+        'email': email,
+        if (password.isNotEmpty) 'password': password,
+      });
 
   static Future<Map<String, dynamic>> getOpportunities({String? token}) =>
       get('/api/opportunities', token: token);
@@ -71,4 +77,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getGovDashboard(String token) =>
       get('/api/government/dashboard', token: token);
+
+  static Future<Map<String, dynamic>> processorSession(String email) =>
+      post('/api/processors/session', {'email': email});
 }

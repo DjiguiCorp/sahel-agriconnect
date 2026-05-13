@@ -1,34 +1,209 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../screens/splash_screen.dart';
-import '../screens/role_screen.dart';
-import '../screens/farmer/farmer_dashboard.dart';
-import '../screens/investor/investor_dashboard.dart';
+import 'age_gate_refresh.dart';
+import 'auth_state.dart';
+import '../screens/age_gate_screen.dart';
+import '../screens/auth/farmer_auth_screen.dart';
+import '../screens/auth/login_screen.dart';
 import '../screens/cooperative/cooperative_dashboard.dart';
+import '../screens/farmer/farmer_dashboard.dart';
 import '../screens/government/government_dashboard.dart';
+import '../screens/investor/investor_dashboard.dart';
 import '../screens/processor/processor_dashboard.dart';
+import '../screens/role_screen.dart';
+import '../screens/shared/about_screen.dart';
+import '../screens/shared/change_contact_screen.dart';
+import '../screens/shared/delete_account_screen.dart';
+import '../screens/shared/edit_profile_screen.dart';
+import '../screens/shared/help_screen.dart';
+import '../screens/shared/language_screen.dart';
+import '../screens/shared/notification_settings_screen.dart';
+import '../screens/shared/notifications_screen.dart';
+import '../screens/shared/profile_screen.dart';
+import '../screens/splash_screen.dart';
 
-final GlobalKey<NavigatorState> rootNavigatorKey =
-    GlobalKey<NavigatorState>(debugLabel: 'root');
+final GlobalKey<NavigatorState> _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
-final appRouter = GoRouter(
-  navigatorKey: rootNavigatorKey,
-  initialLocation: '/',
-  routes: [
-    GoRoute(path: '/', builder: (ctx, state) => const SplashScreen()),
-    GoRoute(path: '/role', builder: (ctx, state) => const RoleScreen()),
-    GoRoute(path: '/farmer', builder: (ctx, state) => const FarmerDashboard()),
-    GoRoute(
-        path: '/investor', builder: (ctx, state) => const InvestorDashboard()),
-    GoRoute(
-        path: '/cooperative',
-        builder: (ctx, state) => const CooperativeDashboard()),
-    GoRoute(
-        path: '/government',
-        builder: (ctx, state) => const GovernmentDashboard()),
-    GoRoute(
-        path: '/processor',
-        builder: (ctx, state) => const ProcessorDashboard()),
-  ],
-);
+GlobalKey<NavigatorState> get rootNavigatorKey => _rootKey;
+
+late GoRouter appRouter;
+
+GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
+  appRouter = GoRouter(
+      navigatorKey: _rootKey,
+      initialLocation: ageGate.accepted ? '/' : '/age-gate',
+      refreshListenable: Listenable.merge([authState, ageGate]),
+      redirect: (context, state) {
+        final loc = state.matchedLocation;
+
+        if (!ageGate.accepted) {
+          if (loc != '/age-gate') return '/age-gate';
+          return null;
+        }
+        if (loc == '/age-gate') return '/';
+
+        if (authState.loading) return '/';
+
+        final loggedIn = authState.isLoggedIn;
+
+        if (loggedIn && _routeMismatch(authState.role, loc)) {
+          return _dashboardRoute(authState.role);
+        }
+
+        if (!loggedIn) {
+          if (_isProtectedPath(loc)) {
+            return _loginPathFor(loc);
+          }
+        }
+
+        if (loggedIn &&
+            (loc == '/' ||
+                loc == '/role' ||
+                loc.startsWith('/login') ||
+                loc.startsWith('/register'))) {
+          return _dashboardRoute(authState.role);
+        }
+
+        return null;
+      },
+      routes: [
+        GoRoute(path: '/age-gate', builder: (_, __) => const AgeGateScreen()),
+        GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+        GoRoute(path: '/role', builder: (_, __) => const RoleScreen()),
+        GoRoute(
+            path: '/login/farmer',
+            builder: (_, __) => const FarmerAuthScreen()),
+        GoRoute(
+          path: '/login/investor',
+          builder: (_, __) => const LoginScreen(role: AuthRole.investor),
+        ),
+        GoRoute(
+          path: '/login/cooperative',
+          builder: (_, __) => const LoginScreen(role: AuthRole.cooperative),
+        ),
+        GoRoute(
+          path: '/login/government',
+          builder: (_, __) => const LoginScreen(role: AuthRole.government),
+        ),
+        GoRoute(
+          path: '/login/processor',
+          builder: (_, __) => const LoginScreen(role: AuthRole.processor),
+        ),
+        GoRoute(
+            path: '/farmer', builder: (_, __) => const FarmerDashboard()),
+        GoRoute(
+            path: '/investor', builder: (_, __) => const InvestorDashboard()),
+        GoRoute(
+            path: '/cooperative',
+            builder: (_, __) => const CooperativeDashboard()),
+        GoRoute(
+            path: '/government',
+            builder: (_, __) => const GovernmentDashboard()),
+        GoRoute(
+            path: '/processor',
+            builder: (_, __) => const ProcessorDashboard()),
+        GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+        GoRoute(
+          path: '/profile/edit',
+          builder: (_, __) => const EditProfileScreen(),
+        ),
+        GoRoute(
+          path: '/profile/change-phone',
+          builder: (_, __) => const ChangeContactScreen(type: 'phone'),
+        ),
+        GoRoute(
+          path: '/profile/change-email',
+          builder: (_, __) => const ChangeContactScreen(type: 'email'),
+        ),
+        GoRoute(
+          path: '/profile/language',
+          builder: (_, __) => const LanguageScreen(),
+        ),
+        GoRoute(
+          path: '/profile/notifications',
+          builder: (_, __) => const NotificationSettingsScreen(),
+        ),
+        GoRoute(
+          path: '/profile/delete-account',
+          builder: (_, __) => const DeleteAccountScreen(),
+        ),
+        GoRoute(
+          path: '/notifications',
+          builder: (_, __) => const NotificationsScreen(),
+        ),
+        GoRoute(path: '/help', builder: (_, __) => const HelpScreen()),
+        GoRoute(path: '/about-app', builder: (_, __) => const AboutAppScreen()),
+      ],
+    );
+  return appRouter;
+}
+
+bool _isProfileOrSupportPath(String loc) {
+  if (loc.startsWith('/profile')) return true;
+  if (loc == '/notifications' || loc.startsWith('/notifications/')) return true;
+  if (loc == '/help' || loc.startsWith('/help/')) return true;
+  if (loc == '/about-app') return true;
+  return false;
+}
+
+bool _isProtectedPath(String loc) {
+  if (_isProfileOrSupportPath(loc)) return true;
+  const paths = [
+    '/farmer',
+    '/investor',
+    '/cooperative',
+    '/government',
+    '/processor',
+  ];
+  for (final p in paths) {
+    if (loc == p || loc.startsWith('$p/')) return true;
+  }
+  return false;
+}
+
+String _loginPathFor(String loc) {
+  if (loc.startsWith('/profile')) return '/role';
+  if (loc.startsWith('/notifications')) return '/role';
+  if (loc.startsWith('/farmer')) return '/login/farmer';
+  if (loc.startsWith('/investor')) return '/login/investor';
+  if (loc.startsWith('/cooperative')) return '/login/cooperative';
+  if (loc.startsWith('/government')) return '/login/government';
+  if (loc.startsWith('/processor')) return '/login/processor';
+  return '/role';
+}
+
+bool _routeMismatch(AuthRole role, String loc) {
+  if (_isProfileOrSupportPath(loc)) return false;
+  switch (role) {
+    case AuthRole.farmer:
+      return !(loc.startsWith('/farmer'));
+    case AuthRole.investor:
+      return !(loc.startsWith('/investor'));
+    case AuthRole.cooperative:
+      return !(loc.startsWith('/cooperative'));
+    case AuthRole.government:
+      return !(loc.startsWith('/government'));
+    case AuthRole.processor:
+      return !(loc.startsWith('/farmer') || loc.startsWith('/processor'));
+    default:
+      return false;
+  }
+}
+
+String _dashboardRoute(AuthRole role) {
+  switch (role) {
+    case AuthRole.farmer:
+      return '/farmer';
+    case AuthRole.investor:
+      return '/investor';
+    case AuthRole.cooperative:
+      return '/cooperative';
+    case AuthRole.government:
+      return '/government';
+    case AuthRole.processor:
+      return '/farmer';
+    default:
+      return '/role';
+  }
+}
