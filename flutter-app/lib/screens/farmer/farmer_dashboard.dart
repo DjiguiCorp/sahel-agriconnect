@@ -61,6 +61,22 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       'url': 'https://sahelagriconnect.com/irrigation',
       'webTitle': 'Irrigation Planning',
     },
+    {
+      'icon': '📊',
+      'title': 'Production optimizer',
+      'desc': 'Gemini AI planning',
+      'bg': Color(0xFFF0FDF4),
+      'url': 'https://sahelagriconnect.com/optimisation-production',
+      'webTitle': 'Production Optimizer',
+    },
+    {
+      'icon': '🔍',
+      'title': 'Traceability',
+      'desc': 'Track your produce lot',
+      'bg': Color(0xFFF8F4E3),
+      'url': 'https://sahelagriconnect.com/traceabilite',
+      'webTitle': 'Traceability',
+    },
   ];
 
   @override
@@ -850,6 +866,48 @@ class _BenefitsTab extends StatelessWidget {
           leading: const Icon(Icons.card_giftcard_outlined, color: AppColors.forestGreen),
           title: const Text('Request training subsidy'),
           onTap: () => _open(context, 'Request training subsidy'),
+        ),
+        ListTile(
+          leading: const Icon(
+            Icons.verified_outlined,
+            color: AppColors.forestGreen,
+          ),
+          title: const Text('Certification program'),
+          subtitle: const Text('Apply for quality certification'),
+          trailing: const Icon(
+            Icons.open_in_browser,
+            size: 16,
+            color: Colors.grey,
+          ),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const InAppWebViewScreen(
+                title: 'Certification',
+                url: 'https://sahelagriconnect.com/certification-agriculteurs',
+              ),
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(
+            Icons.handshake_outlined,
+            color: AppColors.forestGreen,
+          ),
+          title: const Text('Join a cooperative'),
+          subtitle: const Text('Find and join a cooperative near you'),
+          trailing: const Icon(
+            Icons.open_in_browser,
+            size: 16,
+            color: Colors.grey,
+          ),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const InAppWebViewScreen(
+                title: 'Join Cooperative',
+                url: 'https://sahelagriconnect.com/join-cooperative',
+              ),
+            ),
+          ),
         ),
       ],
     );

@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/web_action_tile.dart';
+import '../shared/webview_screen.dart';
 
 typedef _OppCardBuilder = Widget Function({
   required String title,
@@ -572,34 +573,83 @@ class _DealsTab extends StatelessWidget {
         child: CircularProgressIndicator(color: Color(0xFFB5850A)),
       );
     }
-    if (opportunities.isEmpty) {
-      return Center(
-        child: Text(
-          'No open opportunities right now.',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 14,
+    final emptyState = opportunities.isEmpty
+        ? Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'No open opportunities right now.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          )
+        : null;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (emptyState != null) emptyState,
+        ...opportunities.asMap().entries.map((entry) {
+          final i = entry.key;
+          final opp = entry.value;
+          final funded = fundedFraction(opp);
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: i < opportunities.length - 1 ? 12 : 0,
+            ),
+            child: opportunityCard(
+              title: oppTitle(opp),
+              subtitle: oppSubtitle(opp),
+              progress: funded.clamp(0.0, 1.0),
+              delay: i * 60,
+              opportunityId: oppId(opp),
+            ),
+          );
+        }),
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const InAppWebViewScreen(
+                  title: 'AfriYield Exchange',
+                  url: 'https://sahelagriconnect.com/afri-yield/marketplace',
+                ),
+              ),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: const Color(0xFFB5850A).withValues(alpha: 0.4),
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.open_in_browser,
+                    size: 16,
+                    color: Color(0xFFB5850A),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Open full marketplace',
+                    style: TextStyle(
+                      color: Color(0xFFB5850A),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: opportunities.length,
-      itemBuilder: (ctx, i) {
-        final opp = opportunities[i];
-        final funded = fundedFraction(opp);
-        return Padding(
-          padding: EdgeInsets.only(bottom: i < opportunities.length - 1 ? 12 : 0),
-          child: opportunityCard(
-            title: oppTitle(opp),
-            subtitle: oppSubtitle(opp),
-            progress: funded.clamp(0.0, 1.0),
-            delay: i * 60,
-            opportunityId: oppId(opp),
-          ),
-        );
-      },
+      ],
     );
   }
 }
@@ -726,39 +776,105 @@ class _AlertsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.notifications_none,
-            size: 48,
-            color: Colors.white.withValues(alpha: 0.24),
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+          child: Text(
+            'Price alerts',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.gold,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Price alerts coming soon',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+        ),
+        ListTile(
+          tileColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: Colors.grey.shade200, width: 0.5),
+          ),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAEEDA),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.notifications_active_outlined,
+              color: Color(0xFF854F0B),
+              size: 20,
             ),
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              "You'll be notified here when shea or sesame prices move.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 13,
-                height: 1.4,
+          title: const Text(
+            'Manage price alerts',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          subtitle: const Text(
+            'Set alerts when shea, sesame, or cashew prices move',
+            style: TextStyle(fontSize: 12),
+          ),
+          trailing: const Icon(
+            Icons.open_in_browser,
+            size: 16,
+            color: Colors.grey,
+          ),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const InAppWebViewScreen(
+                title: 'Price Alerts',
+                url:
+                    'https://sahelagriconnect.com/afri-yield/investor-portal',
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 10),
+        ListTile(
+          tileColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: Colors.grey.shade200, width: 0.5),
+          ),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE6F1FB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.article_outlined,
+              color: Color(0xFF185FA5),
+              size: 20,
+            ),
+          ),
+          title: const Text(
+            'Investor updates',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          subtitle: const Text(
+            'Latest news and platform reports',
+            style: TextStyle(fontSize: 12),
+          ),
+          trailing: const Icon(
+            Icons.open_in_browser,
+            size: 16,
+            color: Colors.grey,
+          ),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const InAppWebViewScreen(
+                title: 'Investor Updates',
+                url:
+                    'https://sahelagriconnect.com/afri-yield/investor-updates',
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

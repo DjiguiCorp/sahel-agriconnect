@@ -190,6 +190,48 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                 ),
                 const SizedBox(height: 20),
                 Text(
+                  'Platform features',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.forestGreen.withValues(alpha: 0.08),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: const Column(
+                    children: [
+                      WebActionTile(
+                        title: 'Diaspora partnership',
+                        description:
+                            'Connect with diaspora investors and donors',
+                        action: 'diaspora-partnership',
+                        icon: Icons.connecting_airports_outlined,
+                      ),
+                      Divider(height: 1),
+                      WebActionTile(
+                        title: 'Equipment fund',
+                        description: 'Apply for shared equipment grants',
+                        action: 'equipment-fund',
+                        icon: Icons.agriculture_outlined,
+                      ),
+                      Divider(height: 1),
+                      WebActionTile(
+                        title: 'Manage cooperative',
+                        description:
+                            'Members, finances, and certifications',
+                        action: 'cooperative-portal',
+                        icon: Icons.groups_outlined,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
                   'Réglages & web',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
