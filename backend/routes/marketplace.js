@@ -3,11 +3,12 @@ import { authenticateToken } from '../middleware/auth.js';
 import QuoteRequest from '../models/QuoteRequest.js';
 import Opportunity from '../models/Opportunity.js';
 import ProduceListing from '../models/ProduceListing.js';
+import CropPrice from '../models/CropPrice.js';
 
 const router = express.Router();
 
-// GET /api/marketplace/prices — public pilot commodity listings (ProduceListing)
-router.get('/prices', async (req, res) => {
+// GET /api/marketplace/listings — produce rows for marketplace cards (public)
+router.get('/listings', async (req, res) => {
   try {
     const listings = await ProduceListing.find({
       status: 'active',
@@ -42,6 +43,126 @@ router.get('/prices', async (req, res) => {
     return res.status(500).json({ success: false, error: e.message || 'Failed' });
   }
 });
+
+// GET /api/marketplace/prices — weekly reference crop prices (public)
+router.get('/prices', async (req, res) => {
+  try {
+    const prices = await CropPrice.find().sort({ commodity: 1 }).lean();
+    if (prices.length === 0) {
+      return res.json({
+        success: true,
+        prices: _defaultPrices(),
+        updatedAt: new Date(),
+      });
+    }
+    return res.json({
+      success: true,
+      prices,
+      updatedAt: prices[0]?.updatedAt,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// PUT /api/marketplace/prices/:commodity — admin only
+router.put('/prices/:commodity', authenticateToken, async (req, res) => {
+  try {
+    const { pricePerKgUsd, pricePerKgXof, weeklyChangePercent, trend, sourceMarket, commodityFr, emoji } =
+      req.body || {};
+    if (pricePerKgUsd == null || pricePerKgUsd === '' || Number.isNaN(Number(pricePerKgUsd))) {
+      return res.status(400).json({ success: false, error: 'pricePerKgUsd required' });
+    }
+    const commodityName = decodeURIComponent(req.params.commodity);
+    const set = {
+      pricePerKgUsd: Number(pricePerKgUsd),
+      weeklyChangePercent:
+        weeklyChangePercent != null && weeklyChangePercent !== ''
+          ? Number(weeklyChangePercent)
+          : 0,
+      trend: trend || 'stable',
+      sourceMarket: sourceMarket || '',
+      updatedAt: new Date(),
+    };
+    if (pricePerKgXof != null && pricePerKgXof !== '') set.pricePerKgXof = Number(pricePerKgXof);
+    if (commodityFr != null) set.commodityFr = commodityFr;
+    if (emoji != null) set.emoji = emoji;
+
+    const price = await CropPrice.findOneAndUpdate(
+      { commodity: commodityName },
+      { $set: set, $setOnInsert: { commodity: commodityName } },
+      { upsert: true, new: true, runValidators: true }
+    );
+    return res.json({ success: true, price });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+function _defaultPrices() {
+  return [
+    {
+      commodity: 'Shea Butter',
+      commodityFr: 'Beurre de Karité',
+      emoji: '🫙',
+      pricePerKgUsd: 3.8,
+      pricePerKgXof: 2356,
+      weeklyChangePercent: 2.1,
+      trend: 'up',
+      sourceMarket: 'Bamako',
+    },
+    {
+      commodity: 'Sesame',
+      commodityFr: 'Sésame',
+      emoji: '🌾',
+      pricePerKgUsd: 1.45,
+      pricePerKgXof: 898,
+      weeklyChangePercent: -0.8,
+      trend: 'down',
+      sourceMarket: 'Ouagadougou',
+    },
+    {
+      commodity: 'Cashew',
+      commodityFr: 'Noix de Cajou',
+      emoji: '🥜',
+      pricePerKgUsd: 2.1,
+      pricePerKgXof: 1302,
+      weeklyChangePercent: 0,
+      trend: 'stable',
+      sourceMarket: 'Sikasso',
+    },
+    {
+      commodity: 'Mango',
+      commodityFr: 'Mangue',
+      emoji: '🥭',
+      pricePerKgUsd: 0.65,
+      pricePerKgXof: 403,
+      weeklyChangePercent: -1.2,
+      trend: 'down',
+      sourceMarket: 'Bobo-Dioulasso',
+    },
+    {
+      commodity: 'Moringa',
+      commodityFr: 'Moringa',
+      emoji: '🌿',
+      pricePerKgUsd: 6.2,
+      pricePerKgXof: 3844,
+      weeklyChangePercent: 3.5,
+      trend: 'up',
+      sourceMarket: 'Niamey',
+    },
+    {
+      commodity: 'Cotton',
+      commodityFr: 'Coton',
+      emoji: '☁️',
+      pricePerKgUsd: 0.88,
+      pricePerKgXof: 546,
+      weeklyChangePercent: 0.5,
+      trend: 'up',
+      sourceMarket: 'Bamako',
+    },
+  ];
+}
 
 // POST /api/marketplace/seed-pilot — one-time populate (header X-Seed-Key = MARKETPLACE_SEED_KEY)
 router.post('/seed-pilot', async (req, res) => {

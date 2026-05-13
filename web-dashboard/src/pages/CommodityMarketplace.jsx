@@ -116,11 +116,58 @@ function produceListingToOpportunityCard(l) {
   };
 }
 
+function PriceBoard({ prices, isFr }) {
+  if (!prices.length) return null;
+  return (
+    <div className="mb-2">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-[#1a3c2e]">
+          {isFr ? 'Prix du marché cette semaine' : 'Market prices this week'}
+        </h2>
+        <span className="text-xs text-gray-400">
+          {isFr ? 'Source: coopératives vérifiées' : 'Source: verified cooperatives'}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {prices.map((p) => (
+          <div key={p.commodity} className="bg-white rounded-2xl border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">{p.emoji}</span>
+              <span
+                className={`text-xs font-bold px-2 py-1 rounded-full ${
+                  p.trend === 'up'
+                    ? 'bg-green-50 text-green-700'
+                    : p.trend === 'down'
+                      ? 'bg-red-50 text-red-700'
+                      : 'bg-gray-50 text-gray-500'
+                }`}
+              >
+                {p.trend === 'up' ? '↑' : p.trend === 'down' ? '↓' : '→'}{' '}
+                {Math.abs(Number(p.weeklyChangePercent) || 0).toFixed(1)}%
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-1">{isFr ? p.commodityFr : p.commodity}</p>
+            <p className="text-lg font-bold text-[#1a3c2e]">
+              ${Number(p.pricePerKgUsd).toFixed(2)}
+              <span className="text-xs font-normal text-gray-400">/kg</span>
+            </p>
+            {p.pricePerKgXof != null && (
+              <p className="text-xs text-gray-400">{Number(p.pricePerKgXof).toLocaleString()} XOF/kg</p>
+            )}
+            <p className="text-xs text-gray-300 mt-1">{p.sourceMarket}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function CommodityMarketplace() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
 
   const [items, setItems] = useState([]);
+  const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,12 +197,14 @@ export default function CommodityMarketplace() {
     }
     Promise.all([
       fetch(`${base}/api/opportunities`).then((r) => r.json()).catch(() => ({})),
+      fetch(`${base}/api/marketplace/listings`).then((r) => r.json()).catch(() => ({})),
       fetch(`${base}/api/marketplace/prices`).then((r) => r.json()).catch(() => ({})),
     ])
-      .then(([opp, price]) => {
+      .then(([opp, listing, price]) => {
         const fromOpps = opp.opportunities || [];
-        const fromProduce = (price.listings || []).map(produceListingToOpportunityCard);
+        const fromProduce = (listing.listings || []).map(produceListingToOpportunityCard);
         setItems([...fromProduce, ...fromOpps]);
+        setPrices(price.prices || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -305,6 +354,11 @@ export default function CommodityMarketplace() {
       </div>
 
       <div className="px-6 pb-16" style={{ maxWidth: 1100, margin: '0 auto' }}>
+        {prices.length > 0 && (
+          <div className="rounded-2xl bg-white p-5 mb-6 shadow-md">
+            <PriceBoard prices={prices} isFr={isFr} />
+          </div>
+        )}
         <div className="py-5 space-y-4">
           <div
             className="flex items-center gap-3 rounded-2xl px-4 py-3"

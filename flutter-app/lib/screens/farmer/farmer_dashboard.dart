@@ -21,6 +21,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   int _tab = 0;
   Map<String, dynamic>? _farmer;
   bool _loadingFarmer = true;
+  List<Map<String, dynamic>> _prices = [];
 
   List<String> get _cultures =>
       (_farmer?['cultures'] as List?)?.map((e) => e.toString()).toList() ?? [];
@@ -67,6 +68,17 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   }
 
   Future<void> _loadFarmer() async {
+    ApiService.getMarketplacePrices().then((res) {
+      if (!mounted) return;
+      final raw = res['prices'];
+      if (raw is! List) return;
+      final list = <Map<String, dynamic>>[];
+      for (final e in raw) {
+        if (e is Map) list.add(Map<String, dynamic>.from(e));
+      }
+      setState(() => _prices = list);
+    }).catchError((_) {});
+
     final auth = context.read<AuthState>();
     final token = auth.token;
     final email = auth.displayEmail;
@@ -112,6 +124,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
           loadingFarmer: _loadingFarmer,
           tools: tools,
           produceRow: _produceRow,
+          prices: _prices,
         );
     }
   }
@@ -425,11 +438,13 @@ class _HomeTab extends StatelessWidget {
     required this.loadingFarmer,
     required this.tools,
     required this.produceRow,
+    required this.prices,
   });
 
   final List<String> cultures;
   final bool loadingFarmer;
   final List<Map<String, Object>> tools;
+  final List<Map<String, dynamic>> prices;
   final Widget Function(
     String name,
     String sub,
@@ -443,6 +458,100 @@ class _HomeTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Text(
+          'Market prices',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 80,
+          child: prices.isEmpty
+              ? const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: prices.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (ctx, i) {
+                    final p = prices[i];
+                    final trend = p['trend']?.toString() ?? 'stable';
+                    final change =
+                        (p['weeklyChangePercent'] as num?)?.toDouble() ?? 0;
+                    final usd = (p['pricePerKgUsd'] as num?)?.toDouble() ?? 0.0;
+                    return Container(
+                      width: 100,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.forestGreen.withValues(alpha: 0.08),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                p['emoji']?.toString() ?? '🌾',
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: trend == 'up'
+                                      ? const Color(0xFFEAF3DE)
+                                      : trend == 'down'
+                                          ? const Color(0xFFFCEBEB)
+                                          : const Color(0xFFF1EFE8),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${trend == 'up' ? '↑' : trend == 'down' ? '↓' : '→'}${change.abs().toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: trend == 'up'
+                                        ? const Color(0xFF3B6D11)
+                                        : trend == 'down'
+                                            ? const Color(0xFFA32D2D)
+                                            : const Color(0xFF5F5E5A),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Text(
+                            '\$${usd.toStringAsFixed(2)}/kg',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.forestGreen,
+                            ),
+                          ),
+                          Text(
+                            p['commodity']?.toString() ?? '',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.grey[500],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+        const SizedBox(height: 20),
         Text(
           'AI Agricultural Tools',
           style: Theme.of(context).textTheme.titleMedium,
