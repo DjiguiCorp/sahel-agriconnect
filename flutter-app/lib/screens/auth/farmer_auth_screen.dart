@@ -5,6 +5,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 
@@ -83,7 +84,11 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   Future<void> _sendOtp() async {
     final contact = _contact;
     if (contact.isEmpty) {
-      setState(() => _error = 'Please enter your email or phone number');
+      final lp = context.read<LanguageProvider>();
+      setState(() => _error = lp.t(
+            'Please enter your email or phone number',
+            'Veuillez entrer votre email ou numéro de téléphone',
+          ));
       return;
     }
     setState(() {
@@ -129,7 +134,11 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
 
   Future<void> _verifyOtp() async {
     if (_otpCode.length < 6) {
-      setState(() => _error = 'Please enter all 6 digits');
+      final lp = context.read<LanguageProvider>();
+      setState(() => _error = lp.t(
+            'Please enter all 6 digits',
+            'Veuillez entrer les 6 chiffres',
+          ));
       return;
     }
     setState(() {
@@ -264,6 +273,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -315,7 +325,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Farmer portal',
+                            lp.t('Farmer portal', 'Portail agriculteur'),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 12,
@@ -345,9 +355,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                           width: 0.5,
                         ),
                       ),
-                      child: const Text(
-                        '🌾 Farmer',
-                        style: TextStyle(
+                      child: Text(
+                        lp.t('🌾 Farmer', '🌾 Agriculteur'),
+                        style: const TextStyle(
                           color: AppColors.gold,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -368,7 +378,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                   ),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    child: _buildStep(),
+                    child: _buildStep(lp),
                   ),
                 ),
               ),
@@ -379,25 +389,25 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     );
   }
 
-  Widget _buildStep() {
+  Widget _buildStep(LanguageProvider lp) {
     switch (_step) {
       case FarmerAuthStep.identity:
-        return _buildIdentityStep();
+        return _buildIdentityStep(lp);
       case FarmerAuthStep.otp:
-        return _buildOtpStep();
+        return _buildOtpStep(lp);
       case FarmerAuthStep.register:
-        return _buildRegisterStep();
+        return _buildRegisterStep(lp);
     }
   }
 
-  Widget _buildIdentityStep() {
+  Widget _buildIdentityStep(LanguageProvider lp) {
     return Column(
       key: const ValueKey<String>('identity'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Welcome',
-          style: TextStyle(
+        Text(
+          lp.t('Welcome', 'Bienvenue'),
+          style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w700,
             color: Color(0xFF1a3c2e),
@@ -405,12 +415,15 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Enter your email or phone number to continue',
+          lp.t(
+            'Enter your email or phone number to continue',
+            'Entrez votre email ou numéro de téléphone pour continuer',
+          ),
           style: TextStyle(fontSize: 14, color: Colors.grey[500]),
         ),
         const SizedBox(height: 28),
         Text(
-          'Email or phone number',
+          lp.t('Email or phone number', 'Email ou numéro de téléphone'),
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -423,7 +436,10 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           keyboardType: TextInputType.emailAddress,
           style: const TextStyle(fontSize: 15, color: Color(0xFF1a3c2e)),
           decoration: InputDecoration(
-            hintText: 'e.g. your@email.com or +223...',
+            hintText: lp.t(
+              'e.g. your@email.com or +223...',
+              'ex. votre@email.com ou +223...',
+            ),
             hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
             filled: true,
             fillColor: const Color(0xFFF8F4E3),
@@ -476,16 +492,25 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                       strokeWidth: 2,
                     ),
                   )
-                : const Text(
-                    'Send verification code',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                : Text(
+                    lp.t(
+                      'Send verification code',
+                      'Envoyer le code de vérification',
+                    ),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
           ),
         ),
         const Spacer(),
         Center(
           child: Text(
-            "We'll send a 6-digit code to verify your identity.\nNo password needed.",
+            lp.t(
+              "We'll send a 6-digit code to verify your identity.\nNo password needed.",
+              "Nous enverrons un code à 6 chiffres pour vérifier votre identité.\nAucun mot de passe requis.",
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey[400],
@@ -498,14 +523,14 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     );
   }
 
-  Widget _buildOtpStep() {
+  Widget _buildOtpStep(LanguageProvider lp) {
     return Column(
       key: const ValueKey<String>('otp'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Enter your code',
-          style: TextStyle(
+        Text(
+          lp.t('Enter your code', 'Entrez votre code'),
+          style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w700,
             color: Color(0xFF1a3c2e),
@@ -516,7 +541,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           text: TextSpan(
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             children: [
-              const TextSpan(text: 'We sent a 6-digit code to '),
+              TextSpan(
+                text: '${lp.t(
+                  'We sent a 6-digit code to',
+                  'Nous avons envoyé un code à 6 chiffres à',
+                )} ',
+              ),
               TextSpan(
                 text: _contact,
                 style: const TextStyle(
@@ -569,9 +599,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                       strokeWidth: 2,
                     ),
                   )
-                : const Text(
-                    'Verify code',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                : Text(
+                    lp.t('Verify code', 'Vérifier le code'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
           ),
         ),
@@ -580,7 +613,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           child: TextButton(
             onPressed: _loading ? null : _sendOtp,
             child: Text(
-              "Didn't receive it? Resend",
+              lp.t("Didn't receive it? Resend", 'Pas reçu ? Renvoyer'),
               style: TextStyle(color: Colors.grey[500], fontSize: 13),
             ),
           ),
@@ -629,7 +662,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         ),
       );
 
-  Widget _buildRegisterStep() {
+  Widget _buildRegisterStep(LanguageProvider lp) {
     return SingleChildScrollView(
       key: const ValueKey<String>('register'),
       child: Column(
@@ -641,9 +674,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
               color: const Color(0xFFEAF3DE),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              'New account',
-              style: TextStyle(
+            child: Text(
+              lp.t('New account', 'Nouveau compte'),
+              style: const TextStyle(
                 color: Color(0xFF3B6D11),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -651,9 +684,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Tell us about yourself',
-            style: TextStyle(
+          Text(
+            lp.t('Tell us about yourself', 'Parlez-nous de vous'),
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: Color(0xFF1a3c2e),
@@ -661,19 +694,22 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            "We'll set up your farmer profile",
+            lp.t(
+              "We'll set up your farmer profile",
+              'Nous allons créer votre profil agriculteur',
+            ),
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
           const SizedBox(height: 24),
           _field(
-            'Full name *',
+            lp.t('Full name *', 'Nom complet *'),
             _nameCtrl,
             Icons.person_outline_rounded,
             'Amadou Diallo',
           ),
           const SizedBox(height: 14),
           Text(
-            'Country *',
+            lp.t('Country *', 'Pays *'),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -696,9 +732,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedCountry.isEmpty ? null : _selectedCountry,
-                hint: const Text(
-                  'Country / Pays *',
-                  style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+                hint: Text(
+                  lp.t('Country *', 'Pays *'),
+                  style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
                 ),
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down_rounded),
@@ -716,14 +752,14 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           ),
           const SizedBox(height: 14),
           _field(
-            'Region / Village',
+            lp.t('Region / Village', 'Région / Village'),
             _regionCtrl,
             Icons.location_on_outlined,
-            'Region / Village',
+            lp.t('Region / Village', 'Région / Village'),
           ),
           const SizedBox(height: 14),
           Text(
-            'Main crop',
+            lp.t('Main crop', 'Culture principale'),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -793,9 +829,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                         strokeWidth: 2,
                       ),
                     )
-                  : const Text(
-                      'Create my account',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  : Text(
+                      lp.t('Create my account', 'Créer mon compte'),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
             ),
           ),

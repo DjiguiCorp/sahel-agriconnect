@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../core/language_provider.dart';
 import '../core/theme.dart';
 import '../core/glass.dart';
 
@@ -27,15 +29,8 @@ class RoleOption {
   });
 }
 
-class RoleScreen extends StatefulWidget {
+class RoleScreen extends StatelessWidget {
   const RoleScreen({super.key});
-
-  @override
-  State<RoleScreen> createState() => _RoleScreenState();
-}
-
-class _RoleScreenState extends State<RoleScreen> {
-  String _lang = 'EN';
 
   static const roles = [
     RoleOption(
@@ -97,6 +92,9 @@ class _RoleScreenState extends State<RoleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final langProvider = context.watch<LanguageProvider>();
+    final isFr = langProvider.isFr;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -111,11 +109,10 @@ class _RoleScreenState extends State<RoleScreen> {
             children: [
               const SizedBox(height: 24),
 
-              // Header
               Column(
                 children: [
                   Text(
-                    'Welcome to',
+                    isFr ? 'Bienvenue sur' : 'Welcome to',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.4),
                       fontSize: 13,
@@ -134,7 +131,7 @@ class _RoleScreenState extends State<RoleScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _lang == 'FR'
+                    isFr
                         ? 'Comment souhaitez-vous continuer ?'
                         : 'How would you like to continue?',
                     style: TextStyle(
@@ -189,7 +186,7 @@ class _RoleScreenState extends State<RoleScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              _lang == 'FR' ? role.titleFr : role.titleEn,
+                              isFr ? role.titleFr : role.titleEn,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -198,7 +195,7 @@ class _RoleScreenState extends State<RoleScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _lang == 'FR' ? role.descFr : role.descEn,
+                              isFr ? role.descFr : role.descEn,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.35),
                                 fontSize: 10,
@@ -217,15 +214,14 @@ class _RoleScreenState extends State<RoleScreen> {
                 ),
               ),
 
-              // Language selector
               Padding(
                 padding: const EdgeInsets.only(bottom: 24),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: ['EN', 'FR', 'بم', 'Ff'].map((lang) {
-                    final isOn = _lang == lang;
+                  children: ['EN', 'FR'].map((lang) {
+                    final isOn = langProvider.lang == lang.toLowerCase();
                     return GestureDetector(
-                      onTap: () => setState(() => _lang = lang),
+                      onTap: () => langProvider.setLang(lang.toLowerCase()),
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         padding: const EdgeInsets.symmetric(

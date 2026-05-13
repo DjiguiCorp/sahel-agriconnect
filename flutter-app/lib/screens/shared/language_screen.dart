@@ -1,39 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
-import '../../main.dart';
 
-class LanguageScreen extends StatefulWidget {
+class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key});
 
-  @override
-  State<LanguageScreen> createState() => _LanguageScreenState();
-}
-
-class _LanguageScreenState extends State<LanguageScreen> {
-  static const _kLocalePrefKey = 'app_locale';
-
-  String _selected = 'fr';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() => _selected = prefs.getString(_kLocalePrefKey) ?? 'fr');
-  }
-
-  Future<void> _select(String code) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kLocalePrefKey, code);
-    SahelApp.updateLocale(Locale(code));
-    if (!mounted) return;
-    setState(() => _selected = code);
+  Future<void> _select(BuildContext context, String code) async {
+    final lp = context.read<LanguageProvider>();
+    await lp.setLang(code);
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -50,6 +27,9 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
+    final selected = lp.lang;
+
     final langs = <Map<String, String>>[
       {
         'code': 'fr',
@@ -72,7 +52,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: Text(_selected == 'fr' ? 'Langue' : 'Language'),
+        title: Text(lp.t('Language', 'Langue')),
         backgroundColor: AppColors.forestGreen,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -83,17 +63,18 @@ class _LanguageScreenState extends State<LanguageScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 16, top: 4),
             child: Text(
-              _selected == 'fr'
-                  ? 'Choisissez votre langue préférée'
-                  : 'Choose your preferred language',
+              lp.t(
+                'Choose your preferred language',
+                'Choisissez votre langue préférée',
+              ),
               style: TextStyle(fontSize: 13, color: Colors.grey[600]),
             ),
           ),
           ...langs.map((lang) {
             final code = lang['code']!;
-            final isSelected = _selected == code;
+            final isSelected = selected == code;
             return GestureDetector(
-              onTap: () => _select(code),
+              onTap: () => _select(context, code),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.only(bottom: 10),

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/age_gate_refresh.dart';
 import 'core/auth_state.dart';
+import 'core/language_provider.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'firebase_options.dart';
@@ -55,6 +56,7 @@ void main() async {
         ChangeNotifierProvider.value(value: authState),
         ChangeNotifierProvider.value(value: ageGate),
         ChangeNotifierProvider(create: (_) => OfflineQueue()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
       child: const SahelApp(),
     ),

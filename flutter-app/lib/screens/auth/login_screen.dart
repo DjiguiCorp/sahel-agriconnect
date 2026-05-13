@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 
@@ -118,14 +119,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
+    final lp = context.read<LanguageProvider>();
     final email = _emailCtrl.text.trim().toLowerCase();
     final password = _passwordCtrl.text;
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Please enter your email and password');
+      setState(() => _error = lp.t(
+            'Please enter your email and password',
+            'Veuillez entrer votre email et mot de passe',
+          ));
       return;
     }
     if (_needsCountry && _selectedCountry.isEmpty) {
-      setState(() => _error = 'Please select your country');
+      setState(() => _error = lp.t(
+            'Please select your country',
+            'Veuillez sélectionner votre pays',
+          ));
       return;
     }
     setState(() {
@@ -175,7 +183,10 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
           setState(() {
             _loading = false;
-            _error = 'Biometric verification failed. Please try again.';
+            _error = lp.t(
+              'Biometric verification failed. Please try again.',
+              'Vérification biométrique échouée. Veuillez réessayer.',
+            );
           });
           return;
         }
@@ -195,6 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -239,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         Text(
-                          _config.title,
+                          _localizedTitle(lp),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 17,
@@ -264,9 +276,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Sign in',
-                        style: TextStyle(
+                      Text(
+                        lp.t('Sign in', 'Connexion'),
+                        style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1a3c2e),
@@ -275,12 +287,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 6),
                       Text(
                         widget.role == AuthRole.government
-                            ? 'Use your institutional email to sign in'
-                            : 'Welcome back',
+                            ? lp.t(
+                                'Use your institutional email to sign in',
+                                'Utilisez votre email institutionnel pour vous connecter',
+                              )
+                            : lp.t('Welcome back', 'Bon retour'),
                         style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                       ),
                       const SizedBox(height: 28),
-                      _label('Email'),
+                      _label(lp.t('Email', 'Email')),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _emailCtrl,
@@ -298,7 +313,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (widget.role == AuthRole.government) ...[
                         const SizedBox(height: 6),
                         Text(
-                          'Requires official .gov or .gouv email',
+                          lp.t(
+                            'Requires official .gov or .gouv email',
+                            'Email officiel .gov ou .gouv requis',
+                          ),
                           style: TextStyle(fontSize: 11, color: Colors.grey[400]),
                         ),
                       ],
@@ -306,8 +324,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 14),
                         _label(
                           widget.role == AuthRole.government
-                              ? 'Country / Pays'
-                              : 'Cooperative country',
+                              ? lp.t('Country', 'Pays')
+                              : lp.t(
+                                  'Cooperative country',
+                                  'Pays de la coopérative',
+                                ),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -328,8 +349,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : _selectedCountry,
                               hint: Text(
                                 widget.role == AuthRole.government
-                                    ? 'Your country / Votre pays'
-                                    : 'Cooperative country',
+                                    ? lp.t('Your country', 'Votre pays')
+                                    : lp.t(
+                                        'Cooperative country',
+                                        'Pays de la coopérative',
+                                      ),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Color(0xFFAAAAAA),
@@ -354,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                       const SizedBox(height: 16),
-                      _label('Password'),
+                      _label(lp.t('Password', 'Mot de passe')),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _passwordCtrl,
@@ -435,9 +459,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text(
-                                  'Sign in',
-                                  style: TextStyle(
+                              : Text(
+                                  lp.t('Sign in', 'Se connecter'),
+                                  style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -452,7 +476,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             Icon(Icons.fingerprint, size: 14, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
                             Text(
-                              'Biometric verification required',
+                              lp.t(
+                                'Biometric verification required',
+                                'Vérification biométrique requise',
+                              ),
                               style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                             ),
                           ],
@@ -465,7 +492,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             'https://sahelagriconnect.com/account/reset-password',
                           ),
                           child: Text(
-                            'Forgot password?',
+                            lp.t('Forgot password?', 'Mot de passe oublié ?'),
                             style: TextStyle(
                               color: Colors.grey[500],
                               fontSize: 13,
@@ -485,8 +512,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             Expanded(
                               child: Text(
                                 _config.canSelfRegister
-                                    ? 'New to AfriYield Exchange?'
-                                    : "Don't have access yet?",
+                                    ? lp.t(
+                                        'New to AfriYield Exchange?',
+                                        'Nouveau sur AfriYield Exchange ?',
+                                      )
+                                    : lp.t(
+                                        "Don't have access yet?",
+                                        'Pas encore accès ?',
+                                      ),
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey[600],
@@ -507,8 +540,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               child: Text(
                                 _config.canSelfRegister
-                                    ? 'Register'
-                                    : 'Request access',
+                                    ? lp.t('Register', "S'inscrire")
+                                    : lp.t(
+                                        'Request access',
+                                        "Demander l'accès",
+                                      ),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -528,6 +564,24 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  /// Localizes the header title shown in the dark gradient bar.
+  /// Only the cooperative portal has a FR translation per spec; other
+  /// role titles stay in their original English form.
+  String _localizedTitle(LanguageProvider lp) {
+    switch (widget.role) {
+      case AuthRole.cooperative:
+        return lp.t('Cooperative portal', 'Portail coopérative');
+      case AuthRole.investor:
+        return lp.t('AfriYield Exchange', 'AfriYield Exchange');
+      case AuthRole.government:
+        return lp.t('Government / NGO', 'Gouvernement / ONG');
+      case AuthRole.processor:
+        return lp.t('Processor portal', 'Portail processeur');
+      default:
+        return _config.title;
+    }
   }
 
   Widget _label(String text) => Text(
