@@ -9,6 +9,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/cooperative/cooperative_dashboard.dart';
 import '../screens/farmer/farmer_dashboard.dart';
 import '../screens/government/government_dashboard.dart';
+import '../screens/home_screen.dart';
 import '../screens/investor/investor_dashboard.dart';
 import '../screens/processor/processor_dashboard.dart';
 import '../screens/role_screen.dart';
@@ -33,7 +34,7 @@ late GoRouter appRouter;
 GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
   appRouter = GoRouter(
       navigatorKey: _rootKey,
-      initialLocation: '/',
+      initialLocation: '/home',
       refreshListenable: Listenable.merge([authState, ageGate]),
       redirect: (context, state) {
         final loc = state.matchedLocation;
@@ -78,6 +79,7 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
       routes: [
         GoRoute(path: '/age-gate', builder: (_, __) => const AgeGateScreen()),
         GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+        GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
         GoRoute(path: '/role', builder: (_, __) => const RoleScreen()),
         GoRoute(
             path: '/login/farmer',
