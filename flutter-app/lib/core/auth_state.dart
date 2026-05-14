@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 import '../services/auth_service.dart';
+import '../services/guest_content_service.dart';
 
 enum AuthRole { none, farmer, investor, cooperative, government, ngo, processor }
 
@@ -109,6 +110,7 @@ class AuthState extends ChangeNotifier {
     _role = AuthRole.none;
     _token = null;
     _user = null;
+    await GuestContentService.clearCache();
     notifyListeners();
     AuthService.cancelSessionTimer();
   }
@@ -122,6 +124,7 @@ class AuthState extends ChangeNotifier {
     _role = AuthRole.none;
     _token = null;
     _user = null;
+    await GuestContentService.clearCache();
     notifyListeners();
     AuthService.cancelSessionTimer();
   }
