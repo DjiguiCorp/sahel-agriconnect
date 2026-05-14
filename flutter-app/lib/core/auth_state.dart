@@ -19,11 +19,17 @@ class AuthState extends ChangeNotifier {
   Map<String, dynamic>? _user;
   bool _loading = true;
 
+  /// True when the user explicitly chose "Explore as Guest" on the home
+  /// screen. Not persisted across app launches — guests start fresh.
+  /// Cleared automatically as soon as a real session is set.
+  bool _isGuest = false;
+
   AuthRole get role => _role;
   String? get token => _token;
   Map<String, dynamic>? get user => _user;
   bool get loading => _loading;
   bool get isLoggedIn => _token != null && _role != AuthRole.none;
+  bool get isGuest => _isGuest && !isLoggedIn;
 
   String get displayName =>
       _user?['name']?.toString() ??
@@ -76,8 +82,24 @@ class AuthState extends ChangeNotifier {
     _role = role;
     _token = token;
     _user = userData;
+    _isGuest = false;
     notifyListeners();
     AuthService.resetActivity();
+  }
+
+  /// Marks the user as a guest, allowing read-only browsing of the public
+  /// content surfaced on the home screen without forcing a login.
+  void continueAsGuest() {
+    if (_isGuest) return;
+    _isGuest = true;
+    notifyListeners();
+  }
+
+  /// Clears guest mode (e.g. when navigating to a real login flow).
+  void exitGuestMode() {
+    if (!_isGuest) return;
+    _isGuest = false;
+    notifyListeners();
   }
 
   Future<void> logout() async {
