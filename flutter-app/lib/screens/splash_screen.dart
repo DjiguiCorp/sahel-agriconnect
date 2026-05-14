@@ -22,7 +22,7 @@ class _SplashScreenState extends State<SplashScreen> {
       await Future<void>.delayed(const Duration(milliseconds: 2800));
       if (!mounted) return;
       final auth = context.read<AuthState>();
-      if (!auth.isLoggedIn) context.go('/role');
+      if (!auth.isLoggedIn) context.go('/home');
     });
   }
 
