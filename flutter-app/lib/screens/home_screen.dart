@@ -405,7 +405,14 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Row(
         children: [
-          const _Logo(size: 36),
+          const _Logo(size: 36)
+              .animate()
+              .fadeIn(duration: 600.ms)
+              .scale(
+                begin: const Offset(0.8, 0.8),
+                duration: 800.ms,
+                curve: Curves.elasticOut,
+              ),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
@@ -452,7 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 12,
               letterSpacing: 0.4,
             ),
-          ).animate().fadeIn(duration: 400.ms),
+          ),
           const SizedBox(height: 8),
           Text(
             lp.t(
@@ -466,7 +473,10 @@ class _HomeScreenState extends State<HomeScreen> {
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
             ),
-          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.06, end: 0),
+          )
+              .animate()
+              .fadeIn(delay: 200.ms, duration: 500.ms)
+              .slideY(begin: 0.3, duration: 500.ms, curve: Curves.easeOut),
           const SizedBox(height: 6),
           Text(
             lp.t(
@@ -478,7 +488,10 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 13,
               height: 1.5,
             ),
-          ).animate(delay: 100.ms).fadeIn(duration: 400.ms),
+          )
+              .animate()
+              .fadeIn(delay: 350.ms, duration: 500.ms)
+              .slideY(begin: 0.3, duration: 500.ms, curve: Curves.easeOut),
           const SizedBox(height: 18),
           Row(
             children: [
@@ -571,7 +584,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ],
-          ).animate(delay: 200.ms).fadeIn(duration: 400.ms),
+          )
+              .animate()
+              .fadeIn(delay: 600.ms, duration: 400.ms)
+              .slideY(begin: 0.2, duration: 400.ms, curve: Curves.easeOut),
         ],
       ),
     );
@@ -623,9 +639,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   isFr: lp.isFr,
                   onTap: () => _selectCategory(i),
                 )
-                    .animate(delay: Duration(milliseconds: 80 * i))
-                    .fadeIn(duration: 350.ms)
-                    .slideX(begin: 0.1, end: 0);
+                    .animate()
+                    .fadeIn(
+                      delay: Duration(milliseconds: 100 * i),
+                      duration: 400.ms,
+                    )
+                    .slideX(
+                      begin: 0.2,
+                      duration: 400.ms,
+                      curve: Curves.easeOut,
+                    );
               },
             ),
           ),
