@@ -4,6 +4,7 @@ import Header from './Header';
 import Footer from './Footer';
 import LanguageSettings from './LanguageSettings';
 import SEO from './SEO';
+import CookieConsent from './CookieConsent';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 
 const Layout = () => {
@@ -22,6 +23,7 @@ const Layout = () => {
       </main>
       <Footer />
       <LanguageSettings />
+      <CookieConsent />
     </div>
   );
 };

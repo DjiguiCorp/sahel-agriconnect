@@ -1,101 +1,75 @@
+import { Link } from 'react-router-dom';
+
+const SECTIONS = [
+  {
+    title: '1. Introduction',
+    content: `Sahel AgriConnect ("Platform") is an agricultural commerce platform connecting farmers, cooperatives, investors, and processors across West Africa and the global diaspora. By accessing or using our Platform, you agree to be bound by these Terms of Service.`,
+  },
+  {
+    title: '2. Eligibility',
+    content: `You must be at least 18 years of age to use this Platform. By registering, you confirm that all information provided is accurate, current, and complete. Accounts found to contain false information will be permanently suspended.`,
+  },
+  {
+    title: '3. Account Registration & Vetting',
+    content: `All accounts are subject to a vetting process before full access is granted. This process ensures the security and quality of our platform community. Vetting typically takes 24–48 hours. We reserve the right to deny access to any applicant without explanation.`,
+  },
+  {
+    title: '4. Acceptable Use',
+    content: `You agree not to misuse the Platform. Prohibited activities include: manipulating market prices, submitting false produce declarations, impersonating other users, engaging in fraudulent transactions, or using the Platform for any unlawful purpose.`,
+  },
+  {
+    title: '5. Agricultural Declarations',
+    content: `Farmers and cooperatives agree to declare produce quantities and qualities accurately. False declarations may result in immediate account suspension and potential legal action under applicable local law.`,
+  },
+  {
+    title: '6. AfriYield Exchange & Investments',
+    content: `Investment features are subject to additional terms. Returns are not guaranteed. The Platform acts as a marketplace and is not a licensed financial institution. Users invest at their own risk and should seek independent financial advice.`,
+  },
+  {
+    title: '7. Intellectual Property',
+    content: `All content, branding, and technology on the Platform is the property of Sahel AgriConnect / DjiguiCorp. You may not reproduce, distribute, or create derivative works without explicit written permission.`,
+  },
+  {
+    title: '8. Limitation of Liability',
+    content: `The Platform is not liable for losses arising from commercial transactions between users, market price fluctuations, system downtime, or data breaches caused by third parties. Our maximum liability is limited to fees paid in the preceding 3 months.`,
+  },
+  {
+    title: '9. Termination',
+    content: `We reserve the right to suspend or terminate any account that violates these Terms, without prior notice. Users may request account deletion by contacting support@sahelagriconnect.com.`,
+  },
+  {
+    title: '10. Governing Law',
+    content: `These Terms are governed by the laws of Mali for users in West Africa. EU/diaspora users are additionally protected by applicable GDPR provisions. Disputes shall be resolved through good-faith negotiation before any legal proceedings.`,
+  },
+  {
+    title: '11. Contact',
+    content: `For legal inquiries: legal@sahelagriconnect.com
+For support: support@sahelagriconnect.com
+Website: https://sahelagriconnect.com`,
+  },
+];
+
 export default function TermsOfService() {
   return (
-    <div className="bg-brand-cream min-h-[60vh]">
-      <section className="section-container py-12 md:py-16">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-[#1a3c2e] mb-3">Conditions d&apos;utilisation</h1>
-          <p className="text-gray-600 mb-10">Last updated: May 2026</p>
+    <div className="min-h-screen bg-brand-forest text-white">
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <Link to="/" className="text-brand-amber text-sm mb-8 inline-block">
+          ← Back to Home
+        </Link>
+        <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
+        <p className="text-white/50 text-sm mb-10">Last updated: May 2026</p>
 
-          <div className="space-y-10 text-gray-700 leading-relaxed">
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">1. Acceptance of Terms</h2>
-              <p>
-                By accessing Sahel AgriConnect or AfriYield Exchange, you agree to these terms.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">2. Platform Description</h2>
-              <p>
-                Sahel AgriConnect is an agricultural digitization platform. AfriYield Exchange is an investment
-                facilitation platform. Neither platform is a licensed financial institution. Investment facilitation is
-                provided as a service; investors are responsible for their own due diligence.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">3. User Responsibilities</h2>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>
-                  Farmers and cooperatives are responsible for the accuracy of their registration data.
-                </li>
-                <li>
-                  Investors acknowledge that agricultural investments carry risk and returns are not guaranteed.
-                </li>
-                <li>
-                  Transformation centers agree to maintain the certifications they claim.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">4. Data Ownership</h2>
-              <p>
-                Farmer, cooperative, and producer data belongs to the registrant. Sahel AgriConnect acts as a data
-                processor, not a data owner. Country licensees control their national data environment.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">5. Investment Disclaimer</h2>
-              <p>
-                AfriYield Exchange facilitates connections between investors and agricultural operators. It does not
-                provide financial advice, manage funds, or guarantee returns. The 5% facilitation fee covers platform
-                services only.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">6. Intellectual Property</h2>
-              <p>
-                The Sahel AgriConnect and AfriYield Exchange brands, platform design, and AI tools are owned by Djigui
-                Corporation. Users may not replicate or redistribute platform content without written permission.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">7. Limitation of Liability</h2>
-              <p>
-                Sahel AgriConnect and AfriYield Exchange are not liable for crop failures, market price fluctuations, or
-                failed transactions between platform users.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">8. Governing Law</h2>
-              <p>
-                These terms are governed by applicable laws. Disputes shall be resolved through good-faith negotiation
-                before any legal action.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">9. Changes to Terms</h2>
-              <p>
-                Djigui Corporation reserves the right to update these terms. Users will be notified of material changes.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#1a3c2e] mb-3">10. Contact</h2>
-              <p>
-                For legal inquiries: <span className="font-semibold">info@djiguicorporation.org</span>
-              </p>
-            </section>
+        {SECTIONS.map((section) => (
+          <div key={section.title} className="mb-8">
+            <h2 className="text-lg font-semibold text-brand-amber mb-3">
+              {section.title}
+            </h2>
+            <p className="text-white/80 leading-relaxed text-sm whitespace-pre-line">
+              {section.content}
+            </p>
           </div>
-        </div>
-      </section>
+        ))}
+      </div>
     </div>
   );
 }
-

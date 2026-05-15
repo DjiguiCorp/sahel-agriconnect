@@ -114,8 +114,8 @@ export default function Footer() {
                 ['Think Tank', '/think-tank'],
                 [isFr ? 'Traçabilité' : 'Traceability', '/trace'],
                 [isFr ? 'Gouvernance' : 'Governance', '/governance'],
-                [isFr ? "Conditions d'utilisation" : 'Terms of Service', '/terms'],
-                [isFr ? 'Confidentialité' : 'Privacy Policy', '/privacy'],
+                [isFr ? "Conditions d'utilisation" : 'Terms of Service', '/terms-of-service'],
+                [isFr ? 'Confidentialité' : 'Privacy Policy', '/privacy-policy'],
                 [isFr ? 'Supprimer mon compte' : 'Delete Account', '/delete-account'],
               ].map(([label, to]) => (
                 <li key={to}>
@@ -135,10 +135,10 @@ export default function Footer() {
             {isFr ? 'Tous droits réservés.' : 'All rights reserved.'}
           </p>
           <div className="flex flex-wrap gap-4 items-center">
-            <Link to="/terms" className="text-xs text-gray-500 hover:text-white transition">
+            <Link to="/terms-of-service" className="text-xs text-gray-500 hover:text-white transition">
               {isFr ? 'Conditions' : 'Terms'}
             </Link>
-            <Link to="/privacy" className="text-xs text-gray-500 hover:text-white transition">
+            <Link to="/privacy-policy" className="text-xs text-gray-500 hover:text-white transition">
               {isFr ? 'Confidentialité' : 'Privacy'}
             </Link>
             <Link to="/investor-relations" className="text-xs text-gray-500 hover:text-white transition">

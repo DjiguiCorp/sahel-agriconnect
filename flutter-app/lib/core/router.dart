@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'age_gate_refresh.dart';
 import 'auth_state.dart';
+import 'terms_refresh.dart';
 import '../screens/age_gate_screen.dart';
 import '../screens/auth/farmer_auth_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -23,6 +24,7 @@ import '../screens/shared/notification_settings_screen.dart';
 import '../screens/shared/notifications_screen.dart';
 import '../screens/shared/pending_vetting_screen.dart';
 import '../screens/shared/profile_screen.dart';
+import '../screens/shared/terms_screen.dart';
 import '../screens/shared/webview_screen.dart';
 import '../screens/splash_screen.dart';
 
@@ -32,11 +34,15 @@ GlobalKey<NavigatorState> get rootNavigatorKey => _rootKey;
 
 late GoRouter appRouter;
 
-GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
+GoRouter buildRouter(
+  AuthState authState,
+  AgeGateRefresh ageGate,
+  TermsRefresh termsGate,
+) {
   appRouter = GoRouter(
       navigatorKey: _rootKey,
       initialLocation: '/home',
-      refreshListenable: Listenable.merge([authState, ageGate]),
+      refreshListenable: Listenable.merge([authState, ageGate, termsGate]),
       // Navigation logic:
       // - Unauthenticated (guest): /home and /guest/* allowed
       // - Pending vetting: /pending-vetting only
@@ -46,6 +52,10 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
         final loc = state.matchedLocation;
 
         if (authState.loading) return '/';
+
+        if (!termsGate.accepted && loc != '/terms') {
+          return '/terms';
+        }
 
         // Age gate — investor routes only
         final isInvestorPath =
@@ -84,6 +94,13 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
       },
       routes: [
         GoRoute(path: '/age-gate', builder: (_, __) => const AgeGateScreen()),
+        GoRoute(
+          path: '/terms',
+          builder: (context, state) {
+            final viewOnly = state.uri.queryParameters['view'] == '1';
+            return TermsScreen(viewOnly: viewOnly);
+          },
+        ),
         GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
         GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
         GoRoute(path: '/role', builder: (_, __) => const RoleScreen()),

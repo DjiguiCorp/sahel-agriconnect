@@ -48,6 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String _error = '';
   String _countryPrefix = '+223';
+  String _selectedPhoneCountryCode = 'ML';
   String _selectedCountry = '';
   String? _verificationId;
   String? _accountStatusMessage;
@@ -141,36 +142,26 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final locale = WidgetsBinding.instance.platformDispatcher.locale;
       final countryCode = locale.countryCode ?? 'ML';
-      const prefixMap = {
-        'ML': '+223',
-        'SN': '+221',
-        'BF': '+226',
-        'NE': '+227',
-        'GN': '+224',
-        'CI': '+225',
-        'FR': '+33',
-        'US': '+1',
-        'GB': '+44',
-        'DE': '+49',
-        'CA': '+1',
-        'BE': '+32',
-        'IT': '+39',
-        'ES': '+34',
-        'NL': '+31',
-        'CH': '+41',
-        'MA': '+212',
-        'DZ': '+213',
-        'TN': '+216',
-        'NG': '+234',
-        'GH': '+233',
-        'CM': '+237',
-      };
+      final option = countryCodePrefixMap.containsKey(countryCode)
+          ? phonePrefixForCountryCode(countryCode)
+          : phonePrefixForCountryCode('ML');
       setState(() {
-        _countryPrefix = prefixMap[countryCode] ?? '+223';
+        _selectedPhoneCountryCode = option.countryCode;
+        _countryPrefix = option.prefix;
       });
     } catch (_) {
-      setState(() => _countryPrefix = '+223');
+      setState(() {
+        _selectedPhoneCountryCode = 'ML';
+        _countryPrefix = '+223';
+      });
     }
+  }
+
+  void _onPhonePrefixChanged(PhonePrefixOption option) {
+    setState(() {
+      _selectedPhoneCountryCode = option.countryCode;
+      _countryPrefix = option.prefix;
+    });
   }
 
   void _onContactChanged() {
@@ -555,79 +546,151 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        if (_step == _LoginStep.otp) {
-                          _goToContactStep();
-                        } else {
-                          context.go('/role');
-                        }
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                    maxHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
                       children: [
-                        Text(
-                          _config.subtitle,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            fontSize: 12,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Consumer<LanguageProvider>(
+                                builder: (context, langProvider, _) {
+                                  final isFr = langProvider.isFr;
+                                  return GestureDetector(
+                                    onTap: () {
+                                      langProvider.setLang(isFr ? 'en' : 'fr');
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.gold.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            isFr ? '🇫🇷' : '🇺🇸',
+                                            style: const TextStyle(fontSize: 16),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            isFr ? 'FR' : 'EN',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          _localizedTitle(lp),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  if (_step == _LoginStep.otp) {
+                                    _goToContactStep();
+                                  } else {
+                                    context.go('/role');
+                                  }
+                                },
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _config.subtitle,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.5),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(
+                                    _localizedTitle(lp),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Text(
+                                _config.emoji,
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(28),
+                              ),
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: _accountStatusMessage != null
+                                  ? _buildStatusMessage(lp)
+                                  : _step == _LoginStep.contact
+                                      ? _buildContactStep(lp)
+                                      : _buildOtpStep(lp),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    Text(_config.emoji, style: const TextStyle(fontSize: 24)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: _accountStatusMessage != null
-                        ? _buildStatusMessage(lp)
-                        : _step == _LoginStep.contact
-                            ? _buildContactStep(lp)
-                            : _buildOtpStep(lp),
                   ),
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -695,23 +758,57 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 28),
         _label(lp.t('Email or phone number', 'Email ou numéro de téléphone')),
         const SizedBox(height: 8),
-        TextField(
-          controller: _contactCtrl,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) {
-            if (_inputValid && !_loading) _sendCode();
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _contactCtrl,
+          builder: (context, value, _) {
+            final isEmail = value.text.contains('@');
+            if (isEmail) {
+              return TextField(
+                controller: _contactCtrl,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) {
+                  if (_inputValid && !_loading) _sendCode();
+                },
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF1a3c2e),
+                ),
+                decoration: _inputDecoration(
+                  lp.t('your@email.com', 'votre@email.com'),
+                  Icons.alternate_email_rounded,
+                ),
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PhonePrefixDropdown(
+                  selectedCountryCode: _selectedPhoneCountryCode,
+                  onChanged: _onPhonePrefixChanged,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _contactCtrl,
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (_inputValid && !_loading) _sendCode();
+                    },
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF1a3c2e),
+                    ),
+                    decoration: _inputDecoration(
+                      lp.t('phone number', 'numéro de téléphone'),
+                      Icons.phone_outlined,
+                    ),
+                  ),
+                ),
+              ],
+            );
           },
-          style: const TextStyle(
-            fontSize: 15,
-            color: Color(0xFF1a3c2e),
-          ),
-          decoration: _inputDecoration(
-            '$_countryPrefix ${lp.t('phone number or email', 'téléphone ou email')}',
-            _contactIsEmail
-                ? Icons.alternate_email_rounded
-                : Icons.phone_outlined,
-          ),
         ),
         if (widget.role == AuthRole.government) ...[
           const SizedBox(height: 6),
@@ -811,6 +908,22 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
         const Spacer(),
+        Center(
+          child: TextButton(
+            onPressed: () => context.push('/terms?view=1'),
+            child: Text(
+              lp.t('View Terms', 'Voir les conditions'),
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.grey[500],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         _registerFooter(lp),
       ],
     );

@@ -71,6 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Active bottom-nav tab. 0 = Home, 1 = Discover, 2 = Favorites, 3 = Profile.
   int _navIndex = 0;
 
+  bool _hasUnreadNotifications = true;
+
   /// Active category on the Home tab.
   int _selectedCategory = 0;
 
@@ -434,21 +436,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.white,
                   size: 26,
                 ),
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+                if (_hasUnreadNotifications)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             onPressed: () {
+              setState(() => _hasUnreadNotifications = false);
               final authState = context.read<AuthState>();
               if (authState.isGuest) {
                 showModalBottomSheet(

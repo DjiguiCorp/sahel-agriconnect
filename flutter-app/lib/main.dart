@@ -9,12 +9,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/age_gate_refresh.dart';
 import 'core/auth_state.dart';
+import 'core/terms_refresh.dart';
 import 'core/language_provider.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'firebase_options.dart';
 import 'navigation/session_nav.dart';
 import 'screens/age_gate_screen.dart';
+import 'screens/shared/terms_screen.dart';
 import 'services/notification_service.dart';
 import 'services/offline_queue.dart';
 
@@ -26,9 +28,12 @@ void main() async {
   final ageAccepted = await AgeGateScreen.hasAccepted();
   final ageGate = AgeGateRefresh(ageAccepted);
 
+  final termsAccepted = await TermsScreen.hasAccepted();
+  final termsGate = TermsRefresh(termsAccepted);
+
   GoogleFonts.config.allowRuntimeFetching = true;
 
-  buildRouter(authState, ageGate);
+  buildRouter(authState, ageGate, termsGate);
   onAuthSessionExpired = () {
     authState.logoutAll();
     appRouter.go('/role');
@@ -55,6 +60,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: authState),
         ChangeNotifierProvider.value(value: ageGate),
+        ChangeNotifierProvider.value(value: termsGate),
         ChangeNotifierProvider(create: (_) => OfflineQueue()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
