@@ -68,8 +68,8 @@ class _Category {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  /// Active bottom-nav tab. 0 = Home, 1 = Discover, 2 = Favorites, 3 = Profile.
-  int _navIndex = 0;
+  /// Active bottom-nav tab. 0 = Home, 1 = Explore, 2 = Alerts, 3 = Profile.
+  int _currentIndex = 0;
 
   bool _hasUnreadNotifications = true;
 
@@ -183,11 +183,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedCategory = index;
       _loadedPreviews.add(index);
     });
-  }
-
-  void _selectTab(int index) {
-    if (index == _navIndex) return;
-    setState(() => _navIndex = index);
   }
 
   /// Sends the user to the role chooser to sign in for a specific category.
@@ -323,7 +318,123 @@ class _HomeScreenState extends State<HomeScreen> {
       resizeToAvoidBottomInset: true,
       extendBody: true,
       backgroundColor: AppColors.darkBg,
-      bottomNavigationBar: _buildBottomNav(lp),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFF1a3c2e),
+        selectedItemColor: AppColors.gold,
+        unselectedItemColor: Colors.white38,
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _currentIndex,
+        elevation: 0,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+          switch (index) {
+            case 0:
+              context.go('/home');
+              break;
+            case 1:
+              // Explore stays on home, just switches tab
+              break;
+            case 2:
+              final auth = context.read<AuthState>();
+              if (auth.isGuest) {
+                showModalBottomSheet<void>(
+                  context: context,
+                  backgroundColor: const Color(0xFF1a3c2e),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  builder: (sheetContext) => Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '🔔 Sign in for notifications',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Get real-time alerts on prices and updates.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.gold,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                              context.go('/home');
+                            },
+                            child: const Text(
+                              'Sign In',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                );
+              } else {
+                context.go('/notifications');
+              }
+              break;
+            case 3:
+              final auth = context.read<AuthState>();
+              if (auth.isGuest) {
+                context.go('/home');
+              } else {
+                context.go('/profile');
+              }
+              break;
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore_outlined),
+            activeIcon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined),
+            activeIcon: Icon(Icons.notifications),
+            label: 'Alerts',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -362,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 child: KeyedSubtree(
-                  key: ValueKey<int>(_navIndex),
+                  key: ValueKey<int>(_currentIndex),
                   child: _buildTab(lp, auth),
                 ),
               ),
@@ -374,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTab(LanguageProvider lp, AuthState auth) {
-    switch (_navIndex) {
+    switch (_currentIndex) {
       case 1:
         return _buildDiscoverTab(lp);
       case 2:
@@ -666,7 +777,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: () => _selectTab(1),
+                  onPressed: () => setState(() => _currentIndex = 1),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: BorderSide(
@@ -882,7 +993,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 10),
                         TextButton(
-                          onPressed: () => _selectTab(1),
+                          onPressed: () => setState(() => _currentIndex = 1),
                           child: Text(
                             lp.t('See more', 'Voir plus'),
                             style: TextStyle(
@@ -938,7 +1049,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     setState(() {
                       _selectedCategory = i;
                       _loadedPreviews.add(i);
-                      _navIndex = 0;
+                      _currentIndex = 0;
                     });
                   },
                   child: Column(
@@ -1249,90 +1360,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ────────────────────────── Bottom navigation ────────────────────────
-
-  Widget _buildBottomNav(LanguageProvider lp) {
-    final items = <(IconData, String, String)>[
-      (Icons.home_outlined, 'Home', 'Accueil'),
-      (Icons.explore_outlined, 'Discover', 'Découvrir'),
-      (Icons.favorite_outline_rounded, 'Favorites', 'Favoris'),
-      (Icons.person_outline_rounded, 'Profile', 'Profil'),
-    ];
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0d1f17).withValues(alpha: 0.78),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-                width: 0.5,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(items.length, (i) {
-                final selected = i == _navIndex;
-                final (icon, en, fr) = items[i];
-                return Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _selectTab(i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOut,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppColors.gold.withValues(alpha: 0.16)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: selected
-                              ? AppColors.gold.withValues(alpha: 0.4)
-                              : Colors.transparent,
-                          width: 0.5,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            icon,
-                            color: selected
-                                ? AppColors.gold
-                                : Colors.white.withValues(alpha: 0.55),
-                            size: 22,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            lp.t(en, fr),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: selected
-                                  ? AppColors.gold
-                                  : Colors.white.withValues(alpha: 0.55),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // ═════════════════════════════════════════════════════════════════════

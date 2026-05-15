@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/auth_state.dart';
 import '../core/theme.dart';
@@ -22,7 +23,12 @@ class _SplashScreenState extends State<SplashScreen> {
       await Future<void>.delayed(const Duration(milliseconds: 2800));
       if (!mounted) return;
       final auth = context.read<AuthState>();
-      if (!auth.isLoggedIn) context.go('/home');
+      if (!auth.isLoggedIn) {
+        final prefs = await SharedPreferences.getInstance();
+        final langSelected = prefs.getBool('language_selected') ?? false;
+        if (!mounted) return;
+        context.go(langSelected ? '/home' : '/language');
+      }
     });
   }
 

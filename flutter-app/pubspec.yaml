@@ -66,12 +66,15 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_launcher_icons: ^0.13.1
 
-# Run: flutter pub run flutter_launcher_icons
-# (Place a 1024x1024 PNG at assets/images/app_icon.png first.)
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "#1a3c2e"
+  adaptive_icon_foreground: "assets/images/logo.png"
+  min_sdk_android: 21
+  web:
+    generate: false
 
 flutter:
   uses-material-design: true

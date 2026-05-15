@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'age_gate_refresh.dart';
 import 'auth_state.dart';
@@ -12,6 +13,7 @@ import '../screens/farmer/farmer_dashboard.dart';
 import '../screens/government/government_dashboard.dart';
 import '../screens/home_screen.dart';
 import '../screens/investor/investor_dashboard.dart';
+import '../screens/language_screen.dart';
 import '../screens/processor/processor_dashboard.dart';
 import '../screens/role_screen.dart';
 import '../screens/shared/about_screen.dart';
@@ -19,7 +21,7 @@ import '../screens/shared/change_contact_screen.dart';
 import '../screens/shared/delete_account_screen.dart';
 import '../screens/shared/edit_profile_screen.dart';
 import '../screens/shared/help_screen.dart';
-import '../screens/shared/language_screen.dart';
+import '../screens/shared/language_screen.dart' as settings_language;
 import '../screens/shared/notification_settings_screen.dart';
 import '../screens/shared/notifications_screen.dart';
 import '../screens/shared/pending_vetting_screen.dart';
@@ -48,13 +50,19 @@ GoRouter buildRouter(
       // - Pending vetting: /pending-vetting only
       // - Authenticated: role-specific dashboard
       // - Logged out: return to /home as guest
-      redirect: (context, state) {
+      redirect: (context, state) async {
         final loc = state.matchedLocation;
 
         if (authState.loading) return '/';
 
         if (!termsGate.accepted && loc != '/terms') {
           return '/terms';
+        }
+
+        final prefs = await SharedPreferences.getInstance();
+        final langSelected = prefs.getBool('language_selected') ?? false;
+        if (termsGate.accepted && !langSelected && loc != '/language') {
+          return '/language';
         }
 
         // Age gate — investor routes only
@@ -101,6 +109,7 @@ GoRouter buildRouter(
             return TermsScreen(viewOnly: viewOnly);
           },
         ),
+        GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
         GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
         GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
         GoRoute(path: '/role', builder: (_, __) => const RoleScreen()),
@@ -167,7 +176,7 @@ GoRouter buildRouter(
         ),
         GoRoute(
           path: '/profile/language',
-          builder: (_, __) => const LanguageScreen(),
+          builder: (_, __) => const settings_language.LanguageScreen(),
         ),
         GoRoute(
           path: '/profile/notifications',
