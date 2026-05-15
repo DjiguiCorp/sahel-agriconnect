@@ -191,6 +191,7 @@ GoRouter buildRouter(
           builder: (_, __) => const NotificationsScreen(),
         ),
         GoRoute(path: '/help', builder: (_, __) => const HelpScreen()),
+        GoRoute(path: '/faq', builder: (_, __) => const HelpScreen()),
         GoRoute(
           path: '/webview',
           builder: (context, state) {
@@ -214,6 +215,7 @@ bool _isProfileOrSupportPath(String loc) {
   if (loc.startsWith('/profile')) return true;
   if (loc == '/notifications' || loc.startsWith('/notifications/')) return true;
   if (loc == '/help' || loc.startsWith('/help/')) return true;
+  if (loc == '/faq') return true;
   if (loc == '/about-app') return true;
   return false;
 }

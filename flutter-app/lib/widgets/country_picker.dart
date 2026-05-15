@@ -71,7 +71,7 @@ const List<PhonePrefixOption> phonePrefixOptions = [
   PhonePrefixOption(countryCode: 'BF', prefix: '+226', flag: '🇧🇫', name: 'Burkina Faso'),
   PhonePrefixOption(countryCode: 'NE', prefix: '+227', flag: '🇳🇪', name: 'Niger'),
   PhonePrefixOption(countryCode: 'GN', prefix: '+224', flag: '🇬🇳', name: 'Guinea'),
-  PhonePrefixOption(countryCode: 'CI', prefix: '+225', flag: '🇨🇮', name: 'Ivory Coast'),
+  PhonePrefixOption(countryCode: 'CI', prefix: '+225', flag: '🇨🇮', name: "Côte d'Ivoire"),
   PhonePrefixOption(countryCode: 'GW', prefix: '+245', flag: '🇬🇼', name: 'Guinea-Bissau'),
   PhonePrefixOption(countryCode: 'MR', prefix: '+222', flag: '🇲🇷', name: 'Mauritania'),
   PhonePrefixOption(countryCode: 'GM', prefix: '+220', flag: '🇬🇲', name: 'Gambia'),
@@ -181,21 +181,52 @@ class PhonePrefixDropdown extends StatelessWidget {
   }
 }
 
-/// Reusable dropdown for selecting an African country.
-///
-/// Exposes the same simple `value` / `hint` / `onChanged` API used by
-/// callers like the login and registration screens, so the underlying
-/// state can be a plain `String` (or a `TextEditingController.text`)
-/// without leaking dropdown internals.
+/// West Africa, East/Central Africa, and diaspora countries — sorted by [name].
+/// Used for registration / investor cooperative country pickers.
+const List<Map<String, String>> allCountries = [
+  {'code': 'BE', 'name': 'Belgium', 'flag': '🇧🇪'},
+  {'code': 'BJ', 'name': 'Benin', 'flag': '🇧🇯'},
+  {'code': 'BR', 'name': 'Brazil', 'flag': '🇧🇷'},
+  {'code': 'BF', 'name': 'Burkina Faso', 'flag': '🇧🇫'},
+  {'code': 'CM', 'name': 'Cameroon', 'flag': '🇨🇲'},
+  {'code': 'CA', 'name': 'Canada', 'flag': '🇨🇦'},
+  {'code': 'CI', 'name': "Côte d'Ivoire", 'flag': '🇨🇮'},
+  {'code': 'ET', 'name': 'Ethiopia', 'flag': '🇪🇹'},
+  {'code': 'FR', 'name': 'France', 'flag': '🇫🇷'},
+  {'code': 'GM', 'name': 'Gambia', 'flag': '🇬🇲'},
+  {'code': 'GH', 'name': 'Ghana', 'flag': '🇬🇭'},
+  {'code': 'GN', 'name': 'Guinea', 'flag': '🇬🇳'},
+  {'code': 'GW', 'name': 'Guinea-Bissau', 'flag': '🇬🇼'},
+  {'code': 'IT', 'name': 'Italy', 'flag': '🇮🇹'},
+  {'code': 'KE', 'name': 'Kenya', 'flag': '🇰🇪'},
+  {'code': 'LR', 'name': 'Liberia', 'flag': '🇱🇷'},
+  {'code': 'ML', 'name': 'Mali', 'flag': '🇲🇱'},
+  {'code': 'MR', 'name': 'Mauritania', 'flag': '🇲🇷'},
+  {'code': 'NE', 'name': 'Niger', 'flag': '🇳🇪'},
+  {'code': 'NG', 'name': 'Nigeria', 'flag': '🇳🇬'},
+  {'code': 'SN', 'name': 'Senegal', 'flag': '🇸🇳'},
+  {'code': 'SL', 'name': 'Sierra Leone', 'flag': '🇸🇱'},
+  {'code': 'TZ', 'name': 'Tanzania', 'flag': '🇹🇿'},
+  {'code': 'TG', 'name': 'Togo', 'flag': '🇹🇬'},
+  {'code': 'UG', 'name': 'Uganda', 'flag': '🇺🇬'},
+  {'code': 'GB', 'name': 'United Kingdom', 'flag': '🇬🇧'},
+  {'code': 'US', 'name': 'United States', 'flag': '🇺🇸'},
+];
+
+/// Canonical English country names for [CountryDropdown] (alphabetical).
+final List<String> appCountryNames =
+    List<String>.unmodifiable(allCountries.map((m) => m['name']!).toList());
+
+/// Reusable country dropdown for registration and role-specific forms.
 class CountryDropdown extends StatelessWidget {
-  const CountryDropdown({
+  CountryDropdown({
     super.key,
     required this.value,
     required this.onChanged,
     this.hint,
-    this.countries = africanCountries,
+    List<String>? countries,
     this.fillColor = const Color(0xFFF8F4E3),
-  });
+  }) : countries = countries ?? appCountryNames;
 
   /// Currently selected country name. Empty string means "no selection",
   /// in which case the [hint] is shown.
@@ -208,7 +239,7 @@ class CountryDropdown extends StatelessWidget {
   /// Placeholder text shown when [value] is empty.
   final String? hint;
 
-  /// Override the list of countries (defaults to all 54 African states).
+  /// Override the list of countries (defaults to [appCountryNames]).
   final List<String> countries;
 
   /// Background color of the dropdown container.
@@ -259,19 +290,3 @@ class CountryDropdown extends StatelessWidget {
     );
   }
 }
-
-/// All 54 African countries (UN/AU member states), alphabetical.
-/// Kept here so any caller can use the same canonical list without
-/// duplicating it across screens.
-const List<String> africanCountries = [
-  'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi',
-  'Cabo Verde', 'Cameroon', 'Central African Republic', 'Chad', 'Comoros',
-  'Congo', "Côte d'Ivoire", 'Democratic Republic of the Congo',
-  'Djibouti', 'Egypt', 'Equatorial Guinea', 'Eritrea', 'Eswatini',
-  'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea', 'Guinea-Bissau',
-  'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali',
-  'Mauritania', 'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger',
-  'Nigeria', 'Rwanda', 'São Tomé and Príncipe', 'Senegal', 'Seychelles',
-  'Sierra Leone', 'Somalia', 'South Africa', 'South Sudan', 'Sudan',
-  'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe',
-];

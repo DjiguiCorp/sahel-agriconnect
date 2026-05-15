@@ -64,19 +64,6 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     'Other',
   ];
 
-  static const _countries = [
-    'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi',
-    'Cabo Verde', 'Cameroon', 'Central African Republic', 'Chad', 'Comoros',
-    'Congo', "Côte d'Ivoire", 'Democratic Republic of the Congo',
-    'Djibouti', 'Egypt', 'Equatorial Guinea', 'Eritrea', 'Eswatini',
-    'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea', 'Guinea-Bissau',
-    'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali',
-    'Mauritania', 'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger',
-    'Nigeria', 'Rwanda', 'São Tomé and Príncipe', 'Senegal', 'Seychelles',
-    'Sierra Leone', 'Somalia', 'South Africa', 'South Sudan', 'Sudan',
-    'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -1238,7 +1225,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                 ),
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                items: _countries
+                items: appCountryNames
                     .map((c) => DropdownMenuItem<String>(
                           value: c,
                           child: Text(c, style: const TextStyle(fontSize: 14)),

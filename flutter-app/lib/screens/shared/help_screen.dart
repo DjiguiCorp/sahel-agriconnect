@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -172,32 +173,53 @@ class _HelpScreenState extends State<HelpScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _contactCard(
-                  '📧',
-                  'Email us',
-                  'Response in 48h',
-                  () => launchUrl(
-                    Uri.parse('mailto:info@djiguicorporation.org'),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200, width: 0.5),
+            ),
+            child: Column(
+              children: [
+                _HelpItem(
+                  icon: Icons.chat_bubble_outline,
+                  title: 'Contact Support',
+                  subtitle: 'support@sahelagriconnect.com',
+                  onTap: () => launchUrl(
+                    Uri.parse('mailto:support@sahelagriconnect.com'),
                     mode: LaunchMode.externalApplication,
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _contactCard(
-                  '💬',
-                  'WhatsApp',
-                  'Chat with our team',
-                  () => launchUrl(
+                Divider(height: 1, color: Colors.grey.shade200),
+                _HelpItem(
+                  icon: Icons.language,
+                  title: 'Visit Help Center',
+                  subtitle: 'sahelagriconnect.com/help',
+                  onTap: () => launchUrl(
+                    Uri.parse('https://sahelagriconnect.com/help'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                ),
+                Divider(height: 1, color: Colors.grey.shade200),
+                _HelpItem(
+                  icon: Icons.phone_outlined,
+                  title: 'WhatsApp Support',
+                  subtitle: 'Chat with us on WhatsApp',
+                  onTap: () => launchUrl(
                     Uri.parse('https://wa.me/message/sahelagriconnect'),
                     mode: LaunchMode.externalApplication,
                   ),
                 ),
-              ),
-            ],
+                Divider(height: 1, color: Colors.grey.shade200),
+                _HelpItem(
+                  icon: Icons.quiz_outlined,
+                  title: 'Frequently Asked Questions',
+                  subtitle:
+                      'How vetting works, how to declare produce, how to invest',
+                  onTap: () => context.push('/faq'),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -225,43 +247,6 @@ class _HelpScreenState extends State<HelpScreen> {
       ),
     );
   }
-
-  Widget _contactCard(
-    String emoji,
-    String title,
-    String subtitle,
-    VoidCallback onTap,
-  ) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade200, width: 0.5),
-          ),
-          child: Column(
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 22)),
-              const SizedBox(height: 6),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1a3c2e),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-              ),
-            ],
-          ),
-        ),
-      );
 
   Widget _faqItem(BuildContext context, String q, String a) => Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -296,4 +281,63 @@ class _HelpScreenState extends State<HelpScreen> {
           ),
         ),
       );
+}
+
+class _HelpItem extends StatelessWidget {
+  const _HelpItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF3DE),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: const Color(0xFF3B6D11), size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1a3c2e),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 18),
+          ],
+        ),
+      ),
+    );
+  }
 }

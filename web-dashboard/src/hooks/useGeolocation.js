@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { AFRICAN_REGIONS, COUNTRY_LIST } from '../data/africanRegions';
+import { ALL_COUNTRY_NAMES, primaryRegionForAppCountry } from '../data/africanCountries';
+import { AFRICAN_REGIONS } from '../data/africanRegions';
 
 // Maps browser locale / timezone to country
 function detectCountryFromBrowser() {
@@ -96,7 +97,7 @@ export function useGeolocation() {
     fetch('https://ipapi.co/json/')
       .then((r) => r.json())
       .then((data) => {
-        const countryName = COUNTRY_LIST.find(
+        const countryName = ALL_COUNTRY_NAMES.find(
           (c) =>
             c.toLowerCase().includes(data.country_name?.toLowerCase()) ||
             data.country_name?.toLowerCase().includes(c.toLowerCase())
@@ -104,7 +105,7 @@ export function useGeolocation() {
         if (countryName) {
           const loc = {
             country: countryName,
-            region: data.city || AFRICAN_REGIONS[countryName]?.[0] || null,
+            region: data.city || primaryRegionForAppCountry(countryName),
             detected: true,
             loading: false,
             source: 'ip',

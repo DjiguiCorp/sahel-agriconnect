@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useWebSocket } from '../../context/WebSocketContext';
 import { useTranslation } from 'react-i18next';
-import { COUNTRY_LIST } from '../../data/africanRegions';
+import { ALL_COUNTRY_NAMES, legacyCountryToAppName } from '../../data/africanCountries';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { API_BASE_URL } from '../../config/api';
 
@@ -20,8 +20,9 @@ const RealTimeFarmers = ({ globalCountryFilter = '', adminToken = '' }) => {
 
   useEffect(() => {
     if (!detected || !detectedCountry) return;
-    if (!COUNTRY_LIST.includes(detectedCountry)) return;
-    setCountryFilter((p) => p || detectedCountry);
+    const appDetected = legacyCountryToAppName(detectedCountry);
+    if (!appDetected || !ALL_COUNTRY_NAMES.includes(appDetected)) return;
+    setCountryFilter((p) => p || appDetected);
   }, [detected, detectedCountry]);
 
   const farmersWithInvestment = farmers.filter(f => f.investissementCooperative === 'oui');
@@ -175,7 +176,7 @@ const RealTimeFarmers = ({ globalCountryFilter = '', adminToken = '' }) => {
             className="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
           >
             <option value="">{i18n.language === 'fr' ? 'Tous les pays' : 'All countries'}</option>
-            {COUNTRY_LIST.map((c) => (
+            {ALL_COUNTRY_NAMES.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>

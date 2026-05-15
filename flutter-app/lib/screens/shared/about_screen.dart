@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutAppScreen extends StatelessWidget {
@@ -40,37 +41,7 @@ class AboutAppScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  'Sahel AgriConnect',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1a3c2e),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Version 1.0.0',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                ),
               ],
-            ),
-          ),
-          const SizedBox(height: 28),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200, width: 0.5),
-            ),
-            child: const Text(
-              "Sahel AgriConnect is a digital platform connecting West African farmers, cooperatives, and transformation centers to diaspora investors and international buyers.\n\nAfriYield Exchange — included in this app — enables diaspora members to invest in certified cooperative supply chains and receive returns, transforming traditional remittances into productive agricultural capital.\n\nOperating across Mali, Senegal, Burkina Faso, Ghana, Côte d'Ivoire and beyond.",
-              style: TextStyle(
-                fontSize: 13,
-                color: Color(0xFF555555),
-                height: 1.7,
-              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -81,59 +52,131 @@ class AboutAppScreen extends StatelessWidget {
               border: Border.all(color: Colors.grey.shade200, width: 0.5),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _infoRow('Developer', 'Djigui Corporation'),
-                _infoRow('Website', 'sahelagriconnect.com'),
-                _infoRow('Email', 'info@djiguicorporation.org'),
-                _infoRow('Minimum age', '18 years'),
-                _infoRow('Languages', 'English · Français · Bambara · Fulani'),
-                _infoRow('Platform', 'iOS & Android'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Center(
-            child: TextButton(
-              onPressed: () => launchUrl(
-                Uri.parse('https://sahelagriconnect.com'),
-                mode: LaunchMode.externalApplication,
-              ),
-              child: const Text(
-                'Visit sahelagriconnect.com',
-                style: TextStyle(
-                  color: Color(0xFF1a3c2e),
-                  fontWeight: FontWeight.w600,
+                const _AboutItem(
+                  title: 'Sahel AgriConnect',
+                  content: 'A pan-African agricultural platform connecting '
+                      'farmers, cooperatives, investors and processors '
+                      'across West Africa and the global diaspora.',
                 ),
-              ),
+                const _AboutItem(
+                  title: 'Version',
+                  content: '1.1.0',
+                ),
+                const _AboutItem(
+                  title: 'Mission',
+                  content: 'Produce together. Sell further. Earn more.',
+                ),
+                const _AboutItem(
+                  title: 'Website',
+                  content: 'sahelagriconnect.com',
+                  isLink: true,
+                  url: 'https://sahelagriconnect.com',
+                ),
+                const _AboutItem(
+                  title: 'Contact',
+                  content: 'support@sahelagriconnect.com',
+                  isLink: true,
+                  url: 'mailto:support@sahelagriconnect.com',
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  title: const Text(
+                    'Terms of Service',
+                    style: TextStyle(
+                      color: Color(0xFF1a3c2e),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.black54,
+                    size: 16,
+                  ),
+                  onTap: () => context.push('/terms?view=1'),
+                ),
+                ListTile(
+                  title: const Text(
+                    'Privacy Policy',
+                    style: TextStyle(
+                      color: Color(0xFF1a3c2e),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.black54,
+                    size: 16,
+                  ),
+                  onTap: () => context.push('/terms?view=1'),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _infoRow(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 120,
-              child: Text(
-                label,
-                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-              ),
+class _AboutItem extends StatelessWidget {
+  const _AboutItem({
+    required this.title,
+    required this.content,
+    this.isLink = false,
+    this.url,
+  });
+
+  final String title;
+  final String content;
+  final bool isLink;
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
+              letterSpacing: 0.3,
             ),
-            Expanded(
+          ),
+          const SizedBox(height: 6),
+          if (isLink && url != null)
+            InkWell(
+              onTap: () => launchUrl(
+                Uri.parse(url!),
+                mode: LaunchMode.externalApplication,
+              ),
               child: Text(
-                value,
+                content,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1a3c2e),
+                  color: Color(0xFF185FA5),
+                  decoration: TextDecoration.underline,
                 ),
               ),
+            )
+          else
+            Text(
+              content,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF333333),
+                height: 1.45,
+              ),
             ),
-          ],
-        ),
-      );
+        ],
+      ),
+    );
+  }
 }

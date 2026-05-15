@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Shield, TrendingUp, Globe, ChevronRight, ArrowRight, Check, Star, Lock } from 'lucide-react';
+import { ALL_COUNTRIES } from '../data/africanCountries';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -571,12 +572,19 @@ export default function AfriYieldExchange() {
                 <label className="block text-xs font-semibold text-gray-600 mb-1">
                   {isFr ? 'Pays de résidence' : 'Country of residence'}
                 </label>
-                <input
+                <select
                   required
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-[#B5850A]"
                   value={kycData.country}
                   onChange={(e) => setKycData((d) => ({ ...d, country: e.target.value }))}
-                />
+                >
+                  <option value="">{isFr ? 'Sélectionnez un pays' : 'Select a country'}</option>
+                  {ALL_COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.flag} {c.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">
