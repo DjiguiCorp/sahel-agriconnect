@@ -42,14 +42,8 @@
     "title": "Sahel AgriConnect",
     "hero": {
       "tagline": "Produce together. Sell further. Earn more.",
-      "subtitle": "Sovereign digitization of agriculture",
-      "lead": "An innovative platform for smallholder farmers across West Africa and beyond",
-      "stats": {
-        "panAfrican": "Pan-African platform",
-        "sheaSesame": "Shea Butter & Sesame",
-        "live": "Now live — join first"
-      },
-      "joinCooperative": "Join as a cooperative",
+      "lead": "The pan-African platform connecting producers, cooperatives and investors to transform agriculture across West Africa and beyond.",
+      "joinCooperative": "Join the project",
       "downloadAppSoon": "Download the app — coming soon",
       "statsAria": "Project highlights"
     },

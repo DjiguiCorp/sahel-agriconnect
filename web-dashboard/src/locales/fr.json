@@ -42,14 +42,8 @@
     "title": "Sahel AgriConnect",
     "hero": {
       "tagline": "Produire ensemble. Vendre plus loin. Gagner plus.",
-      "subtitle": "Digitalisation souveraine de l'agriculture",
-      "lead": "Plateforme innovante pour les petits producteurs en Afrique de l'Ouest et au-delà",
-      "stats": {
-        "panAfrican": "Plateforme panafricaine",
-        "sheaSesame": "Beurre de karité & sésame",
-        "live": "En ligne — rejoignez-nous en premier"
-      },
-      "joinCooperative": "Rejoindre le projet (coopérative)",
+      "lead": "La plateforme panafricaine qui connecte producteurs, coopératives et investisseurs pour transformer l'agriculture en Afrique de l'Ouest et au-delà.",
+      "joinCooperative": "Rejoindre le projet",
       "downloadAppSoon": "Télécharger l'app — bientôt",
       "statsAria": "Indicateurs clés du projet"
     },
