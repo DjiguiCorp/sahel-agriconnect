@@ -3,10 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../core/auth_state.dart';
 import '../core/theme.dart';
-import '../core/glass.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,143 +14,165 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _contentVisible = true;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future<void>.delayed(const Duration(milliseconds: 2800));
-      if (!mounted) return;
-      final auth = context.read<AuthState>();
-      if (!auth.isLoggedIn) {
-        final prefs = await SharedPreferences.getInstance();
-        final langSelected = prefs.getBool('language_selected') ?? false;
-        if (!mounted) return;
-        context.go(langSelected ? '/home' : '/language');
-      }
-    });
+    _navigate();
+  }
+
+  Future<void> _navigate() async {
+    // Wait for entrance animation to complete
+    await Future.delayed(const Duration(milliseconds: 3200));
+
+    if (!mounted) return;
+
+    setState(() => _contentVisible = false);
+    await Future.delayed(const Duration(milliseconds: 520));
+
+    if (!mounted) return;
+
+    final auth = context.read<AuthState>();
+    final prefs = await SharedPreferences.getInstance();
+    final termsAccepted = prefs.getBool('terms_accepted') ?? false;
+    final langSelected = prefs.getBool('language_selected') ?? false;
+
+    if (!mounted) return;
+
+    if (!termsAccepted) {
+      context.go('/terms');
+    } else if (!langSelected) {
+      context.go('/language');
+    } else if (auth.isLoggedIn) {
+      // Navigate to role dashboard
+      context.go('/home');
+    } else {
+      context.go('/home');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.3),
-            radius: 1.4,
-            colors: [
-              Color(0xFF1a3c2e),
-              Color(0xFF0d1f17),
-              Color(0xFF060f0a),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-              // Liquid glass orb
-              const GlassOrb(
-                size: 130,
-                child: Text(
-                  'SA',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.gold,
-                    letterSpacing: -1,
+      backgroundColor: const Color(0xFF0d1f17),
+      body: Center(
+        child: AnimatedOpacity(
+          opacity: _contentVisible ? 1 : 0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInCubic,
+          child: AnimatedScale(
+            scale: _contentVisible ? 1 : 0.94,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInCubic,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo with entrance animation
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF2d6a4f), Color(0xFF1a3c2e)],
+                    ),
+                    borderRadius: BorderRadius.circular(36),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withValues(alpha: 0.3),
+                        blurRadius: 40,
+                        spreadRadius: 8,
+                      ),
+                    ],
                   ),
-                ),
-              )
-                  .animate()
-                  .fadeIn(duration: 600.ms, curve: Curves.easeOut)
-                  .scale(
-                      begin: const Offset(0.8, 0.8),
+                  child: const Center(
+                    child: Text(
+                      'SA',
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -2,
+                      ),
+                    ),
+                  ),
+                )
+                    .animate()
+                    .scale(
+                      begin: const Offset(0.3, 0.3),
+                      end: const Offset(1.0, 1.0),
                       duration: 800.ms,
-                      curve: Curves.elasticOut),
+                      curve: Curves.elasticOut,
+                    )
+                    .fadeIn(duration: 400.ms),
 
-              const SizedBox(height: 28),
+                const SizedBox(height: 32),
 
-              const Text(
-                'Sahel AgriConnect',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
-              )
-                  .animate(delay: 300.ms)
-                  .fadeIn(duration: 500.ms)
-                  .slideY(begin: 0.2, end: 0),
+                // App name with stagger
+                const Text(
+                  'Sahel AgriConnect',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ).animate(delay: 400.ms).fadeIn(duration: 500.ms).slideY(
+                      begin: 0.3,
+                      end: 0,
+                      duration: 500.ms,
+                      curve: Curves.easeOut,
+                    ),
 
-              const SizedBox(height: 6),
+                const SizedBox(height: 8),
 
-              Text(
-                'POWERED BY DJIGUI CORPORATION',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 2,
-                ),
-              )
-                  .animate(delay: 400.ms)
-                  .fadeIn(duration: 400.ms),
+                // Tagline with gold color
+                const Text(
+                  'Produire. Vendre. Gagner.',
+                  style: TextStyle(
+                    color: AppColors.gold,
+                    fontSize: 15,
+                    fontStyle: FontStyle.italic,
+                    letterSpacing: 0.5,
+                  ),
+                ).animate(delay: 700.ms).fadeIn(duration: 500.ms).slideY(
+                      begin: 0.3,
+                      end: 0,
+                      duration: 500.ms,
+                      curve: Curves.easeOut,
+                    ),
 
-              const Spacer(),
+                const SizedBox(height: 80),
 
-              // Loading indicator
-              Padding(
-                padding: const EdgeInsets.only(bottom: 32),
-                child: Column(
-                  children: [
-                    // Animated loading bar
-                    Container(
-                      width: 48,
-                      height: 3,
+                // Loading dots animation
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    3,
+                    (i) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: const LinearProgressIndicator(
-                          backgroundColor: Colors.transparent,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.gold,
-                          ),
-                        ),
+                        color: AppColors.gold.withValues(alpha: 0.7),
+                        shape: BoxShape.circle,
                       ),
                     )
-                        .animate(delay: 600.ms)
+                        .animate(
+                          delay: Duration(milliseconds: 900 + (i * 150)),
+                          onPlay: (controller) => controller.repeat(),
+                        )
+                        .fadeIn(duration: 300.ms)
+                        .then()
+                        .fadeOut(duration: 300.ms)
+                        .then()
                         .fadeIn(duration: 300.ms),
-
-                    const SizedBox(height: 20),
-
-                    // AfriYield pill
-                    GlassCard(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      borderRadius: BorderRadius.circular(30),
-                      borderColor: AppColors.gold.withValues(alpha: 0.2),
-                      backgroundColor: AppColors.gold.withValues(alpha: 0.06),
-                      child: Text(
-                        'AfriYield Exchange included',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
-                          fontSize: 11,
-                        ),
-                      ),
-                    )
-                        .animate(delay: 700.ms)
-                        .fadeIn(duration: 400.ms),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ).animate(delay: 900.ms).fadeIn(duration: 300.ms),
+              ],
+            ),
           ),
         ),
       ),

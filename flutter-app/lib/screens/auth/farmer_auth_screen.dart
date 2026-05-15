@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -110,9 +111,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       if (_savedEmail.isNotEmpty) {
         _contactController.text = _savedEmail;
         _isEmail = _savedEmail.contains('@');
-        _keyboardType = _isEmail
-            ? TextInputType.emailAddress
-            : TextInputType.phone;
+        _keyboardType =
+            _isEmail ? TextInputType.emailAddress : TextInputType.phone;
       }
     });
   }
@@ -154,8 +154,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       final parts = contact.split('@');
       if (parts.length != 2) return contact;
       final local = parts[0];
-      final masked =
-          local.length <= 1 ? '*' : '${local[0]}${'*' * (local.length - 1).clamp(1, 3)}';
+      final masked = local.length <= 1
+          ? '*'
+          : '${local[0]}${'*' * (local.length - 1).clamp(1, 3)}';
       return '$masked@${parts[1]}';
     }
     if (contact.length <= 8) return contact;
@@ -282,7 +283,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         'Erreur de connexion. Vérifiez votre réseau',
       );
     }
-    if (msg.contains('email') || msg.contains('phone') || msg.contains('valid')) {
+    if (msg.contains('email') ||
+        msg.contains('phone') ||
+        msg.contains('valid')) {
       return lp.t(
         'Please enter a valid email or phone number',
         'Veuillez entrer un email ou un numéro de téléphone valide',
@@ -300,6 +303,27 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       );
     }
     return cleaned;
+  }
+
+  void _showOtpSentSnackBar() {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _isEmail
+              ? 'Code sent to $_contact. Check your inbox.'
+              : 'Code sent to $_countryPrefix$_contact',
+          style: const TextStyle(color: Colors.black),
+        ),
+        backgroundColor: AppColors.gold,
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.black,
+          onPressed: () {},
+        ),
+      ),
+    );
   }
 
   Future<void> _sendCode() async {
@@ -331,6 +355,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       });
       _clearOtpFields();
       _startResendCountdown();
+      _showOtpSentSnackBar();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -395,7 +420,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     });
     try {
       final res = await _verifyOtpApi(_otpCode);
-      if (res['success'] == false && res['token'] == null && res['isNewUser'] != true) {
+      if (res['success'] == false &&
+          res['token'] == null &&
+          res['isNewUser'] != true) {
         throw Exception(res['error']?.toString() ?? 'Verification failed');
       }
 
@@ -595,7 +622,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                                         children: [
                                           Text(
                                             isFr ? '🇫🇷' : '🇺🇸',
-                                            style: const TextStyle(fontSize: 16),
+                                            style:
+                                                const TextStyle(fontSize: 16),
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
@@ -684,7 +712,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                                   color: AppColors.gold.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: AppColors.gold.withValues(alpha: 0.3),
+                                    color:
+                                        AppColors.gold.withValues(alpha: 0.3),
                                     width: 0.5,
                                   ),
                                 ),
@@ -704,7 +733,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                         Expanded(
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 20),
-                            padding: const EdgeInsets.all(24),
+                            padding: _step == FarmerAuthStep.otp
+                                ? EdgeInsets.zero
+                                : const EdgeInsets.all(24),
                             decoration: const BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.vertical(
@@ -950,7 +981,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
               backgroundColor: AppColors.gold,
               foregroundColor: AppColors.forestGreen,
               disabledBackgroundColor: AppColors.gold.withValues(alpha: 0.4),
-              disabledForegroundColor: AppColors.forestGreen.withValues(alpha: 0.5),
+              disabledForegroundColor:
+                  AppColors.forestGreen.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -1012,84 +1044,129 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   }
 
   Widget _buildOtpStep(LanguageProvider lp) {
-    return Column(
+    return GestureDetector(
       key: const ValueKey<String>('otp'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          lp.t('Enter your verification code', 'Entrez votre code de vérification'),
-          style: const TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1a3c2e),
-          ),
-        ),
-        const SizedBox(height: 6),
-        RichText(
-          text: TextSpan(
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-            children: [
-              TextSpan(text: '${lp.t('Sent to', 'Envoyé à')} '),
-              TextSpan(
-                text: _maskedDestination(_contact),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1a3c2e),
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            reverse: true,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lp.t('Enter your verification code',
+                          'Entrez votre code de vérification'),
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1a3c2e),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                        children: [
+                          TextSpan(text: '${lp.t('Sent to', 'Envoyé à')} '),
+                          TextSpan(
+                            text: _maskedDestination(_contact),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1a3c2e),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(6, (i) => _otpBox(i)),
+                    ),
+                    if (kDebugMode) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.orange.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Text(
+                          '🔧 Dev mode: Backend OTP not configured yet.\n'
+                          'Enter any 6 digits to continue testing.',
+                          style: TextStyle(color: Colors.orange, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                    if (_error.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _inlineError(_error),
+                    ],
+                    const SizedBox(height: 16),
+                    Center(
+                      child: _resendSeconds > 0
+                          ? Text(
+                              lp.t(
+                                'Resend in ${_resendSeconds}s',
+                                'Renvoyer dans ${_resendSeconds}s',
+                              ),
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.grey[500]),
+                            )
+                          : TextButton(
+                              onPressed: _loading ? null : _resendCode,
+                              child: Text(
+                                lp.t('Resend code', 'Renvoyer le code'),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1a3c2e),
+                                ),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: _loading ? null : _goToIdentityStep,
+                      child: Text(
+                        lp.t('← Change number', '← Changer le numéro'),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      ),
+                    ),
+                    if (_loading) ...[
+                      const SizedBox(height: 16),
+                      const Center(
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 36),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(6, (i) => _otpBox(i)),
-        ),
-        if (_error.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _inlineError(_error),
-        ],
-        const SizedBox(height: 20),
-        Center(
-          child: _resendSeconds > 0
-              ? Text(
-                  lp.t(
-                    'Resend in ${_resendSeconds}s',
-                    'Renvoyer dans ${_resendSeconds}s',
-                  ),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                )
-              : TextButton(
-                  onPressed: _loading ? null : _resendCode,
-                  child: Text(
-                    lp.t('Resend code', 'Renvoyer le code'),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1a3c2e),
-                    ),
-                  ),
-                ),
-        ),
-        const SizedBox(height: 8),
-        TextButton(
-          onPressed: _loading ? null : _goToIdentityStep,
-          child: Text(
-            lp.t('← Change number', '← Changer le numéro'),
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-          ),
-        ),
-        if (_loading) ...[
-          const SizedBox(height: 16),
-          const Center(
-            child: SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-          ),
-        ],
-      ],
+          );
+        },
+      ),
     );
   }
 
@@ -1221,7 +1298,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                 value: _selectedCountry.isEmpty ? null : _selectedCountry,
                 hint: Text(
                   lp.t('Country *', 'Pays *'),
-                  style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+                  style:
+                      const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
                 ),
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down_rounded),
@@ -1352,7 +1430,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFF1a3c2e), width: 1.5),
+                borderSide:
+                    const BorderSide(color: Color(0xFF1a3c2e), width: 1.5),
               ),
               prefixIcon: Icon(icon, color: Colors.grey[400]),
               contentPadding: const EdgeInsets.symmetric(

@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +24,10 @@ import '../core/theme.dart';
 /// `/role`) is intentionally left out of this file so it can be enabled
 /// incrementally without breaking existing logged-in flows.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.initialGuestCategory});
+
+  /// When set (via `/guest/...`), selects this audience on first frame.
+  final int? initialGuestCategory;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -67,7 +72,19 @@ class _Category {
   });
 }
 
+class _MockNotification {
+  const _MockNotification({required this.title, required this.subtitle});
+  final String title;
+  final String subtitle;
+}
+
 class _HomeScreenState extends State<HomeScreen> {
+  static const List<String> _guestPaths = <String>[
+    '/guest/farmer',
+    '/guest/investor',
+    '/guest/cooperative',
+    '/guest/markets',
+  ];
   /// Active bottom-nav tab. 0 = Home, 1 = Explore, 2 = Alerts, 3 = Profile.
   int _currentIndex = 0;
 
@@ -79,6 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Tracks which category preview panels have been built at least once so
   /// inactive panels stay cheap on first render (lazy loading).
   final Set<int> _loadedPreviews = <int>{0};
+
+  int _exploreChip = 0;
 
   /// Categories surfaced on the Home tab. Order matches role_screen.dart
   /// where it overlaps so the experience feels consistent.
@@ -177,12 +196,20 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
-  void _selectCategory(int index) {
-    if (index == _selectedCategory) return;
-    setState(() {
-      _selectedCategory = index;
-      _loadedPreviews.add(index);
-    });
+  @override
+  void initState() {
+    super.initState();
+    final g = widget.initialGuestCategory;
+    if (g != null && g >= 0 && g < _guestPaths.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _selectedCategory = g;
+          _loadedPreviews.add(g);
+          _currentIndex = 0;
+        });
+      });
+    }
   }
 
   /// Sends the user to the role chooser to sign in for a specific category.
@@ -309,349 +336,292 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    final auth = context.watch<AuthState>();
-
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      extendBody: true,
-      backgroundColor: AppColors.darkBg,
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFF1a3c2e),
-        selectedItemColor: AppColors.gold,
-        unselectedItemColor: Colors.white38,
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
-        elevation: 0,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-          switch (index) {
-            case 0:
-              context.go('/home');
-              break;
-            case 1:
-              // Explore stays on home, just switches tab
-              break;
-            case 2:
-              final auth = context.read<AuthState>();
-              if (auth.isGuest) {
-                showModalBottomSheet<void>(
-                  context: context,
-                  backgroundColor: const Color(0xFF1a3c2e),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                  ),
-                  builder: (sheetContext) => Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          '🔔 Sign in for notifications',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Get real-time alerts on prices and updates.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.gold,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.pop(sheetContext);
-                              context.go('/home');
-                            },
-                            child: const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    ),
-                  ),
-                );
-              } else {
-                context.go('/notifications');
-              }
-              break;
-            case 3:
-              final auth = context.read<AuthState>();
-              if (auth.isGuest) {
-                context.go('/home');
-              } else {
-                context.go('/profile');
-              }
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore_outlined),
-            activeIcon: Icon(Icons.explore),
-            label: 'Explore',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            activeIcon: Icon(Icons.notifications),
-            label: 'Alerts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+  void _showGuestAlertsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1a3c2e),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1a3c2e), Color(0xFF0d1f17)],
-          ),
-        ),
-        child: Stack(
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Decorative ambient glows — purely visual.
-            const Positioned(
-              top: -80,
-              right: -60,
-              child: _Glow(color: AppColors.gold, size: 220),
+            const Text(
+              '🔔 Sign in for notifications',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const Positioned(
-              bottom: -100,
-              left: -80,
-              child: _Glow(color: AppColors.sage, size: 260),
+            const SizedBox(height: 8),
+            Text(
+              'Get real-time alerts on prices and updates.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
             ),
-            SafeArea(
-              bottom: false,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 320),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: (child, anim) => FadeTransition(
-                  opacity: anim,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.015),
-                      end: Offset.zero,
-                    ).animate(anim),
-                    child: child,
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: KeyedSubtree(
-                  key: ValueKey<int>(_currentIndex),
-                  child: _buildTab(lp, auth),
+                onPressed: () {
+                  Navigator.pop(sheetContext);
+                  _goSignIn(null);
+                },
+                child: const Text(
+                  'Sign In',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTab(LanguageProvider lp, AuthState auth) {
-    switch (_currentIndex) {
-      case 1:
-        return _buildDiscoverTab(lp);
-      case 2:
-        return _buildFavoritesTab(lp, auth);
-      case 3:
-        return _buildProfileTab(lp, auth);
-      case 0:
-      default:
-        return _buildHomeTab(lp, auth);
+  void _onHomeAppBarBell(AuthState auth) {
+    if (auth.isGuest) {
+      _showGuestAlertsSheet();
+    } else {
+      setState(() => _currentIndex = 2);
     }
   }
 
-  // ───────────────────────────── Home tab ──────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
+    final auth = context.watch<AuthState>();
 
-  Widget _buildHomeTab(LanguageProvider lp, AuthState auth) {
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(child: _buildTopBar(lp, auth)),
-        SliverToBoxAdapter(child: _buildHero(lp, auth)),
-        SliverToBoxAdapter(child: _buildCategoryCarousel(lp)),
-        SliverToBoxAdapter(child: _buildPreviewPanel(lp, auth)),
-        // Bottom padding so the floating nav doesn't overlap content.
-        const SliverToBoxAdapter(child: SizedBox(height: 110)),
-      ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+          return;
+        }
+        showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: const Color(0xFF1a3c2e),
+            title: const Text(
+              'Exit app?',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: const Text(
+              'Do you want to exit Sahel AgriConnect?',
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text(
+                  'Stay',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text(
+                  'Exit',
+                  style: TextStyle(color: AppColors.gold),
+                ),
+              ),
+            ],
+          ),
+        ).then((shouldExit) {
+          if (shouldExit == true && context.mounted) {
+            SystemNavigator.pop();
+          }
+        });
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        extendBody: true,
+        backgroundColor: AppColors.darkBg,
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: const Color(0xFF1a3c2e),
+          selectedItemColor: AppColors.gold,
+          unselectedItemColor: Colors.white38,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _currentIndex,
+          elevation: 0,
+          onTap: (index) {
+            setState(() => _currentIndex = index);
+            switch (index) {
+              case 0:
+                break;
+              case 1:
+                break;
+              case 2:
+                final a = context.read<AuthState>();
+                if (a.isGuest) {
+                  _showGuestAlertsSheet();
+                }
+                break;
+              case 3:
+                break;
+            }
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.explore_outlined),
+              activeIcon: Icon(Icons.explore),
+              label: 'Explore',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications_outlined),
+              activeIcon: Icon(Icons.notifications),
+              label: 'Alerts',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+        ),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _buildHomeTab(lp, auth),
+            _buildExploreTab(lp, auth),
+            _buildAlertsTab(lp, auth),
+            _buildProfileTab(lp, auth),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildTopBar(LanguageProvider lp, AuthState auth) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-      child: Row(
+  Widget _buildHomeTab(LanguageProvider lp, AuthState auth) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1a3c2e), Color(0xFF0d1f17)],
+        ),
+      ),
+      child: Stack(
         children: [
-          const _Logo(size: 36)
-              .animate()
-              .fadeIn(duration: 600.ms)
-              .scale(
-                begin: const Offset(0.8, 0.8),
-                duration: 800.ms,
-                curve: Curves.elasticOut,
-              ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text(
-              'Sahel AgriConnect',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-              ),
-            ),
+          const Positioned(
+            top: -80,
+            right: -60,
+            child: _Glow(color: AppColors.gold, size: 220),
           ),
-          IconButton(
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(
-                  Icons.notifications_outlined,
-                  color: Colors.white,
-                  size: 26,
+          const Positioned(
+            bottom: -100,
+            left: -80,
+            child: _Glow(color: AppColors.sage, size: 260),
+          ),
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                floating: false,
+                backgroundColor: const Color(0xFF1a3c2e),
+                surfaceTintColor: Colors.transparent,
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: const _Logo(size: 34)
+                        .animate()
+                        .fadeIn(duration: 600.ms)
+                        .scale(
+                          begin: const Offset(0.8, 0.8),
+                          duration: 800.ms,
+                          curve: Curves.elasticOut,
+                        ),
+                  ),
                 ),
-                if (_hasUnreadNotifications)
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                leadingWidth: 52,
+                title: const Text(
+                  'Sahel AgriConnect',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
-              ],
-            ),
-            onPressed: () {
-              setState(() => _hasUnreadNotifications = false);
-              final authState = context.read<AuthState>();
-              if (authState.isGuest) {
-                showModalBottomSheet(
-                  context: context,
-                  backgroundColor: const Color(0xFF1a3c2e),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                  ),
-                  builder: (_) => Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                ),
+                actions: [
+                  IconButton(
+                    icon: Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.white24,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+                        const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                          size: 24,
                         ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          '🔔 Sign in for notifications',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Get real-time alerts on market prices, '
-                          'cooperative updates and more.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.gold,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                        if (_hasUnreadNotifications)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
                               ),
                             ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              context.go('/home');
-                            },
-                            child: const Text(
-                              'Sign In',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
                       ],
                     ),
+                    onPressed: () {
+                      setState(() => _hasUnreadNotifications = false);
+                      _onHomeAppBarBell(auth);
+                    },
                   ),
-                );
-              } else {
-                context.go('/notifications');
-              }
-            },
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Center(
+                      child: auth.isLoggedIn
+                          ? _PillButton(
+                              label: lp.t('Profile', 'Profil'),
+                              icon: Icons.person_outline_rounded,
+                              onTap: () => setState(() => _currentIndex = 3),
+                            )
+                          : _PillButton(
+                              label: lp.t('Sign in', 'Connexion'),
+                              icon: Icons.login_rounded,
+                              isPrimary: true,
+                              onTap: () => _goSignIn(null),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+              SliverToBoxAdapter(child: _buildHero(lp, auth)),
+              SliverToBoxAdapter(child: _buildCategoryCarousel(lp)),
+              SliverToBoxAdapter(child: _buildPreviewPanel(lp, auth)),
+              const SliverToBoxAdapter(child: SizedBox(height: 110)),
+            ],
           ),
-          if (auth.isLoggedIn)
-            _PillButton(
-              label: lp.t('Profile', 'Profil'),
-              icon: Icons.person_outline_rounded,
-              onTap: () => context.go('/profile'),
-            )
-          else
-            _PillButton(
-              label: lp.t('Sign in', 'Connexion'),
-              icon: Icons.login_rounded,
-              isPrimary: true,
-              onTap: () => _goSignIn(null),
-            ),
         ],
       ),
     );
@@ -851,7 +821,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   category: c,
                   selected: selected,
                   isFr: lp.isFr,
-                  onTap: () => _selectCategory(i),
+                  onTap: () => context.go(_guestPaths[i]),
                 )
                     .animate()
                     .fadeIn(
@@ -1013,161 +983,589 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─────────────────────────── Discover tab ────────────────────────────
+  // ─────────────────────────── Explore tab ─────────────────────────────
 
-  Widget _buildDiscoverTab(LanguageProvider lp) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionTitle(
-            title: lp.t('Discover', 'Découvrir'),
-            subtitle: lp.t(
-              'Explore crops, regions and live activity.',
-              'Explorez cultures, régions et activité.',
+  Widget _buildExploreTab(LanguageProvider lp, AuthState auth) {
+    final chips = <(String, IconData)>[
+      (lp.t('Crops', 'Cultures'), Icons.eco_outlined),
+      (lp.t('Markets', 'Marchés'), Icons.show_chart_rounded),
+      (lp.t('Cooperatives', 'Coopératives'), Icons.groups_outlined),
+      (lp.t('Investors', 'Investisseurs'), Icons.trending_up_rounded),
+    ];
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF152922), Color(0xFF0a1612)],
+        ),
+      ),
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            floating: false,
+            backgroundColor: const Color(0xFF152922),
+            surfaceTintColor: Colors.transparent,
+            title: Text(
+              lp.t('Discover', 'Découvrir'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search_rounded, color: Colors.white),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        lp.t('Search coming soon', 'Recherche bientôt'),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            sliver: SliverToBoxAdapter(
+              child: TextField(
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                cursorColor: AppColors.gold,
+                decoration: InputDecoration(
+                  hintText: lp.t(
+                    'Search crops, regions, cooperatives…',
+                    'Rechercher cultures, régions, coopératives…',
+                  ),
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    fontSize: 13,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: Colors.white.withValues(alpha: 0.45),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.06),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 14),
-          Expanded(
-            child: GridView.builder(
-              physics: const BouncingScrollPhysics(),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.05,
-              ),
-              itemCount: _categories.length,
-              itemBuilder: (context, i) {
-                final c = _categories[i];
-                return GlassCard(
-                  borderColor: c.accent.withValues(alpha: 0.35),
-                  backgroundColor: c.accent.withValues(alpha: 0.08),
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = i;
-                      _loadedPreviews.add(i);
-                      _currentIndex = 0;
-                    });
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(c.emoji, style: const TextStyle(fontSize: 26)),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 52,
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                scrollDirection: Axis.horizontal,
+                itemCount: chips.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final sel = i == _exploreChip;
+                  return GestureDetector(
+                    onTap: () => setState(() => _exploreChip = i),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: sel
+                            ? AppColors.gold.withValues(alpha: 0.2)
+                            : Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: sel
+                              ? AppColors.gold.withValues(alpha: 0.5)
+                              : Colors.white.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            lp.t(c.titleEn, c.titleFr),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          Icon(
+                            chips[i].$2,
+                            size: 16,
+                            color: sel ? AppColors.gold : Colors.white70,
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(width: 6),
                           Text(
-                            lp.t(c.descEn, c.descFr),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            chips[i].$1,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.55),
-                              fontSize: 11,
-                              height: 1.3,
+                              color: sel ? AppColors.gold : Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                )
-                    .animate(delay: Duration(milliseconds: 60 * i))
-                    .fadeIn(duration: 350.ms);
-              },
+                    ),
+                  );
+                },
+              ),
             ),
           ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                lp.t('Featured', 'À la une'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  GlassCard(
+                    padding: const EdgeInsets.all(16),
+                    borderColor: AppColors.gold.withValues(alpha: 0.35),
+                    backgroundColor: AppColors.gold.withValues(alpha: 0.06),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lp.t('AfriYield — live lots', 'AfriYield — lots en direct'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          lp.t(
+                            'Track sesame and shea cycles across Mali & Burkina.',
+                            'Suivez le sésame et le karité au Mali et au Burkina.',
+                          ),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GlassCard(
+                    padding: const EdgeInsets.all(16),
+                    borderColor: const Color(0xFF185FA5).withValues(alpha: 0.4),
+                    backgroundColor: const Color(0xFF185FA5).withValues(alpha: 0.08),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lp.t('West Africa spot prices', 'Prix spot Afrique de l\'Ouest'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          lp.t(
+                            'Shea, cashew and sesame benchmarks updated weekly.',
+                            'Références karité, cajou et sésame mises à jour chaque semaine.',
+                          ),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                lp.t('Market trends', 'Tendances marché'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: GlassCard(
+                padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
+                child: SizedBox(
+                  height: 200,
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: 100,
+                      gridData: const FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 28,
+                            getTitlesWidget: (v, m) => Text(
+                              '${v.toInt()}',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                fontSize: 9,
+                              ),
+                            ),
+                          ),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (v, m) {
+                              const labels = ['S', 'O', 'N', 'D', 'J', 'F'];
+                              final i = v.toInt();
+                              if (i < 0 || i >= labels.length) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  labels[i],
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.45),
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      barGroups: [
+                        for (int i = 0; i < 6; i++)
+                          BarChartGroupData(
+                            x: i,
+                            barRods: [
+                              BarChartRodData(
+                                toY: [62, 55, 71, 48, 80, 66][i].toDouble(),
+                                width: 14,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(4),
+                                  topRight: Radius.circular(4),
+                                ),
+                                color: AppColors.gold,
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 110)),
         ],
       ),
     );
   }
 
-  // ─────────────────────────── Favorites tab ───────────────────────────
+  // ─────────────────────────── Alerts tab ──────────────────────────────
 
-  Widget _buildFavoritesTab(LanguageProvider lp, AuthState auth) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionTitle(
-            title: lp.t('Favorites', 'Favoris'),
-            subtitle: lp.t(
-              'Save crops, lots and cooperatives to revisit later.',
-              'Enregistrez cultures, lots et coopératives pour plus tard.',
+  Widget _buildAlertsTab(LanguageProvider lp, AuthState auth) {
+    const bg = Color(0xFF0c1814);
+
+    if (auth.isGuest) {
+      return ColoredBox(
+        color: bg,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: bg,
+              surfaceTintColor: Colors.transparent,
+              title: Text(
+                lp.t('Alerts', 'Alertes'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Center(
-              child: GlassCard(
-                padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
-                borderColor: AppColors.gold.withValues(alpha: 0.25),
-                backgroundColor: Colors.white.withValues(alpha: 0.04),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 110),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.gold.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.favorite_outline_rounded,
-                        color: AppColors.gold,
-                        size: 28,
-                      ),
+                    const Icon(
+                      Icons.notifications_active_outlined,
+                      color: AppColors.gold,
+                      size: 48,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      auth.isLoggedIn
-                          ? lp.t('No favorites yet', 'Aucun favori pour l\'instant')
-                          : lp.t(
-                              'Sign in to save favorites',
-                              'Connectez-vous pour enregistrer vos favoris',
-                            ),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                      lp.t(
+                        'Sign in for alerts',
+                        'Connectez-vous pour les alertes',
                       ),
                       textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       lp.t(
-                        'Tap the bookmark on any crop, lot or cooperative to keep track of it.',
-                        'Touchez le marque-page sur une culture, un lot ou une coopérative.',
+                        'Get prices, vetting updates and cooperative news in real time.',
+                        'Recevez prix, validations et nouvelles des coopératives en temps réel.',
                       ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 12,
+                        fontSize: 13,
                         height: 1.45,
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    if (!auth.isLoggedIn)
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () => _goSignIn(null),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: AppColors.forestGreen,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          lp.t('Sign in or sign up', "S'inscrire ou se connecter"),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    const notifications = <_MockNotification>[];
+
+    return ColoredBox(
+      color: bg,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            backgroundColor: bg,
+            surfaceTintColor: Colors.transparent,
+            title: Text(
+              lp.t('Alerts', 'Alertes'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (notifications.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 110),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.notifications_none_rounded,
+                      size: 64,
+                      color: Colors.white.withValues(alpha: 0.25),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      lp.t(
+                        'No notifications yet',
+                        'Aucune notification pour l\'instant',
+                      ),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      lp.t(
+                        'We will notify you about prices, lots and messages.',
+                        'Nous vous préviendrons pour les prix, lots et messages.',
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) {
+                    final n = notifications[i];
+                    return ListTile(
+                      title: Text(n.title, style: const TextStyle(color: Colors.white)),
+                      subtitle: Text(
+                        n.subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 12,
+                        ),
+                      ),
+                    );
+                  },
+                  childCount: notifications.length,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────── Profile tab ───────────────────────────
+
+  Widget _buildProfileTab(LanguageProvider lp, AuthState auth) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1a3c2e), Color(0xFF0d1a15)],
+        ),
+      ),
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            floating: false,
+            backgroundColor: const Color(0xFF1a3c2e),
+            surfaceTintColor: Colors.transparent,
+            title: Text(
+              lp.t('Profile', 'Profil'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (auth.isGuest) ...[
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: GlassCard(
+                  padding: const EdgeInsets.all(20),
+                  borderColor: AppColors.gold.withValues(alpha: 0.35),
+                  backgroundColor: Colors.white.withValues(alpha: 0.05),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        lp.t(
+                          'Unlock the full platform',
+                          'Débloquez toute la plateforme',
+                        ),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _benefitRow(
+                        lp,
+                        lp.t(
+                          'Declare produce and use AI tools',
+                          'Déclarez vos produits et outils IA',
+                        ),
+                      ),
+                      _benefitRow(
+                        lp,
+                        lp.t(
+                          'Invest on AfriYield Exchange',
+                          'Investir sur AfriYield Exchange',
+                        ),
+                      ),
+                      _benefitRow(
+                        lp,
+                        lp.t(
+                          'Manage your cooperative portal',
+                          'Gérez le portail de votre coopérative',
+                        ),
+                      ),
+                      _benefitRow(
+                        lp,
+                        lp.t(
+                          'Price alerts and secure messaging',
+                          'Alertes prix et messages sécurisés',
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       SizedBox(
-                        height: 44,
+                        height: 48,
                         child: ElevatedButton(
                           onPressed: () => _goSignIn(null),
                           style: ElevatedButton.styleFrom(
@@ -1175,24 +1573,126 @@ class _HomeScreenState extends State<HomeScreen> {
                             foregroundColor: AppColors.forestGreen,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 18),
-                            child: Text(
-                              lp.t('Sign in', 'Se connecter'),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
+                          child: Text(
+                            lp.t('Sign in or sign up', "S'inscrire ou se connecter"),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ] else ...[
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: GlassCard(
+                  padding: const EdgeInsets.all(18),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: AppColors.gold.withValues(alpha: 0.2),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          color: AppColors.gold,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              auth.displayName.isEmpty
+                                  ? lp.t('Member', 'Membre')
+                                  : auth.displayName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (auth.displayEmail.isNotEmpty)
+                              Text(
+                                auth.displayEmail,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.55),
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
+            sliver: SliverToBoxAdapter(
+              child: GlassCard(
+                child: Column(
+                  children: [
+                    if (auth.isLoggedIn) ...[
+                      _ProfileLink(
+                        icon: Icons.settings_outlined,
+                        label: lp.t('Account & settings', 'Compte et réglages'),
+                        onTap: () => context.go('/profile'),
+                      ),
+                      _Divider(),
+                    ],
+                    _ProfileLink(
+                      icon: Icons.translate_rounded,
+                      label: lp.t('Language', 'Langue'),
+                      trailing: lp.lang.toUpperCase(),
+                      onTap: () => lp.setLang(lp.isFr ? 'en' : 'fr'),
+                    ),
+                    _Divider(),
+                    _ProfileLink(
+                      icon: Icons.description_outlined,
+                      label: lp.t('Terms of Service', 'Conditions d\'utilisation'),
+                      onTap: () => context.push('/terms?view=1'),
+                    ),
+                    _Divider(),
+                    _ProfileLink(
+                      icon: Icons.privacy_tip_outlined,
+                      label: lp.t('Privacy Policy', 'Politique de confidentialité'),
+                      onTap: () => context.push('/terms?view=1'),
+                    ),
+                    _Divider(),
+                    _ProfileLink(
+                      icon: Icons.help_outline_rounded,
+                      label: lp.t('Help', 'Aide'),
+                      onTap: () => context.go('/help'),
+                    ),
+                    _Divider(),
+                    _ProfileLink(
+                      icon: Icons.info_outline_rounded,
+                      label: lp.t('About', 'À propos'),
+                      onTap: () => context.go('/about-app'),
+                    ),
+                    if (auth.isLoggedIn) ...[
+                      _Divider(),
+                      _ProfileLink(
+                        icon: Icons.logout_rounded,
+                        label: lp.t('Sign out', 'Déconnexion'),
+                        onTap: () => _confirmLogout(lp),
+                      ),
+                    ],
                   ],
                 ),
-              ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.04, end: 0),
+              ),
             ),
           ),
         ],
@@ -1200,164 +1700,70 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ──────────────────────────── Profile tab ────────────────────────────
-
-  Widget _buildProfileTab(LanguageProvider lp, AuthState auth) {
+  Widget _benefitRow(LanguageProvider lp, String text) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
-      child: Column(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(
-            title: lp.t('Profile', 'Profil'),
-            subtitle: auth.isLoggedIn
-                ? lp.t('Manage your account.', 'Gérez votre compte.')
-                : lp.t(
-                    'Sign in to manage your account.',
-                    'Connectez-vous pour gérer votre compte.',
-                  ),
+          Icon(
+            Icons.check_circle_outline,
+            size: 18,
+            color: AppColors.gold.withValues(alpha: 0.9),
           ),
-          const SizedBox(height: 16),
-          if (auth.isLoggedIn) ...[
-            GlassCard(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.gold.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.gold.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      color: AppColors.gold,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          auth.displayName.isEmpty
-                              ? lp.t('Welcome back', 'Bon retour')
-                              : auth.displayName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        if (auth.displayEmail.isNotEmpty)
-                          Text(
-                            auth.displayEmail,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.55),
-                              fontSize: 12,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => context.go('/profile'),
-                    icon: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 13,
+                height: 1.35,
               ),
             ),
-          ] else ...[
-            GlassCard(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-              borderColor: AppColors.gold.withValues(alpha: 0.25),
-              backgroundColor: Colors.white.withValues(alpha: 0.04),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    lp.t('You are browsing as guest', 'Vous explorez en visiteur'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    lp.t(
-                      'Create an account to unlock saving, declaring produce, investing and your cooperative portal.',
-                      'Créez un compte pour enregistrer, déclarer des produits, investir et ouvrir votre portail coopérative.',
-                    ),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 12,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 46,
-                    child: ElevatedButton(
-                      onPressed: () => _goSignIn(null),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.gold,
-                        foregroundColor: AppColors.forestGreen,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        lp.t('Sign in or sign up', "S'inscrire ou se connecter"),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 400.ms),
-          ],
-          const SizedBox(height: 14),
-          GlassCard(
-            child: Column(
-              children: [
-                _ProfileLink(
-                  icon: Icons.translate_rounded,
-                  label: lp.t('Language', 'Langue'),
-                  trailing: lp.lang.toUpperCase(),
-                  onTap: () =>
-                      lp.setLang(lp.isFr ? 'en' : 'fr'),
-                ),
-                _Divider(),
-                _ProfileLink(
-                  icon: Icons.help_outline_rounded,
-                  label: lp.t('Help', 'Aide'),
-                  onTap: () => context.go('/help'),
-                ),
-                _Divider(),
-                _ProfileLink(
-                  icon: Icons.info_outline_rounded,
-                  label: lp.t('About', 'À propos'),
-                  onTap: () => context.go('/about-app'),
-                ),
-              ],
-            ),
-          ).animate(delay: 100.ms).fadeIn(duration: 400.ms),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmLogout(LanguageProvider lp) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1a3c2e),
+        title: Text(
+          lp.t('Sign out?', 'Déconnexion ?'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          lp.t(
+            'You will return to browsing as a guest on this device.',
+            'Vous reviendrez en navigation invité sur cet appareil.',
+          ),
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              lp.t('Cancel', 'Annuler'),
+              style: const TextStyle(color: Colors.white54),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              lp.t('Sign out', 'Déconnexion'),
+              style: const TextStyle(color: AppColors.gold),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      await context.read<AuthState>().logout();
+    }
   }
 
 }
@@ -1654,39 +2060,6 @@ class _PreviewRow extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  const _SectionTitle({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 12,
-            height: 1.4,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -80,6 +80,10 @@ GoRouter buildRouter(
 
         final loggedIn = authState.isLoggedIn;
 
+        if (loggedIn && loc.startsWith('/guest/')) {
+          return _dashboardRoute(authState.role);
+        }
+
         if (loggedIn && _routeMismatch(authState.role, loc)) {
           return _dashboardRoute(authState.role);
         }
@@ -111,7 +115,25 @@ GoRouter buildRouter(
         ),
         GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
         GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+        // Public & dashboards: /home, /guest/*, /farmer, /investor, /cooperative,
+        // /government, /processor, /notifications, /profile.
         GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+        GoRoute(
+          path: '/guest/farmer',
+          builder: (_, __) => const HomeScreen(initialGuestCategory: 0),
+        ),
+        GoRoute(
+          path: '/guest/investor',
+          builder: (_, __) => const HomeScreen(initialGuestCategory: 1),
+        ),
+        GoRoute(
+          path: '/guest/cooperative',
+          builder: (_, __) => const HomeScreen(initialGuestCategory: 2),
+        ),
+        GoRoute(
+          path: '/guest/markets',
+          builder: (_, __) => const HomeScreen(initialGuestCategory: 3),
+        ),
         GoRoute(path: '/role', builder: (_, __) => const RoleScreen()),
         GoRoute(
             path: '/login/farmer',
@@ -221,6 +243,7 @@ bool _isProfileOrSupportPath(String loc) {
 }
 
 bool _isProtectedPath(String loc) {
+  if (loc.startsWith('/guest/')) return false;
   if (_isProfileOrSupportPath(loc)) return true;
   const paths = [
     '/farmer',
