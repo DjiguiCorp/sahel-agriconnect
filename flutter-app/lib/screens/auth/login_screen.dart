@@ -48,13 +48,15 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String _error = '';
   String _countryPrefix = '+223';
-  String _selectedPhoneCountryCode = 'ML';
   String _selectedCountry = '';
   String? _verificationId;
   String? _accountStatusMessage;
 
   Timer? _resendTimer;
   int _resendSeconds = 45;
+
+  TextInputType _keyboardType = TextInputType.emailAddress;
+  bool _isEmail = false;
 
   bool get _needsCountry =>
       widget.role == AuthRole.government ||
@@ -126,9 +128,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String get _otpCode => _otpCtrl.map((c) => c.text).join();
 
-  bool get _inputValid {
-    if (_contact.isEmpty) return false;
-    return _contactIsEmail ? _isValidEmail(_contact) : _isValidPhone(_contact);
+  bool get _isValidContact {
+    final value = _contactCtrl.text.trim();
+    if (value.isEmpty) return false;
+    if (value.contains('@')) {
+      return RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(value);
+    }
+    final digits = value.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    return digits.length >= 6 && digits.length <= 15;
   }
 
   @override
@@ -146,22 +153,13 @@ class _LoginScreenState extends State<LoginScreen> {
           ? phonePrefixForCountryCode(countryCode)
           : phonePrefixForCountryCode('ML');
       setState(() {
-        _selectedPhoneCountryCode = option.countryCode;
         _countryPrefix = option.prefix;
       });
     } catch (_) {
       setState(() {
-        _selectedPhoneCountryCode = 'ML';
         _countryPrefix = '+223';
       });
     }
-  }
-
-  void _onPhonePrefixChanged(PhonePrefixOption option) {
-    setState(() {
-      _selectedPhoneCountryCode = option.countryCode;
-      _countryPrefix = option.prefix;
-    });
   }
 
   void _onContactChanged() {
@@ -185,17 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
       f.dispose();
     }
     super.dispose();
-  }
-
-  bool _isValidEmail(String value) {
-    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value.trim());
-  }
-
-  bool _isValidPhone(String value) {
-    final normalized = value.replaceAll(RegExp(r'[\s\-().]'), '');
-    if (!normalized.startsWith('+')) return false;
-    final digits = normalized.substring(1);
-    return RegExp(r'^\d{8,15}$').hasMatch(digits);
   }
 
   String _maskedDestination(String contact) {
@@ -257,14 +244,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<Map<String, dynamic>> _sendOtpApi() async {
-    final isEmail = _contact.contains('@');
-    final formattedContact = isEmail
-        ? _contact
-        : '$_countryPrefix${_contact.replaceAll(RegExp(r'^\+'), '')}';
+    final contact = _contactCtrl.text.trim();
+    final formattedContact = contact.contains('@')
+        ? contact
+        : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
     final body = <String, dynamic>{
       'purpose': 'login',
-      if (isEmail) 'email': formattedContact.toLowerCase(),
-      if (!isEmail) 'phone': formattedContact,
+      if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
+      if (!contact.contains('@')) 'phone': formattedContact,
     };
     try {
       final res = await ApiService.post('/api/auth/send-otp', body);
@@ -360,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _sendCode() async {
     final lp = context.read<LanguageProvider>();
-    if (!_inputValid) {
+    if (!_isValidContact) {
       setState(() => _error = lp.t(
             'Please enter a valid email or phone number',
             'Veuillez entrer un email ou un numéro de téléphone valide',
@@ -759,57 +746,70 @@ class _LoginScreenState extends State<LoginScreen> {
           style: TextStyle(fontSize: 14, color: Colors.grey[500]),
         ),
         const SizedBox(height: 28),
-        _label(lp.t('Email or phone number', 'Email ou numéro de téléphone')),
-        const SizedBox(height: 8),
         ValueListenableBuilder<TextEditingValue>(
           valueListenable: _contactCtrl,
           builder: (context, value, _) {
-            final isEmail = value.text.contains('@');
-            if (isEmail) {
-              return TextField(
-                controller: _contactCtrl,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) {
-                  if (_inputValid && !_loading) _sendCode();
-                },
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF1a3c2e),
+            return TextFormField(
+              controller: _contactCtrl,
+              keyboardType: _keyboardType,
+              autocorrect: false,
+              enableSuggestions: false,
+              style: const TextStyle(
+                fontSize: 15,
+                color: Color(0xFF1a3c2e),
+              ),
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) {
+                if (_isValidContact && !_loading) _sendCode();
+              },
+              decoration: InputDecoration(
+                hintText: _isEmail
+                    ? lp.t('email@example.com', 'email@exemple.com')
+                    : '$_countryPrefix  •  ${lp.t('phone number', 'numéro de téléphone')}',
+                labelText: lp.t(
+                  'Email or phone number',
+                  'Email ou numéro de téléphone',
                 ),
-                decoration: _inputDecoration(
-                  lp.t('your@email.com', 'votre@email.com'),
-                  Icons.alternate_email_rounded,
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                labelStyle: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PhonePrefixDropdown(
-                  selectedCountryCode: _selectedPhoneCountryCode,
-                  onChanged: _onPhonePrefixChanged,
+                filled: true,
+                fillColor: const Color(0xFFF8F4E3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _contactCtrl,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) {
-                      if (_inputValid && !_loading) _sendCode();
-                    },
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF1a3c2e),
-                    ),
-                    decoration: _inputDecoration(
-                      lp.t('phone number', 'numéro de téléphone'),
-                      Icons.phone_outlined,
-                    ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF1a3c2e),
+                    width: 1.5,
                   ),
                 ),
-              ],
+                suffixIcon: value.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        onPressed: () {
+                          _contactCtrl.clear();
+                          setState(() {
+                            _isEmail = false;
+                            _keyboardType = TextInputType.emailAddress;
+                          });
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (val) {
+                setState(() {
+                  _isEmail = val.contains('@');
+                  _keyboardType = _isEmail
+                      ? TextInputType.emailAddress
+                      : TextInputType.phone;
+                });
+              },
             );
           },
         ),
@@ -846,7 +846,7 @@ class _LoginScreenState extends State<LoginScreen> {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: _loading || !_inputValid ? null : _sendCode,
+            onPressed: _loading || !_isValidContact ? null : _sendCode,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.gold,
               foregroundColor: AppColors.forestGreen,
@@ -1147,24 +1147,6 @@ class _LoginScreenState extends State<LoginScreen> {
           fontWeight: FontWeight.w600,
           color: Colors.grey[700],
         ),
-      );
-
-  InputDecoration _inputDecoration(String hint, IconData icon) =>
-      InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-        filled: true,
-        fillColor: const Color(0xFFF8F4E3),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF1a3c2e), width: 1.5),
-        ),
-        prefixIcon: Icon(icon, color: Colors.grey[400]),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       );
 
   String _dashboardRoute(AuthRole role) {

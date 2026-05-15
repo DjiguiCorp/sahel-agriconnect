@@ -24,7 +24,7 @@ class FarmerAuthScreen extends StatefulWidget {
 class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   FarmerAuthStep _step = FarmerAuthStep.identity;
 
-  final _emailCtrl = TextEditingController();
+  final _contactController = TextEditingController();
 
   final List<TextEditingController> _otpCtrl =
       List.generate(6, (_) => TextEditingController());
@@ -39,12 +39,14 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   bool _loading = false;
   String _error = '';
   String _countryPrefix = '+223';
-  String _selectedPhoneCountryCode = 'ML';
   String? _verificationId;
   String? _accountStatusMessage;
 
   Timer? _resendTimer;
   int _resendSeconds = 45;
+
+  TextInputType _keyboardType = TextInputType.emailAddress;
+  bool _isEmail = false;
 
   String _savedEmail = '';
   String _savedName = '';
@@ -78,7 +80,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   @override
   void initState() {
     super.initState();
-    _emailCtrl.addListener(_onContactChanged);
+    _contactController.addListener(_onContactChanged);
     _detectCountry();
     _checkSavedSession();
   }
@@ -91,22 +93,13 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           ? phonePrefixForCountryCode(countryCode)
           : phonePrefixForCountryCode('ML');
       setState(() {
-        _selectedPhoneCountryCode = option.countryCode;
         _countryPrefix = option.prefix;
       });
     } catch (_) {
       setState(() {
-        _selectedPhoneCountryCode = 'ML';
         _countryPrefix = '+223';
       });
     }
-  }
-
-  void _onPhonePrefixChanged(PhonePrefixOption option) {
-    setState(() {
-      _selectedPhoneCountryCode = option.countryCode;
-      _countryPrefix = option.prefix;
-    });
   }
 
   void _onContactChanged() {
@@ -128,21 +121,30 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       _savedName = name ?? '';
       _checkingSession = false;
       if (_savedEmail.isNotEmpty) {
-        _emailCtrl.text = _savedEmail;
+        _contactController.text = _savedEmail;
+        _isEmail = _savedEmail.contains('@');
+        _keyboardType = _isEmail
+            ? TextInputType.emailAddress
+            : TextInputType.phone;
       }
     });
   }
 
-  bool get _inputValid {
-    if (_contact.isEmpty) return false;
-    return _contactIsEmail ? _isValidEmail(_contact) : _isValidPhone(_contact);
+  bool get _isValidContact {
+    final value = _contactController.text.trim();
+    if (value.isEmpty) return false;
+    if (value.contains('@')) {
+      return RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(value);
+    }
+    final digits = value.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    return digits.length >= 6 && digits.length <= 15;
   }
 
   @override
   void dispose() {
     _resendTimer?.cancel();
-    _emailCtrl.removeListener(_onContactChanged);
-    _emailCtrl.dispose();
+    _contactController.removeListener(_onContactChanged);
+    _contactController.dispose();
     for (final c in _otpCtrl) {
       c.dispose();
     }
@@ -156,20 +158,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
 
   String get _otpCode => _otpCtrl.map((c) => c.text).join();
 
-  String get _contact => _emailCtrl.text.trim();
+  String get _contact => _contactController.text.trim();
 
   bool get _contactIsEmail => _contact.contains('@');
-
-  bool _isValidEmail(String value) {
-    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value.trim());
-  }
-
-  bool _isValidPhone(String value) {
-    final normalized = value.replaceAll(RegExp(r'[\s\-().]'), '');
-    if (!normalized.startsWith('+')) return false;
-    final digits = normalized.substring(1);
-    return RegExp(r'^\d{8,15}$').hasMatch(digits);
-  }
 
   String _maskedDestination(String contact) {
     if (_contactIsEmail) {
@@ -230,14 +221,14 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   }
 
   Future<Map<String, dynamic>> _sendOtpApi() async {
-    final isEmail = _contact.contains('@');
-    final formattedContact = isEmail
-        ? _contact
-        : '$_countryPrefix${_contact.replaceAll(RegExp(r'^\+'), '')}';
+    final contact = _contactController.text.trim();
+    final formattedContact = contact.contains('@')
+        ? contact
+        : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
     final body = <String, dynamic>{
       'purpose': 'login',
-      if (isEmail) 'email': formattedContact.toLowerCase(),
-      if (!isEmail) 'phone': formattedContact,
+      if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
+      if (!contact.contains('@')) 'phone': formattedContact,
     };
     try {
       final res = await ApiService.post('/api/auth/send-otp', body);
@@ -326,7 +317,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
 
   Future<void> _sendCode() async {
     final lp = context.read<LanguageProvider>();
-    if (!_inputValid) {
+    if (!_isValidContact) {
       setState(() => _error = lp.t(
             'Please enter a valid email or phone number',
             'Veuillez entrer un email ou un numéro de téléphone valide',
@@ -854,7 +845,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
             onPressed: () => setState(() {
               _savedName = '';
               _savedEmail = '';
-              _emailCtrl.clear();
+              _contactController.clear();
+              _isEmail = false;
+              _keyboardType = TextInputType.emailAddress;
             }),
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
@@ -888,103 +881,71 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           ),
         ],
         const SizedBox(height: 28),
-        Text(
-          lp.t('Email or phone number', 'Email ou numéro de téléphone'),
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 8),
         ValueListenableBuilder<TextEditingValue>(
-          valueListenable: _emailCtrl,
+          valueListenable: _contactController,
           builder: (context, value, _) {
-            final isEmail = value.text.contains('@');
-            if (isEmail) {
-              return TextField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) {
-                  if (_inputValid && !_loading) _sendCode();
-                },
-                style: const TextStyle(fontSize: 15, color: Color(0xFF1a3c2e)),
-                decoration: InputDecoration(
-                  hintText: lp.t('your@email.com', 'votre@email.com'),
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F4E3),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF1a3c2e),
-                      width: 1.5,
-                    ),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.alternate_email_rounded,
-                    color: Colors.grey[400],
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
+            return TextFormField(
+              controller: _contactController,
+              keyboardType: _keyboardType,
+              autocorrect: false,
+              enableSuggestions: false,
+              style: const TextStyle(fontSize: 15, color: Color(0xFF1a3c2e)),
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) {
+                if (_isValidContact && !_loading) _sendCode();
+              },
+              decoration: InputDecoration(
+                hintText: _isEmail
+                    ? lp.t('email@example.com', 'email@exemple.com')
+                    : '$_countryPrefix  •  ${lp.t('phone number', 'numéro de téléphone')}',
+                labelText: lp.t(
+                  'Email or phone number',
+                  'Email ou numéro de téléphone',
+                ),
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                labelStyle: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF8F4E3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF1a3c2e),
+                    width: 1.5,
                   ),
                 ),
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PhonePrefixDropdown(
-                  selectedCountryCode: _selectedPhoneCountryCode,
-                  onChanged: _onPhonePrefixChanged,
+                suffixIcon: value.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        onPressed: () {
+                          _contactController.clear();
+                          setState(() {
+                            _isEmail = false;
+                            _keyboardType = TextInputType.emailAddress;
+                          });
+                        },
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _emailCtrl,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) {
-                      if (_inputValid && !_loading) _sendCode();
-                    },
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF1a3c2e),
-                    ),
-                    decoration: InputDecoration(
-                      hintText: lp.t('phone number', 'numéro de téléphone'),
-                      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                      filled: true,
-                      fillColor: const Color(0xFFF8F4E3),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF1a3c2e),
-                          width: 1.5,
-                        ),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.phone_outlined,
-                        color: Colors.grey[400],
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
+              onChanged: (val) {
+                setState(() {
+                  _isEmail = val.contains('@');
+                  _keyboardType = _isEmail
+                      ? TextInputType.emailAddress
+                      : TextInputType.phone;
+                });
+              },
             );
           },
         ),
@@ -997,7 +958,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: _loading || !_inputValid ? null : _sendCode,
+            onPressed: _loading || !_isValidContact ? null : _sendCode,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.gold,
               foregroundColor: AppColors.forestGreen,
