@@ -21,6 +21,7 @@ import '../screens/shared/help_screen.dart';
 import '../screens/shared/language_screen.dart';
 import '../screens/shared/notification_settings_screen.dart';
 import '../screens/shared/notifications_screen.dart';
+import '../screens/shared/pending_vetting_screen.dart';
 import '../screens/shared/profile_screen.dart';
 import '../screens/shared/webview_screen.dart';
 import '../screens/splash_screen.dart';
@@ -36,6 +37,11 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
       navigatorKey: _rootKey,
       initialLocation: '/home',
       refreshListenable: Listenable.merge([authState, ageGate]),
+      // Navigation logic:
+      // - Unauthenticated (guest): /home and /guest/* allowed
+      // - Pending vetting: /pending-vetting only
+      // - Authenticated: role-specific dashboard
+      // - Logged out: return to /home as guest
       redirect: (context, state) {
         final loc = state.matchedLocation;
 
@@ -60,7 +66,7 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
           return _dashboardRoute(authState.role);
         }
 
-        if (!loggedIn) {
+        if (authState.isGuest) {
           if (_isProtectedPath(loc)) {
             return _loginPathFor(loc);
           }
@@ -103,6 +109,18 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
         GoRoute(
           path: '/login/processor',
           builder: (_, __) => const LoginScreen(role: AuthRole.processor),
+        ),
+        GoRoute(
+          path: '/pending-vetting',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            return PendingVettingScreen(
+              role: extra['role'] ?? AuthRole.none,
+              contact: extra['contact'] ?? '',
+              sessionToken: extra['sessionToken'],
+              verificationId: extra['verificationId'],
+            );
+          },
         ),
         GoRoute(
             path: '/farmer', builder: (_, __) => const FarmerDashboard()),
