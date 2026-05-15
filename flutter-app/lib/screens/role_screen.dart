@@ -96,6 +96,7 @@ class RoleScreen extends StatelessWidget {
     final isFr = langProvider.isFr;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

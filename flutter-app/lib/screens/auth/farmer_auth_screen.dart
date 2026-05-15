@@ -557,6 +557,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -573,6 +574,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                 ),

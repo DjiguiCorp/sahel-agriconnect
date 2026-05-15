@@ -6,6 +6,7 @@ class DeleteAccountScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF8F4E3),
       appBar: AppBar(
         title: const Text('Delete account'),
@@ -13,7 +14,8 @@ class DeleteAccountScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: const Padding(
+      body: const SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.all(24),
         child: Text(
           'Account deletion is completed on our secure web platform after verification. This screen will link to that flow when available.',

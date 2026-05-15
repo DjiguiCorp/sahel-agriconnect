@@ -245,6 +245,7 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
     final lp = context.watch<LanguageProvider>();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -285,6 +286,8 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 16,

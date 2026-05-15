@@ -62,6 +62,7 @@ class _TermsScreenState extends State<TermsScreen>
     final lp = context.watch<LanguageProvider>();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.darkBg,
       body: Container(
         decoration: const BoxDecoration(
@@ -458,6 +459,7 @@ class _LegalScroll extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

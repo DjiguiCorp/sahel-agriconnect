@@ -112,6 +112,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final unread = _notifications.where((n) => n['read'] != true).length;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF8F4E3),
       appBar: AppBar(
         title: Row(

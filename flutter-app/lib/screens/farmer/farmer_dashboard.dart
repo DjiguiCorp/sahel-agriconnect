@@ -155,6 +155,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         : (_farmer?['nom'] ?? 'Farmer').toString();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.cream,
       body: Column(
         children: [

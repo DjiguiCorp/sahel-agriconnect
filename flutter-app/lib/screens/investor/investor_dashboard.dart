@@ -158,6 +158,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         (auth.user?['status'] ?? 'Standard').toString();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.darkBg,
       body: Column(
         children: [

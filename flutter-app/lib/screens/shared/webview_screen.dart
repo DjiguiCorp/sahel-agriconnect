@@ -37,6 +37,7 @@ class _InAppWebViewScreenState extends State<InAppWebViewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text(widget.title),
         backgroundColor: const Color(0xFF1a3c2e),

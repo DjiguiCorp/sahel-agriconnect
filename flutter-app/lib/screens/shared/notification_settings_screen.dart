@@ -85,6 +85,7 @@ class _NotifSettingsState extends State<NotificationSettingsScreen> {
     final isPremium = context.watch<AuthState>().user?['isPremium'] == true;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF8F4E3),
       appBar: AppBar(
         title: const Text('Notification settings'),

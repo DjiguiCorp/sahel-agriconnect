@@ -135,6 +135,7 @@ class _HelpScreenState extends State<HelpScreen> {
         .toList();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF8F4E3),
       appBar: AppBar(
         title: const Text('Help center'),

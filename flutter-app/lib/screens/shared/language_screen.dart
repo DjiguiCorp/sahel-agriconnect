@@ -50,6 +50,7 @@ class LanguageScreen extends StatelessWidget {
     ];
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: Text(lp.t('Language', 'Langue')),

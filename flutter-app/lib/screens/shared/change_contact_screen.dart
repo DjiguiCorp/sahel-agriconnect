@@ -9,6 +9,7 @@ class ChangeContactScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPhone = type == 'phone';
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF8F4E3),
       appBar: AppBar(
         title: Text(isPhone ? 'Phone number' : 'Email address'),

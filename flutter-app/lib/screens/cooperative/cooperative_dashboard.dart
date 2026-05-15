@@ -49,6 +49,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.cream,
       body: Column(
         children: [

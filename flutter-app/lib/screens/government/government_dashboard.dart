@@ -49,6 +49,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.darkBg,
       body: Column(
         children: [

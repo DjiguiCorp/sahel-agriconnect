@@ -55,6 +55,7 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.cream,
       body: Column(
         children: [

@@ -320,6 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = context.watch<AuthState>();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       extendBody: true,
       backgroundColor: AppColors.darkBg,
       bottomNavigationBar: _buildBottomNav(lp),
