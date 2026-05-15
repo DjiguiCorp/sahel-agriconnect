@@ -439,12 +439,12 @@ class _LoginScreenState extends State<LoginScreen> {
         context.go(_dashboardRoute(widget.role));
         return;
       case 'pending_vetting':
-        setState(() {
-          _loading = false;
-          _accountStatusMessage = lp.t(
-            "Your account is under review. You'll be notified by email when it's ready. Questions? Visit sahelagriconnect.com",
-            "Votre compte est en cours d'examen. Vous serez notifié par email lorsqu'il sera prêt. Des questions ? Visitez sahelagriconnect.com",
-          );
+        if (!mounted) return;
+        context.go('/pending-vetting', extra: {
+          'role': widget.role,
+          'contact': _contact,
+          'sessionToken': token,
+          'verificationId': _verificationId,
         });
         return;
       case 'suspended':

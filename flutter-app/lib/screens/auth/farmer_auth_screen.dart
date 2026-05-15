@@ -391,12 +391,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       final status = res['accountStatus']?.toString();
       if (status == 'pending_vetting') {
         if (!mounted) return;
-        setState(() {
-          _loading = false;
-          _accountStatusMessage = lp.t(
-            "Your account is under review. You'll be notified by email when it's ready. Questions? Visit sahelagriconnect.com",
-            "Votre compte est en cours d'examen. Vous serez notifié par email lorsqu'il sera prêt. Des questions ? Visitez sahelagriconnect.com",
-          );
+        final token = res['token'] as String?;
+        context.go('/pending-vetting', extra: {
+          'role': AuthRole.farmer,
+          'contact': _contact,
+          'sessionToken': token,
+          'verificationId': _verificationId,
         });
         return;
       }

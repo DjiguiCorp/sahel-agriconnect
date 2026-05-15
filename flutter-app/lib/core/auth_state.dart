@@ -8,6 +8,9 @@ import '../services/guest_content_service.dart';
 enum AuthRole { none, farmer, investor, cooperative, government, ngo, processor }
 
 class AuthState extends ChangeNotifier {
+  /// Optional hook for post-logout navigation (e.g. return to [/home]).
+  VoidCallback? onLogout;
+
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(
@@ -119,6 +122,7 @@ class AuthState extends ChangeNotifier {
     await GuestContentService.clearCache();
     _isGuest = true;
     _accountStatus = 'active';
+    onLogout?.call();
     notifyListeners();
     AuthService.cancelSessionTimer();
   }
@@ -133,6 +137,7 @@ class AuthState extends ChangeNotifier {
     _token = null;
     _user = null;
     await GuestContentService.clearCache();
+    onLogout?.call();
     notifyListeners();
     AuthService.cancelSessionTimer();
   }

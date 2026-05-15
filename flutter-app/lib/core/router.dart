@@ -178,6 +178,9 @@ GoRouter buildRouter(AuthState authState, AgeGateRefresh ageGate) {
         GoRoute(path: '/about-app', builder: (_, __) => const AboutAppScreen()),
       ],
     );
+  authState.onLogout = () {
+    Future.microtask(() => appRouter.go('/home'));
+  };
   return appRouter;
 }
 
@@ -205,15 +208,7 @@ bool _isProtectedPath(String loc) {
 }
 
 String _loginPathFor(String loc) {
-  if (loc.startsWith('/profile')) return '/role';
-  if (loc.startsWith('/notifications')) return '/role';
-  if (loc.startsWith('/farmer')) return '/login/farmer';
-  if (loc.startsWith('/investor')) return '/login/investor';
-  if (loc.startsWith('/cooperative')) return '/login/cooperative';
-  if (loc.startsWith('/government')) return '/login/government';
-  if (loc.startsWith('/processor')) return '/login/processor';
-  if (loc == '/login/ngo') return '/login/ngo';
-  return '/role';
+  return '/home';
 }
 
 bool _routeMismatch(AuthRole role, String loc) {
