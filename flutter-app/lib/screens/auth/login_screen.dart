@@ -47,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _loading = false;
   String _error = '';
+  String _countryPrefix = '+223';
   String _selectedCountry = '';
   String? _verificationId;
   String? _accountStatusMessage;
@@ -133,6 +134,43 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _contactCtrl.addListener(_onContactChanged);
+    _detectCountry();
+  }
+
+  Future<void> _detectCountry() async {
+    try {
+      final locale = WidgetsBinding.instance.platformDispatcher.locale;
+      final countryCode = locale.countryCode ?? 'ML';
+      const prefixMap = {
+        'ML': '+223',
+        'SN': '+221',
+        'BF': '+226',
+        'NE': '+227',
+        'GN': '+224',
+        'CI': '+225',
+        'FR': '+33',
+        'US': '+1',
+        'GB': '+44',
+        'DE': '+49',
+        'CA': '+1',
+        'BE': '+32',
+        'IT': '+39',
+        'ES': '+34',
+        'NL': '+31',
+        'CH': '+41',
+        'MA': '+212',
+        'DZ': '+213',
+        'TN': '+216',
+        'NG': '+234',
+        'GH': '+233',
+        'CM': '+237',
+      };
+      setState(() {
+        _countryPrefix = prefixMap[countryCode] ?? '+223';
+      });
+    } catch (_) {
+      setState(() => _countryPrefix = '+223');
+    }
   }
 
   void _onContactChanged() {
@@ -228,11 +266,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<Map<String, dynamic>> _sendOtpApi() async {
-    final contact = _contact;
+    final isEmail = _contact.contains('@');
+    final formattedContact = isEmail
+        ? _contact
+        : '$_countryPrefix${_contact.replaceAll(RegExp(r'^\+'), '')}';
     final body = <String, dynamic>{
       'purpose': 'login',
-      if (_contactIsEmail) 'email': contact.toLowerCase(),
-      if (!_contactIsEmail) 'phone': contact,
+      if (isEmail) 'email': formattedContact.toLowerCase(),
+      if (!isEmail) 'phone': formattedContact,
     };
     try {
       final res = await ApiService.post('/api/auth/send-otp', body);
@@ -666,7 +707,7 @@ class _LoginScreenState extends State<LoginScreen> {
             color: Color(0xFF1a3c2e),
           ),
           decoration: _inputDecoration(
-            _config.hint,
+            '$_countryPrefix ${lp.t('phone number or email', 'téléphone ou email')}',
             _contactIsEmail
                 ? Icons.alternate_email_rounded
                 : Icons.phone_outlined,
