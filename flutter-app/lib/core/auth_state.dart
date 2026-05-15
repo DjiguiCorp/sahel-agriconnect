@@ -23,7 +23,8 @@ class AuthState extends ChangeNotifier {
   /// True when the user explicitly chose "Explore as Guest" on the home
   /// screen. Not persisted across app launches — guests start fresh.
   /// Cleared automatically as soon as a real session is set.
-  bool _isGuest = false;
+  bool _isGuest = true;
+  String _accountStatus = 'active';
 
   AuthRole get role => _role;
   String? get token => _token;
@@ -31,6 +32,10 @@ class AuthState extends ChangeNotifier {
   bool get loading => _loading;
   bool get isLoggedIn => _token != null && _role != AuthRole.none;
   bool get isGuest => _isGuest && !isLoggedIn;
+  bool get isPendingVetting => _accountStatus == 'pending_vetting';
+  bool get isSuspended => _accountStatus == 'suspended';
+  bool get canUseFullFeatures => isLoggedIn && !isPendingVetting;
+  String get accountStatus => _accountStatus;
 
   String get displayName =>
       _user?['name']?.toString() ??
@@ -82,8 +87,9 @@ class AuthState extends ChangeNotifier {
     await _storage.write(key: 'token_${role.name}', value: token);
     _role = role;
     _token = token;
-    _user = userData;
     _isGuest = false;
+    _accountStatus = userData['accountStatus'] as String? ?? 'active';
+    _user = userData;
     notifyListeners();
     AuthService.resetActivity();
   }
@@ -111,6 +117,8 @@ class AuthState extends ChangeNotifier {
     _token = null;
     _user = null;
     await GuestContentService.clearCache();
+    _isGuest = true;
+    _accountStatus = 'active';
     notifyListeners();
     AuthService.cancelSessionTimer();
   }
@@ -141,4 +149,11 @@ class AuthState extends ChangeNotifier {
       _storage.read(key: 'farmer_email');
   Future<String?> getSavedFarmerName() async =>
       _storage.read(key: 'farmer_name');
+
+  void startGuestSession() {
+    _isGuest = true;
+    _role = AuthRole.none;
+    _token = null;
+    notifyListeners();
+  }
 }
