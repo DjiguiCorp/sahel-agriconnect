@@ -158,7 +158,12 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         ? '…'
         : '€ ${_formatEuroThousands(_totalDeployed)}';
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) context.go('/home');
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: _Inv.bg,
       body: Column(
@@ -211,9 +216,14 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         lp: lp,
         onChanged: (i) {
           AuthService.resetActivity();
+          if (i == 0) {
+            context.go('/home');
+            return;
+          }
           setState(() => _tab = i);
         },
       ),
+    ),
     );
   }
 
@@ -1340,7 +1350,10 @@ class _InvestorAccountTab extends StatelessWidget {
           expandedHeight: 188,
           pinned: true,
           backgroundColor: const Color(0xFF1a2744),
-          leading: const SizedBox.shrink(),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => context.go('/investor'),
+          ),
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
               decoration: const BoxDecoration(gradient: _Inv.headerGrad),
@@ -1611,7 +1624,7 @@ class _InvestorAccountTab extends StatelessWidget {
                       );
                       if (ok == true && context.mounted) {
                         await context.read<AuthState>().logout();
-                        if (context.mounted) context.go('/role');
+                        if (context.mounted) context.go('/home');
                       }
                     },
                     icon: const Icon(Icons.logout, color: Colors.red),

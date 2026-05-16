@@ -75,7 +75,12 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
   @override
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) context.go('/home');
+      },
+      child: Scaffold(
       backgroundColor: _Gov.bg,
       body: Column(
         children: [
@@ -114,11 +119,16 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
             lp: lp,
             onChanged: (i) {
               AuthService.resetActivity();
+              if (i == 0) {
+                context.go('/home');
+                return;
+              }
               setState(() => _tab = i);
             },
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -881,6 +891,10 @@ class _GovAccountTab extends StatelessWidget {
           pinned: true,
           backgroundColor: const Color(0xFF1a2035),
           automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => context.go('/government'),
+          ),
           title: Text(
             lp.t('Account', 'Compte'),
             style: const TextStyle(color: Colors.white),
@@ -1025,7 +1039,7 @@ class _GovAccountTab extends StatelessWidget {
                   );
                   if (ok == true && context.mounted) {
                     await context.read<AuthState>().logout();
-                    if (context.mounted) context.go('/role');
+                    if (context.mounted) context.go('/home');
                   }
                 },
                 icon: const Icon(Icons.logout, color: Colors.red),

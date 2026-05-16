@@ -69,7 +69,12 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
   @override
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) context.go('/home');
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: _Coop.bg,
       body: Column(
@@ -112,11 +117,16 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
             lp: lp,
             onChanged: (i) {
               AuthService.resetActivity();
+              if (i == 0) {
+                context.go('/home');
+                return;
+              }
               setState(() => _tab = i);
             },
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -1298,6 +1308,10 @@ class _CooperativeAccountTab extends StatelessWidget {
           pinned: true,
           backgroundColor: const Color(0xFF1a3a2a),
           automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => context.go('/cooperative'),
+          ),
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
               decoration: const BoxDecoration(gradient: _Coop.headerGrad),
@@ -1557,7 +1571,7 @@ class _CooperativeAccountTab extends StatelessWidget {
                       );
                       if (ok == true && context.mounted) {
                         await context.read<AuthState>().logout();
-                        if (context.mounted) context.go('/role');
+                        if (context.mounted) context.go('/home');
                       }
                     },
                     icon: const Icon(Icons.logout, color: Colors.red),

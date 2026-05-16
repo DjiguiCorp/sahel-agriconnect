@@ -70,7 +70,12 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
     final lp = context.watch<LanguageProvider>();
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) context.go('/home');
+      },
+      child: Scaffold(
       backgroundColor: _Proc.bg,
       body: Column(
         children: [
@@ -90,11 +95,16 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
             lp: lp,
             onChanged: (i) {
               AuthService.resetActivity();
+              if (i == 0) {
+                context.go('/home');
+                return;
+              }
               setState(() => _tab = i);
             },
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -739,6 +749,10 @@ class _ProcAccountTab extends StatelessWidget {
           pinned: true,
           backgroundColor: const Color(0xFF2d1f00),
           automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => context.go('/processor'),
+          ),
           title: Text(
             lp.t('Account', 'Compte'),
             style: const TextStyle(color: Colors.white),
@@ -876,7 +890,7 @@ class _ProcAccountTab extends StatelessWidget {
                   );
                   if (ok == true && context.mounted) {
                     await context.read<AuthState>().logout();
-                    if (context.mounted) context.go('/role');
+                    if (context.mounted) context.go('/home');
                   }
                 },
                 icon: const Icon(Icons.logout, color: Colors.red),

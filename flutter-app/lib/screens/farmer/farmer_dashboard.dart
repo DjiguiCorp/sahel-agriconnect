@@ -302,7 +302,12 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
 
     return Consumer<LanguageProvider>(
       builder: (context, langProvider, _) {
-        return Scaffold(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) context.go('/home');
+          },
+          child: Scaffold(
           resizeToAvoidBottomInset: true,
           backgroundColor: const Color(0xFF0f2318),
           body: Column(
@@ -320,6 +325,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
               _bottomNav(langProvider),
             ],
           ),
+        ),
         );
       },
     );
@@ -446,6 +452,10 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         child: GestureDetector(
           onTap: () {
             AuthService.resetActivity();
+            if (index == 0) {
+              context.go('/home');
+              return;
+            }
             setState(() => _tab = index);
           },
           child: Container(
@@ -1739,6 +1749,7 @@ class _AccountSettingsTab extends StatelessWidget {
                       );
                       if (confirm == true && context.mounted) {
                         await context.read<AuthState>().logout();
+                        if (context.mounted) context.go('/home');
                       }
                     },
                     icon: const Icon(Icons.logout, color: Colors.red),
