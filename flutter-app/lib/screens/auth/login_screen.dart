@@ -673,25 +673,27 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 32),
                         Expanded(
-                          child: Container(
-                            padding: _step == _LoginStep.otp
-                                ? EdgeInsets.zero
-                                : const EdgeInsets.all(24),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(28),
-                              ),
-                            ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              child: _accountStatusMessage != null
-                                  ? _buildStatusMessage(lp)
-                                  : _step == _LoginStep.contact
-                                      ? _buildContactStep(lp)
-                                      : _buildOtpStep(lp),
-                            ),
-                          ),
+                          child: _step == _LoginStep.otp
+                              ? AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  child: _buildOtpStep(lp),
+                                )
+                              : Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(28),
+                                    ),
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration:
+                                        const Duration(milliseconds: 300),
+                                    child: _accountStatusMessage != null
+                                        ? _buildStatusMessage(lp)
+                                        : _buildContactStep(lp),
+                                  ),
+                                ),
                         ),
                       ],
               );
@@ -941,126 +943,134 @@ class _LoginScreenState extends State<LoginScreen> {
       key: const ValueKey<String>('otp'),
       behavior: HitTestBehavior.opaque,
       onTap: () => FocusScope.of(context).unfocus(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
+      child: Center(
         child: SingleChildScrollView(
+          reverse: true,
           physics: const ClampingScrollPhysics(),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                lp.t('Enter your verification code',
-                    'Entrez votre code de vérification'),
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1a3c2e),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  lp.t('Enter your verification code',
+                      'Entrez votre code de vérification'),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1a3c2e),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              RichText(
-                text: TextSpan(
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                const SizedBox(height: 8),
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    children: [
+                      TextSpan(
+                        text: '${lp.t('Sent to', 'Envoyé à')} ',
+                      ),
+                      TextSpan(
+                        text: _maskedDestination(_contact),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1a3c2e),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    TextSpan(
-                      text: '${lp.t('Sent to', 'Envoyé à')} ',
-                    ),
-                    TextSpan(
-                      text: _maskedDestination(_contact),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1a3c2e),
+                    for (var i = 0; i < 6; i++) ...[
+                      if (i > 0) const SizedBox(width: 6),
+                      _otpBox(i),
+                    ],
+                  ],
+                ),
+                if (kDebugMode) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.5),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < 6; i++) ...[
-                    if (i > 0) const SizedBox(width: 6),
-                    _otpBox(i),
-                  ],
-                ],
-              ),
-              if (kDebugMode) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.orange.withValues(alpha: 0.5),
+                    child: const Text(
+                      '🔧 Dev mode: Backend OTP not configured yet.\n'
+                      'Enter any 6 digits to continue testing.',
+                      style: TextStyle(color: Colors.orange, fontSize: 12),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                  child: const Text(
-                    '🔧 Dev mode: Backend OTP not configured yet.\n'
-                    'Enter any 6 digits to continue testing.',
-                    style: TextStyle(color: Colors.orange, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-              if (_error.isNotEmpty) ...[
+                ],
+                if (_error.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _inlineError(_error),
+                ],
                 const SizedBox(height: 12),
-                _inlineError(_error),
-              ],
-              const SizedBox(height: 12),
-              Center(
-                child: _resendSeconds > 0
-                    ? Text(
-                        lp.t(
-                          'Resend in ${_resendSeconds}s',
-                          'Renvoyer dans ${_resendSeconds}s',
-                        ),
-                        style:
-                            TextStyle(fontSize: 13, color: Colors.grey[500]),
-                      )
-                    : TextButton(
-                        onPressed: _loading ? null : _resendCode,
-                        child: Text(
-                          lp.t('Resend code', 'Renvoyer le code'),
-                          style: const TextStyle(
+                Center(
+                  child: _resendSeconds > 0
+                      ? Text(
+                          lp.t(
+                            'Resend in ${_resendSeconds}s',
+                            'Renvoyer dans ${_resendSeconds}s',
+                          ),
+                          style: TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1a3c2e),
+                            color: Colors.grey[500],
+                          ),
+                        )
+                      : TextButton(
+                          onPressed: _loading ? null : _resendCode,
+                          child: Text(
+                            lp.t('Resend code', 'Renvoyer le code'),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1a3c2e),
+                            ),
                           ),
                         ),
-                      ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: _loading ? null : _goToContactStep,
-                child: Text(
-                  lp.t('← Change number', '← Changer le numéro'),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
-              ),
-              if (_loading) ...[
                 const SizedBox(height: 8),
-                const Center(
-                  child: SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                TextButton(
+                  onPressed: _loading ? null : _goToContactStep,
+                  child: Text(
+                    lp.t('← Change number', '← Changer le numéro'),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                 ),
+                if (_loading) ...[
+                  const SizedBox(height: 8),
+                  const Center(
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                _registerFooter(lp),
               ],
-              const SizedBox(height: 16),
-              _registerFooter(lp),
-            ],
+            ),
           ),
         ),
       ),

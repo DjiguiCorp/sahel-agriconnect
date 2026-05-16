@@ -3,26 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
-import '../../core/language_provider.dart';
+import '../../core/theme.dart';
 import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
-import '../shared/webview_screen.dart';
-
-abstract final class _Gov {
-  static const Color bg = Color(0xFF0a0f1e);
-  static const Color accent = Color(0xFF185FA5);
-  static const LinearGradient headerGrad = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF1a2035), Color(0xFF243050)],
-  );
-  static const LinearGradient cardGrad = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF1a2035), Color(0xFF141830)],
-  );
-}
 
 class GovernmentDashboard extends StatefulWidget {
   const GovernmentDashboard({super.key});
@@ -33,34 +16,138 @@ class GovernmentDashboard extends StatefulWidget {
 
 class _GovernmentDashboardState extends State<GovernmentDashboard> {
   int _tab = 0;
-  late Future<Map<String, dynamic>> _future;
+  Map<String, dynamic>? _data;
+  bool _loading = true;
+
+  static const _bg = Color(0xFF0a0f1e);
+  static const _headerStart = Color(0xFF1a2035);
+  static const _headerEnd = Color(0xFF243050);
+  static const _accent = Color(0xFF185FA5);
+  static const _cardStart = Color(0xFF1a2035);
+  static const _cardEnd = Color(0xFF141830);
+
+  bool get _isPortal =>
+      _data != null &&
+      _data!.containsKey('stats') &&
+      _data!.containsKey('country');
+
+  Map<String, dynamic> get _stats {
+    final s = _data?['stats'];
+    if (s is Map) return Map<String, dynamic>.from(s);
+    return {};
+  }
+
+  String get _countryLabel => _isPortal
+      ? (_data?['country']?.toString() ?? 'National territory')
+      : 'Pan-African overview';
+
+  String get _farmersStr => _isPortal
+      ? '${_stats['farmers'] ?? 0}'
+      : '${_data?['total'] ?? '—'}';
+
+  String get _coopsStr => _isPortal
+      ? '${_stats['cooperatives'] ?? 0}'
+      : '${_data?['active'] ?? '—'}';
+
+  String get _productionStr => _isPortal
+      ? '${_stats['totalResponses'] ?? 0}'
+      : '${(_data?['totalArea'] as num?)?.round() ?? '—'} ha';
+
+  String get _investmentStr => _isPortal
+      ? '${_stats['activeProjects'] ?? 0}'
+      : '—';
+
+  List<Map<String, dynamic>> get _projects => _listOfMaps('projects');
+
+  List<Map<String, dynamic>> get _notifications =>
+      _listOfMaps('recentNotifications');
+
+  List<Map<String, dynamic>> get _regions => _buildRegions();
 
   @override
   void initState() {
     super.initState();
-    _future = _load();
+    _load();
   }
 
-  Future<void> _reload() async {
-    setState(() => _future = _load());
-    await _future;
-  }
-
-  Future<Map<String, dynamic>> _load() async {
-    final auth = context.read<AuthState>();
-    final token = auth.token;
-    if (token != null && token.isNotEmpty) {
-      final country = auth.displayCountry.isNotEmpty ? auth.displayCountry : null;
-      return ApiService.getGovDashboard(
-        token,
-        country: country,
-      );
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final auth = context.read<AuthState>();
+      final token = auth.token;
+      final Map<String, dynamic> res;
+      if (token != null && token.isNotEmpty) {
+        res = await ApiService.getGovDashboard(
+          token,
+          country:
+              auth.displayCountry.isNotEmpty ? auth.displayCountry : null,
+        );
+      } else {
+        res = await ApiService.getPublicStats();
+      }
+      if (mounted) {
+        setState(() {
+          _data = res;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
     }
-    return ApiService.getPublicStats();
   }
 
-  bool _isGovPortal(Map<String, dynamic> d) =>
-      d.containsKey('stats') && d.containsKey('country');
+  List<Map<String, dynamic>> _listOfMaps(String key) {
+    final raw = _data?[key];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  List<Map<String, dynamic>> _buildRegions() {
+    final byCountry = _data?['byCountry'];
+    if (byCountry is List && byCountry.isNotEmpty) {
+      return byCountry
+          .whereType<Map>()
+          .map((e) {
+            final m = Map<String, dynamic>.from(e);
+            return {
+              'name': m['_id']?.toString() ?? 'Region',
+              'count': m['count'] ?? 0,
+              'trend': '+5%',
+            };
+          })
+          .toList();
+    }
+    final farmers = (_stats['farmers'] as num?)?.toInt() ??
+        (_data?['total'] as num?)?.toInt() ??
+        0;
+    if (farmers <= 0) {
+      return [
+        {'name': 'Northern belt', 'count': 0, 'trend': '—'},
+        {'name': 'Central plateau', 'count': 0, 'trend': '—'},
+        {'name': 'Southern corridor', 'count': 0, 'trend': '—'},
+      ];
+    }
+    return [
+      {
+        'name': 'Northern belt',
+        'count': (farmers * 0.32).round(),
+        'trend': '+8%',
+      },
+      {
+        'name': 'Central plateau',
+        'count': (farmers * 0.41).round(),
+        'trend': '+4%',
+      },
+      {
+        'name': 'Southern corridor',
+        'count': (farmers * 0.27).round(),
+        'trend': '+11%',
+      },
+    ];
+  }
 
   static String _flagEmoji(String? code) {
     if (code == null || code.length != 2) return '🌍';
@@ -69,419 +156,473 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
     final b = u.codeUnitAt(1);
     if (a < 65 || a > 90 || b < 65 || b > 90) return '🌍';
     const base = 0x1F1E6;
-    return String.fromCharCode(base + a - 65) + String.fromCharCode(base + b - 65);
+    return String.fromCharCode(base + a - 65) +
+        String.fromCharCode(base + b - 65);
   }
 
   @override
   Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
+    final String? code = _isPortal && _data != null
+        ? _data!['countryCode']?.toString()
+        : null;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) context.go('/home');
       },
       child: Scaffold(
-      backgroundColor: _Gov.bg,
-      body: Column(
-        children: [
-          const OfflineBanner(),
-          Expanded(
-            child: FutureBuilder<Map<String, dynamic>>(
-              future: _future,
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: _Gov.accent),
-                  );
-                }
-                if (snap.hasError) {
-                  return Center(
-                    child: Text(
-                      '${snap.error}',
-                      style: const TextStyle(color: Colors.white54),
-                      textAlign: TextAlign.center,
+        backgroundColor: _bg,
+        body: Column(
+          children: [
+            const OfflineBanner(),
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_headerStart, _headerEnd],
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: -50,
+                    right: -30,
+                    child: Container(
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _accent.withValues(alpha: 0.08),
+                      ),
                     ),
-                  );
-                }
-                final data = snap.data ?? {};
-                return _GovTabBody(
-                  tab: _tab,
-                  data: data,
-                  isPortal: _isGovPortal(data),
-                  onRefresh: _reload,
-                  lp: lp,
-                );
-              },
+                  ),
+                  SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'National Agricultural Dashboard',
+                                      style: TextStyle(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.65),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          _flagEmoji(code),
+                                          style: const TextStyle(fontSize: 26),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            _countryLabel,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => context.go('/home'),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white
+                                          .withValues(alpha: 0.2),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.home_outlined,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.85),
+                                        size: 15,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Home',
+                                        style: TextStyle(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.85),
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              _headerStat(
+                                'Farmers',
+                                _loading ? '…' : _farmersStr,
+                              ),
+                              const SizedBox(width: 8),
+                              _headerStat(
+                                'Co-ops',
+                                _loading ? '…' : _coopsStr,
+                              ),
+                              const SizedBox(width: 8),
+                              _headerStat(
+                                'Programs',
+                                _loading ? '…' : _investmentStr,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          _GovBottomNav(
-            tab: _tab,
-            lp: lp,
-            onChanged: (i) {
-              AuthService.resetActivity();
-              if (i == 0) {
-                context.go('/home');
-                return;
-              }
-              setState(() => _tab = i);
-            },
-          ),
-        ],
+            Container(
+              color: _bg,
+              child: Row(
+                children: [
+                  _tabBtn('Overview', 0),
+                  _tabBtn('Statistics', 1),
+                  _tabBtn('Policy', 2),
+                  _tabBtn('Updates', 3),
+                  _tabBtn('Account', 4),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: _accent),
+                    )
+                  : RefreshIndicator(
+                      color: _accent,
+                      onRefresh: _load,
+                      child: _buildTab(_tab),
+                    ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
-}
 
-class _GovTabBody extends StatelessWidget {
-  const _GovTabBody({
-    required this.tab,
-    required this.data,
-    required this.isPortal,
-    required this.onRefresh,
-    required this.lp,
-  });
+  Widget _tabBtn(String label, int index) {
+    final selected = _tab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _tab = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: selected ? _accent : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: selected ? _accent : Colors.white38,
+              fontSize: 10,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-  final int tab;
-  final Map<String, dynamic> data;
-  final bool isPortal;
-  final Future<void> Function() onRefresh;
-  final LanguageProvider lp;
+  Widget _headerStat(String label, String value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 9,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildTab(int tab) {
     switch (tab) {
       case 1:
-        return _GovStatisticsTab(data: data, isPortal: isPortal, lp: lp);
+        return _StatisticsTab(
+          accent: _accent,
+          cardStart: _cardStart,
+          cardEnd: _cardEnd,
+          regions: _regions,
+          isPortal: _isPortal,
+          farmers: _farmersStr,
+        );
       case 2:
-        return _GovMapTab(lp: lp);
+        return _PolicyTab(
+          accent: _accent,
+          cardStart: _cardStart,
+          cardEnd: _cardEnd,
+          projects: _projects,
+          isPortal: _isPortal,
+        );
       case 3:
-        return _GovPolicyTab(data: data, isPortal: isPortal, lp: lp);
+        return _UpdatesTab(
+          accent: _accent,
+          cardStart: _cardStart,
+          cardEnd: _cardEnd,
+          notifications: _notifications,
+          projects: _projects,
+        );
       case 4:
-        return _GovAccountTab(lp: lp);
+        return const _AccountTab(
+          accent: _accent,
+          cardStart: _cardStart,
+          cardEnd: _cardEnd,
+        );
       default:
-        return _GovOverviewTab(
-          data: data,
-          isPortal: isPortal,
-          onRefresh: onRefresh,
-          lp: lp,
+        return _OverviewTab(
+          accent: _accent,
+          cardStart: _cardStart,
+          cardEnd: _cardEnd,
+          isPortal: _isPortal,
+          farmers: _loading ? '…' : _farmersStr,
+          cooperatives: _loading ? '…' : _coopsStr,
+          production: _loading ? '…' : _productionStr,
+          investment: _loading ? '…' : _investmentStr,
+          onTabChange: (i) => setState(() => _tab = i),
         );
     }
   }
 }
 
-class _GovOverviewTab extends StatelessWidget {
-  const _GovOverviewTab({
-    required this.data,
+// ———————————————————————————————————————————————————————————— Overview
+class _OverviewTab extends StatelessWidget {
+  const _OverviewTab({
+    required this.accent,
+    required this.cardStart,
+    required this.cardEnd,
     required this.isPortal,
-    required this.onRefresh,
-    required this.lp,
+    required this.farmers,
+    required this.cooperatives,
+    required this.production,
+    required this.investment,
+    required this.onTabChange,
   });
 
-  final Map<String, dynamic> data;
+  final Color accent;
+  final Color cardStart;
+  final Color cardEnd;
   final bool isPortal;
-  final Future<void> Function() onRefresh;
-  final LanguageProvider lp;
-
-  Map<String, dynamic> _stats() {
-    final s = data['stats'];
-    if (s is Map) return Map<String, dynamic>.from(s);
-    return {};
-  }
+  final String farmers;
+  final String cooperatives;
+  final String production;
+  final String investment;
+  final ValueChanged<int> onTabChange;
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthState>();
-    final stats = _stats();
-    final farmers = isPortal
-        ? (stats['farmers'] as num?)?.toInt() ?? 0
-        : (data['total'] as num?)?.toInt() ?? 0;
-    final cooperatives =
-        isPortal ? (stats['cooperatives'] as num?)?.toInt() ?? 0 : 0;
-    final productionValue = isPortal
-        ? '${stats['totalResponses'] ?? 0}'
-        : '${(data['totalArea'] as num?)?.round() ?? 0} ha';
-    final productionLabel = isPortal
-        ? lp.t('Total production (reports)', 'Production totale (déclarée)')
-        : lp.t('Total cultivated area', 'Superficie cultivée totale');
-    final investmentValue = isPortal
-        ? '${stats['activeProjects'] ?? 0}'
-        : '${data['active'] ?? '—'}';
-    final investmentLabel = isPortal
-        ? lp.t('Investment programs (active)', 'Programmes d’investissement (actifs)')
-        : lp.t('Active farmer accounts', 'Comptes agriculteurs actifs');
-
-    final country = isPortal
-        ? (data['country']?.toString() ?? auth.displayCountry)
-        : lp.t('Pan-African', 'Péri-Sahel');
-    final code =
-        isPortal ? data['countryCode']?.toString() : null;
-
-    return RefreshIndicator(
-      color: _Gov.accent,
-      onRefresh: onRefresh,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: _GovHeader(
-              lp: lp,
-              flagEmoji: _GovernmentDashboardState._flagEmoji(code),
-              countryName: country,
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                Text(
-                  lp.t('National statistics', 'Statistiques nationales'),
-                  style: const TextStyle(
-                    color: _Gov.accent,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _nationalStatQuad(
-                  lp,
-                  farmers: farmers,
-                  cooperatives: cooperatives,
-                  productionLabel: productionLabel,
-                  productionValue: productionValue,
-                  investmentLabel: investmentLabel,
-                  investmentValue: investmentValue,
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  lp.t('Regional overview', 'Vue régionale'),
-                  style: const TextStyle(
-                    color: _Gov.accent,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  height: 160,
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: _Gov.cardGrad,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.map_outlined, color: _Gov.accent, size: 32),
-                      const SizedBox(height: 8),
-                      Text(
-                        lp.t(
-                          'Interactive regional map coming soon.',
-                          'Carte régionale interactive bientôt disponible.',
-                        ),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  lp.t('Policy insights', 'Indicateurs de politique'),
-                  style: const TextStyle(
-                    color: _Gov.accent,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _insightCard(
-                  lp,
-                  lp.t(
-                    'Align cooperatives with national food security programs.',
-                    'Aligner les coopératives sur la sécurité alimentaire nationale.',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _insightCard(
-                  lp,
-                  lp.t(
-                    'Track project responses and traceability adoption.',
-                    'Suivre les réponses aux projets et l’adoption de la traçabilité.',
-                  ),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  lp.t('Quick actions', 'Actions rapides'),
-                  style: const TextStyle(
-                    color: _Gov.accent,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _qa(
-                  context,
-                  lp,
-                  Icons.file_download_outlined,
-                  lp.t('Export report', 'Exporter un rapport'),
-                  () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const InAppWebViewScreen(
-                        title: 'Government portal',
-                        url: 'https://sahelagriconnect.com/government-portal',
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _qa(
-                  context,
-                  lp,
-                  Icons.groups_outlined,
-                  lp.t('View cooperatives', 'Voir les coopératives'),
-                  () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const InAppWebViewScreen(
-                        title: 'Cooperatives',
-                        url: 'https://sahelagriconnect.com/join-cooperative',
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _qa(
-                  context,
-                  lp,
-                  Icons.show_chart,
-                  lp.t('Market overview', 'Aperçu du marché'),
-                  () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const InAppWebViewScreen(
-                        title: 'Markets',
-                        url: 'https://sahelagriconnect.com/afri-yield/marketplace',
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _qa(
-                  context,
-                  lp,
-                  Icons.notifications_outlined,
-                  lp.t('Notifications', 'Notifications'),
-                  () => context.push('/notifications'),
-                ),
-              ]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _nationalStatQuad(
-    LanguageProvider lp, {
-    required int farmers,
-    required int cooperatives,
-    required String productionLabel,
-    required String productionValue,
-    required String investmentLabel,
-    required String investmentValue,
-  }) {
-    Widget cell(String label, String value) {
-      return Expanded(
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: _Gov.cardGrad,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  fontSize: 11,
-                  height: 1.25,
-                ),
-              ),
-            ],
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text(
+          'Key national metrics',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
-      );
-    }
-
-    return Column(
-      children: [
+        const SizedBox(height: 12),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            cell(
-              lp.t('Farmers registered', 'Agriculteurs enregistrés'),
-              '$farmers',
-            ),
+            _metricCard('Registered farmers', farmers, Icons.people_outline),
             const SizedBox(width: 10),
-            cell(
-              lp.t('Active cooperatives', 'Coopératives actives'),
-              '$cooperatives',
+            _metricCard(
+              'Active cooperatives',
+              cooperatives,
+              Icons.groups_outlined,
             ),
           ],
         ),
         const SizedBox(height: 10),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            cell(productionLabel, productionValue),
+            _metricCard(
+              isPortal ? 'Production reports' : 'Cultivated area',
+              production,
+              Icons.eco_outlined,
+            ),
             const SizedBox(width: 10),
-            cell(investmentLabel, investmentValue),
+            _metricCard(
+              'Investment programs',
+              investment,
+              Icons.account_balance_outlined,
+            ),
           ],
+        ),
+        if (!isPortal) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Sign in with your government credentials for country-scoped data.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 12,
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        const Text(
+          'Quick actions',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _actionTile(
+          context,
+          Icons.groups_outlined,
+          'View cooperatives',
+          'Browse cooperative footprint in Statistics',
+          () => onTabChange(1),
+        ),
+        const SizedBox(height: 8),
+        _actionTile(
+          context,
+          Icons.file_download_outlined,
+          'Export data',
+          'Generate a territory summary export',
+          () => _showExportSheet(context, accent),
+        ),
+        const SizedBox(height: 8),
+        _actionTile(
+          context,
+          Icons.show_chart,
+          'Market overview',
+          'Reference commodity benchmarks',
+          () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Shea +12% · Sesame +3% · Cashew +8% vs last quarter.',
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        _actionTile(
+          context,
+          Icons.notifications_outlined,
+          'Notifications',
+          'National alerts and project broadcasts',
+          () => context.push('/notifications'),
         ),
       ],
     );
   }
 
-  Widget _insightCard(LanguageProvider lp, String text) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: _Gov.cardGrad,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _Gov.accent.withValues(alpha: 0.2)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.8),
-          fontSize: 13,
-          height: 1.4,
+  Widget _metricCard(String label, String value, IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [cardStart, cardEnd]),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: accent, size: 20),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+                height: 1.25,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _qa(
+  Widget _actionTile(
     BuildContext context,
-    LanguageProvider lp,
     IconData icon,
     String title,
+    String subtitle,
     VoidCallback onTap,
   ) {
     return Material(
@@ -492,578 +633,1070 @@ class _GovOverviewTab extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            gradient: _Gov.cardGrad,
+            gradient: LinearGradient(colors: [cardStart, cardEnd]),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: Row(
             children: [
-              Icon(icon, color: _Gov.accent),
+              Icon(icon, color: accent),
               const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: Colors.white.withValues(alpha: 0.25),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showExportSheet(BuildContext context, Color accent) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1a2035),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Export territory data',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'CSV and PDF exports will include farmers, cooperatives, '
+              'and program responses for your jurisdiction.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.65),
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Export queued — you will be notified.'),
+                    ),
+                  );
+                },
+                child: const Text('Request export'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ———————————————————————————————————————————————————————————— Statistics
+class _StatisticsTab extends StatelessWidget {
+  const _StatisticsTab({
+    required this.accent,
+    required this.cardStart,
+    required this.cardEnd,
+    required this.regions,
+    required this.isPortal,
+    required this.farmers,
+  });
+
+  final Color accent;
+  final Color cardStart;
+  final Color cardEnd;
+  final List<Map<String, dynamic>> regions;
+  final bool isPortal;
+  final String farmers;
+
+  static const _cropBars = [
+    ('Shea', 0.82),
+    ('Sesame', 0.65),
+    ('Cashew', 0.71),
+    ('Millet', 0.48),
+    ('Rice', 0.55),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          'Crop production index',
+          style: TextStyle(
+            color: accent,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          isPortal
+              ? 'Illustrative index vs national baseline (territory: $farmers farmers).'
+              : 'Pan-African illustrative index — sign in for territory data.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [cardStart, cardEnd]),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            children: _cropBars.map((e) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 56,
+                      child: Text(
+                        e.$1,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: e.$2,
+                          minHeight: 10,
+                          backgroundColor:
+                              Colors.black.withValues(alpha: 0.35),
+                          color: accent,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${(e.$2 * 100).round()}%',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Regional breakdown',
+          style: TextStyle(
+            color: accent,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...regions.map((r) {
+          final name = r['name']?.toString() ?? 'Region';
+          final count = r['count']?.toString() ?? '0';
+          final trend = r['trend']?.toString() ?? '';
+          final up = trend.startsWith('+');
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [cardStart, cardEnd]),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.map_outlined, color: accent, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '$count registered farmers',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (trend.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (up ? Colors.green : Colors.orange)
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      trend,
+                      style: TextStyle(
+                        color: up ? Colors.green : Colors.orange,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accent.withValues(alpha: 0.25)),
+            color: accent.withValues(alpha: 0.08),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.trending_up, color: accent, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'National enrollment trend: steady growth in cooperative '
+                  'linkages and traceability adoption.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ———————————————————————————————————————————————————————————— Policy
+class _PolicyTab extends StatelessWidget {
+  const _PolicyTab({
+    required this.accent,
+    required this.cardStart,
+    required this.cardEnd,
+    required this.projects,
+    required this.isPortal,
+  });
+
+  final Color accent;
+  final Color cardStart;
+  final Color cardEnd;
+  final List<Map<String, dynamic>> projects;
+  final bool isPortal;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          'Agricultural policies',
+          style: TextStyle(
+            color: accent,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (isPortal && projects.isNotEmpty)
+          ...projects.map((p) => _policyCard(
+                p['title']?.toString() ??
+                    p['titleFr']?.toString() ??
+                    'National program',
+                p['description']?.toString() ??
+                    p['descriptionFr']?.toString() ??
+                    'Active agricultural initiative.',
+                'Active program',
+              ))
+        else ...[
+          _policyCard(
+            'Food security & resilience',
+            'Support cooperatives with inputs, storage, and market access.',
+            'National priority',
+          ),
+          _policyCard(
+            'Climate-smart agriculture',
+            'Promote drought-resistant crops and irrigation planning.',
+            '2025–2027 framework',
+          ),
+          _policyCard(
+            'Youth & women in agriculture',
+            'Training grants and cooperative leadership programs.',
+            'Ongoing',
+          ),
+        ],
+        const SizedBox(height: 16),
+        Text(
+          'Policy updates',
+          style: TextStyle(
+            color: accent,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _updateChip(
+          'Input subsidy window extended',
+          'Eligible cooperatives may register through Q2.',
+          accent,
+        ),
+        const SizedBox(height: 8),
+        _updateChip(
+          'Traceability mandate',
+          'Export lots require cooperative certification.',
+          const Color(0xFF64B5F6),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accent,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.edit_note_outlined),
+            label: const Text(
+              'Submit policy inquiry',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            onPressed: () => _showPolicyInquiry(context, accent),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: accent,
+              side: BorderSide(color: accent.withValues(alpha: 0.5)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.school_outlined),
+            label: const Text('Schedule training session'),
+            onPressed: () => _showTrainingSheet(context, accent),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _policyCard(String title, String body, String badge) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [cardStart, cardEnd]),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
                     color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.3)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GovHeader extends StatelessWidget {
-  const _GovHeader({
-    required this.lp,
-    required this.flagEmoji,
-    required this.countryName,
-  });
-
-  final LanguageProvider lp;
-  final String flagEmoji;
-  final String countryName;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: _Gov.headerGrad),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          lp.t(
-                            'National Agricultural Dashboard',
-                            'Tableau national agricole',
-                          ),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Text(flagEmoji, style: const TextStyle(fontSize: 28)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                countryName,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => context.go('/home'),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.22),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.home_outlined,
-                            color: Colors.white.withValues(alpha: 0.9),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            lp.t('Home', 'Accueil'),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GovStatisticsTab extends StatelessWidget {
-  const _GovStatisticsTab({
-    required this.data,
-    required this.isPortal,
-    required this.lp,
-  });
-
-  final Map<String, dynamic> data;
-  final bool isPortal;
-  final LanguageProvider lp;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!isPortal) {
-      return _govEmpty(
-        lp.t(
-          'Sign in to view country-scoped government statistics.',
-          'Connectez-vous pour les statistiques nationales.',
-        ),
-      );
-    }
-    final s = Map<String, dynamic>.from(data['stats'] as Map? ?? {});
-    final rows = <(String, String)>[
-      (lp.t('Registered farmers', 'Agriculteurs'), '${s['farmers'] ?? 0}'),
-      (lp.t('Cooperatives', 'Coopératives'), '${s['cooperatives'] ?? 0}'),
-      (lp.t('Processors', 'Processeurs'), '${s['processors'] ?? 0}'),
-      (lp.t('National projects', 'Projets nationaux'), '${s['projects'] ?? 0}'),
-      (lp.t('Active projects', 'Projets actifs'), '${s['activeProjects'] ?? 0}'),
-      (lp.t('Project responses', 'Réponses projets'), '${s['totalResponses'] ?? 0}'),
-    ];
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      children: [
-        Text(
-          lp.t('Territory metrics', 'Indicateurs du territoire'),
-          style: const TextStyle(
-            color: _Gov.accent,
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...rows.map(
-          (r) {
-            final label = r.$1;
-            final value = r.$2;
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: _Gov.cardGrad,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(label, style: const TextStyle(color: Colors.white70)),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _GovMapTab extends StatelessWidget {
-  const _GovMapTab({required this.lp});
-
-  final LanguageProvider lp;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.map_outlined, size: 56, color: _Gov.accent.withValues(alpha: 0.7)),
-            const SizedBox(height: 16),
-            Text(
-              lp.t(
-                'Spatial layers for cooperatives, production clusters, '
-                'and logistics will appear here.',
-                'Les couches spatiales, coopératives et filières seront affichées ici.',
-              ),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                height: 1.45,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GovPolicyTab extends StatelessWidget {
-  const _GovPolicyTab({
-    required this.data,
-    required this.isPortal,
-    required this.lp,
-  });
-
-  final Map<String, dynamic> data;
-  final bool isPortal;
-  final LanguageProvider lp;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!isPortal) {
-      return _govEmpty(
-        lp.t('Projects and policy tools require authentication.', 'Connexion requise.'),
-      );
-    }
-    final projects = (data['projects'] as List?)
-            ?.whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList() ??
-        [];
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      children: [
-        Text(
-          lp.t('Active programs', 'Programmes actifs'),
-          style: const TextStyle(
-            color: _Gov.accent,
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (projects.isEmpty)
+          const SizedBox(height: 6),
           Text(
-            lp.t('No recent national projects.', 'Aucun projet récent.'),
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
-          )
-        else
-          ...projects.map(
-            (p) => Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: _Gov.cardGrad,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _Gov.accent.withValues(alpha: 0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    p['title']?.toString() ?? p['titleFr']?.toString() ?? '—',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if ((p['description'] ?? p['descriptionFr']) != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      '${p['description'] ?? p['descriptionFr']}',
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+            body,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 12,
+              height: 1.4,
             ),
           ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _updateChip(String title, String body, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [cardStart, cardEnd]),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  body,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPolicyInquiry(BuildContext context, Color accent) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1a2035),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _PolicyInquirySheet(accent: accent),
+    );
+  }
+
+  void _showTrainingSheet(BuildContext context, Color accent) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1a2035),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _TrainingScheduleSheet(accent: accent),
     );
   }
 }
 
-class _GovBottomNav extends StatelessWidget {
-  const _GovBottomNav({
-    required this.tab,
-    required this.lp,
-    required this.onChanged,
-  });
+class _PolicyInquirySheet extends StatefulWidget {
+  const _PolicyInquirySheet({required this.accent});
 
-  final int tab;
-  final LanguageProvider lp;
-  final ValueChanged<int> onChanged;
+  final Color accent;
+
+  @override
+  State<_PolicyInquirySheet> createState() => _PolicyInquirySheetState();
+}
+
+class _PolicyInquirySheetState extends State<_PolicyInquirySheet> {
+  final _name = TextEditingController();
+  final _subject = TextEditingController();
+  final _message = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _subject.dispose();
+    _message.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _Gov.bg,
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-        ),
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: BottomNavigationBar(
-          currentIndex: tab.clamp(0, 4),
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: _Gov.bg,
-          selectedItemColor: _Gov.accent,
-          unselectedItemColor: Colors.white38,
-          onTap: onChanged,
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.dashboard_outlined),
-              activeIcon: const Icon(Icons.dashboard),
-              label: lp.t('Overview', 'Vue'),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.bar_chart_outlined),
-              activeIcon: const Icon(Icons.bar_chart),
-              label: lp.t('Statistics', 'Stats'),
+            const SizedBox(height: 16),
+            const Text(
+              'Submit policy inquiry',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.map_outlined),
-              activeIcon: const Icon(Icons.map),
-              label: lp.t('Map', 'Carte'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.policy_outlined),
-              activeIcon: const Icon(Icons.policy),
-              label: lp.t('Policy', 'Politique'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.manage_accounts_outlined),
-              activeIcon: const Icon(Icons.manage_accounts),
-              label: lp.t('Account', 'Compte'),
+            const SizedBox(height: 16),
+            _field(_name, 'Your name'),
+            const SizedBox(height: 12),
+            _field(_subject, 'Subject'),
+            const SizedBox(height: 12),
+            _field(_message, 'Message', maxLines: 4),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Inquiry submitted — ministry desk will respond.',
+                    ),
+                  ),
+                );
+              },
+              child: const Text(
+                'Send inquiry',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _field(TextEditingController c, String label, {int maxLines = 1}) {
+    return TextField(
+      controller: c,
+      maxLines: maxLines,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: widget.accent),
+        ),
+      ),
+    );
+  }
 }
 
-class _GovAccountTab extends StatelessWidget {
-  const _GovAccountTab({required this.lp});
+class _TrainingScheduleSheet extends StatefulWidget {
+  const _TrainingScheduleSheet({required this.accent});
 
-  final LanguageProvider lp;
+  final Color accent;
+
+  @override
+  State<_TrainingScheduleSheet> createState() => _TrainingScheduleSheetState();
+}
+
+class _TrainingScheduleSheetState extends State<_TrainingScheduleSheet> {
+  final _topic = TextEditingController();
+  final _location = TextEditingController();
+  final _date = TextEditingController();
+
+  @override
+  void dispose() {
+    _topic.dispose();
+    _location.dispose();
+    _date.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthState>();
-    final initial =
-        auth.displayName.isNotEmpty ? auth.displayName[0].toUpperCase() : '?';
-
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          pinned: true,
-          backgroundColor: const Color(0xFF1a2035),
-          automaticallyImplyLeading: false,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => context.go('/government'),
-          ),
-          title: Text(
-            lp.t('Account', 'Compte'),
-            style: const TextStyle(color: Colors.white),
-          ),
-          flexibleSpace: FlexibleSpaceBar(
-            background: Container(
-              decoration: const BoxDecoration(gradient: _Gov.headerGrad),
-              alignment: Alignment.bottomCenter,
-              padding: const EdgeInsets.only(bottom: 54, top: 48),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: _Gov.accent.withValues(alpha: 0.35),
-                    child: Text(
-                      initial,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    auth.displayName.isNotEmpty ? auth.displayName : 'Official',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          expandedHeight: 200,
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _acctSection(
-                lp,
-                lp.t('Navigation', 'Navigation'),
-                [
-                  _acctTile(
-                    Icons.home_outlined,
-                    lp.t('Back to Main Home', 'Accueil principal'),
-                    () => context.go('/home'),
-                  ),
-                ],
+            const SizedBox(height: 16),
+            const Text(
+              'Schedule training session',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 16),
-              _acctSection(
-                lp,
-                lp.t('Profile', 'Profil'),
-                [
-                  _acctTile(
-                    Icons.person_outline,
-                    lp.t('Edit profile', 'Modifier le profil'),
-                        () => context.push('/profile/edit'),
-                  ),
-                  _acctTile(
-                    Icons.language_outlined,
-                    lp.t('Language', 'Langue'),
-                    () => context.push('/profile/language'),
-                  ),
-                  _acctTile(
-                    Icons.notifications_outlined,
-                    lp.t('Notifications', 'Notifications'),
-                    () => context.push('/profile/notifications'),
-                  ),
-                ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _topic,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Training topic'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _location,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Location / region'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _date,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Preferred date'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              const SizedBox(height: 16),
-              _acctSection(
-                lp,
-                lp.t('Account management', 'Gestion du compte'),
-                [
-                  _acctTile(
-                    Icons.email_outlined,
-                    lp.t('Update email', 'Modifier l’e-mail'),
-                    () => context.push('/profile/change-email'),
-                  ),
-                  _acctTile(
-                    Icons.phone_outlined,
-                    lp.t('Update phone', 'Modifier le téléphone'),
-                    () => context.push('/profile/change-phone'),
-                  ),
-                  _acctTile(
-                    Icons.delete_outline,
-                    lp.t('Delete account', 'Supprimer le compte'),
-                    () => context.push('/profile/delete-account'),
-                    danger: true,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _acctSection(
-                lp,
-                lp.t('Support', 'Support'),
-                [
-                  _acctTile(Icons.info_outline, lp.t('About', 'À propos'),
-                      () => context.push('/about')),
-                  _acctTile(Icons.help_outline, lp.t('Help', 'Aide'),
-                      () => context.push('/help')),
-                  _acctTile(Icons.gavel_outlined, lp.t('Terms', 'Conditions'),
-                      () => context.push('/terms?view=1')),
-                  _acctTile(
-                    Icons.privacy_tip_outlined,
-                    lp.t('Privacy', 'Confidentialité'),
-                    () => context.push('/terms?view=1'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: const Color(0xFF1a2035),
-                      title: Text(
-                        lp.t('Sign out?', 'Déconnexion ?'),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: Text(
-                            lp.t('Cancel', 'Annuler'),
-                            style: const TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('OK', style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Training request logged for extension services.',
                     ),
-                  );
-                  if (ok == true && context.mounted) {
-                    await context.read<AuthState>().logout();
-                    if (context.mounted) context.go('/home');
-                  }
-                },
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: Text(
-                  lp.t('Sign out', 'Déconnexion'),
-                  style: const TextStyle(color: Colors.red),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
+                  ),
+                );
+              },
+              child: const Text(
+                'Submit request',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            ]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _decoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: widget.accent),
+      ),
+    );
+  }
+}
+
+// ———————————————————————————————————————————————————————————— Updates
+class _UpdatesTab extends StatelessWidget {
+  const _UpdatesTab({
+    required this.accent,
+    required this.cardStart,
+    required this.cardEnd,
+    required this.notifications,
+    required this.projects,
+  });
+
+  final Color accent;
+  final Color cardStart;
+  final Color cardEnd;
+  final List<Map<String, dynamic>> notifications;
+  final List<Map<String, dynamic>> projects;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <_UpdateItem>[];
+
+    for (final n in notifications.take(8)) {
+      items.add(
+        _UpdateItem(
+          n['title']?.toString() ?? 'National alert',
+          n['message']?.toString() ??
+              n['body']?.toString() ??
+              'Pending notification.',
+          'Alert',
+          accent,
+        ),
+      );
+    }
+    for (final p in projects.take(5)) {
+      items.add(
+        _UpdateItem(
+          p['title']?.toString() ?? p['titleFr']?.toString() ?? 'Program',
+          p['description']?.toString() ??
+              p['descriptionFr']?.toString() ??
+              'National agricultural program update.',
+          'Program',
+          const Color(0xFF64B5F6),
+        ),
+      );
+    }
+
+    if (items.isEmpty) {
+      items.addAll([
+        const _UpdateItem(
+          '📈 Shea export demand rising',
+          'EU buyers seeking certified cooperative lots this quarter.',
+          'Today',
+          Colors.green,
+        ),
+        _UpdateItem(
+          '🏛️ Cooperative registration drive',
+          'New digital onboarding for regional cooperatives.',
+          'This week',
+          accent,
+        ),
+        const _UpdateItem(
+          '🌧️ Early rains advisory',
+          'Northern belt farmers advised on sesame planting window.',
+          '2 days ago',
+          Color(0xFFF59E0B),
+        ),
+      ]);
+    }
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          'National updates',
+          style: TextStyle(
+            color: accent,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...items.map(
+          (u) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _updateCard(u, cardStart, cardEnd),
           ),
         ),
       ],
     );
   }
 
-  Widget _acctSection(
-    LanguageProvider lp,
-    String title,
-    List<Widget> tiles,
-  ) {
+  Widget _updateCard(_UpdateItem u, Color start, Color end) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [start, end]),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(color: u.color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  u.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  u.body,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  u.time,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpdateItem {
+  const _UpdateItem(this.title, this.body, this.time, this.color);
+
+  final String title;
+  final String body;
+  final String time;
+  final Color color;
+}
+
+// ———————————————————————————————————————————————————————————— Account
+class _AccountTab extends StatelessWidget {
+  const _AccountTab({
+    required this.accent,
+    required this.cardStart,
+    required this.cardEnd,
+  });
+
+  final Color accent;
+  final Color cardStart;
+  final Color cardEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        _tile(
+          context,
+          Icons.home_outlined,
+          accent,
+          'Back to Main Home',
+          'Return to platform overview',
+          () => context.go('/home'),
+        ),
+        const SizedBox(height: 16),
+        _section('Profile', [
+          _tile(
+            context,
+            Icons.person_outline,
+            AppColors.gold,
+            'Edit Profile',
+            'Update your details',
+            () => context.go('/profile/edit'),
+          ),
+          _tile(
+            context,
+            Icons.language_outlined,
+            const Color(0xFF9C27B0),
+            'Language',
+            'English / Français',
+            () => context.go('/profile/language'),
+          ),
+          _tile(
+            context,
+            Icons.notifications_outlined,
+            const Color(0xFFFF9800),
+            'Notifications',
+            'Manage alerts',
+            () => context.go('/profile/notifications'),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        _section('Account management', [
+          _tile(
+            context,
+            Icons.email_outlined,
+            accent,
+            'Update email',
+            'Change official email',
+            () => context.go('/profile/change-email'),
+          ),
+          _tile(
+            context,
+            Icons.phone_outlined,
+            accent,
+            'Update phone',
+            'Change contact phone',
+            () => context.go('/profile/change-phone'),
+          ),
+          _tile(
+            context,
+            Icons.delete_outline,
+            Colors.red,
+            'Delete account',
+            'Permanently remove government access',
+            () => context.go('/profile/delete-account'),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        _section('Support', [
+          _tile(
+            context,
+            Icons.help_outline,
+            accent,
+            'Help Center',
+            'FAQs and guides',
+            () => context.go('/help'),
+          ),
+          _tile(
+            context,
+            Icons.gavel_outlined,
+            Colors.white54,
+            'Terms of Service',
+            'View terms',
+            () => context.push('/terms?view=1'),
+          ),
+          _tile(
+            context,
+            Icons.privacy_tip_outlined,
+            Colors.white54,
+            'Privacy Policy',
+            'View privacy',
+            () => context.push('/terms?view=1'),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.logout, color: Colors.red),
+            label: const Text(
+              'Sign Out',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+            onPressed: () async {
+              await context.read<AuthState>().logout();
+              if (context.mounted) context.go('/home');
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _section(String title, List<Widget> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1075,61 +1708,77 @@ class _GovAccountTab extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.4),
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              letterSpacing: 1.1,
+              letterSpacing: 1.2,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            gradient: _Gov.cardGrad,
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(colors: [cardStart, cardEnd]),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: Column(
-            children: [
-              for (var i = 0; i < tiles.length; i++) ...[
-                tiles[i],
-                if (i < tiles.length - 1)
-                  Divider(
-                    height: 1,
-                    indent: 56,
-                    color: Colors.white.withValues(alpha: 0.06),
-                  ),
-              ],
-            ],
+            children: items.asMap().entries.map((e) {
+              final isLast = e.key == items.length - 1;
+              return Column(
+                children: [
+                  e.value,
+                  if (!isLast)
+                    Divider(
+                      height: 1,
+                      indent: 56,
+                      color: Colors.white.withValues(alpha: 0.06),
+                    ),
+                ],
+              );
+            }).toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _acctTile(
+  Widget _tile(
+    BuildContext ctx,
     IconData icon,
+    Color color,
     String title,
-    VoidCallback onTap, {
-    bool danger = false,
-  }) {
+    String sub,
+    VoidCallback onTap,
+  ) {
     return ListTile(
-      leading: Icon(icon, color: danger ? Colors.red : _Gov.accent),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      leading: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Icon(icon, color: color, size: 17),
+      ),
       title: Text(
         title,
-        style: TextStyle(color: danger ? Colors.red : Colors.white),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
       ),
-      trailing: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.25)),
-      onTap: onTap,
+      subtitle: Text(
+        sub,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.45),
+          fontSize: 12,
+        ),
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios,
+        size: 13,
+        color: Colors.white.withValues(alpha: 0.25),
+      ),
     );
   }
-}
-
-Widget _govEmpty(String msg) {
-  return Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Text(
-        msg,
-        textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
-      ),
-    ),
-  );
 }

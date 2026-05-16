@@ -200,14 +200,14 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                         onTap: () => context.go('/home'),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
+                            horizontal: 12,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: Colors.white.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -215,14 +215,14 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                             children: [
                               Icon(
                                 Icons.home_outlined,
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 size: 16,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 lp.t('Home', 'Accueil'),
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1570,6 +1570,42 @@ class _AccountSettingsTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.home_outlined,
+                      color: Colors.green,
+                      size: 18,
+                    ),
+                  ),
+                  title: const Text(
+                    'Back to Main Home',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Return to platform overview',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
+                  onTap: () => context.go('/home'),
+                ),
+                const Divider(color: Colors.white12),
                 if (auth.displayEmail.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -1584,13 +1620,6 @@ class _AccountSettingsTab extends StatelessWidget {
                 _AccountSection(
                   title: 'Navigation',
                   items: [
-                    _AccountTile(
-                      icon: Icons.home_outlined,
-                      iconColor: const Color(0xFF4CAF50),
-                      title: 'Back to Main Home',
-                      subtitle: 'Return to platform overview',
-                      onTap: () => context.go('/home'),
-                    ),
                     _AccountTile(
                       icon: Icons.insights_outlined,
                       iconColor: const Color(0xFF2196F3),
@@ -1617,14 +1646,14 @@ class _AccountSettingsTab extends StatelessWidget {
                       iconColor: AppColors.gold,
                       title: 'Edit Profile',
                       subtitle: 'Update your name and details',
-                      onTap: () => context.push('/profile/edit'),
+                      onTap: () => context.go('/profile/edit'),
                     ),
                     _AccountTile(
                       icon: Icons.language_outlined,
                       iconColor: const Color(0xFF9C27B0),
                       title: 'Language',
                       subtitle: 'English / Français',
-                      onTap: () => context.push('/profile/language'),
+                      onTap: () => context.go('/profile/language'),
                     ),
                     _AccountTile(
                       icon: Icons.notifications_outlined,
@@ -1667,7 +1696,7 @@ class _AccountSettingsTab extends StatelessWidget {
                       iconColor: const Color(0xFF4CAF50),
                       title: 'Help Center',
                       subtitle: 'FAQs and guides',
-                      onTap: () => context.push('/help'),
+                      onTap: () => context.go('/help'),
                     ),
                     _AccountTile(
                       icon: Icons.gavel_outlined,

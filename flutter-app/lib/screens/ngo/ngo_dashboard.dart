@@ -507,15 +507,19 @@ class _NgoHeader extends StatelessWidget {
               GestureDetector(
                 onTap: () => context.go('/home'),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.22),
+                      color: Colors.white.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.home_outlined,
@@ -528,6 +532,7 @@ class _NgoHeader extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
