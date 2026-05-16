@@ -6,6 +6,8 @@ import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/dashboard_account_nav_header.dart';
+import '../../widgets/dashboard_sign_out_button.dart';
 import '../../widgets/offline_banner.dart';
 
 abstract final class _Ngo {
@@ -100,69 +102,43 @@ class _NgoDashboardState extends State<NgoDashboard> {
                   );
                 }
                 final data = snap.data ?? {};
-                return _NgoTabBody(
-                  tab: _tab,
-                  data: data,
-                  isPortal: _isPortal(data),
-                  onRefresh: _reload,
-                  lp: lp,
-                  flagEmoji: _flagEmoji(
-                    _isPortal(data) ? data['countryCode']?.toString() : null,
-                  ),
+                final isPortal = _isPortal(data);
+                final flagEmoji = _flagEmoji(
+                  isPortal ? data['countryCode']?.toString() : null,
+                );
+                return IndexedStack(
+                  index: _tab,
+                  children: [
+                    _NgoHomeTab(
+                      data: data,
+                      isPortal: isPortal,
+                      onRefresh: _reload,
+                      lp: lp,
+                      flagEmoji: flagEmoji,
+                    ),
+                    _NgoProgramsTab(data: data, isPortal: isPortal, lp: lp),
+                    _NgoPartnersTab(data: data, isPortal: isPortal, lp: lp),
+                    _NgoAccountTab(
+                      lp: lp,
+                      onBackToDashboard: () => setState(() => _tab = 0),
+                    ),
+                  ],
                 );
               },
             ),
           ),
-          _NgoBottomNav(
-            tab: _tab,
-            lp: lp,
-            onChanged: (i) {
-              AuthService.resetActivity();
-              setState(() => _tab = i);
-            },
-          ),
         ],
+      ),
+      bottomNavigationBar: _NgoBottomNav(
+        tab: _tab,
+        lp: lp,
+        onChanged: (i) {
+          AuthService.resetActivity();
+          setState(() => _tab = i);
+        },
       ),
     ),
     );
-  }
-}
-
-class _NgoTabBody extends StatelessWidget {
-  const _NgoTabBody({
-    required this.tab,
-    required this.data,
-    required this.isPortal,
-    required this.onRefresh,
-    required this.lp,
-    required this.flagEmoji,
-  });
-
-  final int tab;
-  final Map<String, dynamic> data;
-  final bool isPortal;
-  final Future<void> Function() onRefresh;
-  final LanguageProvider lp;
-  final String flagEmoji;
-
-  @override
-  Widget build(BuildContext context) {
-    switch (tab) {
-      case 1:
-        return _NgoProgramsTab(data: data, isPortal: isPortal, lp: lp);
-      case 2:
-        return _NgoPartnersTab(data: data, isPortal: isPortal, lp: lp);
-      case 3:
-        return _NgoAccountTab(lp: lp);
-      default:
-        return _NgoHomeTab(
-          data: data,
-          isPortal: isPortal,
-          onRefresh: onRefresh,
-          lp: lp,
-          flagEmoji: flagEmoji,
-        );
-    }
   }
 }
 
@@ -500,41 +476,6 @@ class _NgoHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: () => context.go('/home'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.home_outlined,
-                        color: Colors.white.withValues(alpha: 0.9),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        lp.t('Home', 'Accueil'),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -761,9 +702,16 @@ class _NgoBottomNav extends StatelessWidget {
 }
 
 class _NgoAccountTab extends StatelessWidget {
-  const _NgoAccountTab({required this.lp});
+  const _NgoAccountTab({
+    required this.lp,
+    required this.onBackToDashboard,
+  });
 
   final LanguageProvider lp;
+  final VoidCallback onBackToDashboard;
+
+  static const _cardStart = Color(0xFF1a3a0a);
+  static const _cardEnd = Color(0xFF243810);
 
   @override
   Widget build(BuildContext context) {
@@ -779,7 +727,7 @@ class _NgoAccountTab extends StatelessWidget {
           automaticallyImplyLeading: false,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => context.go('/ngo'),
+            onPressed: onBackToDashboard,
           ),
           title: Text(
             lp.t('Account', 'Compte'),
@@ -837,17 +785,20 @@ class _NgoAccountTab extends StatelessWidget {
           expandedHeight: 220,
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            dashboardAccountScrollBottom(context),
+          ),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _acctSection(lp, lp.t('Navigation', 'Navigation'), [
-                _acctTile(
-                  Icons.home_outlined,
-                  lp.t('Back to Main Home', 'Accueil principal'),
-                  () => context.go('/home'),
-                ),
-              ]),
-              const SizedBox(height: 16),
+              DashboardAccountNavHeader(
+                accent: _Ngo.accent,
+                cardStart: _cardStart,
+                cardEnd: _cardEnd,
+                onBackToDashboard: onBackToDashboard,
+              ),
               _acctSection(lp, lp.t('Profile', 'Profil'), [
                 _acctTile(
                   Icons.person_outline,
@@ -907,49 +858,8 @@ class _NgoAccountTab extends StatelessWidget {
                   () => context.push('/terms?view=1'),
                 ),
               ]),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: const Color(0xFF152818),
-                      title: Text(
-                        lp.t('Sign out?', 'Déconnexion ?'),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: Text(
-                            lp.t('Cancel', 'Annuler'),
-                            style: const TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text(
-                            'OK',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (ok == true && context.mounted) {
-                    await context.read<AuthState>().logout();
-                    if (context.mounted) context.go('/home');
-                  }
-                },
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: Text(
-                  lp.t('Sign out', 'Déconnexion'),
-                  style: const TextStyle(color: Colors.red),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
+              const DashboardSignOutButton(
+                dialogBackground: Color(0xFF152818),
               ),
             ]),
           ),

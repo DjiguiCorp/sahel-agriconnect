@@ -10,6 +10,8 @@ import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/offline_queue.dart';
+import '../../widgets/dashboard_account_nav_header.dart';
+import '../../widgets/dashboard_sign_out_button.dart';
 import '../../widgets/offline_banner.dart';
 import '../shared/webview_screen.dart';
 
@@ -28,57 +30,57 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   List<String> get _cultures =>
       (_farmer?['cultures'] as List?)?.map((e) => e.toString()).toList() ?? [];
 
-  static final List<Map<String, Object>> tools = [
-    {
-      'icon': '🌱',
-      'title': 'Soil diagnosis',
-      'desc': 'Analyze your soil',
-      'bg': const Color(0xFF1e4535),
-      'url': 'https://sahelagriconnect.com/diagnostic-sol',
-      'webTitle': 'Soil Diagnostic',
-    },
-    {
-      'icon': '🔬',
-      'title': 'Disease detect',
-      'desc': 'Photo analysis',
-      'bg': const Color(0xFF243d32),
-      'url': 'https://sahelagriconnect.com/detection-maladies',
-      'webTitle': 'Disease Detection',
-    },
-    {
-      'icon': '🧠',
-      'title': 'Think Tank',
-      'desc': 'AI advisor',
-      'bg': const Color(0xFF1a3540),
-      'url': 'https://sahelagriconnect.com/think-tank',
-      'webTitle': 'AI Advisor',
-    },
-    {
-      'icon': '💧',
-      'title': 'Irrigation',
-      'desc': 'Water planning',
-      'bg': const Color(0xFF1e3545),
-      'url': 'https://sahelagriconnect.com/irrigation',
-      'webTitle': 'Irrigation Planning',
-    },
-    {
-      'icon': '📊',
-      'title': 'Production optimizer',
-      'desc': 'Gemini AI planning',
-      'bg': const Color(0xFF1e4535),
-      'url': 'https://sahelagriconnect.com/optimisation-production',
-      'webTitle': 'Production Optimizer',
-    },
-    {
-      'icon': '🔍',
-      'title': 'Traceability',
-      'desc': 'Track your produce lot',
-      'bg': const Color(0xFF2a3820),
-      'url': 'https://sahelagriconnect.com/traceabilite',
-      'webTitle': 'Traceability',
-      'comingSoon': true,
-    },
-  ];
+  List<Map<String, Object>> _farmerTools(LanguageProvider lp) => [
+        {
+          'icon': '🌱',
+          'title': lp.t('Soil diagnosis', 'Diagnostic du sol'),
+          'desc': lp.t('Analyze your soil', 'Analyser votre sol'),
+          'bg': const Color(0xFF1e4535),
+          'url': 'https://sahelagriconnect.com/diagnostic-sol',
+          'webTitle': lp.t('Soil Diagnostic', 'Diagnostic du sol'),
+        },
+        {
+          'icon': '🔬',
+          'title': lp.t('Disease detect', 'Détection maladies'),
+          'desc': lp.t('Photo analysis', 'Analyse photo'),
+          'bg': const Color(0xFF243d32),
+          'url': 'https://sahelagriconnect.com/detection-maladies',
+          'webTitle': lp.t('Disease Detection', 'Détection des maladies'),
+        },
+        {
+          'icon': '🧠',
+          'title': lp.t('Think Tank', 'Think Tank'),
+          'desc': lp.t('AI advisor', 'Conseiller IA'),
+          'bg': const Color(0xFF1a3540),
+          'url': 'https://sahelagriconnect.com/think-tank',
+          'webTitle': lp.t('AI Advisor', 'Conseiller IA'),
+        },
+        {
+          'icon': '💧',
+          'title': lp.t('Irrigation', 'Irrigation'),
+          'desc': lp.t('Water planning', 'Planification hydrique'),
+          'bg': const Color(0xFF1e3545),
+          'url': 'https://sahelagriconnect.com/irrigation',
+          'webTitle': lp.t('Irrigation Planning', 'Planification irrigation'),
+        },
+        {
+          'icon': '📊',
+          'title': lp.t('Production optimizer', 'Optimiseur production'),
+          'desc': lp.t('Gemini AI planning', 'Planification IA Gemini'),
+          'bg': const Color(0xFF1e4535),
+          'url': 'https://sahelagriconnect.com/optimisation-production',
+          'webTitle': lp.t('Production Optimizer', 'Optimiseur de production'),
+        },
+        {
+          'icon': '🔍',
+          'title': lp.t('Traceability', 'Traçabilité'),
+          'desc': lp.t('Track your produce lot', 'Suivre votre lot'),
+          'bg': const Color(0xFF2a3820),
+          'url': 'https://sahelagriconnect.com/traceabilite',
+          'webTitle': lp.t('Traceability', 'Traçabilité'),
+          'comingSoon': true,
+        },
+      ];
 
   @override
   void initState() {
@@ -86,16 +88,11 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     _loadFarmer();
   }
 
-  String _greetingLine(bool isFr) {
+  String _greetingLine(LanguageProvider lp) {
     final h = DateTime.now().hour;
-    if (isFr) {
-      if (h < 12) return 'Bonjour,';
-      if (h < 17) return 'Bon après-midi,';
-      return 'Bonsoir,';
-    }
-    if (h < 12) return 'Good morning,';
-    if (h < 17) return 'Good afternoon,';
-    return 'Good evening,';
+    if (h < 12) return lp.t('Good morning,', 'Bonjour,');
+    if (h < 17) return lp.t('Good afternoon,', 'Bon après-midi,');
+    return lp.t('Good evening,', 'Bonsoir,');
   }
 
   Future<void> _loadFarmer() async {
@@ -125,7 +122,6 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   }
 
   Widget _buildMainHeader(String displayName, LanguageProvider lp) {
-    final isFr = lp.locale.languageCode == 'fr';
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -172,63 +168,23 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _greetingLine(isFr),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            displayName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        _greetingLine(lp),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 14,
+                        ),
                       ),
-                      GestureDetector(
-                        onTap: () => context.go('/home'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.home_outlined,
-                                color: Colors.white.withValues(alpha: 0.9),
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                lp.t('Home', 'Accueil'),
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -267,41 +223,18 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     );
   }
 
-  Widget _buildTab(int tab) {
-    switch (tab) {
-      case 1:
-        return _ProduceTab(
-          loadingFarmer: _loadingFarmer,
-          cultures: _cultures,
-          produceRow: _produceRow,
-        );
-      case 2:
-        return _AiToolsTab(tools: tools);
-      case 3:
-        return const _BenefitsTab();
-      default:
-        return _HomeTab(
-          cultures: _cultures,
-          loadingFarmer: _loadingFarmer,
-          tools: tools,
-          produceRow: _produceRow,
-          onSeeAllAiTools: () {
-            AuthService.resetActivity();
-            setState(() => _tab = 2);
-          },
-        );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
-    final displayName = auth.displayName.isNotEmpty
-        ? auth.displayName
-        : (_farmer?['nom'] ?? 'Farmer').toString();
-
     return Consumer<LanguageProvider>(
       builder: (context, langProvider, _) {
+        final displayName = auth.displayName.isNotEmpty
+            ? auth.displayName
+            : (_farmer?['nom'] ??
+                    langProvider.t('Farmer', 'Agriculteur'))
+                .toString();
+        final tools = _farmerTools(langProvider);
+
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
@@ -316,15 +249,36 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
               if (_tab != 4 && _tab != 5)
                 _buildMainHeader(displayName, langProvider),
               Expanded(
-                child: _tab == 5
-                    ? const _AccountSettingsTab()
-                    : _tab == 4
-                        ? const _FarmerUpdatesTab()
-                        : _buildTab(_tab),
+                child: IndexedStack(
+                  index: _tab,
+                  children: [
+                    _HomeTab(
+                      cultures: _cultures,
+                      loadingFarmer: _loadingFarmer,
+                      tools: tools,
+                      produceRow: _produceRow,
+                      onSeeAllAiTools: () {
+                        AuthService.resetActivity();
+                        setState(() => _tab = 2);
+                      },
+                    ),
+                    _ProduceTab(
+                      loadingFarmer: _loadingFarmer,
+                      cultures: _cultures,
+                      produceRow: _produceRow,
+                    ),
+                    _AiToolsTab(tools: tools),
+                    const _BenefitsTab(),
+                    const _FarmerUpdatesTab(),
+                    _AccountSettingsTab(
+                      onBackToDashboard: () => setState(() => _tab = 0),
+                    ),
+                  ],
+                ),
               ),
-              _bottomNav(langProvider),
             ],
           ),
+          bottomNavigationBar: _buildBottomNavigationBar(langProvider),
         ),
         );
       },
@@ -384,106 +338,68 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         ),
       );
 
-  Widget _bottomNav(LanguageProvider lp) {
-    final isFr = lp.locale.languageCode == 'fr';
+  Widget _buildBottomNavigationBar(LanguageProvider lp) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF152923),
         border: Border(
           top: BorderSide(
             color: Colors.white.withValues(alpha: 0.08),
-            width: 0.5,
+            width: 1,
           ),
         ),
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            _navIconItem(
-              Icons.home_outlined,
-              Icons.home,
-              isFr ? 'Accueil' : 'Home',
-              0,
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _tab,
+          selectedItemColor: AppColors.gold,
+          unselectedItemColor: Colors.white38,
+          selectedFontSize: 10,
+          unselectedFontSize: 9,
+          onTap: (index) {
+            AuthService.resetActivity();
+            setState(() => _tab = index);
+          },
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: lp.t('Home', 'Accueil'),
             ),
-            _navIconItem(
-              Icons.grass_outlined,
-              Icons.grass,
-              isFr ? 'Production' : 'Produce',
-              1,
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.grass_outlined),
+              activeIcon: const Icon(Icons.grass),
+              label: lp.t('Produce', 'Production'),
             ),
-            _navIconItem(
-              Icons.psychology_outlined,
-              Icons.psychology,
-              isFr ? 'Outils IA' : 'AI Tools',
-              2,
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.psychology_outlined),
+              activeIcon: const Icon(Icons.psychology),
+              label: lp.t('AI Tools', 'Outils IA'),
             ),
-            _navIconItem(
-              Icons.card_giftcard_outlined,
-              Icons.card_giftcard,
-              isFr ? 'Avantages' : 'Benefits',
-              3,
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.card_giftcard_outlined),
+              activeIcon: const Icon(Icons.card_giftcard),
+              label: lp.t('Benefits', 'Avantages'),
             ),
-            _navIconItem(
-              Icons.campaign_outlined,
-              Icons.campaign,
-              isFr ? 'Mises à jour' : 'Updates',
-              4,
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.campaign_outlined),
+              activeIcon: const Icon(Icons.campaign),
+              label: lp.t('Updates', 'Mises à jour'),
             ),
-            _navIconItem(
-              Icons.manage_accounts_outlined,
-              Icons.manage_accounts,
-              isFr ? 'Compte' : 'Account',
-              5,
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.manage_accounts_outlined),
+              activeIcon: const Icon(Icons.manage_accounts),
+              label: lp.t('Account', 'Compte'),
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _navIconItem(
-    IconData icon,
-    IconData activeIcon,
-    String label,
-    int index,
-  ) =>
-      Expanded(
-        child: GestureDetector(
-          onTap: () {
-            AuthService.resetActivity();
-            setState(() => _tab = index);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              children: [
-                Icon(
-                  _tab == index ? activeIcon : icon,
-                  size: 22,
-                  color: _tab == index
-                      ? AppColors.gold
-                      : Colors.white.withValues(alpha: 0.35),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 8,
-                    fontWeight:
-                        _tab == index ? FontWeight.w700 : FontWeight.w400,
-                    color: _tab == index
-                        ? AppColors.gold
-                        : Colors.white.withValues(alpha: 0.4),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
 }
 
 /// Top-level so both dashboard and grid can use it.
@@ -499,57 +415,61 @@ void showFarmerComingSoonSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (sheetCtx) => Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 40)),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+    builder: (sheetCtx) {
+      final lp = sheetCtx.watch<LanguageProvider>();
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 40)),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            body,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
+            const SizedBox(height: 8),
+            Text(
+              body,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.gold,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.pop(sheetCtx),
+                child: Text(
+                  lp.t('Got it', 'Compris'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-              onPressed: () => Navigator.pop(sheetCtx),
-              child: const Text(
-                'Got it',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
             ),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ),
-    ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
+    },
   );
 }
 
 Widget _farmerToolGrid(BuildContext context, List<Map<String, Object>> tools) {
+  final lp = context.watch<LanguageProvider>();
   return GridView.builder(
     shrinkWrap: true,
     physics: const NeverScrollableScrollPhysics(),
@@ -572,8 +492,12 @@ Widget _farmerToolGrid(BuildContext context, List<Map<String, Object>> tools) {
                 context,
                 title: tools[i]['webTitle'] as String,
                 emoji: tools[i]['icon'] as String,
-                body: 'Track your produce lot from farm to market. '
-                    'This feature is coming soon.',
+                body: lp.t(
+                  'Track your produce lot from farm to market. '
+                      'This feature is coming soon.',
+                  'Suivez votre lot de la ferme au marché. '
+                      'Cette fonctionnalité arrive bientôt.',
+                ),
               );
               return;
             }
@@ -1227,67 +1151,93 @@ class _FarmerUpdatesTab extends StatelessWidget {
               style: const TextStyle(color: Colors.white),
             ),
           ),
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _FarmerAlertSection(
                     icon: '📈',
-                    title: 'Market Alerts',
-                    subtitle: 'Price changes for your crops',
+                    title: lp.t('Market Alerts', 'Alertes marché'),
+                    subtitle: lp.t(
+                      'Price changes for your crops',
+                      'Évolution des prix de vos cultures',
+                    ),
                     items: [
                       _FarmerAlertItem(
-                        title: 'Shea Butter +12%',
-                        body: 'High demand in EU markets this week',
-                        time: 'Today',
-                        color: Color(0xFF4CAF50),
+                        title: lp.t('Shea Butter +12%', 'Beurre de karité +12 %'),
+                        body: lp.t(
+                          'High demand in EU markets this week',
+                          'Forte demande sur les marchés UE cette semaine',
+                        ),
+                        time: lp.t('Today', 'Aujourd\'hui'),
+                        color: const Color(0xFF4CAF50),
                       ),
                       _FarmerAlertItem(
-                        title: 'Sesame +3%',
-                        body: 'Stable export prices, good time to sell',
-                        time: 'Yesterday',
-                        color: Color(0xFF4CAF50),
+                        title: lp.t('Sesame +3%', 'Sésame +3 %'),
+                        body: lp.t(
+                          'Stable export prices, good time to sell',
+                          'Prix export stables, bon moment pour vendre',
+                        ),
+                        time: lp.t('Yesterday', 'Hier'),
+                        color: const Color(0xFF4CAF50),
                       ),
                       _FarmerAlertItem(
-                        title: 'Cashew +8%',
-                        body: 'Premium grade wanted by EU buyers',
-                        time: '2 days ago',
-                        color: Color(0xFF4CAF50),
+                        title: lp.t('Cashew +8%', 'Cajou +8 %'),
+                        body: lp.t(
+                          'Premium grade wanted by EU buyers',
+                          'Qualité premium recherchée par les acheteurs UE',
+                        ),
+                        time: lp.t('2 days ago', 'Il y a 2 jours'),
+                        color: const Color(0xFF4CAF50),
                       ),
                     ],
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   _FarmerAlertSection(
                     icon: '🌾',
-                    title: 'Platform Updates',
-                    subtitle: 'News from Sahel AgriConnect',
+                    title: lp.t('Platform Updates', 'Actualités plateforme'),
+                    subtitle: lp.t(
+                      'News from Sahel AgriConnect',
+                      'Nouvelles de Sahel AgriConnect',
+                    ),
                     items: [
                       _FarmerAlertItem(
-                        title: 'Welcome to Sahel AgriConnect',
-                        body:
-                            'Your account is active. Start declaring your produce to connect with buyers.',
-                        time: 'Recently',
-                        color: Color(0xFFB5850A),
+                        title: lp.t(
+                          'Welcome to Sahel AgriConnect',
+                          'Bienvenue sur Sahel AgriConnect',
+                        ),
+                        body: lp.t(
+                          'Your account is active. Start declaring your produce to connect with buyers.',
+                          'Votre compte est actif. Déclarez vos productions pour trouver des acheteurs.',
+                        ),
+                        time: lp.t('Recently', 'Récemment'),
+                        color: const Color(0xFFB5850A),
                       ),
                     ],
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   _FarmerAlertSection(
                     icon: '🤝',
-                    title: 'Cooperative News',
-                    subtitle: 'Updates from your network',
+                    title: lp.t('Cooperative News', 'Actualités coopérative'),
+                    subtitle: lp.t(
+                      'Updates from your network',
+                      'Nouvelles de votre réseau',
+                    ),
                     items: [
                       _FarmerAlertItem(
-                        title: 'No cooperative yet',
-                        body: 'Join a cooperative to receive updates here.',
+                        title: lp.t('No cooperative yet', 'Pas encore de coopérative'),
+                        body: lp.t(
+                          'Join a cooperative to receive updates here.',
+                          'Rejoignez une coopérative pour recevoir des mises à jour ici.',
+                        ),
                         time: '',
                         color: Colors.white38,
                       ),
                     ],
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -1448,7 +1398,12 @@ class _FarmerAlertItem extends StatelessWidget {
 }
 
 class _AccountSettingsTab extends StatelessWidget {
-  const _AccountSettingsTab();
+  const _AccountSettingsTab({required this.onBackToDashboard});
+
+  final VoidCallback onBackToDashboard;
+
+  static const _cardStart = Color(0xFF1a3c2e);
+  static const _cardEnd = Color(0xFF2d6a4f);
 
   Future<void> _openWeb() async {
     final uri = Uri.parse('https://sahelagriconnect.com');
@@ -1460,6 +1415,7 @@ class _AccountSettingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
+    final lp = context.watch<LanguageProvider>();
     final initial =
         auth.displayName.isNotEmpty ? auth.displayName[0].toUpperCase() : 'F';
 
@@ -1517,7 +1473,9 @@ class _AccountSettingsTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      auth.displayName.isNotEmpty ? auth.displayName : 'Farmer',
+                      auth.displayName.isNotEmpty
+                          ? auth.displayName
+                          : lp.t('Farmer', 'Agriculteur'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -1537,9 +1495,9 @@ class _AccountSettingsTab extends StatelessWidget {
                           color: AppColors.gold.withValues(alpha: 0.4),
                         ),
                       ),
-                      child: const Text(
-                        '🌾 Farmer Account',
-                        style: TextStyle(
+                      child: Text(
+                        lp.t('🌾 Farmer Account', '🌾 Compte agriculteur'),
+                        style: const TextStyle(
                           color: AppColors.gold,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -1553,55 +1511,30 @@ class _AccountSettingsTab extends StatelessWidget {
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => context.go('/farmer'),
+            onPressed: onBackToDashboard,
           ),
-          title: const Text(
-            'Account Settings',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+          title: Text(
+            lp.t('Account Settings', 'Paramètres du compte'),
+            style: const TextStyle(color: Colors.white, fontSize: 18),
           ),
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              dashboardAccountScrollBottom(context),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListTile(
-                  leading: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.home_outlined,
-                      color: Colors.green,
-                      size: 18,
-                    ),
-                  ),
-                  title: const Text(
-                    'Back to Main Home',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Return to platform overview',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                    ),
-                  ),
-                  trailing: Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                  onTap: () => context.go('/home'),
+                DashboardAccountNavHeader(
+                  accent: AppColors.gold,
+                  cardStart: _cardStart,
+                  cardEnd: _cardEnd,
+                  onBackToDashboard: onBackToDashboard,
                 ),
-                const Divider(color: Colors.white12),
                 if (auth.displayEmail.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -1614,20 +1547,25 @@ class _AccountSettingsTab extends StatelessWidget {
                     ),
                   ),
                 _AccountSection(
-                  title: 'Navigation',
+                  title: lp.t('Navigation', 'Navigation'),
                   items: [
                     _AccountTile(
                       icon: Icons.insights_outlined,
                       iconColor: const Color(0xFF2196F3),
-                      title: 'My Insights',
-                      subtitle: 'Performance and analytics',
+                      title: lp.t('My Insights', 'Mes indicateurs'),
+                      subtitle: lp.t(
+                        'Performance and analytics',
+                        'Performance et analyses',
+                      ),
                       onTap: () {
                         showFarmerComingSoonSheet(
                           context,
-                          title: 'My Insights',
+                          title: lp.t('My Insights', 'Mes indicateurs'),
                           emoji: '📊',
-                          body:
-                              'Performance and analytics for your farm are coming soon.',
+                          body: lp.t(
+                            'Performance and analytics for your farm are coming soon.',
+                            'Les indicateurs et analyses de votre exploitation arrivent bientôt.',
+                          ),
                         );
                       },
                     ),
@@ -1635,49 +1573,64 @@ class _AccountSettingsTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _AccountSection(
-                  title: 'Profile',
+                  title: lp.t('Profile', 'Profil'),
                   items: [
                     _AccountTile(
                       icon: Icons.person_outline,
                       iconColor: AppColors.gold,
-                      title: 'Edit Profile',
-                      subtitle: 'Update your name and details',
+                      title: lp.t('Edit Profile', 'Modifier le profil'),
+                      subtitle: lp.t(
+                        'Update your name and details',
+                        'Mettre à jour votre nom et vos informations',
+                      ),
                       onTap: () => context.go('/profile/edit'),
                     ),
                     _AccountTile(
                       icon: Icons.language_outlined,
                       iconColor: const Color(0xFF9C27B0),
-                      title: 'Language',
-                      subtitle: 'English / Français',
+                      title: lp.t('Language', 'Langue'),
+                      subtitle: lp.t('English / Français', 'Anglais / Français'),
                       onTap: () => context.go('/profile/language'),
                     ),
                     _AccountTile(
                       icon: Icons.notifications_outlined,
                       iconColor: const Color(0xFFFF9800),
-                      title: 'Notifications',
-                      subtitle: 'Manage alerts and updates',
+                      title: lp.t('Notifications', 'Notifications'),
+                      subtitle: lp.t(
+                        'Manage alerts and updates',
+                        'Gérer les alertes et mises à jour',
+                      ),
                       onTap: () => context.push('/notifications'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 _AccountSection(
-                  title: 'Security & Account',
+                  title: lp.t('Security & Account', 'Sécurité et compte'),
                   items: [
                     _AccountTile(
                       icon: Icons.lock_outline,
                       iconColor: const Color(0xFF03A9F4),
-                      title: 'Update Login Credentials',
-                      subtitle: 'Change your email or phone',
-                      trailing: const _WebBadge(),
+                      title: lp.t(
+                        'Update Login Credentials',
+                        'Mettre à jour les identifiants',
+                      ),
+                      subtitle: lp.t(
+                        'Change your email or phone',
+                        'Modifier votre e-mail ou téléphone',
+                      ),
+                      trailing: _WebBadge(lp: lp),
                       onTap: () => _openWeb(),
                     ),
                     _AccountTile(
                       icon: Icons.delete_outline,
                       iconColor: Colors.red,
-                      title: 'Delete Account',
-                      subtitle: 'Permanently remove your data',
-                      trailing: const _WebBadge(),
+                      title: lp.t('Delete Account', 'Supprimer le compte'),
+                      subtitle: lp.t(
+                        'Permanently remove your data',
+                        'Supprimer définitivement vos données',
+                      ),
+                      trailing: _WebBadge(lp: lp),
                       onTap: () => _openWeb(),
                       destructive: true,
                     ),
@@ -1685,27 +1638,33 @@ class _AccountSettingsTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _AccountSection(
-                  title: 'Support',
+                  title: lp.t('Support', 'Support'),
                   items: [
                     _AccountTile(
                       icon: Icons.help_outline,
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Help Center',
-                      subtitle: 'FAQs and guides',
+                      title: lp.t('Help Center', 'Centre d\'aide'),
+                      subtitle: lp.t('FAQs and guides', 'FAQ et guides'),
                       onTap: () => context.go('/help'),
                     ),
                     _AccountTile(
                       icon: Icons.gavel_outlined,
                       iconColor: Colors.white54,
-                      title: 'Terms of Service',
-                      subtitle: 'View terms and conditions',
+                      title: lp.t('Terms of Service', 'Conditions d\'utilisation'),
+                      subtitle: lp.t(
+                        'View terms and conditions',
+                        'Consulter les conditions',
+                      ),
                       onTap: () => context.push('/terms?view=1'),
                     ),
                     _AccountTile(
                       icon: Icons.privacy_tip_outlined,
                       iconColor: Colors.white54,
-                      title: 'Privacy Policy',
-                      subtitle: 'How we use your data',
+                      title: lp.t('Privacy Policy', 'Politique de confidentialité'),
+                      subtitle: lp.t(
+                        'How we use your data',
+                        'Comment nous utilisons vos données',
+                      ),
                       onTap: () => context.push('/terms?view=1'),
                     ),
                   ],
@@ -1715,7 +1674,10 @@ class _AccountSettingsTab extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        'Sahel AgriConnect v1.1.0',
+                        lp.t(
+                          'Sahel AgriConnect v1.1.0',
+                          'Sahel AgriConnect v1.1.0',
+                        ),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.3),
                           fontSize: 12,
@@ -1723,7 +1685,10 @@ class _AccountSettingsTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '🌾 Produce. Sell. Earn.',
+                        lp.t(
+                          '🌾 Produce. Sell. Earn.',
+                          '🌾 Produire. Vendre. Gagner.',
+                        ),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.2),
                           fontSize: 11,
@@ -1733,67 +1698,9 @@ class _AccountSettingsTab extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (dCtx) => AlertDialog(
-                          backgroundColor: const Color(0xFF1a3c2e),
-                          title: const Text(
-                            'Sign out?',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          content: Text(
-                            'You will be returned to the home screen.',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(dCtx, false),
-                              child: Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(dCtx, true),
-                              child: const Text(
-                                'Sign out',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true && context.mounted) {
-                        await context.read<AuthState>().logout();
-                        if (context.mounted) context.go('/home');
-                      }
-                    },
-                    icon: const Icon(Icons.logout, color: Colors.red),
-                    label: const Text(
-                      'Sign Out',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: Colors.red.withValues(alpha: 0.4),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
+                const DashboardSignOutButton(
+                  dialogBackground: Color(0xFF1a3c2e),
                 ),
-                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -1925,7 +1832,9 @@ class _AccountTile extends StatelessWidget {
 }
 
 class _WebBadge extends StatelessWidget {
-  const _WebBadge();
+  const _WebBadge({required this.lp});
+
+  final LanguageProvider lp;
 
   @override
   Widget build(BuildContext context) {
@@ -1938,9 +1847,9 @@ class _WebBadge extends StatelessWidget {
           color: AppColors.gold.withValues(alpha: 0.3),
         ),
       ),
-      child: const Text(
-        'Web',
-        style: TextStyle(
+      child: Text(
+        lp.t('Web', 'Web'),
+        style: const TextStyle(
           color: AppColors.gold,
           fontSize: 11,
           fontWeight: FontWeight.w600,

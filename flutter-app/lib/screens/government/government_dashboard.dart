@@ -3,8 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
+import '../../widgets/dashboard_account_nav_header.dart';
+import '../../widgets/dashboard_sign_out_button.dart';
 import '../../widgets/offline_banner.dart';
 
 class GovernmentDashboard extends StatefulWidget {
@@ -37,9 +40,10 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
     return {};
   }
 
-  String get _countryLabel => _isPortal
-      ? (_data?['country']?.toString() ?? 'National territory')
-      : 'Pan-African overview';
+  String _countryLabel(LanguageProvider lp) => _isPortal
+      ? (_data?['country']?.toString() ??
+          lp.t('National territory', 'Territoire national'))
+      : lp.t('Pan-African overview', 'Aperçu panafricain');
 
   String get _farmersStr => _isPortal
       ? '${_stats['farmers'] ?? 0}'
@@ -62,7 +66,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
   List<Map<String, dynamic>> get _notifications =>
       _listOfMaps('recentNotifications');
 
-  List<Map<String, dynamic>> get _regions => _buildRegions();
+  List<Map<String, dynamic>> _regions(LanguageProvider lp) => _buildRegions(lp);
 
   @override
   void initState() {
@@ -105,7 +109,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
         .toList();
   }
 
-  List<Map<String, dynamic>> _buildRegions() {
+  List<Map<String, dynamic>> _buildRegions(LanguageProvider lp) {
     final byCountry = _data?['byCountry'];
     if (byCountry is List && byCountry.isNotEmpty) {
       return byCountry
@@ -113,7 +117,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
           .map((e) {
             final m = Map<String, dynamic>.from(e);
             return {
-              'name': m['_id']?.toString() ?? 'Region',
+              'name': m['_id']?.toString() ?? lp.t('Region', 'Région'),
               'count': m['count'] ?? 0,
               'trend': '+5%',
             };
@@ -125,24 +129,36 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
         0;
     if (farmers <= 0) {
       return [
-        {'name': 'Northern belt', 'count': 0, 'trend': '—'},
-        {'name': 'Central plateau', 'count': 0, 'trend': '—'},
-        {'name': 'Southern corridor', 'count': 0, 'trend': '—'},
+        {
+          'name': lp.t('Northern belt', 'Ceinture nord'),
+          'count': 0,
+          'trend': '—',
+        },
+        {
+          'name': lp.t('Central plateau', 'Plateau central'),
+          'count': 0,
+          'trend': '—',
+        },
+        {
+          'name': lp.t('Southern corridor', 'Corridor sud'),
+          'count': 0,
+          'trend': '—',
+        },
       ];
     }
     return [
       {
-        'name': 'Northern belt',
+        'name': lp.t('Northern belt', 'Ceinture nord'),
         'count': (farmers * 0.32).round(),
         'trend': '+8%',
       },
       {
-        'name': 'Central plateau',
+        'name': lp.t('Central plateau', 'Plateau central'),
         'count': (farmers * 0.41).round(),
         'trend': '+4%',
       },
       {
-        'name': 'Southern corridor',
+        'name': lp.t('Southern corridor', 'Corridor sud'),
         'count': (farmers * 0.27).round(),
         'trend': '+11%',
       },
@@ -162,6 +178,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     final String? code = _isPortal && _data != null
         ? _data!['countryCode']?.toString()
         : null;
@@ -213,7 +230,10 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'National Agricultural Dashboard',
+                                      lp.t(
+                                        'National Agricultural Dashboard',
+                                        'Tableau de bord national agricole',
+                                      ),
                                       style: TextStyle(
                                         color: Colors.white
                                             .withValues(alpha: 0.65),
@@ -232,7 +252,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
-                                            _countryLabel,
+                                            _countryLabel(lp),
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 22,
@@ -245,61 +265,23 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                                   ],
                                 ),
                               ),
-                              GestureDetector(
-                                onTap: () => context.go('/home'),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 7,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.2),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.home_outlined,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.85),
-                                        size: 15,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Home',
-                                        style: TextStyle(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.85),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 14),
                           Row(
                             children: [
                               _headerStat(
-                                'Farmers',
+                                lp.t('Farmers', 'Agriculteurs'),
                                 _loading ? '…' : _farmersStr,
                               ),
                               const SizedBox(width: 8),
                               _headerStat(
-                                'Co-ops',
+                                lp.t('Co-ops', 'Coopératives'),
                                 _loading ? '…' : _coopsStr,
                               ),
                               const SizedBox(width: 8),
                               _headerStat(
-                                'Programs',
+                                lp.t('Programs', 'Programmes'),
                                 _loading ? '…' : _investmentStr,
                               ),
                             ],
@@ -311,18 +293,6 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                 ],
               ),
             ),
-            Container(
-              color: _bg,
-              child: Row(
-                children: [
-                  _tabBtn('Overview', 0),
-                  _tabBtn('Statistics', 1),
-                  _tabBtn('Policy', 2),
-                  _tabBtn('Updates', 3),
-                  _tabBtn('Account', 4),
-                ],
-              ),
-            ),
             Expanded(
               child: _loading
                   ? const Center(
@@ -331,39 +301,106 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                   : RefreshIndicator(
                       color: _accent,
                       onRefresh: _load,
-                      child: _buildTab(_tab),
+                      child: IndexedStack(
+                        index: _tab,
+                        children: [
+                          _OverviewTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            isPortal: _isPortal,
+                            farmers: _loading ? '…' : _farmersStr,
+                            cooperatives: _loading ? '…' : _coopsStr,
+                            production: _loading ? '…' : _productionStr,
+                            investment: _loading ? '…' : _investmentStr,
+                            onTabChange: (i) => setState(() => _tab = i),
+                          ),
+                          _StatisticsTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            regions: _regions(lp),
+                            isPortal: _isPortal,
+                            farmers: _farmersStr,
+                          ),
+                          _PolicyTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            projects: _projects,
+                            isPortal: _isPortal,
+                          ),
+                          _UpdatesTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            notifications: _notifications,
+                            projects: _projects,
+                          ),
+                          _AccountTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            onBackToDashboard: () => setState(() => _tab = 0),
+                          ),
+                        ],
+                      ),
                     ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _tabBtn(String label, int index) {
-    final selected = _tab == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _tab = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11),
+        bottomNavigationBar: Container(
           decoration: BoxDecoration(
+            color: const Color(0xFF080d18),
             border: Border(
-              bottom: BorderSide(
-                color: selected ? _accent : Colors.transparent,
-                width: 2,
+              top: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 1,
               ),
             ),
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: selected ? _accent : Colors.white38,
-              fontSize: 10,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+          child: SafeArea(
+            top: false,
+            child: BottomNavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedItemColor: _accent,
+              unselectedItemColor: Colors.white30,
+              type: BottomNavigationBarType.fixed,
+              selectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(fontSize: 10),
+              currentIndex: _tab,
+              onTap: (i) => setState(() => _tab = i),
+              items: [
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.dashboard_outlined),
+                  activeIcon: const Icon(Icons.dashboard),
+                  label: lp.t('Overview', 'Aperçu'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.bar_chart_outlined),
+                  activeIcon: const Icon(Icons.bar_chart),
+                  label: lp.t('Statistics', 'Statistiques'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.policy_outlined),
+                  activeIcon: const Icon(Icons.policy),
+                  label: lp.t('Policy', 'Politique'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.campaign_outlined),
+                  activeIcon: const Icon(Icons.campaign),
+                  label: lp.t('Updates', 'Mises à jour'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.manage_accounts_outlined),
+                  activeIcon: const Icon(Icons.manage_accounts),
+                  label: lp.t('Account', 'Compte'),
+                ),
+              ],
             ),
           ),
         ),
@@ -402,54 +439,6 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
       ),
     );
   }
-
-  Widget _buildTab(int tab) {
-    switch (tab) {
-      case 1:
-        return _StatisticsTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          regions: _regions,
-          isPortal: _isPortal,
-          farmers: _farmersStr,
-        );
-      case 2:
-        return _PolicyTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          projects: _projects,
-          isPortal: _isPortal,
-        );
-      case 3:
-        return _UpdatesTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          notifications: _notifications,
-          projects: _projects,
-        );
-      case 4:
-        return const _AccountTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-        );
-      default:
-        return _OverviewTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          isPortal: _isPortal,
-          farmers: _loading ? '…' : _farmersStr,
-          cooperatives: _loading ? '…' : _coopsStr,
-          production: _loading ? '…' : _productionStr,
-          investment: _loading ? '…' : _investmentStr,
-          onTabChange: (i) => setState(() => _tab = i),
-        );
-    }
-  }
 }
 
 // ———————————————————————————————————————————————————————————— Overview
@@ -478,13 +467,14 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          'Key national metrics',
-          style: TextStyle(
+        Text(
+          lp.t('Key national metrics', 'Indicateurs nationaux clés'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -493,10 +483,14 @@ class _OverviewTab extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            _metricCard('Registered farmers', farmers, Icons.people_outline),
+            _metricCard(
+              lp.t('Registered farmers', 'Agriculteurs enregistrés'),
+              farmers,
+              Icons.people_outline,
+            ),
             const SizedBox(width: 10),
             _metricCard(
-              'Active cooperatives',
+              lp.t('Active cooperatives', 'Coopératives actives'),
               cooperatives,
               Icons.groups_outlined,
             ),
@@ -506,13 +500,15 @@ class _OverviewTab extends StatelessWidget {
         Row(
           children: [
             _metricCard(
-              isPortal ? 'Production reports' : 'Cultivated area',
+              isPortal
+                  ? lp.t('Production reports', 'Rapports de production')
+                  : lp.t('Cultivated area', 'Superficie cultivée'),
               production,
               Icons.eco_outlined,
             ),
             const SizedBox(width: 10),
             _metricCard(
-              'Investment programs',
+              lp.t('Investment programs', 'Programmes d’investissement'),
               investment,
               Icons.account_balance_outlined,
             ),
@@ -521,7 +517,10 @@ class _OverviewTab extends StatelessWidget {
         if (!isPortal) ...[
           const SizedBox(height: 12),
           Text(
-            'Sign in with your government credentials for country-scoped data.',
+            lp.t(
+              'Sign in with your government credentials for country-scoped data.',
+              'Connectez-vous avec vos identifiants gouvernementaux pour des données par pays.',
+            ),
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.45),
               fontSize: 12,
@@ -529,9 +528,9 @@ class _OverviewTab extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 20),
-        const Text(
-          'Quick actions',
-          style: TextStyle(
+        Text(
+          lp.t('Quick actions', 'Actions rapides'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -541,29 +540,41 @@ class _OverviewTab extends StatelessWidget {
         _actionTile(
           context,
           Icons.groups_outlined,
-          'View cooperatives',
-          'Browse cooperative footprint in Statistics',
+          lp.t('View cooperatives', 'Voir les coopératives'),
+          lp.t(
+            'Browse cooperative footprint in Statistics',
+            'Parcourir l’empreinte coopérative dans Statistiques',
+          ),
           () => onTabChange(1),
         ),
         const SizedBox(height: 8),
         _actionTile(
           context,
           Icons.file_download_outlined,
-          'Export data',
-          'Generate a territory summary export',
-          () => _showExportSheet(context, accent),
+          lp.t('Export data', 'Exporter les données'),
+          lp.t(
+            'Generate a territory summary export',
+            'Générer un export récapitulatif du territoire',
+          ),
+          () => _showExportSheet(context, accent, lp),
         ),
         const SizedBox(height: 8),
         _actionTile(
           context,
           Icons.show_chart,
-          'Market overview',
-          'Reference commodity benchmarks',
+          lp.t('Market overview', 'Aperçu du marché'),
+          lp.t(
+            'Reference commodity benchmarks',
+            'Références des matières premières',
+          ),
           () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  'Shea +12% · Sesame +3% · Cashew +8% vs last quarter.',
+                  lp.t(
+                    'Shea +12% · Sesame +3% · Cashew +8% vs last quarter.',
+                    'Karité +12 % · Sésame +3 % · Cajou +8 % vs trimestre précédent.',
+                  ),
                 ),
               ),
             );
@@ -573,8 +584,11 @@ class _OverviewTab extends StatelessWidget {
         _actionTile(
           context,
           Icons.notifications_outlined,
-          'Notifications',
-          'National alerts and project broadcasts',
+          lp.t('Notifications', 'Notifications'),
+          lp.t(
+            'National alerts and project broadcasts',
+            'Alertes nationales et annonces de projets',
+          ),
           () => context.push('/notifications'),
         ),
       ],
@@ -673,7 +687,11 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
-  void _showExportSheet(BuildContext context, Color accent) {
+  void _showExportSheet(
+    BuildContext context,
+    Color accent,
+    LanguageProvider lp,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF1a2035),
@@ -686,9 +704,9 @@ class _OverviewTab extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Export territory data',
-              style: TextStyle(
+            Text(
+              lp.t('Export territory data', 'Exporter les données du territoire'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -696,8 +714,12 @@ class _OverviewTab extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'CSV and PDF exports will include farmers, cooperatives, '
-              'and program responses for your jurisdiction.',
+              lp.t(
+                'CSV and PDF exports will include farmers, cooperatives, '
+                'and program responses for your jurisdiction.',
+                'Les exports CSV et PDF incluront agriculteurs, coopératives '
+                'et réponses aux programmes pour votre juridiction.',
+              ),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.65),
                 height: 1.45,
@@ -715,12 +737,17 @@ class _OverviewTab extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Export queued — you will be notified.'),
+                    SnackBar(
+                      content: Text(
+                        lp.t(
+                          'Export queued — you will be notified.',
+                          'Export en file — vous serez notifié.',
+                        ),
+                      ),
                     ),
                   );
                 },
-                child: const Text('Request export'),
+                child: Text(lp.t('Request export', 'Demander l’export')),
               ),
             ),
           ],
@@ -758,12 +785,13 @@ class _StatisticsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Crop production index',
+          lp.t('Crop production index', 'Indice de production agricole'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -773,8 +801,14 @@ class _StatisticsTab extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           isPortal
-              ? 'Illustrative index vs national baseline (territory: $farmers farmers).'
-              : 'Pan-African illustrative index — sign in for territory data.',
+              ? lp.t(
+                  'Illustrative index vs national baseline (territory: $farmers farmers).',
+                  'Indice illustratif vs référence nationale (territoire : $farmers agriculteurs).',
+                )
+              : lp.t(
+                  'Pan-African illustrative index — sign in for territory data.',
+                  'Indice illustratif panafricain — connectez-vous pour les données territoriales.',
+                ),
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.45),
             fontSize: 12,
@@ -833,7 +867,7 @@ class _StatisticsTab extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'Regional breakdown',
+          lp.t('Regional breakdown', 'Répartition régionale'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -842,7 +876,7 @@ class _StatisticsTab extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         ...regions.map((r) {
-          final name = r['name']?.toString() ?? 'Region';
+          final name = r['name']?.toString() ?? lp.t('Region', 'Région');
           final count = r['count']?.toString() ?? '0';
           final trend = r['trend']?.toString() ?? '';
           final up = trend.startsWith('+');
@@ -870,7 +904,10 @@ class _StatisticsTab extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '$count registered farmers',
+                        lp.t(
+                          '$count registered farmers',
+                          '$count agriculteurs enregistrés',
+                        ),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 12,
@@ -917,8 +954,12 @@ class _StatisticsTab extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'National enrollment trend: steady growth in cooperative '
-                  'linkages and traceability adoption.',
+                  lp.t(
+                    'National enrollment trend: steady growth in cooperative '
+                    'linkages and traceability adoption.',
+                    'Tendance nationale : croissance des liens coopératifs '
+                    'et de l’adoption de la traçabilité.',
+                  ),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.75),
                     fontSize: 12,
@@ -952,12 +993,13 @@ class _PolicyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Agricultural policies',
+          lp.t('Agricultural policies', 'Politiques agricoles'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -969,32 +1011,44 @@ class _PolicyTab extends StatelessWidget {
           ...projects.map((p) => _policyCard(
                 p['title']?.toString() ??
                     p['titleFr']?.toString() ??
-                    'National program',
+                    lp.t('National program', 'Programme national'),
                 p['description']?.toString() ??
                     p['descriptionFr']?.toString() ??
-                    'Active agricultural initiative.',
-                'Active program',
+                    lp.t(
+                      'Active agricultural initiative.',
+                      'Initiative agricole active.',
+                    ),
+                lp.t('Active program', 'Programme actif'),
               ))
         else ...[
           _policyCard(
-            'Food security & resilience',
-            'Support cooperatives with inputs, storage, and market access.',
-            'National priority',
+            lp.t('Food security & resilience', 'Sécurité alimentaire et résilience'),
+            lp.t(
+              'Support cooperatives with inputs, storage, and market access.',
+              'Soutenir les coopératives en intrants, stockage et accès au marché.',
+            ),
+            lp.t('National priority', 'Priorité nationale'),
           ),
           _policyCard(
-            'Climate-smart agriculture',
-            'Promote drought-resistant crops and irrigation planning.',
-            '2025–2027 framework',
+            lp.t('Climate-smart agriculture', 'Agriculture climato-intelligente'),
+            lp.t(
+              'Promote drought-resistant crops and irrigation planning.',
+              'Promouvoir cultures résistantes à la sécheresse et planification irrigation.',
+            ),
+            lp.t('2025–2027 framework', 'Cadre 2025–2027'),
           ),
           _policyCard(
-            'Youth & women in agriculture',
-            'Training grants and cooperative leadership programs.',
-            'Ongoing',
+            lp.t('Youth & women in agriculture', 'Jeunesse et femmes en agriculture'),
+            lp.t(
+              'Training grants and cooperative leadership programs.',
+              'Subventions formation et programmes de leadership coopératif.',
+            ),
+            lp.t('Ongoing', 'En cours'),
           ),
         ],
         const SizedBox(height: 16),
         Text(
-          'Policy updates',
+          lp.t('Policy updates', 'Mises à jour politiques'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -1003,14 +1057,20 @@ class _PolicyTab extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         _updateChip(
-          'Input subsidy window extended',
-          'Eligible cooperatives may register through Q2.',
+          lp.t('Input subsidy window extended', 'Fenêtre subventions intrants prolongée'),
+          lp.t(
+            'Eligible cooperatives may register through Q2.',
+            'Les coopératives éligibles peuvent s’inscrire jusqu’au T2.',
+          ),
           accent,
         ),
         const SizedBox(height: 8),
         _updateChip(
-          'Traceability mandate',
-          'Export lots require cooperative certification.',
+          lp.t('Traceability mandate', 'Obligation de traçabilité'),
+          lp.t(
+            'Export lots require cooperative certification.',
+            'Les lots exportés exigent une certification coopérative.',
+          ),
           const Color(0xFF64B5F6),
         ),
         const SizedBox(height: 20),
@@ -1026,9 +1086,9 @@ class _PolicyTab extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.edit_note_outlined),
-            label: const Text(
-              'Submit policy inquiry',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            label: Text(
+              lp.t('Submit policy inquiry', 'Soumettre une demande politique'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             onPressed: () => _showPolicyInquiry(context, accent),
           ),
@@ -1046,7 +1106,7 @@ class _PolicyTab extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.school_outlined),
-            label: const Text('Schedule training session'),
+            label: Text(lp.t('Schedule training session', 'Planifier une formation')),
             onPressed: () => _showTrainingSheet(context, accent),
           ),
         ),
@@ -1204,6 +1264,7 @@ class _PolicyInquirySheetState extends State<_PolicyInquirySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -1227,20 +1288,20 @@ class _PolicyInquirySheetState extends State<_PolicyInquirySheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Submit policy inquiry',
-              style: TextStyle(
+            Text(
+              lp.t('Submit policy inquiry', 'Soumettre une demande politique'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            _field(_name, 'Your name'),
+            _field(_name, lp.t('Your name', 'Votre nom')),
             const SizedBox(height: 12),
-            _field(_subject, 'Subject'),
+            _field(_subject, lp.t('Subject', 'Objet')),
             const SizedBox(height: 12),
-            _field(_message, 'Message', maxLines: 4),
+            _field(_message, lp.t('Message', 'Message'), maxLines: 4),
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -1251,16 +1312,19 @@ class _PolicyInquirySheetState extends State<_PolicyInquirySheet> {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text(
-                      'Inquiry submitted — ministry desk will respond.',
+                      lp.t(
+                        'Inquiry submitted — ministry desk will respond.',
+                        'Demande envoyée — le bureau ministériel répondra.',
+                      ),
                     ),
                   ),
                 );
               },
-              child: const Text(
-                'Send inquiry',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: Text(
+                lp.t('Send inquiry', 'Envoyer la demande'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -1314,6 +1378,7 @@ class _TrainingScheduleSheetState extends State<_TrainingScheduleSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -1337,9 +1402,9 @@ class _TrainingScheduleSheetState extends State<_TrainingScheduleSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Schedule training session',
-              style: TextStyle(
+            Text(
+              lp.t('Schedule training session', 'Planifier une formation'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -1349,19 +1414,19 @@ class _TrainingScheduleSheetState extends State<_TrainingScheduleSheet> {
             TextField(
               controller: _topic,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration('Training topic'),
+              decoration: _decoration(lp.t('Training topic', 'Thème de formation')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _location,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration('Location / region'),
+              decoration: _decoration(lp.t('Location / region', 'Lieu / région')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _date,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration('Preferred date'),
+              decoration: _decoration(lp.t('Preferred date', 'Date souhaitée')),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -1373,16 +1438,19 @@ class _TrainingScheduleSheetState extends State<_TrainingScheduleSheet> {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text(
-                      'Training request logged for extension services.',
+                      lp.t(
+                        'Training request logged for extension services.',
+                        'Demande de formation enregistrée pour les services de vulgarisation.',
+                      ),
                     ),
                   ),
                 );
               },
-              child: const Text(
-                'Submit request',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: Text(
+                lp.t('Submit request', 'Envoyer la demande'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -1425,16 +1493,17 @@ class _UpdatesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     final items = <_UpdateItem>[];
 
     for (final n in notifications.take(8)) {
       items.add(
         _UpdateItem(
-          n['title']?.toString() ?? 'National alert',
+          n['title']?.toString() ?? lp.t('National alert', 'Alerte nationale'),
           n['message']?.toString() ??
               n['body']?.toString() ??
-              'Pending notification.',
-          'Alert',
+              lp.t('Pending notification.', 'Notification en attente.'),
+          lp.t('Alert', 'Alerte'),
           accent,
         ),
       );
@@ -1442,11 +1511,16 @@ class _UpdatesTab extends StatelessWidget {
     for (final p in projects.take(5)) {
       items.add(
         _UpdateItem(
-          p['title']?.toString() ?? p['titleFr']?.toString() ?? 'Program',
+          p['title']?.toString() ??
+              p['titleFr']?.toString() ??
+              lp.t('Program', 'Programme'),
           p['description']?.toString() ??
               p['descriptionFr']?.toString() ??
-              'National agricultural program update.',
-          'Program',
+              lp.t(
+                'National agricultural program update.',
+                'Mise à jour du programme agricole national.',
+              ),
+          lp.t('Program', 'Programme'),
           const Color(0xFF64B5F6),
         ),
       );
@@ -1454,23 +1528,41 @@ class _UpdatesTab extends StatelessWidget {
 
     if (items.isEmpty) {
       items.addAll([
-        const _UpdateItem(
-          '📈 Shea export demand rising',
-          'EU buyers seeking certified cooperative lots this quarter.',
-          'Today',
+        _UpdateItem(
+          lp.t(
+            '📈 Shea export demand rising',
+            '📈 Demande export karité en hausse',
+          ),
+          lp.t(
+            'EU buyers seeking certified cooperative lots this quarter.',
+            'Acheteurs UE recherchent lots coopératifs certifiés ce trimestre.',
+          ),
+          lp.t('Today', 'Aujourd’hui'),
           Colors.green,
         ),
         _UpdateItem(
-          '🏛️ Cooperative registration drive',
-          'New digital onboarding for regional cooperatives.',
-          'This week',
+          lp.t(
+            '🏛️ Cooperative registration drive',
+            '🏛️ Campagne d’enregistrement coopératif',
+          ),
+          lp.t(
+            'New digital onboarding for regional cooperatives.',
+            'Nouvelle inscription numérique pour coopératives régionales.',
+          ),
+          lp.t('This week', 'Cette semaine'),
           accent,
         ),
-        const _UpdateItem(
-          '🌧️ Early rains advisory',
-          'Northern belt farmers advised on sesame planting window.',
-          '2 days ago',
-          Color(0xFFF59E0B),
+        _UpdateItem(
+          lp.t(
+            '🌧️ Early rains advisory',
+            '🌧️ Avis pluies précoces',
+          ),
+          lp.t(
+            'Northern belt farmers advised on sesame planting window.',
+            'Agriculteurs du nord conseillés sur la fenêtre de semis du sésame.',
+          ),
+          lp.t('2 days ago', 'Il y a 2 jours'),
+          const Color(0xFFF59E0B),
         ),
       ]);
     }
@@ -1480,7 +1572,7 @@ class _UpdatesTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'National updates',
+          lp.t('National updates', 'Actualités nationales'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -1555,7 +1647,7 @@ class _UpdatesTab extends StatelessWidget {
 }
 
 class _UpdateItem {
-  const _UpdateItem(this.title, this.body, this.time, this.color);
+  _UpdateItem(this.title, this.body, this.time, this.color);
 
   final String title;
   final String body;
@@ -1569,128 +1661,117 @@ class _AccountTab extends StatelessWidget {
     required this.accent,
     required this.cardStart,
     required this.cardEnd,
+    required this.onBackToDashboard,
   });
 
   final Color accent;
   final Color cardStart;
   final Color cardEnd;
+  final VoidCallback onBackToDashboard;
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: dashboardAccountScrollBottom(context),
+      ),
       children: [
-        _tile(
-          context,
-          Icons.home_outlined,
-          accent,
-          'Back to Main Home',
-          'Return to platform overview',
-          () => context.go('/home'),
+        DashboardAccountNavHeader(
+          accent: accent,
+          cardStart: cardStart,
+          cardEnd: cardEnd,
+          onBackToDashboard: onBackToDashboard,
         ),
-        const SizedBox(height: 16),
-        _section('Profile', [
+        _section(lp.t('Profile', 'Profil'), [
           _tile(
             context,
             Icons.person_outline,
             AppColors.gold,
-            'Edit Profile',
-            'Update your details',
+            lp.t('Edit Profile', 'Modifier le profil'),
+            lp.t('Update your details', 'Mettre à jour vos informations'),
             () => context.go('/profile/edit'),
           ),
           _tile(
             context,
             Icons.language_outlined,
             const Color(0xFF9C27B0),
-            'Language',
-            'English / Français',
+            lp.t('Language', 'Langue'),
+            lp.t('English / Français', 'English / Français'),
             () => context.go('/profile/language'),
           ),
           _tile(
             context,
             Icons.notifications_outlined,
             const Color(0xFFFF9800),
-            'Notifications',
-            'Manage alerts',
+            lp.t('Notifications', 'Notifications'),
+            lp.t('Manage alerts', 'Gérer les alertes'),
             () => context.go('/profile/notifications'),
           ),
         ]),
         const SizedBox(height: 16),
-        _section('Account management', [
+        _section(lp.t('Account management', 'Gestion du compte'), [
           _tile(
             context,
             Icons.email_outlined,
             accent,
-            'Update email',
-            'Change official email',
+            lp.t('Update email', 'Modifier l’e-mail'),
+            lp.t('Change official email', 'Changer l’e-mail officiel'),
             () => context.go('/profile/change-email'),
           ),
           _tile(
             context,
             Icons.phone_outlined,
             accent,
-            'Update phone',
-            'Change contact phone',
+            lp.t('Update phone', 'Modifier le téléphone'),
+            lp.t('Change contact phone', 'Changer le téléphone de contact'),
             () => context.go('/profile/change-phone'),
           ),
           _tile(
             context,
             Icons.delete_outline,
             Colors.red,
-            'Delete account',
-            'Permanently remove government access',
+            lp.t('Delete account', 'Supprimer le compte'),
+            lp.t(
+              'Permanently remove government access',
+              'Supprimer définitivement l’accès gouvernemental',
+            ),
             () => context.go('/profile/delete-account'),
           ),
         ]),
         const SizedBox(height: 16),
-        _section('Support', [
+        _section(lp.t('Support', 'Support'), [
           _tile(
             context,
             Icons.help_outline,
             accent,
-            'Help Center',
-            'FAQs and guides',
+            lp.t('Help Center', 'Centre d’aide'),
+            lp.t('FAQs and guides', 'FAQ et guides'),
             () => context.go('/help'),
           ),
           _tile(
             context,
             Icons.gavel_outlined,
             Colors.white54,
-            'Terms of Service',
-            'View terms',
+            lp.t('Terms of Service', 'Conditions d’utilisation'),
+            lp.t('View terms', 'Voir les conditions'),
             () => context.push('/terms?view=1'),
           ),
           _tile(
             context,
             Icons.privacy_tip_outlined,
             Colors.white54,
-            'Privacy Policy',
-            'View privacy',
+            lp.t('Privacy Policy', 'Politique de confidentialité'),
+            lp.t('View privacy', 'Voir la confidentialité'),
             () => context.push('/terms?view=1'),
           ),
         ]),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.logout, color: Colors.red),
-            label: const Text(
-              'Sign Out',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-            onPressed: () async {
-              await context.read<AuthState>().logout();
-              if (context.mounted) context.go('/home');
-            },
-          ),
+        const DashboardSignOutButton(
+          dialogBackground: Color(0xFF0a0f1e),
         ),
       ],
     );

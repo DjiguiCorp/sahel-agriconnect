@@ -3,8 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
+import '../../widgets/dashboard_account_nav_header.dart';
+import '../../widgets/dashboard_sign_out_button.dart';
 import '../../widgets/offline_banner.dart';
 
 class ProcessorDashboard extends StatefulWidget {
@@ -66,7 +69,10 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
           setState(() {
             _processor = map;
             _farmers = farmers;
-            _seedBatchesAndSchedule(map);
+            _seedBatchesAndSchedule(
+              map,
+              context.read<LanguageProvider>(),
+            );
             _loading = false;
           });
         }
@@ -78,7 +84,7 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
     }
   }
 
-  void _seedBatchesAndSchedule(Map<String, dynamic>? p) {
+  void _seedBatchesAndSchedule(Map<String, dynamic>? p, LanguageProvider lp) {
     _batches.clear();
     _schedule.clear();
     final active = (p?['activeLots'] as num?)?.toInt() ?? 0;
@@ -88,7 +94,9 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
       _batches.add(
         _ProcBatch(
           id: 'LOT-${now.year}-${i + 1}',
-          crop: i.isEven ? 'Shea nuts' : 'Sesame',
+          crop: i.isEven
+              ? lp.t('Shea nuts', 'Noix de karité')
+              : lp.t('Sesame', 'Sésame'),
           quantityKg: 800 + i * 120,
           status: _BatchStatus.active,
           startedAt: now.subtract(Duration(days: i + 1)),
@@ -99,7 +107,9 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
       _batches.add(
         _ProcBatch(
           id: 'CERT-${now.year}-${i + 1}',
-          crop: i.isEven ? 'Cashew' : 'Shea butter',
+          crop: i.isEven
+              ? lp.t('Cashew', 'Cajou')
+              : lp.t('Shea butter', 'Beurre de karité'),
           quantityKg: 500 + i * 80,
           status: _BatchStatus.completed,
           startedAt: now.subtract(Duration(days: 10 + i)),
@@ -109,17 +119,17 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
     _schedule.addAll([
       _ScheduleEntry(
         date: now.add(const Duration(days: 1)),
-        title: 'Shea intake — Lot A',
+        title: lp.t('Shea intake — Lot A', 'Réception karité — Lot A'),
         type: _ScheduleType.processing,
       ),
       _ScheduleEntry(
         date: now.add(const Duration(days: 3)),
-        title: 'Quality training — HACCP',
+        title: lp.t('Quality training — HACCP', 'Formation qualité — HACCP'),
         type: _ScheduleType.training,
       ),
       _ScheduleEntry(
         date: now.add(const Duration(days: 5)),
-        title: 'Sesame drying line',
+        title: lp.t('Sesame drying line', 'Ligne séchage sésame'),
         type: _ScheduleType.processing,
       ),
     ]);
@@ -153,10 +163,12 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     final auth = context.watch<AuthState>();
     final name = auth.displayName.isNotEmpty
         ? auth.displayName
-        : (_processor?['name']?.toString() ?? 'Processing Center');
+        : (_processor?['name']?.toString() ??
+            lp.t('Processing Center', 'Centre de traitement'));
     final location = (_processor?['location'] ?? auth.displayCountry).toString();
 
     return PopScope(
@@ -198,112 +210,62 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Processing Center',
-                                      style: TextStyle(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.65),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.8,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      name,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    if (location.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        location,
-                                        style: TextStyle(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.55),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                              Text(
+                                lp.t('Processing Center', 'Centre de traitement'),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
-                              GestureDetector(
-                                onTap: () => context.go('/home'),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 7,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.2),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.home_outlined,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.85),
-                                        size: 15,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Home',
-                                        style: TextStyle(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.85),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              const SizedBox(height: 4),
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              if (location.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  location,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.55),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 14),
                           Row(
                             children: [
-                              _headerStat('Raw in', _rawMaterials),
+                              _headerStat(
+                                lp.t('Raw in', 'Entrée brute'),
+                                _rawMaterials,
+                              ),
                               const SizedBox(width: 8),
-                              _headerStat('Processed', _processed),
+                              _headerStat(
+                                lp.t('Processed', 'Traités'),
+                                _processed,
+                              ),
                               const SizedBox(width: 8),
-                              _headerStat('Output', _outputReady),
+                              _headerStat(
+                                lp.t('Output', 'Sortie'),
+                                _outputReady,
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            Container(
-              color: _bg,
-              child: Row(
-                children: [
-                  _tabBtn('Home', 0),
-                  _tabBtn('Supply', 1),
-                  _tabBtn('Processing', 2),
-                  _tabBtn('Schedule', 3),
-                  _tabBtn('Account', 4),
                 ],
               ),
             ),
@@ -315,39 +277,121 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
                   : RefreshIndicator(
                       color: _accent,
                       onRefresh: _load,
-                      child: _buildTab(context),
+                      child: IndexedStack(
+                        index: _tab,
+                        children: [
+                          _HomeTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            raw: _rawMaterials,
+                            processed: _processed,
+                            output: _outputReady,
+                            revenue: _revenue,
+                            onTabChange: (i) => setState(() => _tab = i),
+                            onMarketPrices: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    lp.t(
+                                      'Shea 450 XOF/kg · Sesame 380 · '
+                                      'Cashew 920 (reference).',
+                                      'Karité 450 XOF/kg · Sésame 380 · '
+                                      'Cajou 920 (référence).',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          _SupplyTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            farmers: _farmers,
+                            hasPortal: _hasPortal,
+                            onRequestSupply: () =>
+                                _showRequestSupplySheet(context),
+                          ),
+                          _ProcessingTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            batches: _batches,
+                            onLogBatch: () => _showLogBatchSheet(context),
+                          ),
+                          _ScheduleTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            schedule: _schedule,
+                            onBookTraining: () =>
+                                _showBookTrainingSheet(context),
+                          ),
+                          _AccountTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            onBackToDashboard: () => setState(() => _tab = 0),
+                          ),
+                        ],
+                      ),
                     ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _tabBtn(String label, int index) {
-    final selected = _tab == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _tab = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11),
+        bottomNavigationBar: Container(
           decoration: BoxDecoration(
+            color: const Color(0xFF120c00),
             border: Border(
-              bottom: BorderSide(
-                color: selected ? _accent : Colors.transparent,
-                width: 2,
+              top: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 1,
               ),
             ),
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: selected ? _accent : Colors.white38,
-              fontSize: 10,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+          child: SafeArea(
+            top: false,
+            child: BottomNavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedItemColor: _accent,
+              unselectedItemColor: Colors.white30,
+              type: BottomNavigationBarType.fixed,
+              selectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(fontSize: 10),
+              currentIndex: _tab,
+              onTap: (i) => setState(() => _tab = i),
+              items: [
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.home_outlined),
+                  activeIcon: const Icon(Icons.home),
+                  label: lp.t('Home', 'Accueil'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.local_shipping_outlined),
+                  activeIcon: const Icon(Icons.local_shipping),
+                  label: lp.t('Supply', 'Approvisionnement'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.precision_manufacturing_outlined),
+                  activeIcon: const Icon(Icons.precision_manufacturing),
+                  label: lp.t('Processing', 'Traitement'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  activeIcon: const Icon(Icons.calendar_month),
+                  label: lp.t('Schedule', 'Calendrier'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.manage_accounts_outlined),
+                  activeIcon: const Icon(Icons.manage_accounts),
+                  label: lp.t('Account', 'Compte'),
+                ),
+              ],
             ),
           ),
         ),
@@ -389,62 +433,6 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
     );
   }
 
-  Widget _buildTab(BuildContext context) {
-    switch (_tab) {
-      case 1:
-        return _SupplyTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          farmers: _farmers,
-          hasPortal: _hasPortal,
-          onRequestSupply: () => _showRequestSupplySheet(context),
-        );
-      case 2:
-        return _ProcessingTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          batches: _batches,
-          onLogBatch: () => _showLogBatchSheet(context),
-        );
-      case 3:
-        return _ScheduleTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          schedule: _schedule,
-          onBookTraining: () => _showBookTrainingSheet(context),
-        );
-      case 4:
-        return const _AccountTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-        );
-      default:
-        return _HomeTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          raw: _rawMaterials,
-          processed: _processed,
-          output: _outputReady,
-          revenue: _revenue,
-          onTabChange: (i) => setState(() => _tab = i),
-          onMarketPrices: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Shea 450 XOF/kg · Sesame 380 · Cashew 920 (reference).',
-                ),
-              ),
-            );
-          },
-        );
-    }
-  }
-
   void _showRequestSupplySheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -458,7 +446,14 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
         onSubmit: () {
           Navigator.pop(ctx);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Supply request sent to farmers.')),
+            SnackBar(
+              content: Text(
+                context.read<LanguageProvider>().t(
+                  'Supply request sent to farmers.',
+                  'Demande d’approvisionnement envoyée aux agriculteurs.',
+                ),
+              ),
+            ),
           );
         },
       ),
@@ -487,7 +482,14 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
             ),
           );
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Batch logged on processing floor.')),
+            SnackBar(
+              content: Text(
+                context.read<LanguageProvider>().t(
+                  'Batch logged on processing floor.',
+                  'Lot enregistré sur le plancher de traitement.',
+                ),
+              ),
+            ),
           );
         },
       ),
@@ -509,32 +511,41 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
           _addSchedule(
             _ScheduleEntry(
               date: date,
-              title: 'Training — $topic ($name)',
+              title: context.read<LanguageProvider>().t(
+                'Training — $topic ($name)',
+                'Formation — $topic ($name)',
+              ),
               type: _ScheduleType.training,
             ),
           );
           showDialog<void>(
             context: context,
-            builder: (dCtx) => AlertDialog(
-              backgroundColor: const Color(0xFF2a1a00),
-              title: const Text(
-                'Request received',
-                style: TextStyle(color: Colors.white),
-              ),
-              content: Text(
-                'Our team will contact you to confirm your $topic session.',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  height: 1.4,
+            builder: (dCtx) {
+              final lp = context.read<LanguageProvider>();
+              return AlertDialog(
+                backgroundColor: const Color(0xFF2a1a00),
+                title: Text(
+                  lp.t('Request received', 'Demande reçue'),
+                  style: const TextStyle(color: Colors.white),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dCtx),
-                  child: const Text('OK', style: TextStyle(color: _accent)),
+                content: Text(
+                  lp.t(
+                    'Our team will contact you to confirm your $topic session.',
+                    'Notre équipe vous contactera pour confirmer votre session $topic.',
+                  ),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    height: 1.4,
+                  ),
                 ),
-              ],
-            ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dCtx),
+                    child: const Text('OK', style: TextStyle(color: _accent)),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
@@ -600,13 +611,14 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          'Operations snapshot',
-          style: TextStyle(
+        Text(
+          lp.t('Operations snapshot', 'Aperçu des opérations'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -615,40 +627,84 @@ class _HomeTab extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            _metric('Raw materials', raw, Icons.inventory_2_outlined),
+            _metric(
+              lp.t('Raw materials', 'Matières premières'),
+              raw,
+              Icons.inventory_2_outlined,
+            ),
             const SizedBox(width: 10),
-            _metric('Batches processed', processed, Icons.factory_outlined),
+            _metric(
+              lp.t('Batches processed', 'Lots traités'),
+              processed,
+              Icons.factory_outlined,
+            ),
           ],
         ),
         const SizedBox(height: 10),
         Row(
           children: [
-            _metric('Output ready', output, Icons.local_shipping_outlined),
+            _metric(
+              lp.t('Output ready', 'Sortie prête'),
+              output,
+              Icons.local_shipping_outlined,
+            ),
             const SizedBox(width: 10),
-            _metric('Revenue', revenue, Icons.payments_outlined),
+            _metric(
+              lp.t('Revenue', 'Revenus'),
+              revenue,
+              Icons.payments_outlined,
+            ),
           ],
         ),
         const SizedBox(height: 20),
-        const Text(
-          'Quick actions',
-          style: TextStyle(
+        Text(
+          lp.t('Quick actions', 'Actions rapides'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 12),
-        _action(Icons.shopping_basket_outlined, 'Source produce',
-            'Find farmers and request intake', () => onTabChange(1)),
+        _action(
+          Icons.shopping_basket_outlined,
+          lp.t('Source produce', 'S’approvisionner'),
+          lp.t(
+            'Find farmers and request intake',
+            'Trouver des agriculteurs et demander une réception',
+          ),
+          () => onTabChange(1),
+        ),
         const SizedBox(height: 8),
-        _action(Icons.playlist_add_outlined, 'Log batch',
-            'Register a new processing lot', () => onTabChange(2)),
+        _action(
+          Icons.playlist_add_outlined,
+          lp.t('Log batch', 'Enregistrer un lot'),
+          lp.t(
+            'Register a new processing lot',
+            'Enregistrer un nouveau lot de traitement',
+          ),
+          () => onTabChange(2),
+        ),
         const SizedBox(height: 8),
-        _action(Icons.calendar_month_outlined, 'View schedule',
-            'Processing runs and training', () => onTabChange(3)),
+        _action(
+          Icons.calendar_month_outlined,
+          lp.t('View schedule', 'Voir le calendrier'),
+          lp.t(
+            'Processing runs and training',
+            'Cycles de traitement et formations',
+          ),
+          () => onTabChange(3),
+        ),
         const SizedBox(height: 8),
-        _action(Icons.price_change_outlined, 'Market prices',
-            'Commodity reference benchmarks', onMarketPrices),
+        _action(
+          Icons.price_change_outlined,
+          lp.t('Market prices', 'Prix du marché'),
+          lp.t(
+            'Commodity reference benchmarks',
+            'Références des matières premières',
+          ),
+          onMarketPrices,
+        ),
       ],
     );
   }
@@ -758,6 +814,7 @@ class _SupplyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
@@ -774,16 +831,16 @@ class _SupplyTab extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.add_shopping_cart_outlined),
-            label: const Text(
-              'Request supply',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            label: Text(
+              lp.t('Request supply', 'Demander un approvisionnement'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             onPressed: onRequestSupply,
           ),
         ),
         const SizedBox(height: 16),
         Text(
-          'Available farmers',
+          lp.t('Available farmers', 'Agriculteurs disponibles'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -794,19 +851,25 @@ class _SupplyTab extends StatelessWidget {
         if (!hasPortal)
           _empty(
             Icons.lock_outline,
-            'Sign in to source from the farmer network.',
+            lp.t(
+              'Sign in to source from the farmer network.',
+              'Connectez-vous pour vous approvisionner auprès du réseau.',
+            ),
           )
         else if (farmers.isEmpty)
-          _empty(Icons.agriculture_outlined, 'No farmers listed yet.')
+          _empty(
+            Icons.agriculture_outlined,
+            lp.t('No farmers listed yet.', 'Aucun agriculteur listé pour l’instant.'),
+          )
         else
           ...farmers.take(20).map((f) {
-            final name = f['nom']?.toString() ?? 'Farmer';
+            final name = f['nom']?.toString() ?? lp.t('Farmer', 'Agriculteur');
             final crops =
                 (f['cultures'] as List?)?.map((e) => e.toString()).join(', ') ??
                     '—';
             final qty = f['superficie'] != null
                 ? '${f['superficie']} ha'
-                : 'Available';
+                : lp.t('Available', 'Disponible');
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(14),
@@ -917,6 +980,7 @@ class _RequestSupplySheetState extends State<_RequestSupplySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -931,22 +995,26 @@ class _RequestSupplySheetState extends State<_RequestSupplySheet> {
           children: [
             _handle(),
             const SizedBox(height: 16),
-            const Text(
-              'Request supply',
-              style: TextStyle(
+            Text(
+              lp.t('Request supply', 'Demander un approvisionnement'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            _field(_crop, 'Crop type'),
+            _field(_crop, lp.t('Crop type', 'Type de culture')),
             const SizedBox(height: 12),
-            _field(_qty, 'Quantity needed (kg)', keyboard: TextInputType.number),
+            _field(
+              _qty,
+              lp.t('Quantity needed (kg)', 'Quantité requise (kg)'),
+              keyboard: TextInputType.number,
+            ),
             const SizedBox(height: 12),
-            _field(_date, 'Delivery date'),
+            _field(_date, lp.t('Delivery date', 'Date de livraison')),
             const SizedBox(height: 12),
-            _field(_notes, 'Notes', maxLines: 3),
+            _field(_notes, lp.t('Notes', 'Notes'), maxLines: 3),
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -955,9 +1023,9 @@ class _RequestSupplySheetState extends State<_RequestSupplySheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: widget.onSubmit,
-              child: const Text(
-                'Submit request',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: Text(
+                lp.t('Submit request', 'Envoyer la demande'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -1022,6 +1090,7 @@ class _ProcessingTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     final active =
         batches.where((b) => b.status == _BatchStatus.active).toList();
     final history =
@@ -1043,16 +1112,16 @@ class _ProcessingTab extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.add_circle_outline),
-            label: const Text(
-              'Log new batch',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            label: Text(
+              lp.t('Log new batch', 'Enregistrer un nouveau lot'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             onPressed: onLogBatch,
           ),
         ),
         const SizedBox(height: 16),
         Text(
-          'Active batches',
+          lp.t('Active batches', 'Lots actifs'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -1061,12 +1130,19 @@ class _ProcessingTab extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         if (active.isEmpty)
-          _batchEmpty('No active batches on the floor.')
+          _batchEmpty(
+            lp.t(
+              'No active batches on the floor.',
+              'Aucun lot actif sur le plancher.',
+            ),
+          )
         else
-          ...active.map((b) => _batchCard(b, accent, cardStart, cardEnd, true)),
+          ...active.map(
+            (b) => _batchCard(b, accent, cardStart, cardEnd, true, lp),
+          ),
         const SizedBox(height: 16),
         Text(
-          'Batch history',
+          lp.t('Batch history', 'Historique des lots'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -1075,10 +1151,15 @@ class _ProcessingTab extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         if (history.isEmpty)
-          _batchEmpty('Completed batches will appear here.')
+          _batchEmpty(
+            lp.t(
+              'Completed batches will appear here.',
+              'Les lots terminés apparaîtront ici.',
+            ),
+          )
         else
           ...history.map(
-            (b) => _batchCard(b, accent, cardStart, cardEnd, false),
+            (b) => _batchCard(b, accent, cardStart, cardEnd, false, lp),
           ),
       ],
     );
@@ -1100,6 +1181,7 @@ class _ProcessingTab extends StatelessWidget {
     Color start,
     Color end,
     bool active,
+    LanguageProvider lp,
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1148,7 +1230,7 @@ class _ProcessingTab extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              active ? 'Active' : 'Done',
+              active ? lp.t('Active', 'Actif') : lp.t('Done', 'Terminé'),
               style: TextStyle(
                 color: active ? Colors.orange : Colors.green,
                 fontSize: 10,
@@ -1188,6 +1270,7 @@ class _LogBatchSheetState extends State<_LogBatchSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -1210,9 +1293,9 @@ class _LogBatchSheetState extends State<_LogBatchSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Log processing batch',
-            style: TextStyle(
+          Text(
+            lp.t('Log processing batch', 'Enregistrer un lot de traitement'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1222,14 +1305,14 @@ class _LogBatchSheetState extends State<_LogBatchSheet> {
           TextField(
             controller: _crop,
             style: const TextStyle(color: Colors.white),
-            decoration: _decoration('Crop / product'),
+            decoration: _decoration(lp.t('Crop / product', 'Culture / produit')),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _qty,
             keyboardType: TextInputType.number,
             style: const TextStyle(color: Colors.white),
-            decoration: _decoration('Quantity (kg)'),
+            decoration: _decoration(lp.t('Quantity (kg)', 'Quantité (kg)')),
           ),
           const SizedBox(height: 20),
           ElevatedButton(
@@ -1239,13 +1322,15 @@ class _LogBatchSheetState extends State<_LogBatchSheet> {
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
             onPressed: () {
-              final crop = _crop.text.trim().isEmpty ? 'Mixed' : _crop.text.trim();
+              final crop = _crop.text.trim().isEmpty
+                  ? lp.t('Mixed', 'Mixte')
+                  : _crop.text.trim();
               final qty = int.tryParse(_qty.text.trim()) ?? 0;
               widget.onSubmit(crop, qty);
             },
-            child: const Text(
-              'Submit batch',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            child: Text(
+              lp.t('Submit batch', 'Enregistrer le lot'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -1287,6 +1372,7 @@ class _ScheduleTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     final sorted = [...schedule]..sort((a, b) => a.date.compareTo(b.date));
     final now = DateTime.now();
     final weekStart = DateTime(now.year, now.month, now.day);
@@ -1296,7 +1382,7 @@ class _ScheduleTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Processing calendar',
+          lp.t('Processing calendar', 'Calendrier de traitement'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -1305,7 +1391,10 @@ class _ScheduleTab extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Next 7 days — runs and training (in-app only).',
+          lp.t(
+            'Next 7 days — runs and training (in-app only).',
+            '7 prochains jours — cycles et formations (dans l’app uniquement).',
+          ),
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.45),
             fontSize: 12,
@@ -1319,7 +1408,7 @@ class _ScheduleTab extends StatelessWidget {
                 e.date.month == day.month &&
                 e.date.day == day.day;
           }).toList();
-          final dayLabel = _dayLabel(day, now);
+          final dayLabel = _dayLabel(day, now, lp);
           return Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(12),
@@ -1342,7 +1431,7 @@ class _ScheduleTab extends StatelessWidget {
                 const SizedBox(height: 8),
                 if (dayEvents.isEmpty)
                   Text(
-                    'No events scheduled',
+                    lp.t('No events scheduled', 'Aucun événement planifié'),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.4),
                       fontSize: 12,
@@ -1381,7 +1470,7 @@ class _ScheduleTab extends StatelessWidget {
         }),
         const SizedBox(height: 16),
         Text(
-          'Training sessions',
+          lp.t('Training sessions', 'Sessions de formation'),
           style: TextStyle(
             color: accent,
             fontSize: 16,
@@ -1399,17 +1488,24 @@ class _ScheduleTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'On-site quality & safety training',
-                style: TextStyle(
+              Text(
+                lp.t(
+                  'On-site quality & safety training',
+                  'Formation qualité et sécurité sur site',
+                ),
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                'Book HACCP, equipment, or traceability workshops — '
-                'confirmed by our extension team.',
+                lp.t(
+                  'Book HACCP, equipment, or traceability workshops — '
+                  'confirmed by our extension team.',
+                  'Réserver ateliers HACCP, équipement ou traçabilité — '
+                  'confirmé par notre équipe de vulgarisation.',
+                ),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
@@ -1426,9 +1522,9 @@ class _ScheduleTab extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   icon: const Icon(Icons.school_outlined),
-                  label: const Text(
-                    'Book training session',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  label: Text(
+                    lp.t('Book training session', 'Réserver une formation'),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   onPressed: onBookTraining,
                 ),
@@ -1440,13 +1536,24 @@ class _ScheduleTab extends StatelessWidget {
     );
   }
 
-  String _dayLabel(DateTime day, DateTime now) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  String _dayLabel(DateTime day, DateTime now, LanguageProvider lp) {
+    final days = [
+      lp.t('Mon', 'Lun'),
+      lp.t('Tue', 'Mar'),
+      lp.t('Wed', 'Mer'),
+      lp.t('Thu', 'Jeu'),
+      lp.t('Fri', 'Ven'),
+      lp.t('Sat', 'Sam'),
+      lp.t('Sun', 'Dim'),
+    ];
     final name = days[day.weekday - 1];
     if (day.year == now.year &&
         day.month == now.month &&
         day.day == now.day) {
-      return 'Today · $name ${day.day}/${day.month}';
+      return lp.t(
+        'Today · $name ${day.day}/${day.month}',
+        'Aujourd’hui · $name ${day.day}/${day.month}',
+      );
     }
     return '$name ${day.day}/${day.month}';
   }
@@ -1468,14 +1575,14 @@ class _BookTrainingSheet extends StatefulWidget {
 class _BookTrainingSheetState extends State<_BookTrainingSheet> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
-  String _topic = 'HACCP basics';
+  String _topicEn = 'HACCP basics';
   DateTime _date = DateTime.now().add(const Duration(days: 7));
 
   static const _topics = [
-    'HACCP basics',
-    'Quality control',
-    'Equipment maintenance',
-    'Traceability & certification',
+    ('HACCP basics', 'Bases HACCP'),
+    ('Quality control', 'Contrôle qualité'),
+    ('Equipment maintenance', 'Maintenance équipement'),
+    ('Traceability & certification', 'Traçabilité et certification'),
   ];
 
   @override
@@ -1487,6 +1594,9 @@ class _BookTrainingSheetState extends State<_BookTrainingSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
+    final topicLabel = _topics
+        .firstWhere((t) => t.$1 == _topicEn, orElse: () => _topics.first);
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -1510,9 +1620,9 @@ class _BookTrainingSheetState extends State<_BookTrainingSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Book training session',
-              style: TextStyle(
+            Text(
+              lp.t('Book training session', 'Réserver une formation'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -1522,28 +1632,34 @@ class _BookTrainingSheetState extends State<_BookTrainingSheet> {
             TextField(
               controller: _name,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration('Your name'),
+              decoration: _decoration(lp.t('Your name', 'Votre nom')),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              initialValue: _topic,
+              initialValue: _topicEn,
               dropdownColor: const Color(0xFF2a1a00),
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration('Topic'),
+              decoration: _decoration(lp.t('Topic', 'Thème')),
               items: _topics
                   .map(
-                    (t) => DropdownMenuItem(value: t, child: Text(t)),
+                    (t) => DropdownMenuItem(
+                      value: t.$1,
+                      child: Text(lp.t(t.$1, t.$2)),
+                    ),
                   )
                   .toList(),
               onChanged: (v) {
-                if (v != null) setState(() => _topic = v);
+                if (v != null) setState(() => _topicEn = v);
               },
             ),
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
-                'Preferred date: ${_date.day}/${_date.month}/${_date.year}',
+                lp.t(
+                  'Preferred date: ${_date.day}/${_date.month}/${_date.year}',
+                  'Date souhaitée : ${_date.day}/${_date.month}/${_date.year}',
+                ),
                 style: const TextStyle(color: Colors.white),
               ),
               trailing: Icon(Icons.calendar_today, color: widget.accent),
@@ -1571,11 +1687,14 @@ class _BookTrainingSheetState extends State<_BookTrainingSheet> {
               controller: _phone,
               keyboardType: TextInputType.phone,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration('Phone'),
+              decoration: _decoration(lp.t('Phone', 'Téléphone')),
             ),
             const SizedBox(height: 8),
             Text(
-              'Our team will contact you to confirm.',
+              lp.t(
+                'Our team will contact you to confirm.',
+                'Notre équipe vous contactera pour confirmer.',
+              ),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 12,
@@ -1590,13 +1709,14 @@ class _BookTrainingSheetState extends State<_BookTrainingSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: () {
-                final name =
-                    _name.text.trim().isEmpty ? 'Processor' : _name.text.trim();
-                widget.onSubmit(name, _date, _topic);
+                final name = _name.text.trim().isEmpty
+                    ? lp.t('Processor', 'Processeur')
+                    : _name.text.trim();
+                widget.onSubmit(name, _date, lp.t(topicLabel.$1, topicLabel.$2));
               },
-              child: const Text(
-                'Submit booking',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: Text(
+                lp.t('Submit booking', 'Envoyer la réservation'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -1627,128 +1747,117 @@ class _AccountTab extends StatelessWidget {
     required this.accent,
     required this.cardStart,
     required this.cardEnd,
+    required this.onBackToDashboard,
   });
 
   final Color accent;
   final Color cardStart;
   final Color cardEnd;
+  final VoidCallback onBackToDashboard;
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: dashboardAccountScrollBottom(context),
+      ),
       children: [
-        _tile(
-          context,
-          Icons.home_outlined,
-          accent,
-          'Back to Main Home',
-          'Return to platform overview',
-          () => context.go('/home'),
+        DashboardAccountNavHeader(
+          accent: accent,
+          cardStart: cardStart,
+          cardEnd: cardEnd,
+          onBackToDashboard: onBackToDashboard,
         ),
-        const SizedBox(height: 16),
-        _section('Profile', [
+        _section(lp.t('Profile', 'Profil'), [
           _tile(
             context,
             Icons.person_outline,
             AppColors.gold,
-            'Edit Profile',
-            'Update your details',
+            lp.t('Edit Profile', 'Modifier le profil'),
+            lp.t('Update your details', 'Mettre à jour vos informations'),
             () => context.go('/profile/edit'),
           ),
           _tile(
             context,
             Icons.language_outlined,
             const Color(0xFF9C27B0),
-            'Language',
-            'English / Français',
+            lp.t('Language', 'Langue'),
+            lp.t('English / Français', 'English / Français'),
             () => context.go('/profile/language'),
           ),
           _tile(
             context,
             Icons.notifications_outlined,
             const Color(0xFFFF9800),
-            'Notifications',
-            'Manage alerts',
+            lp.t('Notifications', 'Notifications'),
+            lp.t('Manage alerts', 'Gérer les alertes'),
             () => context.go('/profile/notifications'),
           ),
         ]),
         const SizedBox(height: 16),
-        _section('Account management', [
+        _section(lp.t('Account management', 'Gestion du compte'), [
           _tile(
             context,
             Icons.email_outlined,
             accent,
-            'Update email',
-            'Change contact email',
+            lp.t('Update email', 'Modifier l’e-mail'),
+            lp.t('Change contact email', 'Changer l’e-mail de contact'),
             () => context.go('/profile/change-email'),
           ),
           _tile(
             context,
             Icons.phone_outlined,
             accent,
-            'Update phone',
-            'Change contact phone',
+            lp.t('Update phone', 'Modifier le téléphone'),
+            lp.t('Change contact phone', 'Changer le téléphone de contact'),
             () => context.go('/profile/change-phone'),
           ),
           _tile(
             context,
             Icons.delete_outline,
             Colors.red,
-            'Delete account',
-            'Permanently remove processor account',
+            lp.t('Delete account', 'Supprimer le compte'),
+            lp.t(
+              'Permanently remove processor account',
+              'Supprimer définitivement le compte processeur',
+            ),
             () => context.go('/profile/delete-account'),
           ),
         ]),
         const SizedBox(height: 16),
-        _section('Support', [
+        _section(lp.t('Support', 'Support'), [
           _tile(
             context,
             Icons.help_outline,
             accent,
-            'Help Center',
-            'FAQs and guides',
+            lp.t('Help Center', 'Centre d’aide'),
+            lp.t('FAQs and guides', 'FAQ et guides'),
             () => context.go('/help'),
           ),
           _tile(
             context,
             Icons.gavel_outlined,
             Colors.white54,
-            'Terms of Service',
-            'View terms',
+            lp.t('Terms of Service', 'Conditions d’utilisation'),
+            lp.t('View terms', 'Voir les conditions'),
             () => context.push('/terms?view=1'),
           ),
           _tile(
             context,
             Icons.privacy_tip_outlined,
             Colors.white54,
-            'Privacy Policy',
-            'View privacy',
+            lp.t('Privacy Policy', 'Politique de confidentialité'),
+            lp.t('View privacy', 'Voir la confidentialité'),
             () => context.push('/terms?view=1'),
           ),
         ]),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.logout, color: Colors.red),
-            label: const Text(
-              'Sign Out',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-            onPressed: () async {
-              await context.read<AuthState>().logout();
-              if (context.mounted) context.go('/home');
-            },
-          ),
+        const DashboardSignOutButton(
+          dialogBackground: Color(0xFF1a1200),
         ),
       ],
     );

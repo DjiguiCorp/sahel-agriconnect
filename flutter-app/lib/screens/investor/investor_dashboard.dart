@@ -9,6 +9,8 @@ import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/dashboard_account_nav_header.dart';
+import '../../widgets/dashboard_sign_out_button.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/web_action_tile.dart';
 import '../shared/webview_screen.dart';
@@ -140,10 +142,10 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
     return (raised / sought.toDouble()).clamp(0.0, 1.0);
   }
 
-  String _oppTitle(Map<String, dynamic> opp) =>
+  String _oppTitle(Map<String, dynamic> opp, LanguageProvider lp) =>
       opp['centerName']?.toString() ??
       opp['title']?.toString() ??
-      'Opportunity';
+      lp.t('Opportunity', 'Opportunité');
 
   String _oppSubtitle(Map<String, dynamic> opp) =>
       opp['commodity']?.toString() ?? '';
@@ -170,44 +172,66 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         children: [
           const OfflineBanner(),
           Expanded(
-            child: _tab == 0
-                ? RefreshIndicator(
-                    color: _Inv.gold,
-                    backgroundColor: const Color(0xFF1a2744),
-                    onRefresh: _load,
-                    child: CustomScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: _InvestorHomeHeader(
-                            lp: lp,
-                            portfolioValue: balanceLabel,
-                            returnsPct: _loading
-                                ? '—'
-                                : '${_avgRoi.toStringAsFixed(1)}%',
-                            positions: _loading
-                                ? '—'
-                                : '${_investments.length}',
-                          ),
+            child: IndexedStack(
+              index: _tab,
+              children: [
+                RefreshIndicator(
+                  color: _Inv.gold,
+                  backgroundColor: const Color(0xFF1a2744),
+                  onRefresh: _load,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: _InvestorHomeHeader(
+                          lp: lp,
+                          portfolioValue: balanceLabel,
+                          returnsPct: _loading
+                              ? '—'
+                              : '${_avgRoi.toStringAsFixed(1)}%',
+                          positions: _loading
+                              ? '—'
+                              : '${_investments.length}',
                         ),
-                        SliverToBoxAdapter(
-                          child: _InvestorHomeBody(
-                            lp: lp,
-                            loading: _loading,
-                            opportunities: _opportunities,
-                            investments: _investments,
-                            opportunityCard: _opportunityCard,
-                            fundedFraction: _fundedFraction,
-                            oppTitle: _oppTitle,
-                            oppSubtitle: _oppSubtitle,
-                            oppId: _oppId,
-                            oppRoiRange: _oppRoiRange,
-                          ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _InvestorHomeBody(
+                          lp: lp,
+                          loading: _loading,
+                          opportunities: _opportunities,
+                          investments: _investments,
+                          opportunityCard: _opportunityCard,
+                          fundedFraction: _fundedFraction,
+                          oppTitle: _oppTitle,
+                          oppSubtitle: _oppSubtitle,
+                          oppId: _oppId,
+                          oppRoiRange: _oppRoiRange,
                         ),
-                      ],
-                    ),
-                  )
-                : _buildSecondaryTab(_tab, lp),
+                      ),
+                    ],
+                  ),
+                ),
+                _DealsTab(
+                  opportunities: _opportunities,
+                  loading: _loading,
+                  opportunityCard: _opportunityCard,
+                  fundedFraction: _fundedFraction,
+                  oppTitle: _oppTitle,
+                  oppSubtitle: _oppSubtitle,
+                  oppId: _oppId,
+                  oppRoiRange: _oppRoiRange,
+                ),
+                _PortfolioInvestmentsTab(
+                  investments: _investments,
+                  loading: _loading,
+                  lp: lp,
+                ),
+                _InvestorAccountTab(
+                  lp: lp,
+                  onBackToDashboard: () => setState(() => _tab = 0),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -221,32 +245,6 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
       ),
     ),
     );
-  }
-
-  Widget _buildSecondaryTab(int tab, LanguageProvider lp) {
-    switch (tab) {
-      case 1:
-        return _DealsTab(
-          opportunities: _opportunities,
-          loading: _loading,
-          opportunityCard: _opportunityCard,
-          fundedFraction: _fundedFraction,
-          oppTitle: _oppTitle,
-          oppSubtitle: _oppSubtitle,
-          oppId: _oppId,
-          oppRoiRange: _oppRoiRange,
-        );
-      case 2:
-        return _PortfolioInvestmentsTab(
-          investments: _investments,
-          loading: _loading,
-          lp: lp,
-        );
-      case 3:
-        return _InvestorAccountTab(lp: lp);
-      default:
-        return const SizedBox.shrink();
-    }
   }
 
   Widget _opportunityCard({
@@ -339,8 +337,14 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
           ),
           const Divider(height: 24, color: Color(0x22FFFFFF)),
           WebActionTile(
-            title: 'Invest in this opportunity',
-            description: 'Complete your investment on our secure platform',
+            title: lp.t(
+              'Invest in this opportunity',
+              'Investir dans cette opportunité',
+            ),
+            description: lp.t(
+              'Complete your investment on our secure platform',
+              'Finalisez votre investissement sur notre plateforme sécurisée',
+            ),
             action: 'invest',
             opportunityId: opportunityId,
             icon: Icons.trending_up,
@@ -406,63 +410,22 @@ class _InvestorHomeHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            lp.t('AfriYield Exchange', 'AfriYield Exchange'),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 13,
-                            ),
-                          ),
-                          Text(
-                            lp.t('Investor Portal', 'Portail investisseur'),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        lp.t('AfriYield Exchange', 'AfriYield Exchange'),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 13,
+                        ),
                       ),
-                      GestureDetector(
-                        onTap: () => context.go('/home'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.home_outlined,
-                                color: Colors.white.withValues(alpha: 0.9),
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                lp.t('Home', 'Accueil'),
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
+                      Text(
+                        lp.t('Investor Portal', 'Portail investisseur'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
@@ -571,7 +534,7 @@ class _InvestorHomeBody extends StatelessWidget {
   final List<Map<String, dynamic>> investments;
   final _OppCardBuilder opportunityCard;
   final double Function(Map<String, dynamic>) fundedFraction;
-  final String Function(Map<String, dynamic>) oppTitle;
+  final String Function(Map<String, dynamic>, LanguageProvider) oppTitle;
   final String Function(Map<String, dynamic>) oppSubtitle;
   final String Function(Map<String, dynamic>) oppId;
   final String Function(Map<String, dynamic>) oppRoiRange;
@@ -615,7 +578,7 @@ class _InvestorHomeBody extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: e.key < featured.length - 1 ? 12 : 0),
                 child: opportunityCard(
                   lp: lp,
-                  title: oppTitle(opp),
+                  title: oppTitle(opp, lp),
                   subtitle: oppSubtitle(opp),
                   progress: funded.clamp(0.0, 1.0),
                   delay: e.key * 80,
@@ -776,8 +739,8 @@ class _InvestorHomeBody extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => const InAppWebViewScreen(
-                  title: 'AfriYield Exchange',
+                builder: (_) => InAppWebViewScreen(
+                  title: lp.t('AfriYield Exchange', 'AfriYield Exchange'),
                   url: 'https://sahelagriconnect.com/afri-yield/marketplace',
                 ),
               ),
@@ -1091,7 +1054,7 @@ class _DealsTab extends StatelessWidget {
   final bool loading;
   final _OppCardBuilder opportunityCard;
   final double Function(Map<String, dynamic>) fundedFraction;
-  final String Function(Map<String, dynamic>) oppTitle;
+  final String Function(Map<String, dynamic>, LanguageProvider) oppTitle;
   final String Function(Map<String, dynamic>) oppSubtitle;
   final String Function(Map<String, dynamic>) oppId;
   final String Function(Map<String, dynamic>) oppRoiRange;
@@ -1107,6 +1070,15 @@ class _DealsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
+        Text(
+          lp.t('Exchange opportunities', 'Opportunités boursières'),
+          style: const TextStyle(
+            color: _Inv.gold,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 12),
         if (opportunities.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 32),
@@ -1134,7 +1106,7 @@ class _DealsTab extends StatelessWidget {
             ),
             child: opportunityCard(
               lp: lp,
-              title: oppTitle(opp),
+              title: oppTitle(opp, lp),
               subtitle: oppSubtitle(opp),
               progress: funded.clamp(0.0, 1.0),
               delay: i * 60,
@@ -1148,8 +1120,8 @@ class _DealsTab extends StatelessWidget {
           child: GestureDetector(
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => const InAppWebViewScreen(
-                  title: 'AfriYield Exchange',
+                builder: (_) => InAppWebViewScreen(
+                  title: lp.t('AfriYield Exchange', 'AfriYield Exchange'),
                   url: 'https://sahelagriconnect.com/afri-yield/marketplace',
                 ),
               ),
@@ -1225,9 +1197,22 @@ class _PortfolioInvestmentsTab extends StatelessWidget {
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: investments.length,
+      itemCount: investments.length + 1,
       itemBuilder: (ctx, i) {
-        final inv = investments[i];
+        if (i == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              lp.t('My portfolio', 'Mon portefeuille'),
+              style: const TextStyle(
+                color: _Inv.gold,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          );
+        }
+        final inv = investments[i - 1];
         final name =
             inv['investorName']?.toString() ?? lp.t('Investment', 'Investissement');
         final amt = num.tryParse(inv['amountDeployed']?.toString() ?? '0') ?? 0;
@@ -1271,6 +1256,11 @@ class _PortfolioInvestmentsTab extends StatelessWidget {
                   final dateStr = m['payoutDate']?.toString() ?? '';
                   final isPaid = status == 'paid';
                   final isScheduled = status == 'scheduled';
+                  final statusLabel = isPaid
+                      ? lp.t('paid', 'payé')
+                      : isScheduled
+                          ? lp.t('scheduled', 'prévu')
+                          : status;
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Row(
@@ -1298,7 +1288,7 @@ class _PortfolioInvestmentsTab extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            status,
+                            statusLabel,
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -1324,9 +1314,16 @@ class _PortfolioInvestmentsTab extends StatelessWidget {
 }
 
 class _InvestorAccountTab extends StatelessWidget {
-  const _InvestorAccountTab({required this.lp});
+  const _InvestorAccountTab({
+    required this.lp,
+    required this.onBackToDashboard,
+  });
 
   final LanguageProvider lp;
+  final VoidCallback onBackToDashboard;
+
+  static const _cardStart = Color(0xFF1a2744);
+  static const _cardEnd = Color(0xFF0f1a33);
 
   Future<void> _openWeb() async {
     final uri = Uri.parse('https://sahelagriconnect.com');
@@ -1349,7 +1346,7 @@ class _InvestorAccountTab extends StatelessWidget {
           backgroundColor: const Color(0xFF1a2744),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => context.go('/investor'),
+            onPressed: onBackToDashboard,
           ),
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
@@ -1389,7 +1386,9 @@ class _InvestorAccountTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      auth.displayName.isNotEmpty ? auth.displayName : 'Investor',
+                      auth.displayName.isNotEmpty
+                          ? auth.displayName
+                          : lp.t('Investor', 'Investisseur'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 19,
@@ -1430,7 +1429,12 @@ class _InvestorAccountTab extends StatelessWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              dashboardAccountScrollBottom(context),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1445,22 +1449,12 @@ class _InvestorAccountTab extends StatelessWidget {
                       ),
                     ),
                   ),
-                _InvAccountSection(
-                  title: lp.t('Navigation', 'Navigation'),
-                  children: [
-                    _InvAccountTile(
-                      icon: Icons.home_outlined,
-                      iconColor: _Inv.gold,
-                      title: lp.t('Back to Main Home', 'Retour à l’accueil'),
-                      subtitle: lp.t(
-                        'Platform overview & guest discovery',
-                        'Découverte et aperçu de la plateforme',
-                      ),
-                      onTap: () => context.go('/home'),
-                    ),
-                  ],
+                DashboardAccountNavHeader(
+                  accent: _Inv.gold,
+                  cardStart: _cardStart,
+                  cardEnd: _cardEnd,
+                  onBackToDashboard: onBackToDashboard,
                 ),
-                const SizedBox(height: 16),
                 _InvAccountSection(
                   title: lp.t('Profile', 'Profil'),
                   children: [
@@ -1566,7 +1560,7 @@ class _InvestorAccountTab extends StatelessWidget {
                       iconColor: const Color(0xFF64B5F6),
                       title: lp.t('Visit web portal', 'Portail web'),
                       subtitle: 'sahelagriconnect.com',
-                      trailing: const _InvWebBadge(),
+                      trailing: _InvWebBadge(lp: lp),
                       onTap: _openWeb,
                     ),
                   ],
@@ -1581,59 +1575,8 @@ class _InvestorAccountTab extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          backgroundColor: const Color(0xFF1a2744),
-                          title: Text(
-                            lp.t('Sign out?', 'Déconnexion ?'),
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          content: Text(
-                            lp.t(
-                              'Return to role selection.',
-                              'Retour au choix de rôle.',
-                            ),
-                            style: const TextStyle(color: Colors.white70),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: Text(
-                                lp.t('Cancel', 'Annuler'),
-                                style: const TextStyle(color: Colors.white54),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: Text(
-                                lp.t('Sign out', 'Déconnexion'),
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (ok == true && context.mounted) {
-                        await context.read<AuthState>().logout();
-                        if (context.mounted) context.go('/home');
-                      }
-                    },
-                    icon: const Icon(Icons.logout, color: Colors.red),
-                    label: Text(
-                      lp.t('Sign out', 'Déconnexion'),
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
+                const DashboardSignOutButton(
+                  dialogBackground: Color(0xFF1a2744),
                 ),
               ],
             ),
@@ -1751,7 +1694,9 @@ class _InvAccountTile extends StatelessWidget {
 }
 
 class _InvWebBadge extends StatelessWidget {
-  const _InvWebBadge();
+  const _InvWebBadge({required this.lp});
+
+  final LanguageProvider lp;
 
   @override
   Widget build(BuildContext context) {
@@ -1761,9 +1706,9 @@ class _InvWebBadge extends StatelessWidget {
         color: Colors.blue.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Text(
-        'WEB',
-        style: TextStyle(
+      child: Text(
+        lp.t('WEB', 'WEB'),
+        style: const TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w700,
           color: Colors.lightBlueAccent,

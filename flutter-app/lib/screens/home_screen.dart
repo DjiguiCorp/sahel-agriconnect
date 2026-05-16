@@ -221,6 +221,50 @@ class _HomeScreenState extends State<HomeScreen> {
     context.go(loginRoute ?? '/role');
   }
 
+  int? _categoryIndexForRole(AuthRole role) {
+    switch (role) {
+      case AuthRole.farmer:
+        return 0;
+      case AuthRole.investor:
+        return 1;
+      case AuthRole.cooperative:
+        return 2;
+      default:
+        return null;
+    }
+  }
+
+  String? _dashboardRouteForRole(AuthRole role) {
+    switch (role) {
+      case AuthRole.farmer:
+        return '/farmer';
+      case AuthRole.investor:
+        return '/investor';
+      case AuthRole.cooperative:
+        return '/cooperative';
+      case AuthRole.government:
+        return '/government';
+      case AuthRole.ngo:
+        return '/ngo';
+      case AuthRole.processor:
+        return '/processor';
+      default:
+        return null;
+    }
+  }
+
+  void _openCategory(int index, AuthState auth) {
+    if (auth.isLoggedIn &&
+        _categoryIndexForRole(auth.role) == index) {
+      final route = _dashboardRouteForRole(auth.role);
+      if (route != null) {
+        context.go(route);
+        return;
+      }
+    }
+    context.go(_guestPaths[index]);
+  }
+
   /// Shown when a guest tries to perform a protected action. Keeps the
   /// guest browsing flow intact while making the value of signing in clear.
   Future<void> _showSignInRequiredModal({
@@ -788,6 +832,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryCarousel(LanguageProvider lp) {
+    final auth = context.watch<AuthState>();
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -831,7 +876,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   category: c,
                   selected: selected,
                   isFr: lp.isFr,
-                  onTap: () => context.go(_guestPaths[i]),
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = i;
+                      _loadedPreviews.add(i);
+                    });
+                    _openCategory(i, auth);
+                  },
                 )
                     .animate()
                     .fadeIn(
@@ -941,6 +992,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 if (auth.isLoggedIn) {
+                                  final route =
+                                      _dashboardRouteForRole(auth.role);
+                                  if (route != null &&
+                                      _categoryIndexForRole(auth.role) ==
+                                          _selectedCategory) {
+                                    context.go(route);
+                                    return;
+                                  }
                                   _goSignIn(cat.loginRoute);
                                   return;
                                 }

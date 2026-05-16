@@ -3,8 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
+import '../../widgets/dashboard_account_nav_header.dart';
+import '../../widgets/dashboard_sign_out_button.dart';
 import '../../widgets/offline_banner.dart';
 
 class CooperativeDashboard extends StatefulWidget {
@@ -121,10 +124,11 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     final auth = context.watch<AuthState>();
     final coopName = auth.displayName.isNotEmpty
         ? auth.displayName
-        : 'Your Cooperative';
+        : lp.t('Your Cooperative', 'Votre coopérative');
 
     return PopScope(
       canPop: false,
@@ -165,73 +169,30 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Cooperative Management',
-                                      style: TextStyle(
-                                        color:
-                                            Colors.white.withValues(alpha: 0.65),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.8,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      coopName,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                              Text(
+                                lp.t(
+                                  'Cooperative Management',
+                                  'Gestion coopérative',
+                                ),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
-                              GestureDetector(
-                                onTap: () => context.go('/home'),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 7,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.2),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.home_outlined,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.85),
-                                        size: 15,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Home',
-                                        style: TextStyle(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.85),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              const SizedBox(height: 4),
+                              Text(
+                                coopName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -240,19 +201,19 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                           Row(
                             children: [
                               _statCard(
-                                'Members',
+                                lp.t('Members', 'Membres'),
                                 _loading ? '…' : _memberCountStr,
                                 Icons.groups_outlined,
                               ),
                               const SizedBox(width: 10),
                               _statCard(
-                                'Production',
+                                lp.t('Production', 'Production'),
                                 _loading ? '…' : _productionStr,
                                 Icons.agriculture_outlined,
                               ),
                               const SizedBox(width: 10),
                               _statCard(
-                                'Active',
+                                lp.t('Active', 'Actifs'),
                                 _loading ? '…' : _activeStr,
                                 Icons.check_circle_outline,
                               ),
@@ -265,18 +226,6 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                 ],
               ),
             ),
-            Container(
-              color: _bg,
-              child: Row(
-                children: [
-                  _tabBtn('Home', 0),
-                  _tabBtn('Members', 1),
-                  _tabBtn('Production', 2),
-                  _tabBtn('Updates', 3),
-                  _tabBtn('Account', 4),
-                ],
-              ),
-            ),
             Expanded(
               child: _loading
                   ? const Center(
@@ -285,37 +234,103 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                   : RefreshIndicator(
                       color: _accent,
                       onRefresh: _load,
-                      child: _buildTab(_tab),
+                      child: IndexedStack(
+                        index: _tab,
+                        children: [
+                          _CoopHomeTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            isPortal: _isPortal,
+                            memberCount: _memberCountStr,
+                            pendingListings:
+                                '${_stats['pendingListings'] ?? 0}',
+                            onTabChange: (i) => setState(() => _tab = i),
+                          ),
+                          _MembersTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            members: _members,
+                            isPortal: _isPortal,
+                          ),
+                          _ProductionTab(
+                            listings: _listings,
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            isPortal: _isPortal,
+                          ),
+                          _UpdatesTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            projects: _listOfMaps('nationalProjects'),
+                          ),
+                          _AccountTab(
+                            accent: _accent,
+                            cardStart: _cardStart,
+                            cardEnd: _cardEnd,
+                            onBackToDashboard: () => setState(() => _tab = 0),
+                          ),
+                        ],
+                      ),
                     ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _tabBtn(String label, int index) {
-    final selected = _tab == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _tab = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+        bottomNavigationBar: Container(
           decoration: BoxDecoration(
+            color: const Color(0xFF0d1825),
             border: Border(
-              bottom: BorderSide(
-                color: selected ? _accent : Colors.transparent,
-                width: 2,
+              top: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 1,
               ),
             ),
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: selected ? _accent : Colors.white38,
-              fontSize: 11,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+          child: SafeArea(
+            top: false,
+            child: BottomNavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedItemColor: _accent,
+              unselectedItemColor: Colors.white30,
+              type: BottomNavigationBarType.fixed,
+              selectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(fontSize: 10),
+              currentIndex: _tab,
+              onTap: (i) => setState(() => _tab = i),
+              items: [
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.home_outlined),
+                  activeIcon: const Icon(Icons.home),
+                  label: lp.t('Home', 'Accueil'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.groups_outlined),
+                  activeIcon: const Icon(Icons.groups),
+                  label: lp.t('Members', 'Membres'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.agriculture_outlined),
+                  activeIcon: const Icon(Icons.agriculture),
+                  label: lp.t('Production', 'Production'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.campaign_outlined),
+                  activeIcon: const Icon(Icons.campaign),
+                  label: lp.t('Updates', 'Mises à jour'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.manage_accounts_outlined),
+                  activeIcon: const Icon(Icons.manage_accounts),
+                  label: lp.t('Account', 'Compte'),
+                ),
+              ],
             ),
           ),
         ),
@@ -362,50 +377,6 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
     );
   }
 
-  Widget _buildTab(int tab) {
-    switch (tab) {
-      case 1:
-        return _MembersTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          members: _members,
-          isPortal: _isPortal,
-        );
-      case 2:
-        return _ProductionTab(
-          listings: _listings,
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          isPortal: _isPortal,
-        );
-      case 3:
-        return _UpdatesTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          projects: _listOfMaps('nationalProjects'),
-        );
-      case 4:
-        return const _AccountTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-        );
-      default:
-        return _CoopHomeTab(
-          accent: _accent,
-          cardStart: _cardStart,
-          cardEnd: _cardEnd,
-          isPortal: _isPortal,
-          memberCount: _memberCountStr,
-          pendingListings: '${_stats['pendingListings'] ?? 0}',
-          onTabChange: (i) => setState(() => _tab = i),
-        );
-    }
-  }
-
   List<Map<String, dynamic>> _listOfMaps(String key) {
     final raw = _data?[key];
     if (raw is! List) return [];
@@ -437,6 +408,7 @@ class _CoopHomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
@@ -451,9 +423,12 @@ class _CoopHomeTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '🤝 Welcome to your Cooperative',
-                style: TextStyle(
+              Text(
+                lp.t(
+                  '🤝 Welcome to your Cooperative',
+                  '🤝 Bienvenue dans votre coopérative',
+                ),
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -462,10 +437,18 @@ class _CoopHomeTab extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 isPortal
-                    ? 'You have $memberCount linked members and '
-                        '$pendingListings listings awaiting approval.'
-                    : 'Manage your members, track production, '
-                        'and connect with buyers and investors.',
+                    ? lp.t(
+                        'You have $memberCount linked members and '
+                            '$pendingListings listings awaiting approval.',
+                        'Vous avez $memberCount membres liés et '
+                            '$pendingListings annonces en attente d\'approbation.',
+                      )
+                    : lp.t(
+                        'Manage your members, track production, '
+                            'and connect with buyers and investors.',
+                        'Gérez vos membres, suivez la production '
+                            'et connectez-vous aux acheteurs et investisseurs.',
+                      ),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.65),
                   fontSize: 13,
@@ -476,9 +459,9 @@ class _CoopHomeTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Quick Actions',
-          style: TextStyle(
+        Text(
+          lp.t('Quick Actions', 'Actions rapides'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -495,34 +478,34 @@ class _CoopHomeTab extends StatelessWidget {
           children: [
             _QuickAction(
               icon: '👥',
-              title: 'Add Member',
+              title: lp.t('Add Member', 'Ajouter un membre'),
               color: accent,
               onTap: () => onTabChange(1),
             ),
             _QuickAction(
               icon: '🌾',
-              title: 'Log Production',
+              title: lp.t('Log Production', 'Enregistrer la production'),
               color: const Color(0xFF4CAF50),
               onTap: () => onTabChange(2),
             ),
             _QuickAction(
               icon: '📊',
-              title: 'View Stats',
+              title: lp.t('View Stats', 'Voir les statistiques'),
               color: const Color(0xFF2196F3),
               onTap: () => onTabChange(2),
             ),
             _QuickAction(
               icon: '📢',
-              title: 'Updates',
+              title: lp.t('Updates', 'Mises à jour'),
               color: const Color(0xFFF59E0B),
               onTap: () => onTabChange(3),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Current Market Prices',
-          style: TextStyle(
+        Text(
+          lp.t('Current Market Prices', 'Prix du marché actuels'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -531,17 +514,17 @@ class _CoopHomeTab extends StatelessWidget {
         const SizedBox(height: 12),
         ...[
           {
-            'crop': '🌾 Shea Butter',
+            'crop': lp.t('🌾 Shea Butter', '🌾 Beurre de karité'),
             'price': '450 XOF/kg',
             'trend': '+12%',
           },
           {
-            'crop': '🌿 Sesame',
+            'crop': lp.t('🌿 Sesame', '🌿 Sésame'),
             'price': '380 XOF/kg',
             'trend': '+3%',
           },
           {
-            'crop': '🥜 Cashew',
+            'crop': lp.t('🥜 Cashew', '🥜 Cajou'),
             'price': '920 XOF/kg',
             'trend': '+8%',
           },
@@ -658,6 +641,7 @@ class _MembersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
@@ -674,9 +658,9 @@ class _MembersTab extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.person_add_outlined),
-            label: const Text(
-              'Add New Member',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            label: Text(
+              lp.t('Add New Member', 'Ajouter un membre'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             onPressed: () {
               showModalBottomSheet<void>(
@@ -695,18 +679,24 @@ class _MembersTab extends StatelessWidget {
         if (!isPortal)
           _emptyCard(
             Icons.lock_outline,
-            'Sign in required',
-            'Sign in with your cooperative account to view members.',
+            lp.t('Sign in required', 'Connexion requise'),
+            lp.t(
+              'Sign in with your cooperative account to view members.',
+              'Connectez-vous avec votre compte coopérative pour voir les membres.',
+            ),
           )
         else if (members.isEmpty)
           _emptyCard(
             Icons.groups_outlined,
-            'No members yet',
-            'Add your first cooperative member\nto start managing your group.',
+            lp.t('No members yet', 'Aucun membre pour l\'instant'),
+            lp.t(
+              'Add your first cooperative member\nto start managing your group.',
+              'Ajoutez votre premier membre coopératif\npour commencer à gérer votre groupe.',
+            ),
           )
         else
           ...members.map((m) {
-            final name = m['nom']?.toString() ?? 'Member';
+            final name = m['nom']?.toString() ?? lp.t('Member', 'Membre');
             final region = m['region']?.toString() ?? '';
             final cultures = (m['cultures'] as List?)?.join(', ') ?? '';
             final statut = m['statut']?.toString() ?? '';
@@ -831,6 +821,7 @@ class _AddMemberSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -850,9 +841,9 @@ class _AddMemberSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Add New Member',
-            style: TextStyle(
+          Text(
+            lp.t('Add New Member', 'Ajouter un membre'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -862,7 +853,7 @@ class _AddMemberSheet extends StatelessWidget {
           TextField(
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              labelText: 'Member Name',
+              labelText: lp.t('Member Name', 'Nom du membre'),
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -881,7 +872,7 @@ class _AddMemberSheet extends StatelessWidget {
             style: const TextStyle(color: Colors.white),
             keyboardType: TextInputType.phone,
             decoration: InputDecoration(
-              labelText: 'Phone Number',
+              labelText: lp.t('Phone Number', 'Numéro de téléphone'),
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -910,16 +901,19 @@ class _AddMemberSheet extends StatelessWidget {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text(
-                      'Member invitations are sent from the cooperative portal.',
+                      lp.t(
+                        'Member invitations are sent from the cooperative portal.',
+                        'Les invitations membres sont envoyées depuis le portail coopérative.',
+                      ),
                     ),
                   ),
                 );
               },
-              child: const Text(
-                'Add Member',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: Text(
+                lp.t('Add Member', 'Ajouter'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -946,6 +940,7 @@ class _ProductionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
@@ -962,9 +957,9 @@ class _ProductionTab extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.add_circle_outline),
-            label: const Text(
-              'Log New Production',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            label: Text(
+              lp.t('Log New Production', 'Enregistrer une production'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             onPressed: () {
               showModalBottomSheet<void>(
@@ -983,20 +978,26 @@ class _ProductionTab extends StatelessWidget {
         if (!isPortal)
           _productionEmpty(
             Icons.lock_outline,
-            'Sign in required',
-            'Sign in to view and approve member produce listings.',
+            lp.t('Sign in required', 'Connexion requise'),
+            lp.t(
+              'Sign in to view and approve member produce listings.',
+              'Connectez-vous pour voir et approuver les annonces de production des membres.',
+            ),
           )
         else if (listings.isEmpty)
           _productionEmpty(
             Icons.agriculture_outlined,
-            'No production logged yet',
-            'Log your cooperative\'s produce to connect with buyers.',
+            lp.t('No production logged yet', 'Aucune production enregistrée'),
+            lp.t(
+              'Log your cooperative\'s produce to connect with buyers.',
+              'Enregistrez la production de votre coopérative pour vous connecter aux acheteurs.',
+            ),
           )
         else
           ...listings.map((l) {
             final crop = l['cropType']?.toString() ??
                 l['commodity']?.toString() ??
-                'Produce';
+                lp.t('Produce', 'Produit');
             final qty = l['quantityKg']?.toString() ?? '—';
             final status = l['status']?.toString() ?? '';
             final approved = l['cooperativeApproved'] == true;
@@ -1052,7 +1053,9 @@ class _ProductionTab extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      approved ? 'Approved' : 'Pending',
+                      approved
+                          ? lp.t('Approved', 'Approuvé')
+                          : lp.t('Pending', 'En attente'),
                       style: TextStyle(
                         color: approved ? Colors.green : Colors.orange,
                         fontSize: 10,
@@ -1111,6 +1114,7 @@ class _LogProductionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -1130,9 +1134,9 @@ class _LogProductionSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Log Production',
-            style: TextStyle(
+          Text(
+            lp.t('Log Production', 'Enregistrer la production'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1142,7 +1146,10 @@ class _LogProductionSheet extends StatelessWidget {
           TextField(
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              labelText: 'Crop Type (e.g. Shea Butter)',
+              labelText: lp.t(
+                'Crop Type (e.g. Shea Butter)',
+                'Type de culture (ex. beurre de karité)',
+              ),
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -1161,7 +1168,7 @@ class _LogProductionSheet extends StatelessWidget {
             style: const TextStyle(color: Colors.white),
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              labelText: 'Quantity (kg)',
+              labelText: lp.t('Quantity (kg)', 'Quantité (kg)'),
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -1190,16 +1197,19 @@ class _LogProductionSheet extends StatelessWidget {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text(
-                      'Production logging syncs with member farmer listings.',
+                      lp.t(
+                        'Production logging syncs with member farmer listings.',
+                        'L\'enregistrement de production se synchronise avec les annonces des agriculteurs membres.',
+                      ),
                     ),
                   ),
                 );
               },
-              child: const Text(
-                'Submit',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: Text(
+                lp.t('Submit', 'Envoyer'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1224,13 +1234,14 @@ class _UpdatesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     if (projects.isNotEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'National programs',
+            lp.t('National programs', 'Programmes nationaux'),
             style: TextStyle(
               color: accent,
               fontSize: 16,
@@ -1239,17 +1250,31 @@ class _UpdatesTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ...projects.map((p) {
-            final title =
-                p['title']?.toString() ?? p['titleFr']?.toString() ?? 'Program';
-            final desc = p['description']?.toString() ??
-                p['descriptionFr']?.toString() ??
-                '';
+            final title = lp.isFr
+                ? (p['titleFr']?.toString() ??
+                    p['title']?.toString() ??
+                    lp.t('Program', 'Programme'))
+                : (p['title']?.toString() ??
+                    p['titleFr']?.toString() ??
+                    lp.t('Program', 'Programme'));
+            final desc = lp.isFr
+                ? (p['descriptionFr']?.toString() ??
+                    p['description']?.toString() ??
+                    '')
+                : (p['description']?.toString() ??
+                    p['descriptionFr']?.toString() ??
+                    '');
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _updateCard(
                 title,
-                desc.isEmpty ? 'Active national program for cooperatives.' : desc,
-                'Program',
+                desc.isEmpty
+                    ? lp.t(
+                        'Active national program for cooperatives.',
+                        'Programme national actif pour les coopératives.',
+                      )
+                    : desc,
+                lp.t('Program', 'Programme'),
                 accent,
                 cardStart,
                 cardEnd,
@@ -1265,27 +1290,45 @@ class _UpdatesTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         _updateCard(
-          '📈 Shea Butter Prices Up 12%',
-          'High demand in EU markets. Good time to connect with buyers.',
-          'Today',
+          lp.t(
+            '📈 Shea Butter Prices Up 12%',
+            '📈 Prix du beurre de karité en hausse de 12 %',
+          ),
+          lp.t(
+            'High demand in EU markets. Good time to connect with buyers.',
+            'Forte demande sur les marchés européens. Bon moment pour contacter les acheteurs.',
+          ),
+          lp.t('Today', 'Aujourd\'hui'),
           Colors.green,
           cardStart,
           cardEnd,
         ),
         const SizedBox(height: 10),
         _updateCard(
-          '🤝 New Cooperative Feature',
-          'You can now add members directly from the app. Tap Members tab.',
-          'This week',
+          lp.t(
+            '🤝 New Cooperative Feature',
+            '🤝 Nouvelle fonctionnalité coopérative',
+          ),
+          lp.t(
+            'You can now add members directly from the app. Tap Members tab.',
+            'Vous pouvez maintenant ajouter des membres depuis l\'application. Appuyez sur l\'onglet Membres.',
+          ),
+          lp.t('This week', 'Cette semaine'),
           accent,
           cardStart,
           cardEnd,
         ),
         const SizedBox(height: 10),
         _updateCard(
-          '🌾 Sesame Season Starting',
-          'Sesame harvest season begins. Declare your production early.',
-          '2 days ago',
+          lp.t(
+            '🌾 Sesame Season Starting',
+            '🌾 Début de la saison du sésame',
+          ),
+          lp.t(
+            'Sesame harvest season begins. Declare your production early.',
+            'La saison de récolte du sésame commence. Déclarez votre production tôt.',
+          ),
+          lp.t('2 days ago', 'Il y a 2 jours'),
           const Color(0xFFF59E0B),
           cardStart,
           cardEnd,
@@ -1362,128 +1405,117 @@ class _AccountTab extends StatelessWidget {
     required this.accent,
     required this.cardStart,
     required this.cardEnd,
+    required this.onBackToDashboard,
   });
 
   final Color accent;
   final Color cardStart;
   final Color cardEnd;
+  final VoidCallback onBackToDashboard;
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: dashboardAccountScrollBottom(context),
+      ),
       children: [
-        _tile(
-          context,
-          Icons.home_outlined,
-          Colors.green,
-          'Back to Main Home',
-          'Return to platform overview',
-          () => context.go('/home'),
+        DashboardAccountNavHeader(
+          accent: accent,
+          cardStart: cardStart,
+          cardEnd: cardEnd,
+          onBackToDashboard: onBackToDashboard,
         ),
-        const SizedBox(height: 16),
-        _section('Profile', [
+        _section(lp.t('Profile', 'Profil'), [
           _tile(
             context,
             Icons.person_outline,
             AppColors.gold,
-            'Edit Profile',
-            'Update your details',
+            lp.t('Edit Profile', 'Modifier le profil'),
+            lp.t('Update your details', 'Mettre à jour vos informations'),
             () => context.go('/profile/edit'),
           ),
           _tile(
             context,
             Icons.language_outlined,
             const Color(0xFF9C27B0),
-            'Language',
-            'English / Français',
+            lp.t('Language', 'Langue'),
+            lp.t('English / Français', 'English / Français'),
             () => context.go('/profile/language'),
           ),
           _tile(
             context,
             Icons.notifications_outlined,
             const Color(0xFFFF9800),
-            'Notifications',
-            'Manage alerts',
+            lp.t('Notifications', 'Notifications'),
+            lp.t('Manage alerts', 'Gérer les alertes'),
             () => context.go('/profile/notifications'),
           ),
         ]),
         const SizedBox(height: 16),
-        _section('Account management', [
+        _section(lp.t('Account management', 'Gestion du compte'), [
           _tile(
             context,
             Icons.email_outlined,
             accent,
-            'Update email',
-            'Change cooperative email',
+            lp.t('Update email', 'Modifier l\'e-mail'),
+            lp.t('Change cooperative email', 'Changer l\'e-mail de la coopérative'),
             () => context.go('/profile/change-email'),
           ),
           _tile(
             context,
             Icons.phone_outlined,
             accent,
-            'Update phone',
-            'Change contact phone',
+            lp.t('Update phone', 'Modifier le téléphone'),
+            lp.t('Change contact phone', 'Changer le téléphone de contact'),
             () => context.go('/profile/change-phone'),
           ),
           _tile(
             context,
             Icons.delete_outline,
             Colors.red,
-            'Delete account',
-            'Permanently remove cooperative data',
+            lp.t('Delete account', 'Supprimer le compte'),
+            lp.t(
+              'Permanently remove cooperative data',
+              'Supprimer définitivement les données de la coopérative',
+            ),
             () => context.go('/profile/delete-account'),
           ),
         ]),
         const SizedBox(height: 16),
-        _section('Support', [
+        _section(lp.t('Support', 'Support'), [
           _tile(
             context,
             Icons.help_outline,
             const Color(0xFF4CAF50),
-            'Help Center',
-            'FAQs and guides',
+            lp.t('Help Center', 'Centre d\'aide'),
+            lp.t('FAQs and guides', 'FAQ et guides'),
             () => context.go('/help'),
           ),
           _tile(
             context,
             Icons.policy_outlined,
             Colors.white54,
-            'Terms of Service',
-            'View terms',
+            lp.t('Terms of Service', 'Conditions d\'utilisation'),
+            lp.t('View terms', 'Voir les conditions'),
             () => context.push('/terms?view=1'),
           ),
           _tile(
             context,
             Icons.privacy_tip_outlined,
             Colors.white54,
-            'Privacy Policy',
-            'View privacy',
+            lp.t('Privacy Policy', 'Politique de confidentialité'),
+            lp.t('View privacy', 'Voir la confidentialité'),
             () => context.push('/terms?view=1'),
           ),
         ]),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.logout, color: Colors.red),
-            label: const Text(
-              'Sign Out',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-            onPressed: () async {
-              await context.read<AuthState>().logout();
-              if (context.mounted) context.go('/home');
-            },
-          ),
+        const DashboardSignOutButton(
+          dialogBackground: Color(0xFF0f1a2e),
         ),
       ],
     );
