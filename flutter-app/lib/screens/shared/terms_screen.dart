@@ -88,7 +88,10 @@ class _TermsScreenState extends State<TermsScreen>
                       ),
                       Expanded(
                         child: Text(
-                          lp.t('Legal information', 'Informations légales'),
+                          lp.t(
+                            'Terms of Service & Privacy Policy',
+                            'Conditions d\'utilisation et politique de confidentialité',
+                          ),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 17,
@@ -152,7 +155,8 @@ class _TermsScreenState extends State<TermsScreen>
                       ),
                     ),
                     Tab(
-                      text: lp.t('Privacy Policy', 'Politique de confidentialité'),
+                      text: lp.t(
+                          'Privacy Policy', 'Politique de confidentialité'),
                     ),
                     Tab(
                       text: lp.t('User Agreement', 'Accord utilisateur'),
@@ -223,10 +227,10 @@ class _TermsScreenState extends State<TermsScreen>
                                 child: Text(
                                   lp.t(
                                     'I have read and agree to the Terms, '
-                                    'Privacy Policy and User Agreement',
+                                        'Privacy Policy and User Agreement',
                                     'J\'ai lu et j\'accepte les Conditions, '
-                                    'la Politique de confidentialité et '
-                                    'l\'Accord utilisateur',
+                                        'la Politique de confidentialité et '
+                                        'l\'Accord utilisateur',
                                   ),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.85),
@@ -297,11 +301,11 @@ class _TermsScreenState extends State<TermsScreen>
           bullets: [
             lp.t(
               'Sahel AgriConnect is a platform for agricultural commerce '
-              'connecting producers, cooperatives, and investors across '
-              'West Africa and the diaspora.',
+                  'connecting producers, cooperatives, and investors across '
+                  'West Africa and the diaspora.',
               'Sahel AgriConnect est une plateforme de commerce agricole '
-              'reliant producteurs, coopératives et investisseurs en Afrique '
-              'de l\'Ouest et dans la diaspora.',
+                  'reliant producteurs, coopératives et investisseurs en Afrique '
+                  'de l\'Ouest et dans la diaspora.',
             ),
           ],
         ),
@@ -310,15 +314,15 @@ class _TermsScreenState extends State<TermsScreen>
           bullets: [
             lp.t(
               'You must provide accurate and up-to-date information when '
-              'registering and using the platform.',
+                  'registering and using the platform.',
               'Vous devez fournir des informations exactes et à jour lors '
-              'de l\'inscription et de l\'utilisation de la plateforme.',
+                  'de l\'inscription et de l\'utilisation de la plateforme.',
             ),
             lp.t(
               'Account vetting is required before full access to platform '
-              'features is granted.',
+                  'features is granted.',
               'Un examen de compte est requis avant l\'accès complet aux '
-              'fonctionnalités.',
+                  'fonctionnalités.',
             ),
             lp.t(
               'You must be at least 18 years old to use this platform.',
@@ -331,9 +335,9 @@ class _TermsScreenState extends State<TermsScreen>
           bullets: [
             lp.t(
               'The platform is not liable for commercial transactions '
-              'conducted between users.',
+                  'conducted between users.',
               'La plateforme n\'est pas responsable des transactions '
-              'commerciales entre utilisateurs.',
+                  'commerciales entre utilisateurs.',
             ),
             lp.t(
               'Disputes are resolved under applicable local law.',
@@ -342,7 +346,7 @@ class _TermsScreenState extends State<TermsScreen>
             lp.t(
               'Accounts may be terminated for violations of these policies.',
               'Les comptes peuvent être résiliés en cas de violation de '
-              'ces politiques.',
+                  'ces politiques.',
             ),
           ],
         ),
@@ -357,7 +361,7 @@ class _TermsScreenState extends State<TermsScreen>
           bullets: [
             lp.t(
               'Name, phone number, email address, location, and crop '
-              'information.',
+                  'information.',
               'Nom, téléphone, email, localisation et informations sur les cultures.',
             ),
           ],
@@ -375,9 +379,9 @@ class _TermsScreenState extends State<TermsScreen>
             ),
             lp.t(
               'Data is shared with cooperatives and investors you choose to '
-              'engage with.',
+                  'engage with.',
               'Les données sont partagées avec les coopératives et investisseurs '
-              'avec lesquels vous interagissez.',
+                  'avec lesquels vous interagissez.',
             ),
             lp.t(
               'We do NOT sell your data to third parties.',
@@ -391,7 +395,7 @@ class _TermsScreenState extends State<TermsScreen>
             lp.t(
               'You may request data deletion at support@sahelagriconnect.com.',
               'Vous pouvez demander la suppression des données à '
-              'support@sahelagriconnect.com.',
+                  'support@sahelagriconnect.com.',
             ),
             lp.t(
               'Cookies are used for session management only.',
@@ -400,7 +404,7 @@ class _TermsScreenState extends State<TermsScreen>
             lp.t(
               'Our practices are GDPR compliant for EU and diaspora users.',
               'Nos pratiques sont conformes au RGPD pour les utilisateurs UE '
-              'et de la diaspora.',
+                  'et de la diaspora.',
             ),
           ],
         ),
@@ -415,15 +419,15 @@ class _TermsScreenState extends State<TermsScreen>
           bullets: [
             lp.t(
               'You agree to make truthful declarations of produce and '
-              'production data.',
+                  'production data.',
               'Vous acceptez de déclarer honnêtement vos produits et données '
-              'de production.',
+                  'de production.',
             ),
             lp.t(
               'You agree not to manipulate market prices or misrepresent '
-              'supply or demand.',
+                  'supply or demand.',
               'Vous acceptez de ne pas manipuler les prix du marché ni de '
-              'fausser l\'offre ou la demande.',
+                  'fausser l\'offre ou la demande.',
             ),
             lp.t(
               'You agree to the platform\'s account vetting process.',
@@ -436,15 +440,15 @@ class _TermsScreenState extends State<TermsScreen>
           bullets: [
             lp.t(
               'You agree to receive SMS and email notifications related to '
-              'your account and platform activity.',
+                  'your account and platform activity.',
               'Vous acceptez de recevoir des notifications SMS et email '
-              'liées à votre compte et à l\'activité de la plateforme.',
+                  'liées à votre compte et à l\'activité de la plateforme.',
             ),
             lp.t(
               'You may withdraw consent at any time via your profile settings '
-              'or by contacting support.',
+                  'or by contacting support.',
               'Vous pouvez retirer votre consentement à tout moment via les '
-              'paramètres du profil ou en contactant le support.',
+                  'paramètres du profil ou en contactant le support.',
             ),
           ],
         ),

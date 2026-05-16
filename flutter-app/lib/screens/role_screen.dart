@@ -93,7 +93,7 @@ class RoleScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final langProvider = context.watch<LanguageProvider>();
-    final isFr = langProvider.isFr;
+    final isFr = langProvider.locale.languageCode == 'fr';
 
     return Scaffold(
       resizeToAvoidBottomInset: true,

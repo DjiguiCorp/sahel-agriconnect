@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/offline_banner.dart';
@@ -54,6 +55,7 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
+    final lp = context.watch<LanguageProvider>();
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.cream,
@@ -101,7 +103,9 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
                     Row(
                       children: [
                         _stat(
-                          _loading ? '…' : (_data?['activeLots']?.toString() ?? '0'),
+                          _loading
+                              ? '…'
+                              : (_data?['activeLots']?.toString() ?? '0'),
                           'Active lots',
                         ),
                         const SizedBox(width: 10),
@@ -113,7 +117,9 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
                         ),
                         const SizedBox(width: 10),
                         _stat(
-                          _loading ? '…' : (_data?['capacity'] ?? '—').toString(),
+                          _loading
+                              ? '…'
+                              : (_data?['capacity'] ?? '—').toString(),
                           'Capacity',
                         ),
                       ],
@@ -126,7 +132,7 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
           Expanded(
             child: _tab == 0 ? _buildHome() : _buildProfile(auth),
           ),
-          _buildNav(),
+          _buildNav(lp),
         ],
       ),
     );
@@ -188,13 +194,15 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
               ),
               title: Text(
                 a['title']! as String,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
               subtitle: Text(
                 a['desc']! as String,
                 style: const TextStyle(fontSize: 12),
               ),
-              trailing: const Icon(Icons.open_in_browser, size: 18, color: Colors.grey),
+              trailing: const Icon(Icons.open_in_browser,
+                  size: 18, color: Colors.grey),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => InAppWebViewScreen(
@@ -242,7 +250,8 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
           leading: const Icon(Icons.language_outlined),
           title: const Text('Language'),
           onTap: () => context.go('/profile/language'),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           tileColor: Colors.white,
         ),
         const SizedBox(height: 6),
@@ -254,7 +263,8 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
             if (!mounted) return;
             context.go('/role');
           },
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           tileColor: Colors.white,
         ),
       ],
@@ -296,7 +306,7 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
         ),
       );
 
-  Widget _buildNav() => Container(
+  Widget _buildNav(LanguageProvider lp) => Container(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
@@ -307,8 +317,8 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
           top: false,
           child: Row(
             children: [
-              _navItem(Icons.home_outlined, 'Home', 0),
-              _navItem(Icons.person_outline, 'Profile', 1),
+              _navItem(Icons.home_outlined, lp.t('Home', 'Accueil'), 0),
+              _navItem(Icons.person_outline, lp.t('Profile', 'Profil'), 1),
             ],
           ),
         ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -48,6 +49,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.cream,
@@ -71,7 +73,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Cooperative',
+                      lp.t('Cooperative', 'Coopérative'),
                       style: TextStyle(
                         color: AppColors.forestGreen.withValues(alpha: 0.85),
                         fontSize: 12,
@@ -80,9 +82,9 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Membres & filières',
-                      style: TextStyle(
+                    Text(
+                      lp.t('Members & supply chains', 'Membres & filières'),
+                      style: const TextStyle(
                         color: AppColors.forestGreen,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -107,7 +109,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
-                  'Aperçu public',
+                  lp.t('Public overview', 'Aperçu public'),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
@@ -126,7 +128,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                     }
                     if (snap.hasError) {
                       return Text(
-                        'Erreur réseau: ${snap.error}',
+                        '${lp.t('Network error: ', 'Erreur réseau : ')}${snap.error}',
                         style: const TextStyle(color: AppColors.error),
                       );
                     }
@@ -179,11 +181,19 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                     backgroundColor: AppColors.gold,
                     foregroundColor: AppColors.forestGreen,
                   ),
-                  child: const Text('Ouvrir sahelagriconnect.com'),
+                  child: Text(
+                    lp.t(
+                      'Open sahelagriconnect.com',
+                      'Ouvrir sahelagriconnect.com',
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Connexion: ApiService.coopLogin · Portail: ApiService.getCoopPortal(token).',
+                  lp.t(
+                    'Connection: ApiService.coopLogin · Portal: ApiService.getCoopPortal(token).',
+                    'Connexion : ApiService.coopLogin · Portail : ApiService.getCoopPortal(token).',
+                  ),
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted.withValues(alpha: 0.9),
@@ -223,8 +233,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                       Divider(height: 1),
                       WebActionTile(
                         title: 'Manage cooperative',
-                        description:
-                            'Members, finances, and certifications',
+                        description: 'Members, finances, and certifications',
                         action: 'cooperative-portal',
                         icon: Icons.groups_outlined,
                       ),
@@ -233,7 +242,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Réglages & web',
+                  lp.t('Settings & web', 'Réglages & web'),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
@@ -259,8 +268,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                       Divider(height: 1),
                       WebActionTile(
                         title: 'Change password',
-                        description:
-                            'Update your login credentials securely',
+                        description: 'Update your login credentials securely',
                         action: 'account/security',
                         icon: Icons.lock_outline,
                       ),
@@ -271,13 +279,13 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
             ),
           ),
 
-          _bottomNav(),
+          _bottomNav(lp),
         ],
       ),
     );
   }
 
-  Widget _bottomNav() => Container(
+  Widget _bottomNav(LanguageProvider lp) => Container(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
@@ -288,11 +296,11 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
           top: false,
           child: Row(
             children: [
-              _navItem('🏠', 'Accueil', 0),
-              _navItem('🤝', 'Membres', 1),
-              _navItem('📦', 'Lots', 2),
-              _navItem('📈', 'Stats', 3),
-              _navItem('👤', 'Profil', 4),
+              _navItem('🏠', lp.t('Home', 'Accueil'), 0),
+              _navItem('🤝', lp.t('Members', 'Membres'), 1),
+              _navItem('📦', lp.t('Lots', 'Lots'), 2),
+              _navItem('📈', lp.t('Stats', 'Stats'), 3),
+              _navItem('👤', lp.t('Profile', 'Profil'), 4),
             ],
           ),
         ),
@@ -312,9 +320,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                   emoji,
                   style: TextStyle(
                     fontSize: 20,
-                    color: _tab == index
-                        ? null
-                        : const Color(0xFFcccccc),
+                    color: _tab == index ? null : const Color(0xFFcccccc),
                   ),
                 ),
                 const SizedBox(height: 3),

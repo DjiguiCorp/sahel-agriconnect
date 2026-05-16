@@ -582,7 +582,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               Consumer<LanguageProvider>(
                                 builder: (context, langProvider, _) {
-                                  final isFr = langProvider.isFr;
+                                  final isFr =
+                                      langProvider.locale.languageCode == 'fr';
                                   return GestureDetector(
                                     onTap: () {
                                       langProvider.setLang(isFr ? 'en' : 'fr');

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -73,8 +74,18 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
   String _monthAbbr(int m) {
     final idx = (m.clamp(1, 12) as num).toInt() - 1;
     return const [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ][idx];
   }
 
@@ -140,7 +151,9 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
   }
 
   String _oppTitle(Map<String, dynamic> opp) =>
-      opp['centerName']?.toString() ?? opp['title']?.toString() ?? 'Opportunity';
+      opp['centerName']?.toString() ??
+      opp['title']?.toString() ??
+      'Opportunity';
 
   String _oppSubtitle(Map<String, dynamic> opp) =>
       opp['commodity']?.toString() ?? '';
@@ -151,11 +164,10 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
-    final balanceLabel = _loading
-        ? '...'
-        : '€ ${_formatEuroThousands(_totalDeployed)}';
-    final premiumLabel =
-        (auth.user?['status'] ?? 'Standard').toString();
+    final lp = context.watch<LanguageProvider>();
+    final balanceLabel =
+        _loading ? '...' : '€ ${_formatEuroThousands(_totalDeployed)}';
+    final premiumLabel = (auth.user?['status'] ?? 'Standard').toString();
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -226,7 +238,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
             ),
           ),
           Expanded(child: _buildTab(_tab)),
-          _bottomNav(),
+          _bottomNav(lp),
         ],
       ),
     );
@@ -355,8 +367,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
           const Divider(height: 24, color: Color(0x22FFFFFF)),
           WebActionTile(
             title: 'Invest in this opportunity',
-            description:
-                'Complete your investment on our secure platform',
+            description: 'Complete your investment on our secure platform',
             action: 'invest',
             opportunityId: opportunityId,
             icon: Icons.trending_up,
@@ -371,7 +382,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         .slideY(begin: 0.06);
   }
 
-  Widget _bottomNav() => Container(
+  Widget _bottomNav(LanguageProvider lp) => Container(
         decoration: BoxDecoration(
           color: AppColors.darkCard,
           border: Border(
@@ -385,11 +396,11 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
           top: false,
           child: Row(
             children: [
-              _navItem('💼', 'Portfolio', 0),
-              _navItem('🔭', 'Deals', 1),
-              _navItem('📊', 'Activity', 2),
-              _navItem('🔔', 'Alerts', 3),
-              _navItem('👤', 'Profile', 4),
+              _navItem('💼', lp.t('Portfolio', 'Portefeuille'), 0),
+              _navItem('🔭', lp.t('Deals', 'Offres'), 1),
+              _navItem('📊', lp.t('Activity', 'Activité'), 2),
+              _navItem('🔔', lp.t('Alerts', 'Alertes'), 3),
+              _navItem('👤', lp.t('Profile', 'Profil'), 4),
             ],
           ),
         ),
@@ -522,8 +533,7 @@ class _PortfolioTab extends StatelessWidget {
             children: [
               WebActionTile(
                 title: 'Delete my account',
-                description:
-                    'Permanently remove your data from the platform',
+                description: 'Permanently remove your data from the platform',
                 action: 'delete-account',
                 icon: Icons.delete_outline,
                 isDangerous: true,
@@ -533,8 +543,7 @@ class _PortfolioTab extends StatelessWidget {
               Divider(height: 1, color: Color(0x22FFFFFF)),
               WebActionTile(
                 title: 'Change password',
-                description:
-                    'Update your login credentials securely',
+                description: 'Update your login credentials securely',
                 action: 'account/security',
                 icon: Icons.lock_outline,
                 titleColor: Colors.white,
@@ -826,8 +835,7 @@ class _AlertsTab extends StatelessWidget {
             MaterialPageRoute<void>(
               builder: (_) => const InAppWebViewScreen(
                 title: 'Price Alerts',
-                url:
-                    'https://sahelagriconnect.com/afri-yield/investor-portal',
+                url: 'https://sahelagriconnect.com/afri-yield/investor-portal',
               ),
             ),
           ),
@@ -869,8 +877,7 @@ class _AlertsTab extends StatelessWidget {
             MaterialPageRoute<void>(
               builder: (_) => const InAppWebViewScreen(
                 title: 'Investor Updates',
-                url:
-                    'https://sahelagriconnect.com/afri-yield/investor-updates',
+                url: 'https://sahelagriconnect.com/afri-yield/investor-updates',
               ),
             ),
           ),
@@ -886,9 +893,8 @@ class _InvestorProfileTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
-    final initial = auth.displayName.isNotEmpty
-        ? auth.displayName[0].toUpperCase()
-        : '?';
+    final initial =
+        auth.displayName.isNotEmpty ? auth.displayName[0].toUpperCase() : '?';
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -906,7 +912,8 @@ class _InvestorProfileTab extends StatelessWidget {
           ),
           title: Text(
             auth.displayName.isNotEmpty ? auth.displayName : 'Investor',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w600),
           ),
           subtitle: Text(
             auth.displayEmail,
@@ -915,28 +922,35 @@ class _InvestorProfileTab extends StatelessWidget {
         ),
         Divider(color: Colors.white.withValues(alpha: 0.12)),
         ListTile(
-          leading: Icon(Icons.edit_outlined, color: Colors.white.withValues(alpha: 0.8)),
-          title: const Text('Edit profile', style: TextStyle(color: Colors.white)),
+          leading: Icon(Icons.edit_outlined,
+              color: Colors.white.withValues(alpha: 0.8)),
+          title:
+              const Text('Edit profile', style: TextStyle(color: Colors.white)),
           onTap: () => context.go('/profile/edit'),
         ),
         ListTile(
-          leading: Icon(Icons.language, color: Colors.white.withValues(alpha: 0.8)),
+          leading:
+              Icon(Icons.language, color: Colors.white.withValues(alpha: 0.8)),
           title: const Text('Language', style: TextStyle(color: Colors.white)),
           onTap: () => context.go('/profile/language'),
         ),
         ListTile(
-          leading: Icon(Icons.notifications_outlined, color: Colors.white.withValues(alpha: 0.8)),
-          title: const Text('Notifications', style: TextStyle(color: Colors.white)),
+          leading: Icon(Icons.notifications_outlined,
+              color: Colors.white.withValues(alpha: 0.8)),
+          title: const Text('Notifications',
+              style: TextStyle(color: Colors.white)),
           onTap: () => context.go('/profile/notifications'),
         ),
         ListTile(
-          leading: Icon(Icons.help_outline, color: Colors.white.withValues(alpha: 0.8)),
+          leading: Icon(Icons.help_outline,
+              color: Colors.white.withValues(alpha: 0.8)),
           title: const Text('Help', style: TextStyle(color: Colors.white)),
           onTap: () => context.go('/help'),
         ),
         ListTile(
           leading: const Icon(Icons.logout, color: Color(0xFFFF6B6B)),
-          title: const Text('Sign out', style: TextStyle(color: Color(0xFFFF6B6B))),
+          title: const Text('Sign out',
+              style: TextStyle(color: Color(0xFFFF6B6B))),
           onTap: () async {
             await context.read<AuthState>().logout();
             if (context.mounted) context.go('/role');

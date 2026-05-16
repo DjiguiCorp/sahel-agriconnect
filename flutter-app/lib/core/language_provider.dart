@@ -17,6 +17,9 @@ class LanguageProvider extends ChangeNotifier {
   String get lang => _lang;
   bool get isFr => _lang == 'fr';
 
+  /// Use with [context.watch] so UI rebuilds when language changes.
+  Locale get locale => Locale(_lang);
+
   LanguageProvider() {
     _load();
   }

@@ -599,7 +599,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                             children: [
                               Consumer<LanguageProvider>(
                                 builder: (context, langProvider, _) {
-                                  final isFr = langProvider.isFr;
+                                  final isFr =
+                                      langProvider.locale.languageCode == 'fr';
                                   return GestureDetector(
                                     onTap: () {
                                       langProvider.setLang(isFr ? 'en' : 'fr');

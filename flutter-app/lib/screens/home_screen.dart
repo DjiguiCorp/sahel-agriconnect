@@ -85,10 +85,11 @@ class _HomeScreenState extends State<HomeScreen> {
     '/guest/cooperative',
     '/guest/markets',
   ];
+
   /// Active bottom-nav tab. 0 = Home, 1 = Explore, 2 = Alerts, 3 = Profile.
   int _currentIndex = 0;
 
-  bool _hasUnreadNotifications = true;
+  bool _hasUnreadNotifications = false;
 
   /// Active category on the Home tab.
   int _selectedCategory = 0;
@@ -272,7 +273,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      lp.t('Sign in to unlock', 'Connectez-vous pour débloquer'),
+                      lp.t(
+                          'Sign in to unlock', 'Connectez-vous pour débloquer'),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -307,7 +309,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           elevation: 0,
                         ),
                         child: Text(
-                          lp.t('Sign in or sign up', "S'inscrire ou se connecter"),
+                          lp.t('Sign in or sign up',
+                              "S'inscrire ou se connecter"),
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
@@ -337,6 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showGuestAlertsSheet() {
+    final lp = context.read<LanguageProvider>();
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF1a3c2e),
@@ -348,9 +352,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              '🔔 Sign in for notifications',
-              style: TextStyle(
+            Text(
+              lp.t(
+                '🔔 Sign in for notifications',
+                '🔔 Connectez-vous pour les notifications',
+              ),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -358,7 +365,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Get real-time alerts on prices and updates.',
+              lp.t(
+                'Get real-time alerts on prices and updates.',
+                'Recevez en temps réel des alertes sur les prix et les nouvelles.',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.7),
@@ -381,9 +391,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.pop(sheetContext);
                   _goSignIn(null);
                 },
-                child: const Text(
-                  'Sign In',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  lp.t('Sign In', 'Connexion'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -1145,7 +1155,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          lp.t('AfriYield — live lots', 'AfriYield — lots en direct'),
+                          lp.t('AfriYield — live lots',
+                              'AfriYield — lots en direct'),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -1171,12 +1182,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   GlassCard(
                     padding: const EdgeInsets.all(16),
                     borderColor: const Color(0xFF185FA5).withValues(alpha: 0.4),
-                    backgroundColor: const Color(0xFF185FA5).withValues(alpha: 0.08),
+                    backgroundColor:
+                        const Color(0xFF185FA5).withValues(alpha: 0.08),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          lp.t('West Africa spot prices', 'Prix spot Afrique de l\'Ouest'),
+                          lp.t('West Africa spot prices',
+                              'Prix spot Afrique de l\'Ouest'),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -1306,7 +1319,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildAlertsTab(LanguageProvider lp, AuthState auth) {
     const bg = Color(0xFF0c1814);
 
-    if (auth.isGuest) {
+    if (!auth.isLoggedIn) {
       return ColoredBox(
         color: bg,
         child: CustomScrollView(
@@ -1378,7 +1391,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         child: Text(
-                          lp.t('Sign in or sign up', "S'inscrire ou se connecter"),
+                          lp.t('Sign in or sign up',
+                              "S'inscrire ou se connecter"),
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                           ),
@@ -1465,7 +1479,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   (context, i) {
                     final n = notifications[i];
                     return ListTile(
-                      title: Text(n.title, style: const TextStyle(color: Colors.white)),
+                      title: Text(n.title,
+                          style: const TextStyle(color: Colors.white)),
                       subtitle: Text(
                         n.subtitle,
                         style: TextStyle(
@@ -1577,7 +1592,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           child: Text(
-                            lp.t('Sign in or sign up', "S'inscrire ou se connecter"),
+                            lp.t('Sign in or sign up',
+                                "S'inscrire ou se connecter"),
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                             ),
@@ -1661,13 +1677,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     _Divider(),
                     _ProfileLink(
                       icon: Icons.description_outlined,
-                      label: lp.t('Terms of Service', 'Conditions d\'utilisation'),
+                      label:
+                          lp.t('Terms of Service', 'Conditions d\'utilisation'),
                       onTap: () => context.push('/terms?view=1'),
                     ),
                     _Divider(),
                     _ProfileLink(
                       icon: Icons.privacy_tip_outlined,
-                      label: lp.t('Privacy Policy', 'Politique de confidentialité'),
+                      label: lp.t(
+                          'Privacy Policy', 'Politique de confidentialité'),
                       onTap: () => context.push('/terms?view=1'),
                     ),
                     _Divider(),
@@ -1765,7 +1783,6 @@ class _HomeScreenState extends State<HomeScreen> {
       await context.read<AuthState>().logout();
     }
   }
-
 }
 
 // ═════════════════════════════════════════════════════════════════════

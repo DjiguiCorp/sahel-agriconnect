@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -48,6 +49,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.darkBg,
@@ -71,7 +73,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Gouvernement',
+                      lp.t('Government', 'Gouvernement'),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 12,
@@ -80,9 +82,9 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Tableau national',
-                      style: TextStyle(
+                    Text(
+                      lp.t('National dashboard', 'Tableau national'),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -107,7 +109,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
-                  'Agrégats publics',
+                  lp.t('Public aggregates', 'Agrégats publics'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.gold,
                         fontWeight: FontWeight.w700,
@@ -121,13 +123,14 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                       return const Padding(
                         padding: EdgeInsets.all(24),
                         child: Center(
-                          child: CircularProgressIndicator(color: AppColors.gold),
+                          child:
+                              CircularProgressIndicator(color: AppColors.gold),
                         ),
                       );
                     }
                     if (snap.hasError) {
                       return Text(
-                        'Erreur: ${snap.error}',
+                        '${lp.t('Error: ', 'Erreur : ')}${snap.error}',
                         style: const TextStyle(color: AppColors.error),
                       );
                     }
@@ -180,11 +183,19 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                     foregroundColor: AppColors.gold,
                     side: const BorderSide(color: AppColors.gold),
                   ),
-                  child: const Text('Portail sahelagriconnect.com'),
+                  child: Text(
+                    lp.t(
+                      'Open portal sahelagriconnect.com',
+                      'Portail sahelagriconnect.com',
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Authentifié: ApiService.govLogin · ApiService.getGovDashboard(token).',
+                  lp.t(
+                    'Authenticated: ApiService.govLogin · ApiService.getGovDashboard(token).',
+                    'Authentifié : ApiService.govLogin · ApiService.getGovDashboard(token).',
+                  ),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.45),
@@ -192,7 +203,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Réglages & web',
+                  lp.t('Settings & web', 'Réglages & web'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.gold,
                         fontWeight: FontWeight.w700,
@@ -223,8 +234,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
                       Divider(height: 1, color: Color(0x22FFFFFF)),
                       WebActionTile(
                         title: 'Change password',
-                        description:
-                            'Update your login credentials securely',
+                        description: 'Update your login credentials securely',
                         action: 'account/security',
                         icon: Icons.lock_outline,
                         titleColor: Colors.white,
@@ -237,13 +247,13 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
             ),
           ),
 
-          _bottomNav(),
+          _bottomNav(lp),
         ],
       ),
     );
   }
 
-  Widget _bottomNav() => Container(
+  Widget _bottomNav(LanguageProvider lp) => Container(
         decoration: BoxDecoration(
           color: AppColors.darkCard,
           border: Border(
@@ -257,11 +267,11 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
           top: false,
           child: Row(
             children: [
-              _navItem('🏛️', 'Vue', 0),
-              _navItem('🌾', 'Agricoles', 1),
-              _navItem('📊', 'Indicateurs', 2),
-              _navItem('🔔', 'Alertes', 3),
-              _navItem('👤', 'Profil', 4),
+              _navItem('🏛️', lp.t('View', 'Vue'), 0),
+              _navItem('🌾', lp.t('Agricultural', 'Agricoles'), 1),
+              _navItem('📊', lp.t('Indicators', 'Indicateurs'), 2),
+              _navItem('🔔', lp.t('Alerts', 'Alertes'), 3),
+              _navItem('👤', lp.t('Profile', 'Profil'), 4),
             ],
           ),
         ),
