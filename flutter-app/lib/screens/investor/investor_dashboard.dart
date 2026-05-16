@@ -216,10 +216,6 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         lp: lp,
         onChanged: (i) {
           AuthService.resetActivity();
-          if (i == 0) {
-            context.go('/home');
-            return;
-          }
           setState(() => _tab = i);
         },
       ),

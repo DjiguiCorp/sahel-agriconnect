@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +11,7 @@ import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/country_picker.dart';
+import '../../widgets/otp_code_row.dart';
 
 enum FarmerAuthStep { identity, otp, register }
 
@@ -1092,14 +1092,11 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (var i = 0; i < 6; i++) ...[
-                      if (i > 0) const SizedBox(width: 6),
-                      _otpBox(i),
-                    ],
-                  ],
+                OtpCodeRow(
+                  controllers: _otpCtrl,
+                  focusNodes: _otpFocus,
+                  enabled: !_loading,
+                  onDigitChanged: _onOtpDigitChanged,
                 ),
                 if (kDebugMode) ...[
                   const SizedBox(height: 8),
@@ -1187,49 +1184,18 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         ),
       );
 
-  Widget _otpBox(int index) => SizedBox(
-        width: 46,
-        height: 54,
-        child: TextField(
-          controller: _otpCtrl[index],
-          focusNode: _otpFocus[index],
-          textAlign: TextAlign.center,
-          keyboardType: TextInputType.number,
-          maxLength: 1,
-          enabled: !_loading,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1a3c2e),
-          ),
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: InputDecoration(
-            counterText: '',
-            filled: true,
-            fillColor: const Color(0xFFF8F4E3),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF1a3c2e), width: 2),
-            ),
-          ),
-          onChanged: (val) {
-            if (val.isNotEmpty && index < 5) {
-              _otpFocus[index + 1].requestFocus();
-            }
-            if (val.isEmpty && index > 0) {
-              _otpFocus[index - 1].requestFocus();
-            }
-            if (_error.isNotEmpty) setState(() => _error = '');
-            if (_otpCode.length == 6 && !_loading) {
-              _verifyOtp();
-            }
-          },
-        ),
-      );
+  void _onOtpDigitChanged(int index, String val) {
+    if (val.isNotEmpty && index < 5) {
+      _otpFocus[index + 1].requestFocus();
+    }
+    if (val.isEmpty && index > 0) {
+      _otpFocus[index - 1].requestFocus();
+    }
+    if (_error.isNotEmpty) setState(() => _error = '');
+    if (_otpCode.length == 6 && !_loading) {
+      _verifyOtp();
+    }
+  }
 
   Widget _buildRegisterStep(LanguageProvider lp) {
     return SingleChildScrollView(

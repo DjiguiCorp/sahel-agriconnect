@@ -97,7 +97,10 @@ GoRouter buildRouter(
         return _dashboardRoute(authState.role);
       }
 
-      if (loggedIn && _routeMismatch(authState.role, loc)) {
+      // Logged-in users may open the platform home (/home) from dashboards.
+      if (loggedIn &&
+          loc != '/home' &&
+          _routeMismatch(authState.role, loc)) {
         return _dashboardRoute(authState.role);
       }
 

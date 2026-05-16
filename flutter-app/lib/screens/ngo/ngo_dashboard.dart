@@ -118,10 +118,6 @@ class _NgoDashboardState extends State<NgoDashboard> {
             lp: lp,
             onChanged: (i) {
               AuthService.resetActivity();
-              if (i == 0) {
-                context.go('/home');
-                return;
-              }
               setState(() => _tab = i);
             },
           ),

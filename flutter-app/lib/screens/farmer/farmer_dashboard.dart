@@ -452,10 +452,6 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         child: GestureDetector(
           onTap: () {
             AuthService.resetActivity();
-            if (index == 0) {
-              context.go('/home');
-              return;
-            }
             setState(() => _tab = index);
           },
           child: Container(
