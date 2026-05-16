@@ -232,7 +232,7 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
       case AuthRole.government:
         return '/government';
       case AuthRole.ngo:
-        return '/government';
+        return '/ngo';
       case AuthRole.processor:
         return '/processor';
       default:

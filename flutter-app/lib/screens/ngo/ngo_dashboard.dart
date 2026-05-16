@@ -8,84 +8,107 @@ import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
 
-abstract final class _Proc {
-  static const Color bg = Color(0xFF1a1200);
-  static const Color accent = Color(0xFFF59E0B);
+abstract final class _Ngo {
+  static const Color bg = Color(0xFF0d1f0d);
+  static const Color accent = Color(0xFF7BC67E);
   static const LinearGradient headerGrad = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2d1f00), Color(0xFF3d2800)],
+    colors: [Color(0xFF1a3a0a), Color(0xFF243d12)],
   );
   static const LinearGradient cardGrad = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2a1a00), Color(0xFF1f1200)],
+    colors: [Color(0xFF152818), Color(0xFF0f1f0f)],
   );
 }
 
-class ProcessorDashboard extends StatefulWidget {
-  const ProcessorDashboard({super.key});
+class NgoDashboard extends StatefulWidget {
+  const NgoDashboard({super.key});
 
   @override
-  State<ProcessorDashboard> createState() => _ProcessorDashboardState();
+  State<NgoDashboard> createState() => _NgoDashboardState();
 }
 
-class _ProcessorDashboardState extends State<ProcessorDashboard> {
-  Map<String, dynamic>? _data;
-  bool _loading = true;
+class _NgoDashboardState extends State<NgoDashboard> {
   int _tab = 0;
+  late Future<Map<String, dynamic>> _future;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _future = _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _reload() async {
+    setState(() => _future = _load());
+    await _future;
+  }
+
+  Future<Map<String, dynamic>> _load() async {
     final auth = context.read<AuthState>();
     final token = auth.token;
-    if (token == null || token.isEmpty) {
-      if (mounted) setState(() => _loading = false);
-      return;
+    if (token != null && token.isNotEmpty) {
+      final country = auth.displayCountry.isNotEmpty ? auth.displayCountry : null;
+      return ApiService.getGovDashboard(token, country: country);
     }
-    final country = auth.displayCountry;
-    try {
-      final res = await ApiService.getProcessorPortal(
-        token,
-        country: country.isNotEmpty ? country : null,
-      );
-      if (!mounted) return;
-      final raw = res['processor'];
-      final map = raw is Map ? Map<String, dynamic>.from(raw) : null;
-      setState(() {
-        _data = map;
-        _loading = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
+    return ApiService.getPublicStats();
+  }
+
+  bool _isPortal(Map<String, dynamic> d) =>
+      d.containsKey('stats') && d.containsKey('country');
+
+  static String _flagEmoji(String? code) {
+    if (code == null || code.length != 2) return '🌍';
+    final u = code.toUpperCase();
+    final a = u.codeUnitAt(0);
+    final b = u.codeUnitAt(1);
+    if (a < 65 || a > 90 || b < 65 || b > 90) return '🌍';
+    const base = 0x1F1E6;
+    return String.fromCharCode(base + a - 65) + String.fromCharCode(base + b - 65);
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthState>();
     final lp = context.watch<LanguageProvider>();
     return Scaffold(
-      backgroundColor: _Proc.bg,
+      backgroundColor: _Ngo.bg,
       body: Column(
         children: [
           const OfflineBanner(),
           Expanded(
-            child: _ProcTabBody(
-              tab: _tab,
-              lp: lp,
-              auth: auth,
-              data: _data,
-              loading: _loading,
-              onRefresh: _load,
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: _future,
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: _Ngo.accent),
+                  );
+                }
+                if (snap.hasError) {
+                  return Center(
+                    child: Text(
+                      '${snap.error}',
+                      style: const TextStyle(color: Colors.white54),
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                }
+                final data = snap.data ?? {};
+                return _NgoTabBody(
+                  tab: _tab,
+                  data: data,
+                  isPortal: _isPortal(data),
+                  onRefresh: _reload,
+                  lp: lp,
+                  flagEmoji: _flagEmoji(
+                    _isPortal(data) ? data['countryCode']?.toString() : null,
+                  ),
+                );
+              },
             ),
           ),
-          _ProcBottomNav(
+          _NgoBottomNav(
             tab: _tab,
             lp: lp,
             onChanged: (i) {
@@ -99,93 +122,100 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
   }
 }
 
-class _ProcTabBody extends StatelessWidget {
-  const _ProcTabBody({
+class _NgoTabBody extends StatelessWidget {
+  const _NgoTabBody({
     required this.tab,
-    required this.lp,
-    required this.auth,
     required this.data,
-    required this.loading,
+    required this.isPortal,
     required this.onRefresh,
+    required this.lp,
+    required this.flagEmoji,
   });
 
   final int tab;
-  final LanguageProvider lp;
-  final AuthState auth;
-  final Map<String, dynamic>? data;
-  final bool loading;
+  final Map<String, dynamic> data;
+  final bool isPortal;
   final Future<void> Function() onRefresh;
+  final LanguageProvider lp;
+  final String flagEmoji;
 
   @override
   Widget build(BuildContext context) {
     switch (tab) {
       case 1:
-        return _ProcSupplyTab(lp: lp, loading: loading);
+        return _NgoProgramsTab(data: data, isPortal: isPortal, lp: lp);
       case 2:
-        return _ProcProcessingTab(lp: lp, data: data, loading: loading);
+        return _NgoPartnersTab(data: data, isPortal: isPortal, lp: lp);
       case 3:
-        return _ProcAccountTab(lp: lp);
+        return _NgoAccountTab(lp: lp);
       default:
-        return _ProcHomeTab(
-          lp: lp,
-          auth: auth,
+        return _NgoHomeTab(
           data: data,
-          loading: loading,
+          isPortal: isPortal,
           onRefresh: onRefresh,
+          lp: lp,
+          flagEmoji: flagEmoji,
         );
     }
   }
 }
 
-class _ProcHomeTab extends StatelessWidget {
-  const _ProcHomeTab({
-    required this.lp,
-    required this.auth,
+class _NgoHomeTab extends StatelessWidget {
+  const _NgoHomeTab({
     required this.data,
-    required this.loading,
+    required this.isPortal,
     required this.onRefresh,
+    required this.lp,
+    required this.flagEmoji,
   });
 
-  final LanguageProvider lp;
-  final AuthState auth;
-  final Map<String, dynamic>? data;
-  final bool loading;
+  final Map<String, dynamic> data;
+  final bool isPortal;
   final Future<void> Function() onRefresh;
+  final LanguageProvider lp;
+  final String flagEmoji;
 
   @override
   Widget build(BuildContext context) {
-    final name = auth.displayName.isNotEmpty
-        ? auth.displayName
-        : (data?['name'] ?? 'Processor').toString();
-    final loc = (data?['location'] ?? auth.displayCountry).toString();
-    final lots = data?['activeLots'];
-    final certified = data?['certifiedBatches'];
-    final capacity = (data?['capacity'] ?? '—').toString();
-    final lotsStr = loading ? '…' : '${lots ?? 0}';
-    final certStr = loading ? '…' : '${certified ?? 0}';
-    final connectedFarmers = loading ? '…' : '—';
+    final auth = context.watch<AuthState>();
+    final stats = Map<String, dynamic>.from(data['stats'] as Map? ?? {});
+    final farmers = isPortal
+        ? (stats['farmers'] as num?)?.toInt() ?? 0
+        : (data['total'] as num?)?.toInt() ?? 0;
+    final cooperatives = isPortal ? (stats['cooperatives'] as num?)?.toInt() ?? 0 : 0;
+    final programs = isPortal ? (stats['activeProjects'] as num?)?.toInt() ?? 0 : 0;
+    final beneficiaries =
+        isPortal ? (stats['totalResponses'] as num?)?.toInt() ?? 0 : (data['active'] as num?)?.toInt() ?? 0;
+
+    final country = isPortal
+        ? (data['country']?.toString() ?? auth.displayCountry)
+        : lp.t('Regional partnership', 'Partenariat régional');
 
     void toast(String msg) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
 
     return RefreshIndicator(
-      color: _Proc.accent,
+      color: _Ngo.accent,
       onRefresh: onRefresh,
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(child: _ProcHeader(lp: lp, title: name, subtitle: loc)),
+          SliverToBoxAdapter(
+            child: _NgoHeader(
+              lp: lp,
+              flagEmoji: flagEmoji,
+              countryName: country,
+            ),
+          ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 Text(
-                  lp.t('Supply chain overview', 'Aperçu de la chaîne'),
+                  lp.t('Program overview', 'Aperçu des programmes'),
                   style: const TextStyle(
-                    color: _Proc.accent,
+                    color: _Ngo.accent,
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
                   ),
@@ -193,51 +223,68 @@ class _ProcHomeTab extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _miniStat(
-                      lp.t('Raw inbound', 'Approvisionnement'),
-                      lotsStr,
-                      lp.t('Lots tracked', 'Lots suivis'),
+                    _dashCell(
+                      '$programs',
+                      lp.t('Active programs', 'Programmes actifs'),
                     ),
                     const SizedBox(width: 10),
-                    _miniStat(
-                      lp.t('Processed', 'Transformé'),
-                      certStr,
-                      lp.t('Certified batches', 'Lots certifiés'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _miniStat(
-                      lp.t('Output capacity', 'Capacité'),
-                      capacity,
-                      lp.t('Nominal throughput', 'Débit nominal'),
-                    ),
-                    const SizedBox(width: 10),
-                    _miniStat(
-                      lp.t('Partner farmers', 'Agriculteurs liés'),
-                      connectedFarmers,
-                      lp.t('Connected producers', 'Producteurs connectés'),
+                    _dashCell(
+                      '$beneficiaries',
+                      lp.t('Beneficiaries reached', 'Bénéficiaires'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 22),
                 Text(
-                  lp.t('Capacity utilization', 'Utilisation de capacité'),
+                  lp.t('Partner network', 'Réseau partenaires'),
                   style: const TextStyle(
-                    color: _Proc.accent,
+                    color: _Ngo.accent,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _dashCell(
+                      '$cooperatives',
+                      lp.t('Cooperatives', 'Coopératives'),
+                    ),
+                    const SizedBox(width: 10),
+                    _dashCell(
+                      '$farmers',
+                      lp.t('Farmers in network', 'Agriculteurs'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  lp.t('Impact metrics', 'Indicateurs d’impact'),
+                  style: const TextStyle(
+                    color: _Ngo.accent,
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
                   ),
                 ),
                 const SizedBox(height: 10),
-                _utilCard(lp, data, loading),
+                _impactCard(
+                  lp.t(
+                    'Farmers supported through bundled services (training + inputs).',
+                    'Agriculteurs accompagnés (formation + intrants).',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _impactCard(
+                  lp.t(
+                    'Yield improvement tracking will combine satellite + field audits.',
+                    'Le gain de rendement combinera satellite et audits terrain.',
+                  ),
+                ),
                 const SizedBox(height: 22),
                 Text(
                   lp.t('Quick actions', 'Actions rapides'),
                   style: const TextStyle(
-                    color: _Proc.accent,
+                    color: _Ngo.accent,
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
                   ),
@@ -246,44 +293,44 @@ class _ProcHomeTab extends StatelessWidget {
                 _qa(
                   context,
                   lp,
-                  Icons.shopping_basket_outlined,
-                  lp.t('Source produce', 'Approvisionnement'),
+                  Icons.add_box_outlined,
+                  lp.t('Create program', 'Créer un programme'),
                   () => toast(lp.t(
-                    'Lot sourcing will open from Supply.',
-                    'L’approvisionnement sera géré dans l’onglet Approvisionnement.',
+                    'Program builder opens from the web console.',
+                    'Le créateur de programme s’ouvre depuis la console web.',
                   )),
                 ),
                 const SizedBox(height: 8),
                 _qa(
                   context,
                   lp,
-                  Icons.playlist_add_outlined,
-                  lp.t('Log batch', 'Enregistrer un lot'),
+                  Icons.person_add_outlined,
+                  lp.t('Add beneficiary', 'Ajouter un bénéficiaire'),
                   () => toast(lp.t(
-                    'Batch logging moves to Processing.',
-                    'L’enregistrement des lots ira dans Transformation.',
+                    'Beneficiary intake syncs with national farmer registry checks.',
+                    'L’ajout vérifie le registre national des agriculteurs.',
                   )),
                 ),
                 const SizedBox(height: 8),
                 _qa(
                   context,
                   lp,
-                  Icons.handshake_outlined,
-                  lp.t('Connect cooperative', 'Lier une coopérative'),
+                  Icons.assignment_outlined,
+                  lp.t('Generate report', 'Générer un rapport'),
                   () => toast(lp.t(
-                    'Cooperative linking launches from your back office.',
-                    'La liaison coopérative se fait depuis votre espace.',
+                    'Scheduled PDF exports will appear under Programs.',
+                    'Les exports PDF programmés seront sous Programmes.',
                   )),
                 ),
                 const SizedBox(height: 8),
                 _qa(
                   context,
                   lp,
-                  Icons.price_change_outlined,
-                  lp.t('Market prices', 'Prix du marché'),
+                  Icons.sms_outlined,
+                  lp.t('Contact farmers', 'Contacter les agriculteurs'),
                   () => toast(lp.t(
-                    'Connect pricing feeds to see live benchmarks.',
-                    'Connectez le flux de prix pour les références temps réel.',
+                    'Broadcasts respect agronomic quiet hours by default.',
+                    'Les diffusions respectent les heures calmes par défaut.',
                   )),
                 ),
               ]),
@@ -294,12 +341,12 @@ class _ProcHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _miniStat(String title, String value, String hint) {
+  Widget _dashCell(String value, String label) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient: _Proc.cardGrad,
+          gradient: _Ngo.cardGrad,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -311,23 +358,16 @@ class _ProcHomeTab extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
-                fontSize: 17,
+                fontSize: 20,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
-              title,
+              label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.45),
                 fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              hint,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.35),
-                fontSize: 10,
+                height: 1.25,
               ),
             ),
           ],
@@ -336,40 +376,22 @@ class _ProcHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _utilCard(LanguageProvider lp, Map<String, dynamic>? data, bool loading) {
-    final lots = (data?['activeLots'] as num?)?.toInt() ?? 0;
-    final cert = (data?['certifiedBatches'] as num?)?.toInt() ?? 0;
-    final score = loading ? 0.0 : ((lots * 12 + cert * 18).clamp(0, 100)) / 100.0;
-    final label = score < 0.2
-        ? lp.t('Planned downtime / low intake', 'Faible activité / arrêt')
-        : lp.t('Operations within normal band', 'Activité dans la plage normale');
-
+  Widget _impactCard(String text) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: _Proc.cardGrad,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _Proc.accent.withValues(alpha: 0.25)),
+        gradient: _Ngo.cardGrad,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _Ngo.accent.withValues(alpha: 0.22)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: loading ? null : score.clamp(0.05, 1.0),
-              minHeight: 8,
-              backgroundColor: Colors.black.withValues(alpha: 0.35),
-              color: _Proc.accent,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13),
-          ),
-        ],
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.82),
+          fontSize: 13,
+          height: 1.4,
+        ),
       ),
     );
   }
@@ -389,13 +411,13 @@ class _ProcHomeTab extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            gradient: _Proc.cardGrad,
+            gradient: _Ngo.cardGrad,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: Row(
             children: [
-              Icon(icon, color: _Proc.accent),
+              Icon(icon, color: _Ngo.accent),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -415,21 +437,21 @@ class _ProcHomeTab extends StatelessWidget {
   }
 }
 
-class _ProcHeader extends StatelessWidget {
-  const _ProcHeader({
+class _NgoHeader extends StatelessWidget {
+  const _NgoHeader({
     required this.lp,
-    required this.title,
-    required this.subtitle,
+    required this.flagEmoji,
+    required this.countryName,
   });
 
   final LanguageProvider lp;
-  final String title;
-  final String subtitle;
+  final String flagEmoji;
+  final String countryName;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(gradient: _Proc.headerGrad),
+      decoration: const BoxDecoration(gradient: _Ngo.headerGrad),
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -442,30 +464,32 @@ class _ProcHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      lp.t('Processing facility', 'Unité de transformation'),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
+                      lp.t(
+                        'Partner & programs dashboard',
+                        'Tableau partenaires & programmes',
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      title,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: 13,
-                      ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Text(flagEmoji, style: const TextStyle(fontSize: 28)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            countryName,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -508,162 +532,165 @@ class _ProcHeader extends StatelessWidget {
   }
 }
 
-class _ProcSupplyTab extends StatelessWidget {
-  const _ProcSupplyTab({required this.lp, required this.loading});
-
-  final LanguageProvider lp;
-  final bool loading;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      children: [
-        Text(
-          lp.t('Inbound supply', 'Approvisionnement entrant'),
-          style: const TextStyle(
-            color: _Proc.accent,
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (loading)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(color: _Proc.accent),
-            ),
-          )
-        else ...[
-          _supplyCard(
-            lp.t('No pending deliveries', 'Aucune livraison en attente'),
-            lp.t(
-              'Connect cooperatives to see scheduled intake.',
-              'Liez des coopératives pour voir les livraisons.',
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _supplyCard(String title, String body) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: _Proc.cardGrad,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            body,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
-              fontSize: 13,
-              height: 1.35,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProcProcessingTab extends StatelessWidget {
-  const _ProcProcessingTab({
-    required this.lp,
+class _NgoProgramsTab extends StatelessWidget {
+  const _NgoProgramsTab({
     required this.data,
-    required this.loading,
+    required this.isPortal,
+    required this.lp,
   });
 
+  final Map<String, dynamic> data;
+  final bool isPortal;
   final LanguageProvider lp;
-  final Map<String, dynamic>? data;
-  final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    final lots = (data?['activeLots'] as num?)?.toInt() ?? 0;
-    final cert = (data?['certifiedBatches'] as num?)?.toInt() ?? 0;
-    final cap = (data?['capacity'] ?? '—').toString();
-
+    if (!isPortal) {
+      return _ngoEmpty(
+        lp.t(
+          'Programs require authentication.',
+          'Les programmes nécessitent une authentification.',
+        ),
+      );
+    }
+    final projects = (data['projects'] as List?)
+            ?.whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList() ??
+        [];
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
         Text(
-          lp.t('Processing floor', 'Ligne de transformation'),
+          lp.t('Field programs', 'Programmes de terrain'),
           style: const TextStyle(
-            color: _Proc.accent,
+            color: _Ngo.accent,
             fontWeight: FontWeight.w800,
             fontSize: 16,
           ),
         ),
         const SizedBox(height: 12),
-        if (loading)
-          const Center(
-            child: CircularProgressIndicator(color: _Proc.accent),
-          )
-        else ...[
-          _rowMetric(lp.t('Active lots', 'Lots actifs'), '$lots'),
-          _rowMetric(lp.t('Certified output', 'Sortie certifiée'), '$cert'),
-          _rowMetric(lp.t('Rated capacity', 'Capacité nominale'), cap),
-          const SizedBox(height: 16),
+        if (projects.isEmpty)
           Text(
-            lp.t(
-              'Calibration data from sensors and lab checks will surface here.',
-              'Les données d’atelier et de laboratoire apparaîtront ici.',
-            ),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
-              height: 1.4,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _rowMetric(String k, String v) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          gradient: _Proc.cardGrad,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(k, style: const TextStyle(color: Colors.white70)),
-            Text(
-              v,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
+            lp.t('No published programs yet.', 'Aucun programme publié.'),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
+          )
+        else
+          ...projects.map(
+            (p) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: _Ngo.cardGrad,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _Ngo.accent.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    p['title']?.toString() ?? p['titleFr']?.toString() ?? '—',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if ((p['description'] ?? p['descriptionFr']) != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      '${p['description'] ?? p['descriptionFr']}',
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }
 
-class _ProcBottomNav extends StatelessWidget {
-  const _ProcBottomNav({
+class _NgoPartnersTab extends StatelessWidget {
+  const _NgoPartnersTab({
+    required this.data,
+    required this.isPortal,
+    required this.lp,
+  });
+
+  final Map<String, dynamic> data;
+  final bool isPortal;
+  final LanguageProvider lp;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isPortal) {
+      return _ngoEmpty(
+        lp.t(
+          'Network statistics appear after sign-in.',
+          'Les statistiques réseau après connexion.',
+        ),
+      );
+    }
+    final s = Map<String, dynamic>.from(data['stats'] as Map? ?? {});
+    final rows = <(String, String)>[
+      (lp.t('Farmers', 'Agriculteurs'), '${s['farmers'] ?? 0}'),
+      (lp.t('Cooperatives', 'Coopératives'), '${s['cooperatives'] ?? 0}'),
+      (lp.t('Processors', 'Processeurs'), '${s['processors'] ?? 0}'),
+      (lp.t('National projects', 'Projets nationaux'), '${s['projects'] ?? 0}'),
+    ];
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        Text(
+          lp.t('Alliance footprint', 'Empreinte d’alliance'),
+          style: const TextStyle(
+            color: _Ngo.accent,
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...rows.map(
+          (r) {
+            final label = r.$1;
+            final value = r.$2;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: _Ngo.cardGrad,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(label, style: const TextStyle(color: Colors.white70)),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _NgoBottomNav extends StatelessWidget {
+  const _NgoBottomNav({
     required this.tab,
     required this.lp,
     required this.onChanged,
@@ -677,7 +704,7 @@ class _ProcBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: _Proc.bg,
+        color: _Ngo.bg,
         border: Border(
           top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
         ),
@@ -690,8 +717,8 @@ class _ProcBottomNav extends StatelessWidget {
         child: BottomNavigationBar(
           currentIndex: tab.clamp(0, 3),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: _Proc.bg,
-          selectedItemColor: _Proc.accent,
+          backgroundColor: _Ngo.bg,
+          selectedItemColor: _Ngo.accent,
           unselectedItemColor: Colors.white38,
           onTap: onChanged,
           items: [
@@ -701,14 +728,14 @@ class _ProcBottomNav extends StatelessWidget {
               label: lp.t('Home', 'Accueil'),
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.inventory_2_outlined),
-              activeIcon: const Icon(Icons.inventory_2),
-              label: lp.t('Supply', 'Approvisionnement'),
+              icon: const Icon(Icons.volunteer_activism_outlined),
+              activeIcon: const Icon(Icons.volunteer_activism),
+              label: lp.t('Programs', 'Programmes'),
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.factory_outlined),
-              activeIcon: const Icon(Icons.factory),
-              label: lp.t('Processing', 'Transformation'),
+              icon: const Icon(Icons.groups_outlined),
+              activeIcon: const Icon(Icons.groups),
+              label: lp.t('Partners', 'Partenaires'),
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.manage_accounts_outlined),
@@ -722,8 +749,8 @@ class _ProcBottomNav extends StatelessWidget {
   }
 }
 
-class _ProcAccountTab extends StatelessWidget {
-  const _ProcAccountTab({required this.lp});
+class _NgoAccountTab extends StatelessWidget {
+  const _NgoAccountTab({required this.lp});
 
   final LanguageProvider lp;
 
@@ -737,7 +764,7 @@ class _ProcAccountTab extends StatelessWidget {
       slivers: [
         SliverAppBar(
           pinned: true,
-          backgroundColor: const Color(0xFF2d1f00),
+          backgroundColor: const Color(0xFF1a3a0a),
           automaticallyImplyLeading: false,
           title: Text(
             lp.t('Account', 'Compte'),
@@ -745,7 +772,7 @@ class _ProcAccountTab extends StatelessWidget {
           ),
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
-              decoration: const BoxDecoration(gradient: _Proc.headerGrad),
+              decoration: const BoxDecoration(gradient: _Ngo.headerGrad),
               alignment: Alignment.bottomCenter,
               padding: const EdgeInsets.only(bottom: 54, top: 48),
               child: Column(
@@ -753,7 +780,7 @@ class _ProcAccountTab extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 36,
-                    backgroundColor: _Proc.accent.withValues(alpha: 0.35),
+                    backgroundColor: _Ngo.accent.withValues(alpha: 0.35),
                     child: Text(
                       initial,
                       style: const TextStyle(
@@ -765,17 +792,34 @@ class _ProcAccountTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    auth.displayName.isNotEmpty ? auth.displayName : 'Processor',
+                    auth.displayName.isNotEmpty ? auth.displayName : 'Partner',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _Ngo.accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: _Ngo.accent.withValues(alpha: 0.35)),
+                    ),
+                    child: Text(
+                      lp.t('Development partner', 'Partenaire au développement'),
+                      style: const TextStyle(
+                        color: _Ngo.accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          expandedHeight: 200,
+          expandedHeight: 220,
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
@@ -854,7 +898,7 @@ class _ProcAccountTab extends StatelessWidget {
                   final ok = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: const Color(0xFF2a1a00),
+                      backgroundColor: const Color(0xFF152818),
                       title: Text(
                         lp.t('Sign out?', 'Déconnexion ?'),
                         style: const TextStyle(color: Colors.white),
@@ -869,7 +913,10 @@ class _ProcAccountTab extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('OK', style: TextStyle(color: Colors.red)),
+                          child: const Text(
+                            'OK',
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ),
                       ],
                     ),
@@ -914,7 +961,7 @@ class _ProcAccountTab extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            gradient: _Proc.cardGrad,
+            gradient: _Ngo.cardGrad,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
@@ -943,7 +990,7 @@ class _ProcAccountTab extends StatelessWidget {
     bool danger = false,
   }) {
     return ListTile(
-      leading: Icon(icon, color: danger ? Colors.red : _Proc.accent),
+      leading: Icon(icon, color: danger ? Colors.red : _Ngo.accent),
       title: Text(
         title,
         style: TextStyle(color: danger ? Colors.red : Colors.white),
@@ -952,4 +999,17 @@ class _ProcAccountTab extends StatelessWidget {
       onTap: onTap,
     );
   }
+}
+
+Widget _ngoEmpty(String msg) {
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        msg,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
+      ),
+    ),
+  );
 }

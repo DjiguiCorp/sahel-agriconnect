@@ -14,6 +14,7 @@ import '../screens/government/government_dashboard.dart';
 import '../screens/home_screen.dart';
 import '../screens/investor/investor_dashboard.dart';
 import '../screens/language_screen.dart';
+import '../screens/ngo/ngo_dashboard.dart';
 import '../screens/processor/processor_dashboard.dart';
 import '../screens/role_screen.dart';
 import '../screens/shared/about_screen.dart';
@@ -132,7 +133,7 @@ GoRouter buildRouter(
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
       // Public & dashboards: /home, /guest/*, /farmer, /investor, /cooperative,
-      // /government, /processor, /notifications, /profile.
+      // /government, /ngo, /processor, /notifications, /profile.
       GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
       GoRoute(
         path: '/guest/farmer',
@@ -192,6 +193,7 @@ GoRouter buildRouter(
           builder: (_, __) => const CooperativeDashboard()),
       GoRoute(
           path: '/government', builder: (_, __) => const GovernmentDashboard()),
+      GoRoute(path: '/ngo', builder: (_, __) => const NgoDashboard()),
       GoRoute(
           path: '/processor', builder: (_, __) => const ProcessorDashboard()),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
@@ -225,6 +227,7 @@ GoRouter buildRouter(
       ),
       GoRoute(path: '/help', builder: (_, __) => const HelpScreen()),
       GoRoute(path: '/faq', builder: (_, __) => const HelpScreen()),
+      GoRoute(path: '/about', builder: (_, __) => const AboutScreen()),
       GoRoute(
         path: '/webview',
         builder: (context, state) {
@@ -244,17 +247,22 @@ GoRouter buildRouter(
   return appRouter;
 }
 
+bool _isGlobalUtilityPath(String loc) {
+  if (loc == '/help' || loc.startsWith('/help/')) return true;
+  if (loc == '/faq') return true;
+  if (loc == '/about' || loc == '/about-app') return true;
+  return false;
+}
+
 bool _isProfileOrSupportPath(String loc) {
   if (loc.startsWith('/profile')) return true;
   if (loc == '/notifications' || loc.startsWith('/notifications/')) return true;
-  if (loc == '/help' || loc.startsWith('/help/')) return true;
-  if (loc == '/faq') return true;
-  if (loc == '/about-app') return true;
   return false;
 }
 
 bool _isProtectedPath(String loc) {
   if (loc.startsWith('/guest/')) return false;
+  if (_isGlobalUtilityPath(loc)) return false;
   if (_isProfileOrSupportPath(loc)) return true;
   const paths = [
     '/farmer',
@@ -276,9 +284,8 @@ String _loginPathFor(String loc) {
 bool _routeMismatch(AuthRole role, String loc) {
   if (loc == '/webview') return false;
   if (loc == '/privacy' || loc == '/terms') return false;
+  if (_isGlobalUtilityPath(loc)) return false;
   if (_isProfileOrSupportPath(loc)) return false;
-  // NGO shares the government dashboard.
-  if (role == AuthRole.ngo && loc.startsWith('/government')) return false;
   switch (role) {
     case AuthRole.farmer:
       return !(loc.startsWith('/farmer'));
@@ -289,9 +296,9 @@ bool _routeMismatch(AuthRole role, String loc) {
     case AuthRole.government:
       return !(loc.startsWith('/government'));
     case AuthRole.ngo:
-      return !(loc.startsWith('/government'));
+      return !(loc.startsWith('/ngo'));
     case AuthRole.processor:
-      return !(loc.startsWith('/farmer') || loc.startsWith('/processor'));
+      return !(loc.startsWith('/processor'));
     default:
       return false;
   }
@@ -308,9 +315,9 @@ String _dashboardRoute(AuthRole role) {
     case AuthRole.government:
       return '/government';
     case AuthRole.ngo:
-      return '/government';
+      return '/ngo';
     case AuthRole.processor:
-      return '/farmer';
+      return '/processor';
     default:
       return '/role';
   }

@@ -1692,13 +1692,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     _ProfileLink(
                       icon: Icons.help_outline_rounded,
                       label: lp.t('Help', 'Aide'),
-                      onTap: () => context.go('/help'),
+                      onTap: () => context.push('/help'),
                     ),
                     _Divider(),
                     _ProfileLink(
                       icon: Icons.info_outline_rounded,
                       label: lp.t('About', 'À propos'),
-                      onTap: () => context.go('/about-app'),
+                      onTap: () => context.push('/about'),
                     ),
                     if (auth.isLoggedIn) ...[
                       _Divider(),
