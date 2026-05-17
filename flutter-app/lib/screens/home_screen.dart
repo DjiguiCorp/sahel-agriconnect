@@ -218,7 +218,21 @@ class _HomeScreenState extends State<HomeScreen> {
   /// otherwise we fall back to the role selection screen.
   void _goSignIn(String? loginRoute) {
     context.read<AuthState>().exitGuestMode();
-    context.go(loginRoute ?? '/role');
+    context.go(loginRoute ?? '/home');
+  }
+
+  /// Logged-in users open their role dashboard; guests return to role hub.
+  void _goRoleDashboard(AuthState auth) {
+    if (!auth.isLoggedIn) {
+      context.go('/home');
+      return;
+    }
+    final route = _dashboardRouteForRole(auth.role);
+    if (route != null) {
+      context.go(route);
+    } else {
+      context.go('/home');
+    }
   }
 
   int? _categoryIndexForRole(AuthRole role) {
@@ -516,6 +530,13 @@ class _HomeScreenState extends State<HomeScreen> {
           currentIndex: _currentIndex,
           elevation: 0,
           onTap: (index) {
+            if (index == 3) {
+              final a = context.read<AuthState>();
+              if (a.isLoggedIn) {
+                _goRoleDashboard(a);
+                return;
+              }
+            }
             setState(() => _currentIndex = index);
             switch (index) {
               case 0:
@@ -658,7 +679,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ? _PillButton(
                               label: lp.t('Profile', 'Profil'),
                               icon: Icons.person_outline_rounded,
-                              onTap: () => setState(() => _currentIndex = 3),
+                              onTap: () => _goRoleDashboard(auth),
                             )
                           : _PillButton(
                               label: lp.t('Sign in', 'Connexion'),
@@ -1137,7 +1158,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 52,
+              height: 72,
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 scrollDirection: Axis.horizontal,
@@ -1147,40 +1168,45 @@ class _HomeScreenState extends State<HomeScreen> {
                   final sel = i == _exploreChip;
                   return GestureDetector(
                     onTap: () => setState(() => _exploreChip = i),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: sel
-                            ? AppColors.gold.withValues(alpha: 0.2)
-                            : Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+                    child: SizedBox(
+                      width: 140,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
                           color: sel
-                              ? AppColors.gold.withValues(alpha: 0.5)
-                              : Colors.white.withValues(alpha: 0.12),
+                              ? AppColors.gold.withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: sel
+                                ? AppColors.gold.withValues(alpha: 0.5)
+                                : Colors.white.withValues(alpha: 0.12),
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            chips[i].$2,
-                            size: 16,
-                            color: sel ? AppColors.gold : Colors.white70,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            chips[i].$1,
-                            style: TextStyle(
-                              color: sel ? AppColors.gold : Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              chips[i].$2,
+                              size: 16,
+                              color: sel ? AppColors.gold : Colors.white70,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                chips[i].$1,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: sel ? AppColors.gold : Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -1207,7 +1233,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   GlassCard(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     borderColor: AppColors.gold.withValues(alpha: 0.35),
                     backgroundColor: AppColors.gold.withValues(alpha: 0.06),
                     child: Column(
@@ -1216,18 +1242,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           lp.t('AfriYield — live lots',
                               'AfriYield — lots en direct'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           lp.t(
                             'Track sesame and shea cycles across Mali & Burkina.',
                             'Suivez le sésame et le karité au Mali et au Burkina.',
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 12,
@@ -1239,7 +1269,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
                   GlassCard(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     borderColor: const Color(0xFF185FA5).withValues(alpha: 0.4),
                     backgroundColor:
                         const Color(0xFF185FA5).withValues(alpha: 0.08),
@@ -1249,18 +1279,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           lp.t('West Africa spot prices',
                               'Prix spot Afrique de l\'Ouest'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           lp.t(
                             'Shea, cashew and sesame benchmarks updated weekly.',
                             'Références karité, cajou et sésame mises à jour chaque semaine.',
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 12,
@@ -1723,7 +1757,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _ProfileLink(
                         icon: Icons.settings_outlined,
                         label: lp.t('Account & settings', 'Compte et réglages'),
-                        onTap: () => context.go('/profile'),
+                        onTap: () => _goRoleDashboard(auth),
                       ),
                       _Divider(),
                     ],

@@ -100,7 +100,7 @@ class RoleScreen extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.go('/home'),
+          onPressed: () => context.go('/platform'),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,

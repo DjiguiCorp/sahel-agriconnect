@@ -2,8 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/auth_state.dart';
 import '../core/glass.dart';
 import '../core/theme.dart';
 import '../screens/shared/terms_screen.dart';
@@ -50,10 +52,15 @@ class _SplashScreenState extends State<SplashScreen>
 
     _entranceCtrl.forward();
 
-    Future.delayed(const Duration(milliseconds: 3400), () {
-      if (!mounted) return;
-      _playExitAndNavigate();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleExitAndNavigate();
     });
+  }
+
+  Future<void> _scheduleExitAndNavigate() async {
+    await Future<void>.delayed(const Duration(milliseconds: 3400));
+    if (!mounted) return;
+    await _playExitAndNavigate();
   }
 
   Future<void> _playExitAndNavigate() async {
@@ -70,12 +77,34 @@ class _SplashScreenState extends State<SplashScreen>
         prefs.getBool(TermsScreen.termsAcceptedKey) ?? false;
     final langSelected = prefs.getBool('language_selected') ?? false;
     if (!mounted) return;
+
+    final auth = context.read<AuthState>();
+
     if (!termsAccepted) {
       context.go('/terms');
       return;
     }
     if (!langSelected) {
       context.go('/language');
+      return;
+    }
+    if (auth.isLoggedIn) {
+      switch (auth.role) {
+        case AuthRole.farmer:
+          context.go('/farmer');
+        case AuthRole.investor:
+          context.go('/investor');
+        case AuthRole.cooperative:
+          context.go('/cooperative');
+        case AuthRole.government:
+          context.go('/government');
+        case AuthRole.ngo:
+          context.go('/ngo');
+        case AuthRole.processor:
+          context.go('/processor');
+        case AuthRole.none:
+          context.go('/home');
+      }
       return;
     }
     context.go('/home');

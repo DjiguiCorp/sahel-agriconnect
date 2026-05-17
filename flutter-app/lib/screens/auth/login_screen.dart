@@ -624,7 +624,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   if (_step == _LoginStep.otp) {
                                     _goToContactStep();
                                   } else {
-                                    context.go('/role');
+                                    context.go('/home');
                                   }
                                 },
                                 child: Container(
@@ -1188,7 +1188,7 @@ class _LoginScreenState extends State<LoginScreen> {
       case AuthRole.processor:
         return '/processor';
       default:
-        return '/role';
+        return '/home';
     }
   }
 }

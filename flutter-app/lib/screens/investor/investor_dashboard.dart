@@ -163,7 +163,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/home');
+        if (!didPop) context.go('/platform');
       },
       child: Scaffold(
       resizeToAvoidBottomInset: true,
@@ -1546,14 +1546,14 @@ class _InvestorAccountTab extends StatelessWidget {
                       iconColor: Colors.white54,
                       title: lp.t('Terms of Service', 'Conditions d’utilisation'),
                       subtitle: lp.t('Legal terms', 'Mentions légales'),
-                      onTap: () => context.push('/terms?view=1'),
+                      onTap: () => context.push('/terms?view=1&tab=0'),
                     ),
                     _InvAccountTile(
                       icon: Icons.privacy_tip_outlined,
                       iconColor: Colors.white54,
                       title: lp.t('Privacy Policy', 'Confidentialité'),
                       subtitle: lp.t('How we use your data', 'Traitement des données'),
-                      onTap: () => context.push('/terms?view=1'),
+                      onTap: () => context.push('/terms?view=1&tab=1'),
                     ),
                     _InvAccountTile(
                       icon: Icons.language,

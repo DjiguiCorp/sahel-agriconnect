@@ -9,10 +9,17 @@ import '../../core/theme.dart';
 
 /// Terms of Service, Privacy Policy, and User Agreement.
 class TermsScreen extends StatefulWidget {
-  const TermsScreen({super.key, this.viewOnly = false});
+  const TermsScreen({
+    super.key,
+    this.viewOnly = false,
+    this.initialTabIndex = 0,
+  });
 
   /// When true (e.g. opened from login), user can read without re-accepting.
   final bool viewOnly;
+
+  /// 0 = Terms, 1 = Privacy, 2 = User Agreement.
+  final int initialTabIndex;
 
   static const termsAcceptedKey = 'terms_accepted';
 
@@ -34,7 +41,15 @@ class _TermsScreenState extends State<TermsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    final tabFromRoute = int.tryParse(
+          GoRouterState.of(context).uri.queryParameters['tab'] ?? '') ??
+        widget.initialTabIndex;
+    final tabIndex = tabFromRoute.clamp(0, 2);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: tabIndex,
+    );
   }
 
   @override

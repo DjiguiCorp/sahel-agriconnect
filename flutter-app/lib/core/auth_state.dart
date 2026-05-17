@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
 import '../services/guest_content_service.dart';
@@ -67,6 +68,10 @@ class AuthState extends ChangeNotifier {
               _role = role;
               _token = token;
               _user = payload;
+              _isGuest = false;
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('auth_token', token);
+              await prefs.setString('auth_role', role.toString());
               break;
             } catch (_) {
               await _storage.delete(key: 'token_${role.name}');
@@ -77,6 +82,31 @@ class AuthState extends ChangeNotifier {
         }
       }
     } catch (_) {}
+
+    if (_token == null) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('auth_token');
+        final roleStr = prefs.getString('auth_role');
+        if (token != null &&
+            token.isNotEmpty &&
+            roleStr != null &&
+            !JwtDecoder.isExpired(token)) {
+          final role = AuthRole.values.firstWhere(
+            (r) => r.toString() == roleStr,
+            orElse: () => AuthRole.none,
+          );
+          if (role != AuthRole.none) {
+            final raw = JwtDecoder.decode(token);
+            _role = role;
+            _token = token;
+            _user = Map<String, dynamic>.from(raw as Map<dynamic, dynamic>);
+            _isGuest = false;
+            _accountStatus = _user?['accountStatus'] as String? ?? 'active';
+          }
+        }
+      } catch (_) {}
+    }
 
     _loading = false;
     notifyListeners();
@@ -93,6 +123,11 @@ class AuthState extends ChangeNotifier {
     _isGuest = false;
     _accountStatus = userData['accountStatus'] as String? ?? 'active';
     _user = userData;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+    await prefs.setString('auth_role', role.toString());
+
     notifyListeners();
     AuthService.resetActivity();
   }
@@ -122,6 +157,11 @@ class AuthState extends ChangeNotifier {
     await GuestContentService.clearCache();
     _isGuest = true;
     _accountStatus = 'active';
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('auth_role');
+
     onLogout?.call();
     notifyListeners();
     AuthService.cancelSessionTimer();
@@ -137,6 +177,13 @@ class AuthState extends ChangeNotifier {
     _token = null;
     _user = null;
     await GuestContentService.clearCache();
+    _isGuest = true;
+    _accountStatus = 'active';
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('auth_role');
+
     onLogout?.call();
     notifyListeners();
     AuthService.cancelSessionTimer();

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../core/language_provider.dart';
 
-/// Top-of-account-tab navigation: return to role dashboard tab 0, or exit to `/home`.
+/// Top-of-account-tab navigation: return to role dashboard tab 0, or exit to `/platform`.
 class DashboardAccountNavHeader extends StatelessWidget {
   const DashboardAccountNavHeader({
     super.key,
@@ -82,7 +82,7 @@ class DashboardAccountNavHeader extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => context.go('/home'),
+          onTap: () => context.go('/platform'),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),

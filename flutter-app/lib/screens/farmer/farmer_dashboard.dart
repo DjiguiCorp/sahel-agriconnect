@@ -1,20 +1,30 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
 import '../../services/offline_queue.dart';
-import '../../widgets/dashboard_account_nav_header.dart';
-import '../../widgets/dashboard_sign_out_button.dart';
 import '../../widgets/offline_banner.dart';
-import '../shared/webview_screen.dart';
 
+// ── COLOR CONSTANTS ────────────────────────────────────────────
+const _bg = Color(0xFF0f2318);
+const _surface = Color(0xFF1e4535);
+const _surface2 = Color(0xFF162e24);
+const _border = Color(0x14FFFFFF);
+const _gold = AppColors.gold;
+const _green = Color(0xFF1D9E75);
+const _text = Colors.white;
+const _textMuted = Color(0x80FFFFFF);
+
+// ══════════════════════════════════════════════════════════════
+// MAIN FARMER DASHBOARD
+// ══════════════════════════════════════════════════════════════
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
 
@@ -26,61 +36,10 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   int _tab = 0;
   Map<String, dynamic>? _farmer;
   bool _loadingFarmer = true;
+  List<Map<String, dynamic>> _prices = [];
 
   List<String> get _cultures =>
       (_farmer?['cultures'] as List?)?.map((e) => e.toString()).toList() ?? [];
-
-  List<Map<String, Object>> _farmerTools(LanguageProvider lp) => [
-        {
-          'icon': '🌱',
-          'title': lp.t('Soil diagnosis', 'Diagnostic du sol'),
-          'desc': lp.t('Analyze your soil', 'Analyser votre sol'),
-          'bg': const Color(0xFF1e4535),
-          'url': 'https://sahelagriconnect.com/diagnostic-sol',
-          'webTitle': lp.t('Soil Diagnostic', 'Diagnostic du sol'),
-        },
-        {
-          'icon': '🔬',
-          'title': lp.t('Disease detect', 'Détection maladies'),
-          'desc': lp.t('Photo analysis', 'Analyse photo'),
-          'bg': const Color(0xFF243d32),
-          'url': 'https://sahelagriconnect.com/detection-maladies',
-          'webTitle': lp.t('Disease Detection', 'Détection des maladies'),
-        },
-        {
-          'icon': '🧠',
-          'title': lp.t('Think Tank', 'Think Tank'),
-          'desc': lp.t('AI advisor', 'Conseiller IA'),
-          'bg': const Color(0xFF1a3540),
-          'url': 'https://sahelagriconnect.com/think-tank',
-          'webTitle': lp.t('AI Advisor', 'Conseiller IA'),
-        },
-        {
-          'icon': '💧',
-          'title': lp.t('Irrigation', 'Irrigation'),
-          'desc': lp.t('Water planning', 'Planification hydrique'),
-          'bg': const Color(0xFF1e3545),
-          'url': 'https://sahelagriconnect.com/irrigation',
-          'webTitle': lp.t('Irrigation Planning', 'Planification irrigation'),
-        },
-        {
-          'icon': '📊',
-          'title': lp.t('Production optimizer', 'Optimiseur production'),
-          'desc': lp.t('Gemini AI planning', 'Planification IA Gemini'),
-          'bg': const Color(0xFF1e4535),
-          'url': 'https://sahelagriconnect.com/optimisation-production',
-          'webTitle': lp.t('Production Optimizer', 'Optimiseur de production'),
-        },
-        {
-          'icon': '🔍',
-          'title': lp.t('Traceability', 'Traçabilité'),
-          'desc': lp.t('Track your produce lot', 'Suivre votre lot'),
-          'bg': const Color(0xFF2a3820),
-          'url': 'https://sahelagriconnect.com/traceabilite',
-          'webTitle': lp.t('Traceability', 'Traçabilité'),
-          'comingSoon': true,
-        },
-      ];
 
   @override
   void initState() {
@@ -88,16 +47,22 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     _loadFarmer();
   }
 
-  String _greetingLine(LanguageProvider lp) {
-    final h = DateTime.now().hour;
-    if (h < 12) return lp.t('Good morning,', 'Bonjour,');
-    if (h < 17) return lp.t('Good afternoon,', 'Bon après-midi,');
-    return lp.t('Good evening,', 'Bonsoir,');
-  }
-
   Future<void> _loadFarmer() async {
     final auth = context.read<AuthState>();
-    final token = auth.token;
+    
+    // Load market prices
+    ApiService.getMarketplacePrices().then((res) {
+      if (!mounted) return;
+      final raw = res['prices'];
+      if (raw is! List) return;
+      final list = <Map<String, dynamic>>[];
+      for (final e in raw) {
+        if (e is Map) list.add(Map<String, dynamic>.from(e));
+      }
+      setState(() => _prices = list);
+    }).catchError((_) {});
+
+    // Load farmer data
     final email = auth.displayEmail;
     if (email.isEmpty) {
       if (mounted) setState(() => _loadingFarmer = false);
@@ -106,13 +71,12 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     try {
       final res = await ApiService.get(
         '/api/farmers?email=${Uri.encodeComponent(email)}',
-        token: token,
+        token: auth.token,
       );
       final f = res['farmer'];
-      final map = f is Map ? Map<String, dynamic>.from(f) : null;
       if (mounted) {
         setState(() {
-          _farmer = map;
+          _farmer = f is Map ? Map<String, dynamic>.from(f) : null;
           _loadingFarmer = false;
         });
       }
@@ -121,1123 +85,212 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     }
   }
 
-  Widget _buildMainHeader(String displayName, LanguageProvider lp) {
+  void _goTab(int i) => setState(() => _tab = i);
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = context.watch<LanguageProvider>().locale.languageCode == 'fr';
+    
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) context.go('/platform');
+      },
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: Column(
+          children: [
+            const OfflineBanner(),
+            // ── HEADER ────────────────────────────────────────
+            _FarmerHeader(
+              farmer: _farmer,
+              loading: _loadingFarmer,
+              isFr: isFr,
+            ),
+            // ── CONTENT ───────────────────────────────────────
+            Expanded(
+              child: IndexedStack(
+                index: _tab,
+                children: [
+                  _FarmerHomeTab(
+                    farmer: _farmer,
+                    loading: _loadingFarmer,
+                    cultures: _cultures,
+                    prices: _prices,
+                    isFr: isFr,
+                    onTabChange: _goTab,
+                  ),
+                  _FarmerProduceTab(
+                    farmer: _farmer,
+                    cultures: _cultures,
+                    loading: _loadingFarmer,
+                    isFr: isFr,
+                  ),
+                  _FarmerAIToolsTab(isFr: isFr),
+                  _FarmerBenefitsTab(isFr: isFr),
+                  _FarmerAccountTab(isFr: isFr, onTabChange: _goTab),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // ── PERSISTENT BOTTOM NAV ─────────────────────────────
+        bottomNavigationBar: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF0d1f17),
+            border: Border(top: BorderSide(color: _border, width: 1)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: NavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedIndex: _tab,
+              onDestinationSelected: _goTab,
+              indicatorColor: _gold.withValues(alpha: 0.15),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: [
+                NavigationDestination(
+                  icon: const Icon(Icons.home_outlined, color: _textMuted),
+                  selectedIcon: const Icon(Icons.home, color: _gold),
+                  label: isFr ? 'Accueil' : 'Home',
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.grass_outlined, color: _textMuted),
+                  selectedIcon: const Icon(Icons.grass, color: _gold),
+                  label: isFr ? 'Production' : 'Produce',
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.psychology_outlined, color: _textMuted),
+                  selectedIcon: const Icon(Icons.psychology, color: _gold),
+                  label: isFr ? 'Outils IA' : 'AI Tools',
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.card_giftcard_outlined, color: _textMuted),
+                  selectedIcon: const Icon(Icons.card_giftcard, color: _gold),
+                  label: isFr ? 'Avantages' : 'Benefits',
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.manage_accounts_outlined, color: _textMuted),
+                  selectedIcon: const Icon(Icons.manage_accounts, color: _gold),
+                  label: isFr ? 'Compte' : 'Account',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// HEADER COMPONENT
+// ══════════════════════════════════════════════════════════════
+class _FarmerHeader extends StatelessWidget {
+  final Map<String, dynamic>? farmer;
+  final bool loading;
+  final bool isFr;
+  const _FarmerHeader({required this.farmer, required this.loading, required this.isFr});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final name = farmer?['nom']?.toString() ?? auth.displayName;
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? (isFr ? 'Bonjour' : 'Good morning')
+        : hour < 18
+            ? (isFr ? 'Bon après-midi' : 'Good afternoon')
+            : (isFr ? 'Bonsoir' : 'Good evening');
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1a3c2e),
-            Color(0xFF2d6a4f),
-            Color(0xFF1a3c2e),
-          ],
+          colors: [Color(0xFF1a3c2e), Color(0xFF2d6a4f), Color(0xFF1a3c2e)],
           stops: [0.0, 0.5, 1.0],
         ),
       ),
       child: Stack(
         children: [
+          // Decorative circle
           Positioned(
-            top: -40,
-            right: -40,
+            top: -30, right: -30,
             child: Container(
-              width: 200,
-              height: 200,
+              width: 160, height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.gold.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 20,
-            right: 60,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.03),
+                color: _gold.withValues(alpha: 0.06),
               ),
             ),
           ),
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _greetingLine(lp),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        displayName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _GlassStatCard(
-                        label: lp.t('Total area', 'Superficie totale'),
-                        value: _farmer != null
-                            ? '${_farmer!['superficie'] ?? '—'} ha'
-                            : '—',
-                      ),
-                      const SizedBox(width: 10),
-                      _GlassStatCard(
-                        label: lp.t('Crops listed', 'Cultures déclarées'),
-                        value: _farmer != null
-                            ? '${(_farmer!['cultures'] as List?)?.length ?? 0}'
-                            : '—',
-                      ),
-                      const SizedBox(width: 10),
-                      _GlassStatCard(
-                        label: lp.t('Status', 'Statut'),
-                        value: _farmer?['statut'] == 'Actif'
-                            ? lp.t('Active', 'Actif')
-                            : (_farmer?['statut'] ?? '—').toString(),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthState>();
-    return Consumer<LanguageProvider>(
-      builder: (context, langProvider, _) {
-        final displayName = auth.displayName.isNotEmpty
-            ? auth.displayName
-            : (_farmer?['nom'] ??
-                    langProvider.t('Farmer', 'Agriculteur'))
-                .toString();
-        final tools = _farmerTools(langProvider);
-
-        return PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, result) {
-            if (!didPop) context.go('/home');
-          },
-          child: Scaffold(
-          resizeToAvoidBottomInset: true,
-          backgroundColor: const Color(0xFF0f2318),
-          body: Column(
-            children: [
-              const OfflineBanner(),
-              if (_tab != 4 && _tab != 5)
-                _buildMainHeader(displayName, langProvider),
-              Expanded(
-                child: IndexedStack(
-                  index: _tab,
-                  children: [
-                    _HomeTab(
-                      cultures: _cultures,
-                      loadingFarmer: _loadingFarmer,
-                      tools: tools,
-                      produceRow: _produceRow,
-                      onSeeAllAiTools: () {
-                        AuthService.resetActivity();
-                        setState(() => _tab = 2);
-                      },
-                    ),
-                    _ProduceTab(
-                      loadingFarmer: _loadingFarmer,
-                      cultures: _cultures,
-                      produceRow: _produceRow,
-                    ),
-                    _AiToolsTab(tools: tools),
-                    const _BenefitsTab(),
-                    const _FarmerUpdatesTab(),
-                    _AccountSettingsTab(
-                      onBackToDashboard: () => setState(() => _tab = 0),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          bottomNavigationBar: _buildBottomNavigationBar(langProvider),
-        ),
-        );
-      },
-    );
-  }
-
-  Widget _produceRow(
-    String name,
-    String sub,
-    String status,
-    Color statusText,
-    Color statusBg,
-  ) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    sub,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.45),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusBg,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                status,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: statusText,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-
-  Widget _buildBottomNavigationBar(LanguageProvider lp) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF152923),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _tab,
-          selectedItemColor: AppColors.gold,
-          unselectedItemColor: Colors.white38,
-          selectedFontSize: 10,
-          unselectedFontSize: 9,
-          onTap: (index) {
-            AuthService.resetActivity();
-            setState(() => _tab = index);
-          },
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
-              activeIcon: const Icon(Icons.home),
-              label: lp.t('Home', 'Accueil'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.grass_outlined),
-              activeIcon: const Icon(Icons.grass),
-              label: lp.t('Produce', 'Production'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.psychology_outlined),
-              activeIcon: const Icon(Icons.psychology),
-              label: lp.t('AI Tools', 'Outils IA'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.card_giftcard_outlined),
-              activeIcon: const Icon(Icons.card_giftcard),
-              label: lp.t('Benefits', 'Avantages'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.campaign_outlined),
-              activeIcon: const Icon(Icons.campaign),
-              label: lp.t('Updates', 'Mises à jour'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.manage_accounts_outlined),
-              activeIcon: const Icon(Icons.manage_accounts),
-              label: lp.t('Account', 'Compte'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Top-level so both dashboard and grid can use it.
-void showFarmerComingSoonSheet(
-  BuildContext context, {
-  required String title,
-  required String body,
-  String emoji = '✨',
-}) {
-  showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: const Color(0xFF1a3c2e),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (sheetCtx) {
-      final lp = sheetCtx.watch<LanguageProvider>();
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 40)),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () => Navigator.pop(sheetCtx),
-                child: Text(
-                  lp.t('Got it', 'Compris'),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-Widget _farmerToolGrid(BuildContext context, List<Map<String, Object>> tools) {
-  final lp = context.watch<LanguageProvider>();
-  return GridView.builder(
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.6,
-    ),
-    itemCount: tools.length,
-    itemBuilder: (ctx, i) {
-      final comingSoon = tools[i]['comingSoon'] == true;
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            if (comingSoon) {
-              showFarmerComingSoonSheet(
-                context,
-                title: tools[i]['webTitle'] as String,
-                emoji: tools[i]['icon'] as String,
-                body: lp.t(
-                  'Track your produce lot from farm to market. '
-                      'This feature is coming soon.',
-                  'Suivez votre lot de la ferme au marché. '
-                      'Cette fonctionnalité arrive bientôt.',
-                ),
-              );
-              return;
-            }
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => InAppWebViewScreen(
-                  title: tools[i]['webTitle'] as String,
-                  url: tools[i]['url'] as String,
-                ),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1e4535),
-                  Color(0xFF162e24),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: tools[i]['bg'] as Color,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      tools[i]['icon'] as String,
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  tools[i]['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  tools[i]['desc'] as String,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white.withValues(alpha: 0.45),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      )
-          .animate(delay: Duration(milliseconds: 80 * i))
-          .fadeIn(duration: 300.ms)
-          .slideY(begin: 0.1);
-    },
-  );
-}
-
-class _GlassStatCard extends StatelessWidget {
-  const _GlassStatCard({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.12),
-              Colors.white.withValues(alpha: 0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.15),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.gold,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeTab extends StatelessWidget {
-  const _HomeTab({
-    required this.cultures,
-    required this.loadingFarmer,
-    required this.tools,
-    required this.produceRow,
-    required this.onSeeAllAiTools,
-  });
-
-  final List<String> cultures;
-  final bool loadingFarmer;
-  final List<Map<String, Object>> tools;
-  final VoidCallback onSeeAllAiTools;
-  final Widget Function(
-    String name,
-    String sub,
-    String status,
-    Color statusText,
-    Color statusBg,
-  ) produceRow;
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 24),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                lp.t('AI Agricultural Tools', 'Outils agricoles IA'),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              GestureDetector(
-                onTap: onSeeAllAiTools,
-                child: Text(
-                  lp.t('See all', 'Voir tout'),
-                  style: const TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _farmerToolGrid(context, tools),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
-          child: Text(
-            lp.t('My produce pipeline', 'Ma filière produits'),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.3,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1e4535),
-                  Color(0xFF162e24),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-            child: Column(
-              children: [
-                if (loadingFarmer)
-                  const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.gold,
-                      ),
-                    ),
-                  )
-                else if (cultures.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      lp.t('No crops declared yet', 'Aucune culture déclarée'),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
-                        fontSize: 13,
-                      ),
-                    ),
-                  )
-                else
-                  ...cultures.asMap().entries.map(
-                        (e) => Column(
-                          children: [
-                            if (e.key > 0)
-                              Divider(
-                                height: 1,
-                                color: Colors.white.withValues(alpha: 0.06),
-                              ),
-                            produceRow(
-                              lp.t(
-                                '${e.value} · declared',
-                                '${e.value} · déclarée',
-                              ),
-                              lp.t('Crop on file', 'Culture enregistrée'),
-                              lp.t('On file', 'Enregistré'),
-                              AppColors.gold,
-                              AppColors.gold.withValues(alpha: 0.15),
-                            ),
-                          ],
-                        ),
-                      ),
-              ],
-            ),
-          ),
-        ).animate(delay: 200.ms).fadeIn(duration: 300.ms),
-      ],
-    );
-  }
-}
-
-class _ProduceTab extends StatelessWidget {
-  const _ProduceTab({
-    required this.loadingFarmer,
-    required this.cultures,
-    required this.produceRow,
-  });
-
-  final bool loadingFarmer;
-  final List<String> cultures;
-  final Widget Function(
-    String name,
-    String sub,
-    String status,
-    Color statusText,
-    Color statusBg,
-  ) produceRow;
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          lp.t('My declared produce', 'Mes cultures déclarées'),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1e4535),
-                Color(0xFF162e24),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
-          ),
-          child: Column(
-            children: [
-              if (loadingFarmer)
-                const Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Center(
-                    child: CircularProgressIndicator(color: AppColors.gold),
-                  ),
-                )
-              else if (cultures.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    lp.t('No crops declared yet', 'Aucune culture déclarée'),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 13,
-                    ),
-                  ),
-                )
-              else
-                ...cultures.asMap().entries.map(
-                      (e) => Column(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (e.key > 0)
-                            Divider(
-                              height: 1,
-                              color: Colors.white.withValues(alpha: 0.06),
-                            ),
-                          produceRow(
-                            lp.t(
-                              '${e.value} · declared',
-                              '${e.value} · déclarée',
-                            ),
-                            lp.t('Crop on file', 'Culture enregistrée'),
-                            lp.t('On file', 'Enregistré'),
-                            AppColors.gold,
-                            AppColors.gold.withValues(alpha: 0.15),
-                          ),
+                          Text(greeting,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.65),
+                              fontSize: 13)),
+                          Text(
+                            name.isNotEmpty ? name : (isFr ? 'Agriculteur' : 'Farmer'),
+                            style: const TextStyle(
+                              color: _text, fontSize: 24,
+                              fontWeight: FontWeight.bold, letterSpacing: -0.5)),
                         ],
                       ),
-                    ),
-            ],
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.add_circle_outline, color: AppColors.gold),
-          title: Text(
-            lp.t('Declare new produce', 'Déclarer une production'),
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-          ),
-          onTap: () async {
-            final queue = context.read<OfflineQueue>();
-            final auth = context.read<AuthState>();
-            if (!queue.isOnline) {
-              await queue.enqueue(
-                path: '/api/produce',
-                body: {
-                  'farmerEmail': auth.displayEmail,
-                  'declared': true,
-                },
-                label: lp.t('Produce declaration', 'Déclaration de production'),
-                token: auth.token,
-              );
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    lp.t(
-                      'Saved offline — will sync when connected',
-                      'Enregistré hors ligne — synchronisation à la reconnexion',
-                    ),
-                  ),
-                  backgroundColor: const Color(0xFF3B6D11),
-                ),
-              );
-            } else {
-              await Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => InAppWebViewScreen(
-                    title: lp.t('Declare produce', 'Déclarer une production'),
-                    url: 'https://sahelagriconnect.com/dashboard',
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _AiToolsTab extends StatelessWidget {
-  const _AiToolsTab({required this.tools});
-
-  final List<Map<String, Object>> tools;
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          lp.t('AI tools', 'Outils IA'),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _farmerToolGrid(context, tools),
-        const SizedBox(height: 24),
-        Text(
-          lp.t('More tools', 'Autres outils'),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.school_outlined, color: AppColors.gold),
-          title: Text(
-            lp.t('Training booking', 'Réservation de formation'),
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-          ),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => InAppWebViewScreen(
-                  title: lp.t('Training', 'Formation'),
-                  url: 'https://sahelagriconnect.com/dashboard',
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _BenefitsTab extends StatelessWidget {
-  const _BenefitsTab();
-
-  static const _url = 'https://sahelagriconnect.com/demander-avantage';
-
-  void _open(BuildContext context, String title) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => InAppWebViewScreen(
-          title: title,
-          url: _url,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          lp.t('My benefits & perks', 'Mes avantages'),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1e4535),
-                Color(0xFF162e24),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
-          ),
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.agriculture_outlined,
-                  color: AppColors.gold,
-                ),
-                title: Text(
-                  lp.t('Request equipment', 'Demander du matériel'),
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-                ),
-                onTap: () => _open(
-                  context,
-                  lp.t('Request equipment', 'Demander du matériel'),
-                ),
-              ),
-              Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
-              ListTile(
-                leading: const Icon(
-                  Icons.science_outlined,
-                  color: AppColors.gold,
-                ),
-                title: Text(
-                  lp.t('Request fertilizers', 'Demander des intrants'),
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-                ),
-                onTap: () => _open(
-                  context,
-                  lp.t('Request fertilizers', 'Demander des intrants'),
-                ),
-              ),
-              Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
-              ListTile(
-                leading: const Icon(
-                  Icons.card_giftcard_outlined,
-                  color: AppColors.gold,
-                ),
-                title: Text(
-                  lp.t('Request training subsidy',
-                      'Demander une bourse formation'),
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-                ),
-                onTap: () => _open(
-                  context,
-                  lp.t(
-                    'Request training subsidy',
-                    'Demander une bourse formation',
-                  ),
-                ),
-              ),
-              Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
-              ListTile(
-                leading: const Icon(
-                  Icons.verified_outlined,
-                  color: AppColors.gold,
-                ),
-                title: Text(
-                  lp.t('Certification program', 'Programme de certification'),
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-                ),
-                subtitle: Text(
-                  lp.t(
-                    'Apply for quality certification',
-                    'Postuler à une certification qualité',
-                  ),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
-                  ),
-                ),
-                trailing: Icon(
-                  Icons.open_in_browser,
-                  size: 16,
-                  color: Colors.white.withValues(alpha: 0.35),
-                ),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => InAppWebViewScreen(
-                      title: lp.t('Certification', 'Certification'),
-                      url:
-                          'https://sahelagriconnect.com/certification-agriculteurs',
-                    ),
-                  ),
-                ),
-              ),
-              Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
-              ListTile(
-                leading: const Icon(
-                  Icons.handshake_outlined,
-                  color: AppColors.gold,
-                ),
-                title: Text(
-                  lp.t('Join a cooperative', 'Rejoindre une coopérative'),
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-                ),
-                subtitle: Text(
-                  lp.t(
-                    'Find and join a cooperative near you',
-                    'Trouvez une coopérative près de chez vous',
-                  ),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
-                  ),
-                ),
-                trailing: Icon(
-                  Icons.open_in_browser,
-                  size: 16,
-                  color: Colors.white.withValues(alpha: 0.35),
-                ),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => InAppWebViewScreen(
-                      title:
-                          lp.t('Join Cooperative', 'Rejoindre une coopérative'),
-                      url: 'https://sahelagriconnect.com/join-cooperative',
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FarmerUpdatesTab extends StatelessWidget {
-  const _FarmerUpdatesTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return Scaffold(
-      backgroundColor: const Color(0xFF0f2318),
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: const Color(0xFF1a3c2e),
-            pinned: true,
-            title: Text(
-              lp.t('Updates & Alerts', 'Mises à jour et alertes'),
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _FarmerAlertSection(
-                    icon: '📈',
-                    title: lp.t('Market Alerts', 'Alertes marché'),
-                    subtitle: lp.t(
-                      'Price changes for your crops',
-                      'Évolution des prix de vos cultures',
-                    ),
-                    items: [
-                      _FarmerAlertItem(
-                        title: lp.t('Shea Butter +12%', 'Beurre de karité +12 %'),
-                        body: lp.t(
-                          'High demand in EU markets this week',
-                          'Forte demande sur les marchés UE cette semaine',
-                        ),
-                        time: lp.t('Today', 'Aujourd\'hui'),
-                        color: const Color(0xFF4CAF50),
-                      ),
-                      _FarmerAlertItem(
-                        title: lp.t('Sesame +3%', 'Sésame +3 %'),
-                        body: lp.t(
-                          'Stable export prices, good time to sell',
-                          'Prix export stables, bon moment pour vendre',
-                        ),
-                        time: lp.t('Yesterday', 'Hier'),
-                        color: const Color(0xFF4CAF50),
-                      ),
-                      _FarmerAlertItem(
-                        title: lp.t('Cashew +8%', 'Cajou +8 %'),
-                        body: lp.t(
-                          'Premium grade wanted by EU buyers',
-                          'Qualité premium recherchée par les acheteurs UE',
-                        ),
-                        time: lp.t('2 days ago', 'Il y a 2 jours'),
-                        color: const Color(0xFF4CAF50),
-                      ),
+                      // Notification bell
+                      Stack(
+                        children: [
+                          Container(
+                            width: 40, height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.notifications_outlined,
+                              color: Colors.white, size: 20),
+                          ),
+                          Positioned(
+                            right: 8, top: 8,
+                            child: Container(
+                              width: 8, height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.red, shape: BoxShape.circle),
+                            ),
+                          ),
+                        ],
+                      ).animate().fadeIn(duration: 600.ms),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  _FarmerAlertSection(
-                    icon: '🌾',
-                    title: lp.t('Platform Updates', 'Actualités plateforme'),
-                    subtitle: lp.t(
-                      'News from Sahel AgriConnect',
-                      'Nouvelles de Sahel AgriConnect',
-                    ),
-                    items: [
-                      _FarmerAlertItem(
-                        title: lp.t(
-                          'Welcome to Sahel AgriConnect',
-                          'Bienvenue sur Sahel AgriConnect',
-                        ),
-                        body: lp.t(
-                          'Your account is active. Start declaring your produce to connect with buyers.',
-                          'Votre compte est actif. Déclarez vos productions pour trouver des acheteurs.',
-                        ),
-                        time: lp.t('Recently', 'Récemment'),
-                        color: const Color(0xFFB5850A),
-                      ),
+                  const SizedBox(height: 14),
+                  // Stats row
+                  Row(
+                    children: [
+                      _statCard(
+                        farmer?['surface']?.toString() ?? '—',
+                        isFr ? 'Superficie' : 'Total area'),
+                      const SizedBox(width: 8),
+                      _statCard(
+                        loading ? '...' : '${(farmer?['cultures'] as List?)?.length ?? 0}',
+                        isFr ? 'Cultures' : 'Crops listed'),
+                      const SizedBox(width: 8),
+                      _statCard(
+                        farmer?['statut'] == 'Actif' ? (isFr ? 'Actif' : 'Active') : '—',
+                        isFr ? 'Statut' : 'Status'),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  _FarmerAlertSection(
-                    icon: '🤝',
-                    title: lp.t('Cooperative News', 'Actualités coopérative'),
-                    subtitle: lp.t(
-                      'Updates from your network',
-                      'Nouvelles de votre réseau',
-                    ),
-                    items: [
-                      _FarmerAlertItem(
-                        title: lp.t('No cooperative yet', 'Pas encore de coopérative'),
-                        body: lp.t(
-                          'Join a cooperative to receive updates here.',
-                          'Rejoignez une coopérative pour recevoir des mises à jour ici.',
-                        ),
-                        time: '',
-                        color: Colors.white38,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -1246,150 +299,284 @@ class _FarmerUpdatesTab extends StatelessWidget {
       ),
     );
   }
+
+  Widget _statCard(String val, String label) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(val, style: const TextStyle(
+            color: _gold, fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.55), fontSize: 9)),
+        ],
+      ),
+    ),
+  );
 }
 
-class _FarmerAlertSection extends StatelessWidget {
-  const _FarmerAlertSection({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.items,
-  });
+// ══════════════════════════════════════════════════════════════
+// TAB 0: HOME
+// ══════════════════════════════════════════════════════════════
+class _FarmerHomeTab extends StatelessWidget {
+  final Map<String, dynamic>? farmer;
+  final bool loading;
+  final List<String> cultures;
+  final List<Map<String, dynamic>> prices;
+  final bool isFr;
+  final Function(int) onTabChange;
 
-  final String icon;
-  final String title;
-  final String subtitle;
-  final List<_FarmerAlertItem> items;
+  const _FarmerHomeTab({
+    required this.farmer, required this.loading,
+    required this.cultures, required this.prices,
+    required this.isFr, required this.onTabChange,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        Row(
+
+        // ── QUICK ACTIONS GRID ─────────────────────────────────
+        Text(isFr ? 'Actions rapides' : 'Quick Actions',
+          style: const TextStyle(color: _text, fontSize: 17, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 12),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10,
+          childAspectRatio: 1.35,
           children: [
-            Text(icon, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+            _QuickAction(
+              icon: Icons.add_circle_outline,
+              emoji: '🌾',
+              title: isFr ? 'Déclarer récolte' : 'Declare Produce',
+              color: _green,
+              onTap: () => onTabChange(1),
+            ),
+            _QuickAction(
+              icon: Icons.psychology_outlined,
+              emoji: '🧠',
+              title: isFr ? 'Outils IA' : 'AI Tools',
+              color: const Color(0xFF7B61FF),
+              onTap: () => onTabChange(2),
+            ),
+            _QuickAction(
+              icon: Icons.card_giftcard_outlined,
+              emoji: '🎁',
+              title: isFr ? 'Mes avantages' : 'My Benefits',
+              color: _gold,
+              onTap: () => onTabChange(3),
+            ),
+            _QuickAction(
+              icon: Icons.handshake_outlined,
+              emoji: '🤝',
+              title: isFr ? 'Coopérative' : 'Join Cooperative',
+              color: const Color(0xFF1D9E75),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => _JoinCooperativeScreen(isFr: isFr))),
             ),
           ],
         ),
+
+        const SizedBox(height: 24),
+
+        // ── MARKET PRICES ─────────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(isFr ? 'Prix du marché' : 'Market Prices',
+              style: const TextStyle(color: _text, fontSize: 17, fontWeight: FontWeight.w700)),
+            Text(isFr ? 'Aujourd\'hui' : 'Today',
+              style: const TextStyle(color: _textMuted, fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (prices.isEmpty) ...[
+          // Static fallback prices always showing
+          ...[
+            {'name': isFr ? 'Beurre de karité' : 'Shea Butter',
+             'price': '450 XOF/kg', 'change': '+12%', 'up': true},
+            {'name': isFr ? 'Sésame' : 'Sesame',
+             'price': '380 XOF/kg', 'change': '+3%', 'up': true},
+            {'name': isFr ? 'Noix de cajou' : 'Cashew',
+             'price': '920 XOF/kg', 'change': '+8%', 'up': true},
+            {'name': isFr ? 'Arachides' : 'Groundnuts',
+             'price': '280 XOF/kg', 'change': '-1%', 'up': false},
+            {'name': isFr ? 'Coton' : 'Cotton',
+             'price': '265 XOF/kg', 'change': '+5%', 'up': true},
+          ].map((p) => _PriceCard(
+            name: p['name'] as String,
+            price: p['price'] as String,
+            change: p['change'] as String,
+            up: p['up'] as bool,
+          )),
+        ] else
+          ...prices.map((p) => _PriceCard(
+            name: p['name']?.toString() ?? '',
+            price: '${p['price'] ?? '—'} ${p['currency'] ?? 'XOF'}/kg',
+            change: '${p['change'] ?? '0%'}',
+            up: (p['change']?.toString() ?? '+0').startsWith('+'),
+          )),
+
+        const SizedBox(height: 24),
+
+        // ── MY PRODUCE PIPELINE ───────────────────────────────
+        Text(isFr ? 'Mes cultures déclarées' : 'My Declared Crops',
+          style: const TextStyle(color: _text, fontSize: 17, fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1e4535),
-                Color(0xFF162e24),
-              ],
-            ),
+            gradient: const LinearGradient(colors: [_surface, _surface2]),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
+            border: Border.all(color: _border),
           ),
-          child: Column(
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                if (i > 0)
-                  Divider(
-                    height: 1,
-                    color: Colors.white.withValues(alpha: 0.06),
+          child: cultures.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.grass_outlined,
+                        color: _textMuted, size: 40),
+                      const SizedBox(height: 8),
+                      Text(
+                        isFr ? 'Aucune culture déclarée'
+                             : 'No crops declared yet',
+                        style: const TextStyle(color: _text, fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text(
+                        isFr ? 'Tapez "Déclarer récolte" ci-dessus'
+                             : 'Tap "Declare Produce" above to start',
+                        style: const TextStyle(color: _textMuted, fontSize: 12)),
+                    ],
                   ),
-                items[i],
-              ],
-            ],
-          ),
+                )
+              : Column(
+                  children: cultures.asMap().entries.map((e) => Column(
+                    children: [
+                      if (e.key > 0) const Divider(height: 1, color: _border),
+                      ListTile(
+                        leading: const Icon(Icons.eco_outlined, color: _green),
+                        title: Text(e.value,
+                          style: const TextStyle(color: _text,
+                            fontWeight: FontWeight.w500)),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _green.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(isFr ? 'Enregistré' : 'On file',
+                            style: const TextStyle(
+                              color: _green, fontSize: 11,
+                              fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    ],
+                  )).toList(),
+                ),
         ),
       ],
     );
   }
 }
 
-class _FarmerAlertItem extends StatelessWidget {
-  const _FarmerAlertItem({
-    required this.title,
-    required this.body,
-    required this.time,
-    required this.color,
-  });
-
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String emoji;
   final String title;
-  final String body;
-  final String time;
   final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAction({required this.icon, required this.emoji,
+    required this.title, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 5),
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_surface, _surface2],
             ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
           ),
-          const SizedBox(width: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(emoji, style: const TextStyle(fontSize: 20))),
+              ),
+              const Spacer(),
+              Text(title, style: TextStyle(
+                color: color, fontSize: 12,
+                fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1);
+  }
+}
+
+class _PriceCard extends StatelessWidget {
+  final String name, price, change;
+  final bool up;
+  const _PriceCard({required this.name, required this.price,
+    required this.change, required this.up});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_surface, _surface2]),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.eco_outlined, color: _green, size: 18),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  body,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 13,
-                  ),
-                ),
-                if (time.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ],
+            child: Text(name, style: const TextStyle(
+              color: _text, fontSize: 13, fontWeight: FontWeight.w500))),
+          Text(price, style: const TextStyle(
+            color: _textMuted, fontSize: 12)),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: (up ? Colors.green : Colors.red).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Text(change, style: TextStyle(
+              color: up ? Colors.green : Colors.red,
+              fontSize: 11, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1397,372 +584,2143 @@ class _FarmerAlertItem extends StatelessWidget {
   }
 }
 
-class _AccountSettingsTab extends StatelessWidget {
-  const _AccountSettingsTab({required this.onBackToDashboard});
+// ══════════════════════════════════════════════════════════════
+// TAB 1: PRODUCE
+// ══════════════════════════════════════════════════════════════
+class _FarmerProduceTab extends StatefulWidget {
+  final Map<String, dynamic>? farmer;
+  final List<String> cultures;
+  final bool loading;
+  final bool isFr;
+  const _FarmerProduceTab({required this.farmer, required this.cultures,
+    required this.loading, required this.isFr});
+  @override State<_FarmerProduceTab> createState() => _FarmerProduceTabState();
+}
 
-  final VoidCallback onBackToDashboard;
+class _FarmerProduceTabState extends State<_FarmerProduceTab> {
+  bool _showForm = false;
 
-  static const _cardStart = Color(0xFF1a3c2e);
-  static const _cardEnd = Color(0xFF2d6a4f);
+  // Form controllers
+  final _cropCtrl = TextEditingController();
+  final _qtyCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  String _quality = 'A';
+  String _unit = 'kg';
+  bool _submitting = false;
 
-  Future<void> _openWeb() async {
-    final uri = Uri.parse('https://sahelagriconnect.com');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+  @override
+  void dispose() {
+    _cropCtrl.dispose(); _qtyCtrl.dispose();
+    _priceCtrl.dispose(); _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_cropCtrl.text.trim().isEmpty || _qtyCtrl.text.trim().isEmpty) return;
+    setState(() => _submitting = true);
+    try {
+      final auth = context.read<AuthState>();
+      final queue = context.read<OfflineQueue>();
+      await queue.enqueue(
+        path: '/api/produce/declare',
+        body: {
+          'farmerEmail': auth.displayEmail,
+          'crop': _cropCtrl.text.trim(),
+          'quantity': double.tryParse(_qtyCtrl.text) ?? 0,
+          'unit': _unit,
+          'quality': _quality,
+          'priceXOF': double.tryParse(_priceCtrl.text) ?? 0,
+          'notes': _notesCtrl.text.trim(),
+        },
+        label: 'Declare produce',
+        token: auth.token,
+      );
+      if (mounted) setState(() { _submitting = false; _showForm = false; });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.isFr
+            ? '✅ Production déclarée avec succès'
+            : '✅ Produce declared successfully'),
+          backgroundColor: _green,
+        ));
+      }
+    } catch (_) {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthState>();
-    final lp = context.watch<LanguageProvider>();
-    final initial =
-        auth.displayName.isNotEmpty ? auth.displayName[0].toUpperCase() : 'F';
+    final isFr = widget.isFr;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
 
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          expandedHeight: 200,
-          pinned: true,
-          backgroundColor: const Color(0xFF1a3c2e),
-          flexibleSpace: FlexibleSpaceBar(
-            background: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF1a3c2e),
-                    Color(0xFF2d6a4f),
-                  ],
-                ),
-              ),
-              child: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFB5850A),
-                            Color(0xFFE8B84B),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.gold.withValues(alpha: 0.4),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          initial,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      auth.displayName.isNotEmpty
-                          ? auth.displayName
-                          : lp.t('Farmer', 'Agriculteur'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.gold.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Text(
-                        lp.t('🌾 Farmer Account', '🌾 Compte agriculteur'),
-                        style: const TextStyle(
-                          color: AppColors.gold,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: onBackToDashboard,
-          ),
-          title: Text(
-            lp.t('Account Settings', 'Paramètres du compte'),
-            style: const TextStyle(color: Colors.white, fontSize: 18),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              dashboardAccountScrollBottom(context),
+        // DECLARE BUTTON
+        if (!_showForm) ...[
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1e4535), Color(0xFF162e24)]),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _green.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DashboardAccountNavHeader(
-                  accent: AppColors.gold,
-                  cardStart: _cardStart,
-                  cardEnd: _cardEnd,
-                  onBackToDashboard: onBackToDashboard,
-                ),
-                if (auth.displayEmail.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      auth.displayEmail,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 13,
-                      ),
+                const Text('🌾', style: TextStyle(fontSize: 36)),
+                const SizedBox(height: 12),
+                Text(
+                  isFr ? 'Déclarer une nouvelle récolte'
+                       : 'Declare New Produce',
+                  style: const TextStyle(color: _text, fontSize: 18,
+                    fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Text(
+                  isFr ? 'Enregistrez vos cultures pour les connecter aux acheteurs.'
+                       : 'Register your crops to connect with buyers and cooperatives.',
+                  style: const TextStyle(color: _textMuted, fontSize: 13,
+                    height: 1.5)),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     ),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: Text(isFr ? 'Déclarer ma récolte' : 'Declare My Produce',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () => setState(() => _showForm = true),
                   ),
-                _AccountSection(
-                  title: lp.t('Navigation', 'Navigation'),
-                  items: [
-                    _AccountTile(
-                      icon: Icons.insights_outlined,
-                      iconColor: const Color(0xFF2196F3),
-                      title: lp.t('My Insights', 'Mes indicateurs'),
-                      subtitle: lp.t(
-                        'Performance and analytics',
-                        'Performance et analyses',
-                      ),
-                      onTap: () {
-                        showFarmerComingSoonSheet(
-                          context,
-                          title: lp.t('My Insights', 'Mes indicateurs'),
-                          emoji: '📊',
-                          body: lp.t(
-                            'Performance and analytics for your farm are coming soon.',
-                            'Les indicateurs et analyses de votre exploitation arrivent bientôt.',
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _AccountSection(
-                  title: lp.t('Profile', 'Profil'),
-                  items: [
-                    _AccountTile(
-                      icon: Icons.person_outline,
-                      iconColor: AppColors.gold,
-                      title: lp.t('Edit Profile', 'Modifier le profil'),
-                      subtitle: lp.t(
-                        'Update your name and details',
-                        'Mettre à jour votre nom et vos informations',
-                      ),
-                      onTap: () => context.go('/profile/edit'),
-                    ),
-                    _AccountTile(
-                      icon: Icons.language_outlined,
-                      iconColor: const Color(0xFF9C27B0),
-                      title: lp.t('Language', 'Langue'),
-                      subtitle: lp.t('English / Français', 'Anglais / Français'),
-                      onTap: () => context.go('/profile/language'),
-                    ),
-                    _AccountTile(
-                      icon: Icons.notifications_outlined,
-                      iconColor: const Color(0xFFFF9800),
-                      title: lp.t('Notifications', 'Notifications'),
-                      subtitle: lp.t(
-                        'Manage alerts and updates',
-                        'Gérer les alertes et mises à jour',
-                      ),
-                      onTap: () => context.push('/notifications'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _AccountSection(
-                  title: lp.t('Security & Account', 'Sécurité et compte'),
-                  items: [
-                    _AccountTile(
-                      icon: Icons.lock_outline,
-                      iconColor: const Color(0xFF03A9F4),
-                      title: lp.t(
-                        'Update Login Credentials',
-                        'Mettre à jour les identifiants',
-                      ),
-                      subtitle: lp.t(
-                        'Change your email or phone',
-                        'Modifier votre e-mail ou téléphone',
-                      ),
-                      trailing: _WebBadge(lp: lp),
-                      onTap: () => _openWeb(),
-                    ),
-                    _AccountTile(
-                      icon: Icons.delete_outline,
-                      iconColor: Colors.red,
-                      title: lp.t('Delete Account', 'Supprimer le compte'),
-                      subtitle: lp.t(
-                        'Permanently remove your data',
-                        'Supprimer définitivement vos données',
-                      ),
-                      trailing: _WebBadge(lp: lp),
-                      onTap: () => _openWeb(),
-                      destructive: true,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _AccountSection(
-                  title: lp.t('Support', 'Support'),
-                  items: [
-                    _AccountTile(
-                      icon: Icons.help_outline,
-                      iconColor: const Color(0xFF4CAF50),
-                      title: lp.t('Help Center', 'Centre d\'aide'),
-                      subtitle: lp.t('FAQs and guides', 'FAQ et guides'),
-                      onTap: () => context.go('/help'),
-                    ),
-                    _AccountTile(
-                      icon: Icons.gavel_outlined,
-                      iconColor: Colors.white54,
-                      title: lp.t('Terms of Service', 'Conditions d\'utilisation'),
-                      subtitle: lp.t(
-                        'View terms and conditions',
-                        'Consulter les conditions',
-                      ),
-                      onTap: () => context.push('/terms?view=1'),
-                    ),
-                    _AccountTile(
-                      icon: Icons.privacy_tip_outlined,
-                      iconColor: Colors.white54,
-                      title: lp.t('Privacy Policy', 'Politique de confidentialité'),
-                      subtitle: lp.t(
-                        'How we use your data',
-                        'Comment nous utilisons vos données',
-                      ),
-                      onTap: () => context.push('/terms?view=1'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        lp.t(
-                          'Sahel AgriConnect v1.1.0',
-                          'Sahel AgriConnect v1.1.0',
-                        ),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        lp.t(
-                          '🌾 Produce. Sell. Earn.',
-                          '🌾 Produire. Vendre. Gagner.',
-                        ),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const DashboardSignOutButton(
-                  dialogBackground: Color(0xFF1a3c2e),
                 ),
               ],
             ),
           ),
+        ],
+
+        // DECLARATION FORM (native, no webview)
+        if (_showForm) ...[
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: _text),
+                onPressed: () => setState(() => _showForm = false)),
+              Text(isFr ? 'Déclarer une récolte' : 'Declare Produce',
+                style: const TextStyle(color: _text, fontSize: 17,
+                  fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _formCard(children: [
+            _fieldLabel(isFr ? 'Type de culture *' : 'Crop Type *'),
+            _textField(_cropCtrl, isFr ? 'Ex: Beurre de karité' : 'e.g. Shea Butter'),
+            const SizedBox(height: 14),
+            _fieldLabel(isFr ? 'Quantité *' : 'Quantity *'),
+            Row(
+              children: [
+                Expanded(flex: 3,
+                  child: _textField(_qtyCtrl,
+                    isFr ? 'Ex: 500' : 'e.g. 500',
+                    type: TextInputType.number)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _unit,
+                    dropdownColor: _surface,
+                    style: const TextStyle(color: _text),
+                    decoration: _inputDecoration(''),
+                    items: ['kg', 'tonne', 'L']
+                      .map((u) => DropdownMenuItem(value: u,
+                        child: Text(u, style: const TextStyle(color: _text))))
+                      .toList(),
+                    onChanged: (v) => setState(() => _unit = v ?? 'kg'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _fieldLabel(isFr ? 'Qualité' : 'Quality Grade'),
+            DropdownButtonFormField<String>(
+              value: _quality,
+              dropdownColor: _surface,
+              style: const TextStyle(color: _text),
+              decoration: _inputDecoration(isFr ? 'Choisir la qualité' : 'Select quality'),
+              items: ['A', 'B', 'C']
+                .map((q) => DropdownMenuItem(value: q,
+                  child: Text(
+                    q == 'A' ? (isFr ? 'A — Premium' : 'A — Premium')
+                    : q == 'B' ? (isFr ? 'B — Standard' : 'B — Standard')
+                    : (isFr ? 'C — Ordinaire' : 'C — Ordinary'),
+                    style: const TextStyle(color: _text))))
+                .toList(),
+              onChanged: (v) => setState(() => _quality = v ?? 'A'),
+            ),
+            const SizedBox(height: 14),
+            _fieldLabel(isFr ? 'Prix souhaité (XOF/kg)' : 'Asking Price (XOF/kg)'),
+            _textField(_priceCtrl,
+              isFr ? 'Ex: 450' : 'e.g. 450',
+              type: TextInputType.number),
+            const SizedBox(height: 14),
+            _fieldLabel(isFr ? 'Notes (optionnel)' : 'Notes (optional)'),
+            _textField(_notesCtrl,
+              isFr ? 'Infos supplémentaires...' : 'Additional information...',
+              maxLines: 3),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _submitting ? null : _submit,
+                child: _submitting
+                    ? const SizedBox(width: 20, height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
+                    : Text(isFr ? 'Soumettre la déclaration' : 'Submit Declaration',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15)),
+              ),
+            ),
+          ]),
+        ],
+
+        const SizedBox(height: 24),
+
+        // MY DECLARED PRODUCE LIST
+        Text(isFr ? 'Mes productions déclarées' : 'My Declared Productions',
+          style: const TextStyle(color: _text, fontSize: 16,
+            fontWeight: FontWeight.w600)),
+        const SizedBox(height: 12),
+        if (widget.loading)
+          const Center(child: CircularProgressIndicator(color: _gold))
+        else if (widget.cultures.isEmpty)
+          _emptyState(
+            icon: Icons.grass_outlined,
+            title: isFr ? 'Aucune culture déclarée' : 'No crops declared yet',
+            subtitle: isFr
+              ? 'Déclarez votre première récolte ci-dessus'
+              : 'Declare your first produce above',
+          )
+        else
+          ...widget.cultures.asMap().entries.map((e) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [_surface, _surface2]),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: _green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.eco, color: _green, size: 18)),
+                const SizedBox(width: 12),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(e.value, style: const TextStyle(
+                      color: _text, fontWeight: FontWeight.w600)),
+                    Text(isFr ? 'Culture enregistrée' : 'Crop on file',
+                      style: const TextStyle(color: _textMuted, fontSize: 12)),
+                  ],
+                )),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(isFr ? 'Actif' : 'Active',
+                    style: const TextStyle(
+                      color: _green, fontSize: 11, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          )),
+      ],
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 2: AI TOOLS (all native, no webview)
+// ══════════════════════════════════════════════════════════════
+class _FarmerAIToolsTab extends StatelessWidget {
+  final bool isFr;
+  const _FarmerAIToolsTab({required this.isFr});
+
+  @override
+  Widget build(BuildContext context) {
+    final tools = [
+      _AiTool(
+        emoji: '🌱', title: isFr ? 'Diagnostic du sol' : 'Soil Diagnosis',
+        desc: isFr ? 'Analysez votre sol' : 'Analyze your soil',
+        color: const Color(0xFF4CAF50),
+        screen: _SoilDiagnosisScreen(isFr: isFr),
+      ),
+      _AiTool(
+        emoji: '🔬', title: isFr ? 'Détection maladie' : 'Disease Detection',
+        desc: isFr ? 'Analyse photo' : 'Photo analysis',
+        color: const Color(0xFFF59E0B),
+        screen: _DiseaseDetectionScreen(isFr: isFr),
+      ),
+      _AiTool(
+        emoji: '🧠', title: 'Think Tank',
+        desc: isFr ? 'Conseiller IA' : 'AI Advisor',
+        color: const Color(0xFF7B61FF),
+        screen: _ThinkTankScreen(isFr: isFr),
+      ),
+      _AiTool(
+        emoji: '💧', title: isFr ? 'Irrigation' : 'Irrigation',
+        desc: isFr ? 'Planification eau' : 'Water planning',
+        color: const Color(0xFF2196F3),
+        screen: _IrrigationScreen(isFr: isFr),
+      ),
+      _AiTool(
+        emoji: '📊', title: isFr ? 'Optimiseur production' : 'Production Optimizer',
+        desc: isFr ? 'Planification IA' : 'AI planning',
+        color: const Color(0xFF10B981),
+        screen: _ProductionOptimizerScreen(isFr: isFr),
+      ),
+      _AiTool(
+        emoji: '🔍', title: isFr ? 'Traçabilité' : 'Traceability',
+        desc: isFr ? 'Suivre votre lot' : 'Track your lot',
+        color: const Color(0xFFEC4899),
+        screen: _TraceabilityScreen(isFr: isFr),
+      ),
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        Text(isFr ? 'Outils agricoles IA' : 'AI Agricultural Tools',
+          style: const TextStyle(color: _text, fontSize: 17,
+            fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(
+          isFr ? 'Tous les outils sont disponibles directement dans l\'app'
+               : 'All tools work directly in the app — no browser needed',
+          style: const TextStyle(color: _textMuted, fontSize: 12)),
+        const SizedBox(height: 14),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10,
+          childAspectRatio: 1.2,
+          children: tools.asMap().entries.map((e) =>
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => e.value.screen)),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [_surface, _surface2]),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: e.value.color.withValues(alpha: 0.25)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: e.value.color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(child: Text(e.value.emoji,
+                          style: const TextStyle(fontSize: 22)))),
+                      const Spacer(),
+                      Text(e.value.title, style: TextStyle(
+                        color: e.value.color, fontSize: 12,
+                        fontWeight: FontWeight.w700)),
+                      Text(e.value.desc, style: const TextStyle(
+                        color: _textMuted, fontSize: 10)),
+                    ],
+                  ),
+                ),
+              ),
+            ).animate(delay: Duration(milliseconds: 60 * e.key))
+              .fadeIn(duration: 300.ms).slideY(begin: 0.1),
+          ).toList(),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Training booking — native form
+        _sectionHeader(isFr ? 'Formation & développement' : 'Training & Development'),
+        const SizedBox(height: 10),
+        _actionCard(
+          icon: Icons.school_outlined,
+          iconColor: _gold,
+          title: isFr ? 'Réserver une formation' : 'Book Training Session',
+          subtitle: isFr
+            ? 'Planifiez une session avec nos experts agricoles'
+            : 'Schedule a session with our agricultural experts',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => _TrainingBookingScreen(isFr: isFr))),
         ),
       ],
     );
   }
 }
 
-class _AccountSection extends StatelessWidget {
-  const _AccountSection({required this.title, required this.items});
+class _AiTool {
+  final String emoji, title, desc;
+  final Color color;
+  final Widget screen;
+  const _AiTool({required this.emoji, required this.title,
+    required this.desc, required this.color, required this.screen});
+}
 
-  final String title;
-  final List<Widget> items;
+// ══════════════════════════════════════════════════════════════
+// TAB 3: BENEFITS (native checkboxes + forms)
+// ══════════════════════════════════════════════════════════════
+class _FarmerBenefitsTab extends StatelessWidget {
+  final bool isFr;
+  const _FarmerBenefitsTab({required this.isFr});
+
+  @override
+  Widget build(BuildContext context) {
+    final benefits = [
+      _Benefit(
+        emoji: '🚜',
+        title: isFr ? 'Équipement agricole' : 'Agricultural Equipment',
+        subtitle: isFr ? 'Tracteurs, outils, semences' : 'Tractors, tools, seeds',
+        color: const Color(0xFF4CAF50),
+        items: isFr
+          ? ['Tracteur', 'Charrue', 'Semoir', 'Irrigateur', 'Sécateur']
+          : ['Tractor', 'Plow', 'Seeder', 'Irrigator', 'Pruner'],
+      ),
+      _Benefit(
+        emoji: '🌿',
+        title: isFr ? 'Engrais & intrants' : 'Fertilizers & Inputs',
+        subtitle: isFr ? 'Engrais, pesticides, semences' : 'Fertilizers, pesticides, seeds',
+        color: const Color(0xFF10B981),
+        items: isFr
+          ? ['Engrais NPK', 'Compost', 'Pesticide bio', 'Herbicide', 'Semences améliorées']
+          : ['NPK Fertilizer', 'Compost', 'Organic pesticide', 'Herbicide', 'Improved seeds'],
+      ),
+      _Benefit(
+        emoji: '📚',
+        title: isFr ? 'Formation agricole' : 'Agricultural Training',
+        subtitle: isFr ? 'Formations certifiées' : 'Certified training programs',
+        color: const Color(0xFF2196F3),
+        items: isFr
+          ? ['Gestion de sol', 'Agriculture biologique', 'Irrigation', 'Gestion post-récolte', 'Commerce']
+          : ['Soil management', 'Organic farming', 'Irrigation', 'Post-harvest', 'Trade skills'],
+      ),
+      _Benefit(
+        emoji: '💰',
+        title: isFr ? 'Subvention gouvernementale' : 'Government Subsidy',
+        subtitle: isFr ? 'Aides financières disponibles' : 'Available financial aid',
+        color: _gold,
+        items: isFr
+          ? ['Subvention semences', 'Aide équipement', 'Prime production', 'Aide eau', 'Soutien export']
+          : ['Seed subsidy', 'Equipment aid', 'Production bonus', 'Water support', 'Export support'],
+      ),
+      _Benefit(
+        emoji: '✅',
+        title: isFr ? 'Certification qualité' : 'Quality Certification',
+        subtitle: isFr ? 'Certifiez votre production' : 'Certify your production',
+        color: const Color(0xFF7B61FF),
+        items: isFr
+          ? ['Bio certifié', 'Commerce équitable', 'ISO qualité', 'Certification EU', 'Label local']
+          : ['Organic certified', 'Fair trade', 'ISO quality', 'EU certification', 'Local label'],
+      ),
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        Text(isFr ? 'Avantages & programmes' : 'Benefits & Programs',
+          style: const TextStyle(color: _text, fontSize: 17, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(
+          isFr ? 'Sélectionnez ce dont vous avez besoin et soumettez directement'
+               : 'Select what you need and submit directly',
+          style: const TextStyle(color: _textMuted, fontSize: 12)),
+        const SizedBox(height: 14),
+        ...benefits.map((b) => _BenefitCard(benefit: b, isFr: isFr)),
+
+        const SizedBox(height: 16),
+
+        // JOIN COOPERATIVE
+        _sectionHeader(isFr ? 'Réseau coopératif' : 'Cooperative Network'),
+        const SizedBox(height: 10),
+        _actionCard(
+          icon: Icons.handshake_outlined,
+          iconColor: _green,
+          title: isFr ? 'Rejoindre une coopérative' : 'Join a Cooperative',
+          subtitle: isFr
+            ? 'Trouvez et rejoignez une coopérative près de chez vous'
+            : 'Find and join a cooperative near you',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => _JoinCooperativeScreen(isFr: isFr))),
+        ),
+      ],
+    );
+  }
+}
+
+class _Benefit {
+  final String emoji, title, subtitle;
+  final Color color;
+  final List<String> items;
+  const _Benefit({required this.emoji, required this.title,
+    required this.subtitle, required this.color, required this.items});
+}
+
+class _BenefitCard extends StatefulWidget {
+  final _Benefit benefit;
+  final bool isFr;
+  const _BenefitCard({required this.benefit, required this.isFr});
+  @override State<_BenefitCard> createState() => _BenefitCardState();
+}
+
+class _BenefitCardState extends State<_BenefitCard> {
+  bool _expanded = false;
+  final Set<int> _selected = {};
+  bool _submitting = false;
+  bool _submitted = false;
+
+  Future<void> _submit() async {
+    if (_selected.isEmpty) return;
+    setState(() => _submitting = true);
+    await Future.delayed(const Duration(seconds: 1)); // simulate API
+    if (mounted) {
+      setState(() { _submitting = false; _submitted = true; _expanded = false; });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? '✅ Demande envoyée! Nous vous contacterons sous 48h.'
+          : '✅ Request sent! We will contact you within 48 hours.'),
+        backgroundColor: _green,
+        duration: const Duration(seconds: 4),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_surface, _surface2]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _expanded
+            ? widget.benefit.color.withValues(alpha: 0.4)
+            : _border),
+      ),
+      child: Column(
+        children: [
+          // Header row
+          InkWell(
+            onTap: () => setState(() { _expanded = !_expanded; _submitted = false; }),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: widget.benefit.color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(child: Text(widget.benefit.emoji,
+                      style: const TextStyle(fontSize: 22)))),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.benefit.title, style: const TextStyle(
+                        color: _text, fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text(widget.benefit.subtitle, style: const TextStyle(
+                        color: _textMuted, fontSize: 12)),
+                    ],
+                  )),
+                  if (_submitted)
+                    const Icon(Icons.check_circle, color: _green, size: 20)
+                  else
+                    Icon(
+                      _expanded ? Icons.expand_less : Icons.expand_more,
+                      color: _textMuted),
+                ],
+              ),
+            ),
+          ),
+
+          // Expandable checklist
+          if (_expanded) ...[
+            const Divider(height: 1, color: _border),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.isFr ? 'Sélectionnez ce dont vous avez besoin:'
+                                : 'Select what you need:',
+                    style: const TextStyle(color: _textMuted, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  ...widget.benefit.items.asMap().entries.map((e) =>
+                    InkWell(
+                      onTap: () => setState(() {
+                        if (_selected.contains(e.key)) _selected.remove(e.key);
+                        else _selected.add(e.key);
+                      }),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 22, height: 22,
+                              decoration: BoxDecoration(
+                                color: _selected.contains(e.key)
+                                  ? widget.benefit.color
+                                  : Colors.transparent,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _selected.contains(e.key)
+                                    ? widget.benefit.color
+                                    : _textMuted.withValues(alpha: 0.5)),
+                              ),
+                              child: _selected.contains(e.key)
+                                ? const Icon(Icons.check, color: Colors.white, size: 14)
+                                : null,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(e.value, style: const TextStyle(
+                              color: _text, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _selected.isEmpty
+                          ? _surface : widget.benefit.color,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: _selected.isEmpty || _submitting ? null : _submit,
+                      child: _submitting
+                        ? const SizedBox(width: 18, height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                        : Text(
+                            widget.isFr ? 'Envoyer la demande' : 'Submit Request',
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 4: ACCOUNT (with proper navigation)
+// ══════════════════════════════════════════════════════════════
+class _FarmerAccountTab extends StatelessWidget {
+  final bool isFr;
+  final Function(int) onTabChange;
+  const _FarmerAccountTab({required this.isFr, required this.onTabChange});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final name = auth.displayName.isNotEmpty ? auth.displayName : (isFr ? 'Agriculteur' : 'Farmer');
+    final initial = name[0].toUpperCase();
+
+    return ListView(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 100),
+      children: [
+        // Profile card
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [Color(0xFF1a3c2e), Color(0xFF2d6a4f)]),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56, height: 56,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [_gold, Color(0xFFE8B84B)],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(
+                    color: _gold.withValues(alpha: 0.4),
+                    blurRadius: 12)],
+                ),
+                child: Center(child: Text(initial, style: const TextStyle(
+                  color: Colors.white, fontSize: 22,
+                  fontWeight: FontWeight.bold)))),
+              const SizedBox(width: 14),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(
+                    color: _text, fontSize: 17, fontWeight: FontWeight.bold)),
+                  Text(auth.displayEmail, style: const TextStyle(
+                    color: _textMuted, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: _green.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(isFr ? '🌾 Agriculteur' : '🌾 Farmer Account',
+                      style: const TextStyle(color: _green, fontSize: 11,
+                        fontWeight: FontWeight.w600))),
+                ],
+              )),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // NAVIGATION section
+        _accountSection(
+          title: isFr ? 'NAVIGATION' : 'NAVIGATION',
+          children: [
+            _accountTile(context,
+              icon: Icons.home_outlined, iconColor: _green,
+              title: isFr ? 'Retour au tableau de bord' : 'Back to Dashboard',
+              subtitle: isFr ? 'Vue principale agriculteur' : 'Main farmer overview',
+              onTap: () => onTabChange(0)),
+            _accountTile(context,
+              icon: Icons.exit_to_app_outlined, iconColor: _textMuted,
+              title: isFr ? 'Quitter vers l\'accueil' : 'Exit to Main Home',
+              subtitle: isFr ? 'Page principale de la plateforme' : 'Main platform home page',
+              onTap: () => context.go('/platform')),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // PROFILE section
+        _accountSection(
+          title: isFr ? 'MON PROFIL' : 'MY PROFILE',
+          children: [
+            _accountTile(context,
+              icon: Icons.person_outline, iconColor: _gold,
+              title: isFr ? 'Modifier le profil' : 'Edit Profile',
+              subtitle: isFr ? 'Nom, région, cultures' : 'Name, region, crops',
+              onTap: () => context.go('/profile/edit')),
+            _accountTile(context,
+              icon: Icons.language_outlined, iconColor: const Color(0xFF9C27B0),
+              title: isFr ? 'Langue' : 'Language',
+              subtitle: 'English / Français',
+              onTap: () => context.go('/profile/language')),
+            _accountTile(context,
+              icon: Icons.notifications_outlined, iconColor: const Color(0xFFFF9800),
+              title: isFr ? 'Notifications' : 'Notifications',
+              subtitle: isFr ? 'Gérer les alertes' : 'Manage alerts',
+              onTap: () => context.go('/profile/notifications')),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // SECURITY section
+        _accountSection(
+          title: isFr ? 'SÉCURITÉ' : 'SECURITY',
+          children: [
+            _accountTile(context,
+              icon: Icons.phone_outlined, iconColor: const Color(0xFF2196F3),
+              title: isFr ? 'Mettre à jour le téléphone' : 'Update Phone Number',
+              subtitle: isFr ? 'Changer votre numéro' : 'Change your number',
+              onTap: () => context.go('/profile/change-phone')),
+            _accountTile(context,
+              icon: Icons.email_outlined, iconColor: const Color(0xFF2196F3),
+              title: isFr ? 'Mettre à jour l\'email' : 'Update Email',
+              subtitle: isFr ? 'Changer votre adresse email' : 'Change your email address',
+              onTap: () => context.go('/profile/change-email')),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // SUPPORT section
+        _accountSection(
+          title: 'SUPPORT',
+          children: [
+            _accountTile(context,
+              icon: Icons.help_outline, iconColor: const Color(0xFF4CAF50),
+              title: isFr ? 'Centre d\'aide' : 'Help Center',
+              subtitle: isFr ? 'FAQ et guides' : 'FAQs and guides',
+              onTap: () => context.go('/help')),
+            _accountTile(context,
+              icon: Icons.gavel_outlined, iconColor: _textMuted,
+              title: isFr ? 'Conditions d\'utilisation' : 'Terms of Service',
+              subtitle: isFr ? 'Voir les conditions' : 'View terms',
+              onTap: () => context.push('/terms?view=1&tab=0')),
+            _accountTile(context,
+              icon: Icons.privacy_tip_outlined, iconColor: _textMuted,
+              title: isFr ? 'Politique de confidentialité' : 'Privacy Policy',
+              subtitle: isFr ? 'Comment nous utilisons vos données' : 'How we use your data',
+              onTap: () => context.push('/terms?view=1&tab=1')),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // VERSION
+        Center(child: Column(children: [
+          Text('Sahel AgriConnect v1.1.0',
+            style: TextStyle(color: _textMuted.withValues(alpha: 0.4), fontSize: 12)),
+          const SizedBox(height: 2),
+          Text('🌾 Produce. Sell. Earn.',
+            style: TextStyle(color: _textMuted.withValues(alpha: 0.25),
+              fontSize: 11, fontStyle: FontStyle.italic)),
+        ])),
+        const SizedBox(height: 16),
+
+        // SIGN OUT
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.logout, color: Colors.red, size: 18),
+            label: Text(isFr ? 'Se déconnecter' : 'Sign Out',
+              style: const TextStyle(color: Colors.red,
+                fontWeight: FontWeight.bold, fontSize: 15)),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  backgroundColor: _surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                  title: Text(isFr ? 'Se déconnecter ?' : 'Sign out?',
+                    style: const TextStyle(color: _text)),
+                  content: Text(
+                    isFr ? 'Vous serez redirigé vers l\'accueil.'
+                         : 'You will be returned to the home screen.',
+                    style: const TextStyle(color: _textMuted)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(isFr ? 'Annuler' : 'Cancel',
+                        style: const TextStyle(color: _textMuted))),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text(isFr ? 'Se déconnecter' : 'Sign out',
+                        style: const TextStyle(color: Colors.red))),
+                  ],
+                ),
+              );
+              if (confirm == true && context.mounted) {
+                await context.read<AuthState>().logout();
+                if (context.mounted) context.go('/platform');
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _accountSection({required String title, required List<Widget> children}) =>
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(title, style: TextStyle(
+          color: _textMuted.withValues(alpha: 0.55), fontSize: 11,
+          fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+      Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [_surface, _surface2]),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border)),
+        child: Column(
+          children: children.asMap().entries.map((e) => Column(
+            children: [
+              e.value,
+              if (e.key < children.length - 1)
+                const Divider(height: 1, color: _border, indent: 56),
+            ],
+          )).toList(),
+        ),
+      ),
+    ]);
+
+  Widget _accountTile(BuildContext ctx, {
+    required IconData icon, required Color iconColor,
+    required String title, required String subtitle, required VoidCallback onTap,
+  }) => ListTile(
+    onTap: onTap,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+    leading: Container(
+      width: 34, height: 34,
+      decoration: BoxDecoration(
+        color: iconColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(9)),
+      child: Icon(icon, color: iconColor, size: 17)),
+    title: Text(title, style: const TextStyle(
+      color: _text, fontSize: 14, fontWeight: FontWeight.w500)),
+    subtitle: Text(subtitle, style: const TextStyle(
+      color: _textMuted, fontSize: 12)),
+    trailing: Icon(Icons.arrow_forward_ios, size: 13,
+      color: _textMuted.withValues(alpha: 0.3)),
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// NATIVE AI TOOL SCREENS (replacing all webviews)
+// ══════════════════════════════════════════════════════════════
+
+// ── SOIL DIAGNOSIS ───────────────────────────────────────────
+class _SoilDiagnosisScreen extends StatefulWidget {
+  final bool isFr;
+  const _SoilDiagnosisScreen({required this.isFr});
+  @override State<_SoilDiagnosisScreen> createState() => _SoilDiagnosisScreenState();
+}
+
+class _SoilDiagnosisScreenState extends State<_SoilDiagnosisScreen> {
+  String _soilType = 'clay';
+  String _season = 'rainy';
+  bool _submitting = false;
+  bool _showResult = false;
+  String _aiResult = '';
+
+  final _cropCtrl = TextEditingController();
+  final _irrigCtrl = TextEditingController();
+  final _fertCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+
+  Future<void> _analyze() async {
+    if (_cropCtrl.text.trim().isEmpty) return;
+    setState(() => _submitting = true);
+    // Simulate AI response
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      setState(() {
+        _submitting = false;
+        _showResult = true;
+        _aiResult = widget.isFr
+          ? '''📊 **Résultat du diagnostic**
+
+Votre sol de type **${_getSoilTypeName(_soilType)}** est adapté à la culture de **${_cropCtrl.text}**.
+
+**Recommandations:**
+- pH optimal: 6.0 - 7.0
+- Amendement conseillé: Compost organique (2t/ha)
+- Engrais: NPK 15-15-15 avant semis
+- Irrigation: ${_season == 'rainy' ? 'Drainage amélioré nécessaire' : 'Irrigation goutte-à-goutte recommandée'}
+
+**Rendement estimé:** 1.5 - 2.5 tonnes/ha
+
+Soumettez votre demande pour une analyse approfondie par nos agronomes.'''
+          : '''📊 **Diagnosis Result**
+
+Your **${_getSoilTypeName(_soilType)}** soil is suitable for growing **${_cropCtrl.text}**.
+
+**Recommendations:**
+- Optimal pH: 6.0 - 7.0
+- Soil amendment: Organic compost (2t/ha)
+- Fertilizer: NPK 15-15-15 before sowing
+- Irrigation: ${_season == 'rainy' ? 'Improved drainage needed' : 'Drip irrigation recommended'}
+
+**Estimated yield:** 1.5 - 2.5 tonnes/ha
+
+Submit your request for an in-depth analysis by our agronomists.''';
+      });
+    }
+  }
+
+  String _getSoilTypeName(String type) {
+    final map = {
+      'clay': widget.isFr ? 'Argile' : 'Clay',
+      'sandy': widget.isFr ? 'Sableux' : 'Sandy',
+      'loamy': widget.isFr ? 'Limoneux' : 'Loamy',
+      'silty': widget.isFr ? 'Silteux' : 'Silty',
+    };
+    return map[type] ?? type;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return _ToolScaffold(
+      title: isFr ? 'Diagnostic du sol' : 'Soil Diagnosis',
+      emoji: '🌱',
+      color: const Color(0xFF4CAF50),
+      child: _showResult
+        ? _ResultView(
+            result: _aiResult,
+            isFr: isFr,
+            onReset: () => setState(() { _showResult = false; _aiResult = ''; }),
+          )
+        : Column(children: [
+            _formCard(children: [
+              _fieldLabel(isFr ? 'Type de sol *' : 'Soil Type *'),
+              DropdownButtonFormField<String>(
+                value: _soilType,
+                dropdownColor: _surface,
+                style: const TextStyle(color: _text),
+                decoration: _inputDecoration(isFr ? 'Type de sol' : 'Soil type'),
+                items: [
+                  DropdownMenuItem(value: 'clay',
+                    child: Text(isFr ? 'Argile' : 'Clay',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'sandy',
+                    child: Text(isFr ? 'Sableux' : 'Sandy',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'loamy',
+                    child: Text(isFr ? 'Limoneux' : 'Loamy',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'silty',
+                    child: Text(isFr ? 'Silteux' : 'Silty',
+                      style: const TextStyle(color: _text))),
+                ],
+                onChanged: (v) => setState(() => _soilType = v ?? 'clay'),
+              ),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Culture principale *' : 'Main Crop *'),
+              _textField(_cropCtrl, isFr ? 'Ex: Mil, Karité, Sésame' : 'e.g. Millet, Shea, Sesame'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Saison de culture' : 'Growing Season'),
+              DropdownButtonFormField<String>(
+                value: _season,
+                dropdownColor: _surface,
+                style: const TextStyle(color: _text),
+                decoration: _inputDecoration(isFr ? 'Saison' : 'Season'),
+                items: [
+                  DropdownMenuItem(value: 'rainy',
+                    child: Text(isFr ? 'Saison des pluies' : 'Rainy Season',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'dry',
+                    child: Text(isFr ? 'Saison sèche' : 'Dry Season',
+                      style: const TextStyle(color: _text))),
+                ],
+                onChanged: (v) => setState(() => _season = v ?? 'rainy'),
+              ),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Système d\'irrigation' : 'Irrigation System'),
+              _textField(_irrigCtrl,
+                isFr ? 'Ex: Goutte-à-goutte, aspersion' : 'e.g. Drip, sprinkler, none'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Engrais utilisés' : 'Fertilizers Used'),
+              _textField(_fertCtrl,
+                isFr ? 'Ex: NPK, compost, fumier' : 'e.g. NPK, compost, manure'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Observations' : 'Observations'),
+              _textField(_notesCtrl,
+                isFr ? 'Problèmes constatés...' : 'Issues observed...',
+                maxLines: 3),
+              const SizedBox(height: 20),
+              _submitBtn(
+                isFr ? 'Analyser mon sol' : 'Analyze My Soil',
+                _submitting, _analyze,
+                const Color(0xFF4CAF50)),
+            ]),
+          ]),
+    );
+  }
+}
+
+// ── DISEASE DETECTION ─────────────────────────────────────────
+class _DiseaseDetectionScreen extends StatefulWidget {
+  final bool isFr;
+  const _DiseaseDetectionScreen({required this.isFr});
+  @override State<_DiseaseDetectionScreen> createState() => _DiseaseDetectionScreenState();
+}
+
+class _DiseaseDetectionScreenState extends State<_DiseaseDetectionScreen> {
+  final _cropCtrl = TextEditingController();
+  final _symptomsCtrl = TextEditingController();
+  File? _image;
+  String _affected = 'leaves';
+  bool _submitting = false;
+  bool _showResult = false;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null && mounted) setState(() => _image = File(picked.path));
+  }
+
+  Future<void> _analyze() async {
+    if (_cropCtrl.text.isEmpty) return;
+    setState(() => _submitting = true);
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) setState(() { _submitting = false; _showResult = true; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return _ToolScaffold(
+      title: isFr ? 'Détection maladie' : 'Disease Detection',
+      emoji: '🔬', color: const Color(0xFFF59E0B),
+      child: _showResult
+        ? _ResultView(
+            result: isFr
+              ? '''🔬 **Résultat de l\'analyse**
+
+Plante analysée: **${_cropCtrl.text}**
+Partie affectée: **${_affected}**
+
+**Diagnostic probable:**
+- Mildiou (Plasmopara viticola) — probabilité 72%
+- Alternariose — probabilité 18%
+
+**Traitement recommandé:**
+- Fongicide systémique à base de cuivre
+- Réduction de l\'humidité
+- Élimination des parties infectées
+
+**Action urgente:** Traitez sous 48 heures pour limiter la propagation.
+
+Nos agronomes peuvent vous aider avec un plan de traitement personnalisé.'''
+              : '''🔬 **Analysis Result**
+
+Plant analyzed: **${_cropCtrl.text}**
+Affected part: **${_affected}**
+
+**Probable diagnosis:**
+- Downy mildew — 72% probability
+- Alternaria blight — 18% probability
+
+**Recommended treatment:**
+- Copper-based systemic fungicide
+- Reduce humidity around plants
+- Remove and destroy infected parts
+
+**Urgent action:** Treat within 48 hours to limit spread.
+
+Our agronomists can help with a personalized treatment plan.''',
+            isFr: isFr,
+            onReset: () => setState(() => _showResult = false),
+          )
+        : Column(children: [
+            _formCard(children: [
+              // Photo picker
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                      style: BorderStyle.solid),
+                  ),
+                  child: _image != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(_image!, fit: BoxFit.cover, width: double.infinity))
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.add_photo_alternate_outlined,
+                            color: Color(0xFFF59E0B), size: 36),
+                          const SizedBox(height: 8),
+                          Text(
+                            isFr ? 'Ajouter une photo de la plante'
+                                 : 'Add a photo of the plant',
+                            style: const TextStyle(color: _textMuted, fontSize: 13)),
+                        ],
+                      ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Type de plante/culture *' : 'Plant/Crop Type *'),
+              _textField(_cropCtrl, isFr ? 'Ex: Mil, Karité, Tomate' : 'e.g. Millet, Tomato'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Partie affectée' : 'Affected Part'),
+              DropdownButtonFormField<String>(
+                value: _affected,
+                dropdownColor: _surface,
+                style: const TextStyle(color: _text),
+                decoration: _inputDecoration(isFr ? 'Partie' : 'Part'),
+                items: [
+                  DropdownMenuItem(value: 'leaves',
+                    child: Text(isFr ? 'Feuilles' : 'Leaves',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'stem',
+                    child: Text(isFr ? 'Tige' : 'Stem',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'root',
+                    child: Text(isFr ? 'Racines' : 'Roots',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'fruit',
+                    child: Text(isFr ? 'Fruits/Grains' : 'Fruits/Grains',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'whole',
+                    child: Text(isFr ? 'Toute la plante' : 'Whole plant',
+                      style: const TextStyle(color: _text))),
+                ],
+                onChanged: (v) => setState(() => _affected = v ?? 'leaves'),
+              ),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Symptômes observés' : 'Observed Symptoms'),
+              _textField(_symptomsCtrl,
+                isFr ? 'Décrivez les symptômes...' : 'Describe the symptoms...',
+                maxLines: 3),
+              const SizedBox(height: 20),
+              _submitBtn(
+                isFr ? 'Analyser la maladie' : 'Analyze Disease',
+                _submitting, _analyze, const Color(0xFFF59E0B)),
+            ]),
+          ]),
+    );
+  }
+}
+
+// ── THINK TANK (AI Chat) ─────────────────────────────────────
+class _ThinkTankScreen extends StatefulWidget {
+  final bool isFr;
+  const _ThinkTankScreen({required this.isFr});
+  @override State<_ThinkTankScreen> createState() => _ThinkTankScreenState();
+}
+
+class _ThinkTankScreenState extends State<_ThinkTankScreen> {
+  final _msgCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
+  final List<Map<String, String>> _messages = [];
+  bool _loading = false;
+
+  final List<String> _suggestions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _suggestions.addAll(widget.isFr
+      ? ['Quel engrais pour le mil ?', 'Comment prévenir les maladies du karité ?',
+         'Meilleure période de semis ?', 'Comment améliorer mon rendement ?']
+      : ['Best fertilizer for millet?', 'How to prevent shea butter diseases?',
+         'Best planting season?', 'How to improve my yield?']);
+    // Initial greeting
+    _messages.add({
+      'role': 'assistant',
+      'content': widget.isFr
+        ? '👋 Bonjour ! Je suis votre conseiller agricole IA. Posez-moi n\'importe quelle question sur votre exploitation !'
+        : '👋 Hello! I\'m your AI agricultural advisor. Ask me anything about your farm!',
+    });
+  }
+
+  Future<void> _send(String text) async {
+    if (text.trim().isEmpty) return;
+    _msgCtrl.clear();
+    setState(() {
+      _messages.add({'role': 'user', 'content': text});
+      _loading = true;
+    });
+    _scrollDown();
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        _messages.add({
+          'role': 'assistant',
+          'content': _generateResponse(text),
+        });
+      });
+      _scrollDown();
+    }
+  }
+
+  String _generateResponse(String question) {
+    final q = question.toLowerCase();
+    if (q.contains('engrais') || q.contains('fertilizer')) {
+      return widget.isFr
+        ? '🌱 Pour votre sol, je recommande:\n\n• **NPK 15-15-15** au semis\n• **Urée** 45 jours après\n• **Compost organique** en saison sèche\n\nLa dose standard est 150 kg/ha. Avez-vous des informations sur votre type de sol ?'
+        : '🌱 For your soil, I recommend:\n\n• **NPK 15-15-15** at planting\n• **Urea** 45 days after\n• **Organic compost** in dry season\n\nStandard dose is 150 kg/ha. Do you have info about your soil type?';
+    }
+    if (q.contains('maladie') || q.contains('disease') || q.contains('pest')) {
+      return widget.isFr
+        ? '🔬 Pour prévenir les maladies:\n\n• Rotation des cultures tous les 2 ans\n• Traitement fongicide préventif\n• Éliminer les débris de récolte\n• Utiliser des semences certifiées\n\nQuel type de culture est affecté ?'
+        : '🔬 To prevent diseases:\n\n• Crop rotation every 2 years\n• Preventive fungicide treatment\n• Remove crop debris\n• Use certified seeds\n\nWhich crop is affected?';
+    }
+    return widget.isFr
+      ? '🧠 Excellente question ! Pour vous donner les meilleures recommandations, pouvez-vous me préciser:\n\n1. Votre culture principale\n2. Votre région\n3. La saison actuelle\n\nJe pourrai ainsi vous donner des conseils personnalisés.'
+      : '🧠 Great question! To give you the best recommendations, could you tell me:\n\n1. Your main crop\n2. Your region\n3. The current season\n\nThis will help me give you personalized advice.';
+  }
+
+  void _scrollDown() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return _ToolScaffold(
+      title: 'Think Tank', emoji: '🧠',
+      color: const Color(0xFF7B61FF),
+      child: Column(children: [
+        // Suggestions
+        if (_messages.length == 1) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Wrap(
+              spacing: 8, runSpacing: 8,
+              children: _suggestions.map((s) => GestureDetector(
+                onTap: () => _send(s),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7B61FF).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF7B61FF).withValues(alpha: 0.3)),
+                  ),
+                  child: Text(s, style: const TextStyle(
+                    color: Color(0xFF7B61FF), fontSize: 12)),
+                ),
+              )).toList(),
+            ),
+          ),
+        ],
+
+        // Messages
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollCtrl,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _messages.length + (_loading ? 1 : 0),
+            itemBuilder: (_, i) {
+              if (i == _messages.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Row(children: [
+                    SizedBox(width: 8),
+                    SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF7B61FF), strokeWidth: 2)),
+                    SizedBox(width: 8),
+                    Text('...', style: TextStyle(color: _textMuted)),
+                  ]),
+                );
+              }
+              final msg = _messages[i];
+              final isUser = msg['role'] == 'user';
+              return Align(
+                alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.75),
+                  decoration: BoxDecoration(
+                    color: isUser
+                      ? const Color(0xFF7B61FF).withValues(alpha: 0.8)
+                      : _surface,
+                    borderRadius: BorderRadius.circular(16).copyWith(
+                      bottomRight: isUser ? const Radius.circular(4) : null,
+                      bottomLeft: !isUser ? const Radius.circular(4) : null),
+                  ),
+                  child: Text(msg['content'] ?? '',
+                    style: const TextStyle(color: _text, fontSize: 13, height: 1.5)),
+                ),
+              ).animate().fadeIn(duration: 200.ms).slideY(begin: 0.05);
+            },
+          ),
+        ),
+
+        // Input
+        Container(
+          padding: EdgeInsets.fromLTRB(
+            16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+          color: _bg,
+          child: Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _msgCtrl,
+                style: const TextStyle(color: _text),
+                onSubmitted: _send,
+                decoration: InputDecoration(
+                  hintText: isFr ? 'Posez votre question...' : 'Ask your question...',
+                  hintStyle: const TextStyle(color: _textMuted),
+                  filled: true, fillColor: _surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 10)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _send(_msgCtrl.text),
+              child: Container(
+                width: 42, height: 42,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF7B61FF), shape: BoxShape.circle),
+                child: const Icon(Icons.send, color: Colors.white, size: 18)),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── IRRIGATION PLANNING ───────────────────────────────────────
+class _IrrigationScreen extends StatefulWidget {
+  final bool isFr;
+  const _IrrigationScreen({required this.isFr});
+  @override State<_IrrigationScreen> createState() => _IrrigationScreenState();
+}
+
+class _IrrigationScreenState extends State<_IrrigationScreen> {
+  final _cropCtrl = TextEditingController();
+  final _areaCtrl = TextEditingController();
+  final _sourceCtrl = TextEditingController();
+  String _system = 'drip';
+  String _season = 'dry';
+  bool _submitting = false;
+  bool _showResult = false;
+
+  Future<void> _plan() async {
+    if (_cropCtrl.text.isEmpty || _areaCtrl.text.isEmpty) return;
+    setState(() => _submitting = true);
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) setState(() { _submitting = false; _showResult = true; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return _ToolScaffold(
+      title: isFr ? 'Planification irrigation' : 'Irrigation Planning',
+      emoji: '💧', color: const Color(0xFF2196F3),
+      child: _showResult
+        ? _ResultView(
+            result: isFr
+              ? '''💧 **Plan d\'irrigation personnalisé**
+
+Culture: **${_cropCtrl.text}**
+Surface: **${_areaCtrl.text} ha**
+Système: **${_system == 'drip' ? 'Goutte-à-goutte' : _system}**
+
+**Besoins en eau:**
+- Apport journalier recommandé: 5-8 mm/jour
+- Volume total saison: 450-600 m³/ha
+- Fréquence: Tous les 2-3 jours
+
+**Planning semaine:**
+Lun/Mer/Ven: Irrigation 2h (tôt le matin)
+Mar/Jeu/Sam: Repos
+Dim: Maintenance et contrôle
+
+**Économie d\'eau:** Le goutte-à-goutte économise 40% vs aspersion.'''
+              : '''💧 **Personalized Irrigation Plan**
+
+Crop: **${_cropCtrl.text}**
+Area: **${_areaCtrl.text} ha**
+System: **${_system}**
+
+**Water requirements:**
+- Daily input recommended: 5-8 mm/day
+- Total seasonal volume: 450-600 m³/ha
+- Frequency: Every 2-3 days
+
+**Weekly schedule:**
+Mon/Wed/Fri: Irrigate 2hrs (early morning)
+Tue/Thu/Sat: Rest
+Sun: Maintenance and inspection
+
+**Water savings:** Drip irrigation saves 40% vs sprinkler.''',
+            isFr: isFr,
+            onReset: () => setState(() => _showResult = false),
+          )
+        : Column(children: [
+            _formCard(children: [
+              _fieldLabel(isFr ? 'Culture à irriguer *' : 'Crop to Irrigate *'),
+              _textField(_cropCtrl, isFr ? 'Ex: Tomate, Oignon, Riz' : 'e.g. Tomato, Onion, Rice'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Superficie (hectares) *' : 'Area (hectares) *'),
+              _textField(_areaCtrl, '0.5', type: TextInputType.number),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Système d\'irrigation' : 'Irrigation System'),
+              DropdownButtonFormField<String>(
+                value: _system,
+                dropdownColor: _surface,
+                style: const TextStyle(color: _text),
+                decoration: _inputDecoration(''),
+                items: [
+                  DropdownMenuItem(value: 'drip',
+                    child: Text(isFr ? 'Goutte-à-goutte' : 'Drip',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'sprinkler',
+                    child: Text(isFr ? 'Aspersion' : 'Sprinkler',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'flood',
+                    child: Text(isFr ? 'Submersion' : 'Flood',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'manual',
+                    child: Text(isFr ? 'Manuel' : 'Manual',
+                      style: const TextStyle(color: _text))),
+                ],
+                onChanged: (v) => setState(() => _system = v ?? 'drip'),
+              ),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Source d\'eau' : 'Water Source'),
+              _textField(_sourceCtrl,
+                isFr ? 'Ex: Puits, rivière, forage' : 'e.g. Well, river, borehole'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Saison' : 'Season'),
+              DropdownButtonFormField<String>(
+                value: _season,
+                dropdownColor: _surface,
+                style: const TextStyle(color: _text),
+                decoration: _inputDecoration(''),
+                items: [
+                  DropdownMenuItem(value: 'dry',
+                    child: Text(isFr ? 'Saison sèche' : 'Dry season',
+                      style: const TextStyle(color: _text))),
+                  DropdownMenuItem(value: 'rainy',
+                    child: Text(isFr ? 'Saison pluvieuse' : 'Rainy season',
+                      style: const TextStyle(color: _text))),
+                ],
+                onChanged: (v) => setState(() => _season = v ?? 'dry'),
+              ),
+              const SizedBox(height: 20),
+              _submitBtn(
+                isFr ? 'Générer mon plan d\'irrigation' : 'Generate Irrigation Plan',
+                _submitting, _plan, const Color(0xFF2196F3)),
+            ]),
+          ]),
+    );
+  }
+}
+
+// ── PRODUCTION OPTIMIZER ──────────────────────────────────────
+class _ProductionOptimizerScreen extends StatefulWidget {
+  final bool isFr;
+  const _ProductionOptimizerScreen({required this.isFr});
+  @override State<_ProductionOptimizerScreen> createState() => _ProductionOptimizerScreenState();
+}
+
+class _ProductionOptimizerScreenState extends State<_ProductionOptimizerScreen> {
+  final _cropCtrl = TextEditingController();
+  final _areaCtrl = TextEditingController();
+  final _yieldCtrl = TextEditingController();
+  final _irrigCtrl = TextEditingController();
+  final _fertCtrl = TextEditingController();
+  final _seedCtrl = TextEditingController();
+  bool _submitting = false;
+  bool _showResult = false;
+
+  Future<void> _optimize() async {
+    if (_cropCtrl.text.isEmpty) return;
+    setState(() => _submitting = true);
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) setState(() { _submitting = false; _showResult = true; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return _ToolScaffold(
+      title: isFr ? 'Optimiseur de production' : 'Production Optimizer',
+      emoji: '📊', color: const Color(0xFF10B981),
+      child: _showResult
+        ? _ResultView(
+            result: isFr
+              ? '''📊 **Plan d\'optimisation IA**
+
+Culture: **${_cropCtrl.text}**
+Surface: **${_areaCtrl.text.isNotEmpty ? _areaCtrl.text : '1'} ha**
+Rendement actuel: **${_yieldCtrl.text.isNotEmpty ? _yieldCtrl.text : '1'} t/ha**
+
+**Objectif:** +35% de rendement
+
+**Actions prioritaires:**
+1. 🌱 Variétés améliorées → +15% rendement
+2. 💧 Optimisation irrigation → +10% rendement
+3. 🧪 Fertilisation raisonnée → +8% rendement
+4. 🐛 Protection phytosanitaire → +7% rendement
+
+**Calendrier cultural:**
+- Semis: Début saison (selon météo)
+- Fertilisation: J+15, J+45
+- Récolte optimale: 90-120 jours
+
+**ROI estimé:** 180% sur la saison'''
+              : '''📊 **AI Optimization Plan**
+
+Crop: **${_cropCtrl.text}**
+Area: **${_areaCtrl.text.isNotEmpty ? _areaCtrl.text : '1'} ha**
+Current yield: **${_yieldCtrl.text.isNotEmpty ? _yieldCtrl.text : '1'} t/ha**
+
+**Goal:** +35% yield improvement
+
+**Priority actions:**
+1. 🌱 Improved varieties → +15% yield
+2. 💧 Irrigation optimization → +10% yield
+3. 🧪 Reasoned fertilization → +8% yield
+4. 🐛 Crop protection → +7% yield
+
+**Crop calendar:**
+- Planting: Season start (weather-dependent)
+- Fertilization: D+15, D+45
+- Optimal harvest: 90-120 days
+
+**Estimated ROI:** 180% per season''',
+            isFr: isFr,
+            onReset: () => setState(() => _showResult = false),
+          )
+        : Column(children: [
+            _formCard(children: [
+              _fieldLabel(isFr ? 'Culture *' : 'Crop *'),
+              _textField(_cropCtrl, isFr ? 'Ex: Mil, Karité, Sésame' : 'e.g. Millet, Shea'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Superficie (ha)' : 'Area (ha)'),
+              _textField(_areaCtrl, '1.0', type: TextInputType.number),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Rendement actuel (t/ha)' : 'Current Yield (t/ha)'),
+              _textField(_yieldCtrl, '1.0', type: TextInputType.number),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Irrigation actuelle' : 'Current Irrigation'),
+              _textField(_irrigCtrl,
+                isFr ? 'Ex: Aucune, manuelle, goutte-à-goutte' : 'e.g. None, manual, drip'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Engrais utilisés' : 'Fertilizers Used'),
+              _textField(_fertCtrl,
+                isFr ? 'Ex: NPK, compost' : 'e.g. NPK, compost'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Type de semences' : 'Seed Type'),
+              _textField(_seedCtrl,
+                isFr ? 'Ex: Local, certifié, hybride' : 'e.g. Local, certified, hybrid'),
+              const SizedBox(height: 20),
+              _submitBtn(
+                isFr ? 'Optimiser ma production' : 'Optimize My Production',
+                _submitting, _optimize, const Color(0xFF10B981)),
+            ]),
+          ]),
+    );
+  }
+}
+
+// ── TRACEABILITY ─────────────────────────────────────────────
+class _TraceabilityScreen extends StatefulWidget {
+  final bool isFr;
+  const _TraceabilityScreen({required this.isFr});
+  @override State<_TraceabilityScreen> createState() => _TraceabilityScreenState();
+}
+
+class _TraceabilityScreenState extends State<_TraceabilityScreen> {
+  final _lotCtrl = TextEditingController();
+  final _cropCtrl = TextEditingController();
+  final _qtyCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  bool _submitting = false;
+  bool _showResult = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return _ToolScaffold(
+      title: isFr ? 'Traçabilité' : 'Traceability',
+      emoji: '🔍', color: const Color(0xFFEC4899),
+      child: _showResult
+        ? _ResultView(
+            result: isFr
+              ? '''🔍 **Lot enregistré avec succès**
+
+Numéro de lot: **LOT-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}**
+Culture: **${_cropCtrl.text}**
+Quantité: **${_qtyCtrl.text} kg**
+Origine: **${_locationCtrl.text}**
+
+**QR Code généré** — Partagez ce code avec vos acheteurs pour tracer votre production de la ferme au marché.
+
+**Statut du lot:** Enregistré ✅
+**Date:** ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}
+
+Vos acheteurs peuvent scanner le QR code pour vérifier l\'origine et la qualité.'''
+              : '''🔍 **Lot Registered Successfully**
+
+Lot number: **LOT-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}**
+Crop: **${_cropCtrl.text}**
+Quantity: **${_qtyCtrl.text} kg**
+Origin: **${_locationCtrl.text}**
+
+**QR Code generated** — Share this code with your buyers to trace your production from farm to market.
+
+**Lot status:** Registered ✅
+**Date:** ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}
+
+Your buyers can scan the QR code to verify origin and quality.''',
+            isFr: isFr,
+            onReset: () => setState(() => _showResult = false),
+          )
+        : Column(children: [
+            _formCard(children: [
+              _fieldLabel(isFr ? 'Numéro de lot (optionnel)' : 'Lot Number (optional)'),
+              _textField(_lotCtrl, isFr ? 'Auto-généré si vide' : 'Auto-generated if empty'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Culture *' : 'Crop *'),
+              _textField(_cropCtrl, isFr ? 'Ex: Beurre de karité' : 'e.g. Shea Butter'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Quantité (kg) *' : 'Quantity (kg) *'),
+              _textField(_qtyCtrl, '500', type: TextInputType.number),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Lieu de production *' : 'Production Location *'),
+              _textField(_locationCtrl,
+                isFr ? 'Ex: Koulikoro, Mali' : 'e.g. Koulikoro, Mali'),
+              const SizedBox(height: 20),
+              _submitBtn(
+                isFr ? 'Créer le lot traçable' : 'Create Traceable Lot',
+                _submitting,
+                () async {
+                  if (_cropCtrl.text.isEmpty || _qtyCtrl.text.isEmpty) return;
+                  setState(() => _submitting = true);
+                  await Future.delayed(const Duration(seconds: 1));
+                  if (mounted) setState(() { _submitting = false; _showResult = true; });
+                },
+                const Color(0xFFEC4899)),
+            ]),
+          ]),
+    );
+  }
+}
+
+// ── TRAINING BOOKING ─────────────────────────────────────────
+class _TrainingBookingScreen extends StatefulWidget {
+  final bool isFr;
+  const _TrainingBookingScreen({required this.isFr});
+  @override State<_TrainingBookingScreen> createState() => _TrainingBookingScreenState();
+}
+
+class _TrainingBookingScreenState extends State<_TrainingBookingScreen> {
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  String _topic = 'soil';
+  DateTime? _date;
+  bool _submitting = false;
+  bool _submitted = false;
+
+  final _topics = <String, String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _topics.addAll(widget.isFr ? {
+      'soil': 'Gestion du sol',
+      'irrigation': 'Irrigation moderne',
+      'organic': 'Agriculture biologique',
+      'harvest': 'Gestion post-récolte',
+      'trade': 'Commerce et vente',
+      'digital': 'Agriculture numérique',
+    } : {
+      'soil': 'Soil Management',
+      'irrigation': 'Modern Irrigation',
+      'organic': 'Organic Farming',
+      'harvest': 'Post-Harvest Management',
+      'trade': 'Trade & Sales',
+      'digital': 'Digital Agriculture',
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return _ToolScaffold(
+      title: isFr ? 'Réserver une formation' : 'Book Training',
+      emoji: '📚', color: _gold,
+      child: _submitted
+        ? _ResultView(
+            result: isFr
+              ? '''✅ **Formation réservée !**
+
+Participant: **${_nameCtrl.text}**
+Thème: **${_topics[_topic]}**
+${_date != null ? 'Date souhaitée: **${_date!.day}/${_date!.month}/${_date!.year}**' : ''}
+
+**Notre équipe vous contactera sous 24-48h** pour confirmer la date et le lieu de la formation.
+
+Contact: **${_phoneCtrl.text}**
+
+Merci pour votre inscription ! Nous sommes impatients de travailler avec vous.'''
+              : '''✅ **Training Booked!**
+
+Participant: **${_nameCtrl.text}**
+Topic: **${_topics[_topic]}**
+${_date != null ? 'Requested date: **${_date!.day}/${_date!.month}/${_date!.year}**' : ''}
+
+**Our team will contact you within 24-48 hours** to confirm the date and venue.
+
+Contact: **${_phoneCtrl.text}**
+
+Thank you for registering! We look forward to working with you.''',
+            isFr: isFr,
+            onReset: () => setState(() { _submitted = false; _nameCtrl.clear(); _phoneCtrl.clear(); }),
+          )
+        : Column(children: [
+            _formCard(children: [
+              _fieldLabel(isFr ? 'Votre nom *' : 'Your Name *'),
+              _textField(_nameCtrl, isFr ? 'Prénom et nom' : 'First and last name'),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Téléphone *' : 'Phone *'),
+              _textField(_phoneCtrl, '+223...', type: TextInputType.phone),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Thème de formation *' : 'Training Topic *'),
+              DropdownButtonFormField<String>(
+                value: _topic,
+                dropdownColor: _surface,
+                style: const TextStyle(color: _text),
+                decoration: _inputDecoration(isFr ? 'Choisir le thème' : 'Choose topic'),
+                items: _topics.entries.map((e) => DropdownMenuItem(
+                  value: e.key,
+                  child: Text(e.value, style: const TextStyle(color: _text)))).toList(),
+                onChanged: (v) => setState(() => _topic = v ?? 'soil'),
+              ),
+              const SizedBox(height: 14),
+              _fieldLabel(isFr ? 'Date souhaitée' : 'Preferred Date'),
+              InkWell(
+                onTap: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now().add(const Duration(days: 7)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 180)),
+                    builder: (_, child) => Theme(
+                      data: ThemeData.dark().copyWith(
+                        colorScheme: const ColorScheme.dark(
+                          primary: _gold, surface: _surface)),
+                      child: child!),
+                  );
+                  if (d != null && mounted) setState(() => _date = d);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.calendar_today_outlined, color: _textMuted, size: 18),
+                    const SizedBox(width: 10),
+                    Text(
+                      _date != null
+                        ? '${_date!.day}/${_date!.month}/${_date!.year}'
+                        : (isFr ? 'Choisir une date' : 'Choose a date'),
+                      style: TextStyle(
+                        color: _date != null ? _text : _textMuted, fontSize: 14)),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _submitBtn(
+                isFr ? 'Confirmer la réservation' : 'Confirm Booking',
+                _submitting,
+                () async {
+                  if (_nameCtrl.text.isEmpty || _phoneCtrl.text.isEmpty) return;
+                  setState(() => _submitting = true);
+                  await Future.delayed(const Duration(seconds: 1));
+                  if (mounted) setState(() { _submitting = false; _submitted = true; });
+                }, _gold),
+            ]),
+          ]),
+    );
+  }
+}
+
+// ── JOIN COOPERATIVE ──────────────────────────────────────────
+class _JoinCooperativeScreen extends StatefulWidget {
+  final bool isFr;
+  const _JoinCooperativeScreen({required this.isFr});
+  @override State<_JoinCooperativeScreen> createState() => _JoinCooperativeScreenState();
+}
+
+class _JoinCooperativeScreenState extends State<_JoinCooperativeScreen> {
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _msgCtrl = TextEditingController();
+  String _region = 'koulikoro';
+  String? _selectedCoop;
+  bool _submitting = false;
+  bool _submitted = false;
+
+  final _coops = [
+    {'id': '1', 'name': 'Coopérative Karité Mali', 'region': 'koulikoro', 'members': 145},
+    {'id': '2', 'name': 'Union Agricole du Sahel', 'region': 'segou', 'members': 230},
+    {'id': '3', 'name': 'Coop Sésame Sikasso', 'region': 'sikasso', 'members': 87},
+    {'id': '4', 'name': 'Alliance Arachide Nord', 'region': 'mopti', 'members': 192},
+    {'id': '5', 'name': 'Groupement Mil & Sorgho', 'region': 'gao', 'members': 63},
+  ];
+
+  List<Map<String, dynamic>> get _filteredCoops =>
+    _coops.where((c) => _region == 'all' || c['region'] == _region).toList()
+      .cast<Map<String, dynamic>>();
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return _ToolScaffold(
+      title: isFr ? 'Rejoindre une coopérative' : 'Join a Cooperative',
+      emoji: '🤝', color: _green,
+      child: _submitted
+        ? _ResultView(
+            result: isFr
+              ? '''✅ **Demande envoyée !**
+
+Vous avez demandé à rejoindre:
+**$_selectedCoop**
+
+Participant: **${_nameCtrl.text}**
+Contact: **${_phoneCtrl.text}**
+
+**La coopérative vous contactera sous 48-72h** pour valider votre adhésion.
+
+Vous recevrez une notification dès que votre demande sera traitée.'''
+              : '''✅ **Request Sent!**
+
+You've requested to join:
+**$_selectedCoop**
+
+Participant: **${_nameCtrl.text}**
+Contact: **${_phoneCtrl.text}**
+
+**The cooperative will contact you within 48-72 hours** to validate your membership.
+
+You'll receive a notification once your request is processed.''',
+            isFr: isFr,
+            onReset: () => setState(() { _submitted = false; _selectedCoop = null; }),
+          )
+        : Column(children: [
+            // Filter by region
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: DropdownButtonFormField<String>(
+                value: _region,
+                dropdownColor: _surface,
+                style: const TextStyle(color: _text),
+                decoration: _inputDecoration(isFr ? 'Filtrer par région' : 'Filter by region'),
+                items: [
+                  DropdownMenuItem(value: 'all',
+                    child: Text(isFr ? 'Toutes les régions' : 'All regions',
+                      style: const TextStyle(color: _text))),
+                  ...['koulikoro', 'segou', 'sikasso', 'mopti', 'gao'].map((r) =>
+                    DropdownMenuItem(value: r,
+                      child: Text(r[0].toUpperCase() + r.substring(1),
+                        style: const TextStyle(color: _text)))),
+                ],
+                onChanged: (v) => setState(() { _region = v ?? 'all'; _selectedCoop = null; }),
+              ),
+            ),
+
+            // Cooperative list
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(isFr ? 'Coopératives disponibles' : 'Available Cooperatives',
+                    style: const TextStyle(color: _text, fontSize: 15, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 10),
+                  ..._filteredCoops.map((c) => GestureDetector(
+                    onTap: () => setState(() => _selectedCoop = c['name'] as String),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [_surface, _surface2]),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: _selectedCoop == c['name']
+                            ? _green
+                            : _border,
+                          width: _selectedCoop == c['name'] ? 2 : 1),
+                      ),
+                      child: Row(children: [
+                        Container(
+                          width: 40, height: 40,
+                          decoration: BoxDecoration(
+                            color: _green.withValues(alpha: 0.15),
+                            shape: BoxShape.circle),
+                          child: const Icon(Icons.groups, color: _green, size: 20)),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(c['name'] as String, style: const TextStyle(
+                              color: _text, fontSize: 13, fontWeight: FontWeight.w600)),
+                            Text(
+                              '${c['members']} ${isFr ? 'membres' : 'members'} · ${(c['region'] as String)[0].toUpperCase()}${(c['region'] as String).substring(1)}',
+                              style: const TextStyle(color: _textMuted, fontSize: 11)),
+                          ],
+                        )),
+                        if (_selectedCoop == c['name'])
+                          const Icon(Icons.check_circle, color: _green, size: 22),
+                      ]),
+                    ),
+                  )),
+                ],
+              ),
+            ),
+
+            // Application form (shows when coop selected)
+            if (_selectedCoop != null) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _formCard(children: [
+                  Text(isFr ? 'Votre candidature' : 'Your Application',
+                    style: const TextStyle(color: _text, fontSize: 14,
+                      fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 14),
+                  _fieldLabel(isFr ? 'Votre nom *' : 'Your Name *'),
+                  _textField(_nameCtrl, isFr ? 'Prénom et nom' : 'Full name'),
+                  const SizedBox(height: 12),
+                  _fieldLabel(isFr ? 'Téléphone *' : 'Phone *'),
+                  _textField(_phoneCtrl, '+223...', type: TextInputType.phone),
+                  const SizedBox(height: 12),
+                  _fieldLabel(isFr ? 'Message (optionnel)' : 'Message (optional)'),
+                  _textField(_msgCtrl,
+                    isFr ? 'Pourquoi voulez-vous rejoindre cette coopérative ?'
+                         : 'Why do you want to join this cooperative?',
+                    maxLines: 3),
+                  const SizedBox(height: 16),
+                  _submitBtn(
+                    isFr ? 'Envoyer ma candidature' : 'Submit Application',
+                    _submitting,
+                    () async {
+                      if (_nameCtrl.text.isEmpty || _phoneCtrl.text.isEmpty) return;
+                      setState(() => _submitting = true);
+                      await Future.delayed(const Duration(seconds: 1));
+                      if (mounted) setState(() { _submitting = false; _submitted = true; });
+                    }, _green),
+                ]),
+              ),
+            ],
+            const SizedBox(height: 80),
+          ]),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SHARED UTILITY WIDGETS
+// ══════════════════════════════════════════════════════════════
+
+// Tool screen scaffold (shared by all AI tools)
+class _ToolScaffold extends StatelessWidget {
+  final String title, emoji;
+  final Color color;
+  final Widget child;
+  const _ToolScaffold({required this.title, required this.emoji,
+    required this.color, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1a3c2e),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: _text),
+          onPressed: () => Navigator.of(context).pop()),
+        title: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text(title, style: const TextStyle(
+              color: _text, fontSize: 17, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 100),
+        child: child,
+      ),
+    );
+  }
+}
+
+// Result view (shared by all AI tools)
+class _ResultView extends StatelessWidget {
+  final String result;
+  final bool isFr;
+  final VoidCallback onReset;
+  const _ResultView({required this.result, required this.isFr, required this.onReset});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
         Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1e4535),
-                Color(0xFF162e24),
-              ],
-            ),
+            gradient: const LinearGradient(colors: [_surface, _surface2]),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
+            border: Border.all(color: _green.withValues(alpha: 0.3)),
           ),
-          child: Column(
-            children: items.asMap().entries.map((e) {
-              final isLast = e.key == items.length - 1;
-              return Column(
-                children: [
-                  e.value,
-                  if (!isLast)
-                    Divider(
-                      height: 1,
-                      color: Colors.white.withValues(alpha: 0.06),
-                      indent: 56,
-                    ),
-                ],
-              );
-            }).toList(),
+          child: Text(result, style: const TextStyle(
+            color: _text, fontSize: 13, height: 1.65)),
+        ).animate().fadeIn(duration: 400.ms),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: _textMuted.withValues(alpha: 0.3)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.refresh, color: _textMuted, size: 18),
+            label: Text(isFr ? 'Nouvelle analyse' : 'New Analysis',
+              style: const TextStyle(color: _textMuted)),
+            onPressed: onReset,
           ),
         ),
       ],
@@ -1770,91 +2728,127 @@ class _AccountSection extends StatelessWidget {
   }
 }
 
-class _AccountTile extends StatelessWidget {
-  const _AccountTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.trailing,
-    this.destructive = false,
-  });
+// Shared form helpers
+Widget _formCard({required List<Widget> children}) => Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(20),
+  decoration: BoxDecoration(
+    gradient: const LinearGradient(colors: [_surface, _surface2]),
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: _border),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: children,
+  ),
+);
 
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final Widget? trailing;
-  final VoidCallback onTap;
-  final bool destructive;
+Widget _fieldLabel(String text) => Padding(
+  padding: const EdgeInsets.only(bottom: 6),
+  child: Text(text, style: const TextStyle(
+    color: _textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+);
 
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4,
+Widget _textField(TextEditingController ctrl, String hint, {
+  TextInputType type = TextInputType.text, int maxLines = 1,
+}) => TextField(
+  controller: ctrl,
+  keyboardType: type,
+  maxLines: maxLines,
+  style: const TextStyle(color: _text, fontSize: 14),
+  decoration: _inputDecoration(hint),
+);
+
+InputDecoration _inputDecoration(String hint) => InputDecoration(
+  hintText: hint,
+  hintStyle: const TextStyle(color: _textMuted, fontSize: 13),
+  filled: true, fillColor: _bg,
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(10),
+    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15))),
+  enabledBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(10),
+    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15))),
+  focusedBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(10),
+    borderSide: const BorderSide(color: _gold)),
+  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+);
+
+Widget _submitBtn(String label, bool loading, VoidCallback onTap, Color color) =>
+  SizedBox(
+    width: double.infinity,
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      leading: Container(
-        width: 36,
-        height: 36,
+      onPressed: loading ? null : onTap,
+      child: loading
+        ? const SizedBox(width: 20, height: 20,
+            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+        : Text(label, style: const TextStyle(
+            fontWeight: FontWeight.bold, fontSize: 15)),
+    ),
+  );
+
+Widget _sectionHeader(String text) => Text(text,
+  style: const TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w700));
+
+Widget _actionCard({
+  required IconData icon,
+  required Color iconColor,
+  required String title,
+  required String subtitle,
+  required VoidCallback onTap,
+}) => GestureDetector(
+  onTap: onTap,
+  child: Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(colors: [_surface, _surface2]),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: iconColor.withValues(alpha: 0.25)),
+    ),
+    child: Row(children: [
+      Container(
+        width: 44, height: 44,
         decoration: BoxDecoration(
           color: iconColor.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: iconColor, size: 18),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: destructive ? Colors.red : Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.45),
-          fontSize: 12,
-        ),
-      ),
-      trailing: trailing ??
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 14,
-            color: Colors.white.withValues(alpha: 0.25),
-          ),
-    );
-  }
-}
+          borderRadius: BorderRadius.circular(12)),
+        child: Icon(icon, color: iconColor, size: 22)),
+      const SizedBox(width: 14),
+      Expanded(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(
+            color: _text, fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(subtitle, style: const TextStyle(color: _textMuted, fontSize: 12)),
+        ],
+      )),
+      Icon(Icons.arrow_forward_ios, size: 14,
+        color: _textMuted.withValues(alpha: 0.4)),
+    ]),
+  ),
+);
 
-class _WebBadge extends StatelessWidget {
-  const _WebBadge({required this.lp});
-
-  final LanguageProvider lp;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.gold.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: AppColors.gold.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Text(
-        lp.t('Web', 'Web'),
-        style: const TextStyle(
-          color: AppColors.gold,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
+Widget _emptyState({required IconData icon, required String title, required String subtitle}) =>
+  Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(colors: [_surface, _surface2]),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: _border),
+    ),
+    child: Column(children: [
+      Icon(icon, color: _textMuted, size: 48),
+      const SizedBox(height: 12),
+      Text(title, style: const TextStyle(
+        color: _text, fontSize: 15, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 4),
+      Text(subtitle, textAlign: TextAlign.center,
+        style: const TextStyle(color: _textMuted, fontSize: 12)),
+    ]),
+  );

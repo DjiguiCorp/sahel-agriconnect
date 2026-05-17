@@ -102,10 +102,15 @@ GoRouter buildRouter(
         return _dashboardRoute(authState.role);
       }
 
-      // Logged-in users may open the platform home (/home) from dashboards.
-      if (loggedIn &&
-          loc != '/home' &&
-          _routeMismatch(authState.role, loc)) {
+      if (loggedIn && loc == '/home') {
+        return _dashboardRoute(authState.role);
+      }
+
+      if (loggedIn && loc == '/role') {
+        return '/home';
+      }
+
+      if (loggedIn && _routeMismatch(authState.role, loc)) {
         return _dashboardRoute(authState.role);
       }
 
@@ -117,7 +122,6 @@ GoRouter buildRouter(
 
       if (loggedIn &&
           (loc == '/' ||
-              loc == '/role' ||
               loc.startsWith('/login') ||
               loc.startsWith('/register'))) {
         return _dashboardRoute(authState.role);
@@ -131,12 +135,17 @@ GoRouter buildRouter(
         path: '/terms',
         builder: (context, state) {
           final viewOnly = state.uri.queryParameters['view'] == '1';
-          return TermsScreen(viewOnly: viewOnly);
+          final tabIndex =
+              int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0;
+          return TermsScreen(
+            viewOnly: viewOnly,
+            initialTabIndex: tabIndex.clamp(0, 2),
+          );
         },
       ),
       GoRoute(
         path: '/privacy',
-        builder: (_, __) => const TermsScreen(viewOnly: true),
+        builder: (_, __) => const TermsScreen(viewOnly: true, initialTabIndex: 1),
       ),
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
@@ -286,6 +295,11 @@ bool _isProtectedPath(String loc) {
 }
 
 String _loginPathFor(String loc) {
+  if (loc.startsWith('/farmer')) return '/login/farmer';
+  if (loc.startsWith('/investor')) return '/login/investor';
+  if (loc.startsWith('/cooperative')) return '/login/cooperative';
+  if (loc.startsWith('/government')) return '/login/government';
+  if (loc.startsWith('/processor')) return '/login/processor';
   return '/home';
 }
 
@@ -327,6 +341,6 @@ String _dashboardRoute(AuthRole role) {
     case AuthRole.processor:
       return '/processor';
     default:
-      return '/role';
+      return '/home';
   }
 }

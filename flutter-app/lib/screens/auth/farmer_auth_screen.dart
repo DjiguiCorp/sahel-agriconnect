@@ -639,7 +639,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                               GestureDetector(
                                 onTap: () {
                                   if (_step == FarmerAuthStep.identity) {
-                                    context.go('/role');
+                                    context.go('/home');
                                   } else if (_step == FarmerAuthStep.otp) {
                                     _goToIdentityStep();
                                   } else {

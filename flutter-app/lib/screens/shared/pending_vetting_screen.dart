@@ -217,7 +217,7 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
       case AuthRole.processor:
         return '/login/processor';
       default:
-        return '/role';
+        return '/home';
     }
   }
 
@@ -236,7 +236,7 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
       case AuthRole.processor:
         return '/processor';
       default:
-        return '/role';
+        return '/home';
     }
   }
 

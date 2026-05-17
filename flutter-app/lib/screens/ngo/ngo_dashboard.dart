@@ -76,7 +76,7 @@ class _NgoDashboardState extends State<NgoDashboard> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/home');
+        if (!didPop) context.go('/platform');
       },
       child: Scaffold(
       backgroundColor: _Ngo.bg,

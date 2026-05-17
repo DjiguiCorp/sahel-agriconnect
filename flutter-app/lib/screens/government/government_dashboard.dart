@@ -186,7 +186,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/home');
+        if (!didPop) context.go('/platform');
       },
       child: Scaffold(
         backgroundColor: _bg,
@@ -1759,7 +1759,7 @@ class _AccountTab extends StatelessWidget {
             Colors.white54,
             lp.t('Terms of Service', 'Conditions d’utilisation'),
             lp.t('View terms', 'Voir les conditions'),
-            () => context.push('/terms?view=1'),
+            () => context.push('/terms?view=1&tab=0'),
           ),
           _tile(
             context,
@@ -1767,7 +1767,7 @@ class _AccountTab extends StatelessWidget {
             Colors.white54,
             lp.t('Privacy Policy', 'Politique de confidentialité'),
             lp.t('View privacy', 'Voir la confidentialité'),
-            () => context.push('/terms?view=1'),
+            () => context.push('/terms?view=1&tab=1'),
           ),
         ]),
         const DashboardSignOutButton(
