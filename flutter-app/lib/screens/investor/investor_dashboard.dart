@@ -1,46 +1,74 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
-import '../../widgets/dashboard_account_nav_header.dart';
-import '../../widgets/dashboard_sign_out_button.dart';
 import '../../widgets/offline_banner.dart';
-import '../../widgets/web_action_tile.dart';
-import '../shared/webview_screen.dart';
 
-typedef _OppCardBuilder = Widget Function({
-  required LanguageProvider lp,
-  required String title,
-  required String subtitle,
-  required double progress,
-  required int delay,
-  required String opportunityId,
-  required String roiLabel,
-});
+const _bg = Color(0xFF0A1628);
+const _surface = Color(0xFF1a2744);
+const _surface2 = Color(0xFF0f1a33);
+const _gold = AppColors.gold;
+const _border = Color(0x14FFFFFF);
+const _text = Colors.white;
+const _muted = Color(0x80FFFFFF);
 
-/// AfriYield investor experience — deep navy, gold accents.
-abstract final class _Inv {
-  static const Color bg = Color(0xFF0A1628);
-  static const Color gold = Color(0xFFB5850A);
-  static const LinearGradient headerGrad = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF1a2744), Color(0xFF243358)],
-  );
-  static const LinearGradient cardGrad = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF1a2744), Color(0xFF0f1a33)],
-  );
+List<Map<String, dynamic>> _parseList(dynamic raw) {
+  final list = <Map<String, dynamic>>[];
+  if (raw is! List) return list;
+  for (final e in raw) {
+    if (e is Map) list.add(Map<String, dynamic>.from(e));
+  }
+  return list;
 }
 
+double _oppProgress(Map<String, dynamic> opp) {
+  final funded = num.tryParse(opp['amountFunded']?.toString() ?? '') ??
+      num.tryParse(opp['amountRaised']?.toString() ?? '') ??
+      0;
+  final target = num.tryParse(opp['amountTarget']?.toString() ?? '') ??
+      num.tryParse(opp['amountSought']?.toString() ?? '') ??
+      1;
+  if (target <= 0) return 0;
+  return (funded / target.toDouble()).clamp(0.0, 1.0);
+}
+
+int _oppMinInvestment(Map<String, dynamic> opp) {
+  return (num.tryParse(opp['minimumInvestmentUSD']?.toString() ?? '') ??
+          num.tryParse(opp['minimumInvestment']?.toString() ?? '') ??
+          num.tryParse(opp['minInvestment']?.toString() ?? '') ??
+          0)
+      .toInt();
+}
+
+double _oppReturnRate(Map<String, dynamic> opp) {
+  final single = num.tryParse(opp['expectedROIPercent']?.toString() ?? '');
+  if (single != null) return single.toDouble();
+  final min = num.tryParse(opp['expectedROIMin']?.toString() ?? '') ?? 12;
+  final max = num.tryParse(opp['expectedROIMax']?.toString() ?? '') ?? 25;
+  return ((min + max) / 2).toDouble();
+}
+
+String _oppTitle(Map<String, dynamic> opp, bool isFr) =>
+    opp['centerName']?.toString() ??
+    opp['title']?.toString() ??
+    (isFr ? 'Opportunité' : 'Opportunity');
+
+String _oppSubtitle(Map<String, dynamic> opp) =>
+    opp['commodity']?.toString() ?? opp['description']?.toString() ?? '';
+
+String _oppId(Map<String, dynamic> opp) =>
+    opp['_id']?.toString() ?? opp['id']?.toString() ?? '';
+
+// ══════════════════════════════════════════════════════════════
+// MAIN INVESTOR DASHBOARD
+// ══════════════════════════════════════════════════════════════
 class InvestorDashboard extends StatefulWidget {
   const InvestorDashboard({super.key});
 
@@ -73,22 +101,6 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
           ) /
           _investments.length;
 
-  String _formatEuroThousands(double v) {
-    final s = v.round().toString();
-    return s.replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]},',
-    );
-  }
-
-  String _oppRoiRange(Map<String, dynamic> opp) {
-    final min =
-        num.tryParse(opp['expectedROIMin']?.toString() ?? '') ?? 12;
-    final max =
-        num.tryParse(opp['expectedROIMax']?.toString() ?? '') ?? 25;
-    return '${min.toStringAsFixed(0)}–${max.toStringAsFixed(0)}%';
-  }
-
   @override
   void initState() {
     super.initState();
@@ -97,37 +109,15 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
 
   Future<void> _load() async {
     final auth = context.read<AuthState>();
-    final token = auth.token;
-    final email = auth.displayEmail;
     try {
-      final results = await Future.wait([
-        if (email.isNotEmpty)
-          ApiService.get(
-            '/api/investments/investor/${Uri.encodeComponent(email)}',
-            token: token,
-          )
-        else
-          Future.value(<String, dynamic>{}),
-        ApiService.getOpportunities(token: token),
-      ]);
+      final res = await ApiService.getInvestorPortal(
+        auth.token ?? '',
+        email: auth.displayEmail,
+      );
       if (!mounted) return;
-      final invRaw = results[0]['investments'];
-      final invList = <Map<String, dynamic>>[];
-      if (invRaw is List) {
-        for (final e in invRaw) {
-          if (e is Map) invList.add(Map<String, dynamic>.from(e));
-        }
-      }
-      final oppRaw = results[1]['opportunities'];
-      final oppList = <Map<String, dynamic>>[];
-      if (oppRaw is List) {
-        for (final e in oppRaw) {
-          if (e is Map) oppList.add(Map<String, dynamic>.from(e));
-        }
-      }
       setState(() {
-        _investments = invList;
-        _opportunities = oppList;
+        _investments = _parseList(res['investments']);
+        _opportunities = _parseList(res['opportunities']);
         _loading = false;
       });
     } catch (_) {
@@ -135,320 +125,295 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
     }
   }
 
-  double _fundedFraction(Map<String, dynamic> opp) {
-    final sought = num.tryParse(opp['amountSought']?.toString() ?? '0') ?? 0;
-    final raised = num.tryParse(opp['amountRaised']?.toString() ?? '0') ?? 0;
-    if (sought <= 0) return 0;
-    return (raised / sought.toDouble()).clamp(0.0, 1.0);
+  void _goTab(int i) {
+    AuthService.resetActivity();
+    setState(() => _tab = i);
   }
 
-  String _oppTitle(Map<String, dynamic> opp, LanguageProvider lp) =>
-      opp['centerName']?.toString() ??
-      opp['title']?.toString() ??
-      lp.t('Opportunity', 'Opportunité');
-
-  String _oppSubtitle(Map<String, dynamic> opp) =>
-      opp['commodity']?.toString() ?? '';
-
-  String _oppId(Map<String, dynamic> opp) =>
-      opp['_id']?.toString() ?? opp['id']?.toString() ?? '';
+  Future<void> _onBackPressed() async {
+    if (_tab != 0) {
+      setState(() => _tab = 0);
+      return;
+    }
+    final isFr = context.read<LanguageProvider>().locale.languageCode == 'fr';
+    final exit = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isFr ? 'Quitter ?' : 'Exit?',
+          style: const TextStyle(color: _text),
+        ),
+        content: Text(
+          isFr
+              ? 'Voulez-vous quitter AfriYield ?'
+              : 'Do you want to exit AfriYield?',
+          style: const TextStyle(color: _muted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(
+              isFr ? 'Rester' : 'Stay',
+              style: const TextStyle(color: _muted),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              isFr ? 'Quitter' : 'Exit',
+              style: const TextStyle(color: _gold),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (exit == true) {
+      SystemNavigator.pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    final balanceLabel = _loading
-        ? '…'
-        : '€ ${_formatEuroThousands(_totalDeployed)}';
+    final isFr = context.watch<LanguageProvider>().locale.languageCode == 'fr';
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/platform');
+        if (!didPop) _onBackPressed();
       },
-      child: Scaffold(
-      resizeToAvoidBottomInset: true,
-      backgroundColor: _Inv.bg,
-      body: Column(
-        children: [
-          const OfflineBanner(),
-          Expanded(
-            child: IndexedStack(
-              index: _tab,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Scaffold(
+            resizeToAvoidBottomInset: true,
+            backgroundColor: _bg,
+            body: Column(
               children: [
-                RefreshIndicator(
-                  color: _Inv.gold,
-                  backgroundColor: const Color(0xFF1a2744),
-                  onRefresh: _load,
-                  child: CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: _InvestorHomeHeader(
-                          lp: lp,
-                          portfolioValue: balanceLabel,
-                          returnsPct: _loading
-                              ? '—'
-                              : '${_avgRoi.toStringAsFixed(1)}%',
-                          positions: _loading
-                              ? '—'
-                              : '${_investments.length}',
-                        ),
+                const OfflineBanner(),
+                _InvestorHeader(
+                  totalDeployed: _totalDeployed,
+                  avgRoi: _avgRoi,
+                  investmentCount: _investments.length,
+                  isFr: isFr,
+                ),
+                Expanded(
+                  child: IndexedStack(
+                    index: _tab,
+                    children: [
+                      _PortfolioTab(
+                        investments: _investments,
+                        opportunities: _opportunities,
+                        loading: _loading,
+                        isFr: isFr,
+                        onTabChange: _goTab,
+                        onRefresh: _load,
                       ),
-                      SliverToBoxAdapter(
-                        child: _InvestorHomeBody(
-                          lp: lp,
-                          loading: _loading,
-                          opportunities: _opportunities,
-                          investments: _investments,
-                          opportunityCard: _opportunityCard,
-                          fundedFraction: _fundedFraction,
-                          oppTitle: _oppTitle,
-                          oppSubtitle: _oppSubtitle,
-                          oppId: _oppId,
-                          oppRoiRange: _oppRoiRange,
-                        ),
+                      _ExchangeTab(
+                        opportunities: _opportunities,
+                        loading: _loading,
+                        isFr: isFr,
+                        onRefresh: _load,
+                      ),
+                      _ActivityTab(
+                        investments: _investments,
+                        isFr: isFr,
+                      ),
+                      _UpdatesTab(isFr: isFr),
+                      _InvestorAccountTab(
+                        isFr: isFr,
+                        onTabChange: _goTab,
                       ),
                     ],
                   ),
                 ),
-                _DealsTab(
-                  opportunities: _opportunities,
-                  loading: _loading,
-                  opportunityCard: _opportunityCard,
-                  fundedFraction: _fundedFraction,
-                  oppTitle: _oppTitle,
-                  oppSubtitle: _oppSubtitle,
-                  oppId: _oppId,
-                  oppRoiRange: _oppRoiRange,
-                ),
-                _PortfolioInvestmentsTab(
-                  investments: _investments,
-                  loading: _loading,
-                  lp: lp,
-                ),
-                _InvestorAccountTab(
-                  lp: lp,
-                  onBackToDashboard: () => setState(() => _tab = 0),
-                ),
               ],
             ),
+            bottomNavigationBar: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF080f1e),
+                border: Border(top: BorderSide(color: _border, width: 1)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: NavigationBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  selectedIndex: _tab,
+                  onDestinationSelected: _goTab,
+                  indicatorColor: _gold.withValues(alpha: 0.15),
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  destinations: [
+                    NavigationDestination(
+                      icon: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        color: _muted,
+                      ),
+                      selectedIcon: const Icon(
+                        Icons.account_balance_wallet,
+                        color: _gold,
+                      ),
+                      label: isFr ? 'Portefeuille' : 'Portfolio',
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(
+                        Icons.trending_up_outlined,
+                        color: _muted,
+                      ),
+                      selectedIcon: const Icon(Icons.trending_up, color: _gold),
+                      label: isFr ? 'Échange' : 'Exchange',
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(
+                        Icons.receipt_long_outlined,
+                        color: _muted,
+                      ),
+                      selectedIcon:
+                          const Icon(Icons.receipt_long, color: _gold),
+                      label: isFr ? 'Activité' : 'Activity',
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.campaign_outlined, color: _muted),
+                      selectedIcon: const Icon(Icons.campaign, color: _gold),
+                      label: isFr ? 'Actualités' : 'Updates',
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(
+                        Icons.manage_accounts_outlined,
+                        color: _muted,
+                      ),
+                      selectedIcon:
+                          const Icon(Icons.manage_accounts, color: _gold),
+                      label: isFr ? 'Compte' : 'Account',
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
-      bottomNavigationBar: _InvestorBottomNav(
-        tab: _tab,
-        lp: lp,
-        onChanged: (i) {
-          AuthService.resetActivity();
-          setState(() => _tab = i);
-        },
-      ),
-    ),
-    );
-  }
-
-  Widget _opportunityCard({
-    required LanguageProvider lp,
-    required String title,
-    required String subtitle,
-    required double progress,
-    required int delay,
-    required String opportunityId,
-    required String roiLabel,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: _Inv.cardGrad,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 0.5,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _Inv.gold.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _Inv.gold.withValues(alpha: 0.35),
-                  ),
-                ),
-                child: Text(
-                  roiLabel,
-                  style: const TextStyle(
-                    color: _Inv.gold,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation<Color>(_Inv.gold),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${(progress * 100).round()}% ${lp.t('funded', 'financé')}',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
-              fontSize: 10,
-            ),
-          ),
-          const Divider(height: 24, color: Color(0x22FFFFFF)),
-          WebActionTile(
-            title: lp.t(
-              'Invest in this opportunity',
-              'Investir dans cette opportunité',
-            ),
-            description: lp.t(
-              'Complete your investment on our secure platform',
-              'Finalisez votre investissement sur notre plateforme sécurisée',
-            ),
-            action: 'invest',
-            opportunityId: opportunityId,
-            icon: Icons.trending_up,
-            titleColor: Colors.white,
-            subtitleColor: Colors.white70,
-          ),
-        ],
-      ),
-    )
-        .animate(delay: Duration(milliseconds: delay))
-        .fadeIn(duration: 300.ms)
-        .slideY(begin: 0.06);
+    );
   }
 }
 
-class _InvestorHomeHeader extends StatelessWidget {
-  const _InvestorHomeHeader({
-    required this.lp,
-    required this.portfolioValue,
-    required this.returnsPct,
-    required this.positions,
+// ══════════════════════════════════════════════════════════════
+// HEADER
+// ══════════════════════════════════════════════════════════════
+class _InvestorHeader extends StatelessWidget {
+  const _InvestorHeader({
+    required this.totalDeployed,
+    required this.avgRoi,
+    required this.investmentCount,
+    required this.isFr,
   });
 
-  final LanguageProvider lp;
-  final String portfolioValue;
-  final String returnsPct;
-  final String positions;
+  final double totalDeployed;
+  final double avgRoi;
+  final int investmentCount;
+  final bool isFr;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(gradient: _Inv.headerGrad),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1a2744), Color(0xFF243358), Color(0xFF1a2744)],
+          stops: [0.0, 0.5, 1.0],
+        ),
+      ),
       child: Stack(
         children: [
           Positioned(
             top: -30,
             right: -30,
             child: Container(
-              width: 180,
-              height: 180,
+              width: 160,
+              height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _Inv.gold.withValues(alpha: 0.06),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -40,
-            left: -20,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _Inv.gold.withValues(alpha: 0.04),
+                color: _gold.withValues(alpha: 0.06),
               ),
             ),
           ),
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        lp.t('AfriYield Exchange', 'AfriYield Exchange'),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 13,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AfriYield Exchange',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.65),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          Text(
+                            isFr ? 'Portail investisseur' : 'Investor Portal',
+                            style: const TextStyle(
+                              color: _text,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        lp.t('Investor Portal', 'Portail investisseur'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
+                      Tooltip(
+                        message: isFr
+                            ? 'Retour à l\'accueil principal'
+                            : 'Back to main platform',
+                        child: GestureDetector(
+                          onTap: () => context.go('/platform'),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _gold.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: _gold.withValues(alpha: 0.45),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.home_outlined,
+                              color: _gold,
+                              size: 20,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
-                      _InvestorStatCard(
-                        label: lp.t('Portfolio', 'Portefeuille'),
-                        value: portfolioValue,
-                        icon: Icons.account_balance_wallet_outlined,
+                      _stat(
+                        '\$${totalDeployed.toStringAsFixed(0)}',
+                        isFr ? 'Investi' : 'Deployed',
                       ),
-                      const SizedBox(width: 10),
-                      _InvestorStatCard(
-                        label: lp.t('Returns', 'Rendement'),
-                        value: returnsPct,
-                        icon: Icons.trending_up,
+                      const SizedBox(width: 8),
+                      _stat(
+                        '${avgRoi.toStringAsFixed(1)}%',
+                        isFr ? 'Retour moy.' : 'Avg return',
                       ),
-                      const SizedBox(width: 10),
-                      _InvestorStatCard(
-                        label: lp.t('Positions', 'Positions'),
-                        value: positions,
-                        icon: Icons.pie_chart_outline,
+                      const SizedBox(width: 8),
+                      _stat(
+                        '$investmentCount',
+                        isFr ? 'Positions' : 'Positions',
                       ),
                     ],
                   ),
@@ -460,366 +425,405 @@ class _InvestorHomeHeader extends StatelessWidget {
       ),
     );
   }
-}
 
-class _InvestorStatCard extends StatelessWidget {
-  const _InvestorStatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: _Inv.cardGrad,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
+  Widget _stat(String val, String label) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                val,
+                style: const TextStyle(
+                  color: _gold,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 9,
+                ),
+              ),
+            ],
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: _Inv.gold.withValues(alpha: 0.85), size: 18),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+      );
 }
 
-class _InvestorHomeBody extends StatelessWidget {
-  const _InvestorHomeBody({
-    required this.lp,
-    required this.loading,
-    required this.opportunities,
+// ══════════════════════════════════════════════════════════════
+// TAB 0: PORTFOLIO
+// ══════════════════════════════════════════════════════════════
+class _PortfolioTab extends StatelessWidget {
+  const _PortfolioTab({
     required this.investments,
-    required this.opportunityCard,
-    required this.fundedFraction,
-    required this.oppTitle,
-    required this.oppSubtitle,
-    required this.oppId,
-    required this.oppRoiRange,
+    required this.opportunities,
+    required this.loading,
+    required this.isFr,
+    required this.onTabChange,
+    required this.onRefresh,
   });
 
-  final LanguageProvider lp;
-  final bool loading;
-  final List<Map<String, dynamic>> opportunities;
   final List<Map<String, dynamic>> investments;
-  final _OppCardBuilder opportunityCard;
-  final double Function(Map<String, dynamic>) fundedFraction;
-  final String Function(Map<String, dynamic>, LanguageProvider) oppTitle;
-  final String Function(Map<String, dynamic>) oppSubtitle;
-  final String Function(Map<String, dynamic>) oppId;
-  final String Function(Map<String, dynamic>) oppRoiRange;
+  final List<Map<String, dynamic>> opportunities;
+  final bool loading;
+  final bool isFr;
+  final ValueChanged<int> onTabChange;
+  final Future<void> Function() onRefresh;
+
+  List<Widget> _staticOpportunities() => [
+        _OpportunityCard(
+          title: isFr ? 'Coopérative Karité Mali' : 'Mali Shea Cooperative',
+          subtitle: isFr
+              ? 'Beurre de karité certifié bio'
+              : 'Certified organic shea butter',
+          returnRate: 15.0,
+          minInvestment: 500,
+          progress: 0.65,
+          opportunityId: 'demo-shea-mali',
+          isFr: isFr,
+        ),
+        const SizedBox(height: 10),
+        _OpportunityCard(
+          title: isFr ? 'Union Sésame Sahel' : 'Sahel Sesame Union',
+          subtitle: isFr
+              ? 'Export sésame Europe & Asie'
+              : 'Sesame export Europe & Asia',
+          returnRate: 12.5,
+          minInvestment: 1000,
+          progress: 0.42,
+          opportunityId: 'demo-sesame',
+          isFr: isFr,
+        ),
+        const SizedBox(height: 10),
+        _OpportunityCard(
+          title: isFr ? 'Projet Noix Cajou Sikasso' : 'Sikasso Cashew Project',
+          subtitle: isFr
+              ? 'Transformation locale noix de cajou'
+              : 'Local cashew processing',
+          returnRate: 18.0,
+          minInvestment: 2500,
+          progress: 0.28,
+          opportunityId: 'demo-cashew',
+          isFr: isFr,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
-    final featured = opportunities.take(4).toList();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return RefreshIndicator(
+      color: _gold,
+      backgroundColor: _surface,
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
-          _invSectionTitle(
-            lp.t('Featured opportunities', 'Opportunités à la une'),
+          _AboutAfriYieldCard(isFr: isFr),
+          const SizedBox(height: 16),
+          Text(
+            isFr ? 'Actions rapides' : 'Quick Actions',
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.4,
+            children: [
+              _QA(
+                emoji: '💰',
+                title: isFr ? 'Explorer' : 'Browse Deals',
+                color: _gold,
+                onTap: () => onTabChange(1),
+              ),
+              _QA(
+                emoji: '📊',
+                title: isFr ? 'Mon activité' : 'My Activity',
+                color: const Color(0xFF2196F3),
+                onTap: () => onTabChange(2),
+              ),
+              _QA(
+                emoji: '📢',
+                title: isFr ? 'Actualités' : 'Updates',
+                color: const Color(0xFF10B981),
+                onTap: () => onTabChange(3),
+              ),
+              _QA(
+                emoji: '⚙️',
+                title: isFr ? 'Compte' : 'Account',
+                color: const Color(0xFF9C27B0),
+                onTap: () => onTabChange(4),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isFr ? 'Mes investissements' : 'My Investments',
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => onTabChange(2),
+                child: Text(
+                  isFr ? 'Tout voir' : 'View all',
+                  style: const TextStyle(color: _gold, fontSize: 12),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           if (loading)
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(color: _Inv.gold),
+                child: CircularProgressIndicator(color: _gold),
               ),
             )
-          else if (featured.isEmpty)
-            Text(
-              lp.t(
-                'No open opportunities at this time. Check the Exchange tab.',
-                'Aucune opportunité pour le moment. Voir l’onglet Bourse.',
-              ),
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
-                fontSize: 13,
-              ),
+          else if (investments.isEmpty)
+            _emptyState(
+              Icons.account_balance_wallet_outlined,
+              isFr ? 'Aucun investissement' : 'No investments yet',
+              isFr
+                  ? 'Explorez les opportunités pour commencer'
+                  : 'Browse deals to start investing',
             )
           else
-            ...featured.asMap().entries.map((e) {
-              final opp = e.value;
-              final funded = fundedFraction(opp);
+            ...investments
+                .take(3)
+                .map((inv) => _InvestmentCard(inv: inv, isFr: isFr)),
+          const SizedBox(height: 20),
+          Text(
+            isFr ? 'Opportunités vedettes' : 'Featured Opportunities',
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (loading)
+            const SizedBox.shrink()
+          else if (opportunities.isEmpty)
+            ..._staticOpportunities()
+          else
+            ...opportunities.take(3).map((opp) {
               return Padding(
-                padding: EdgeInsets.only(bottom: e.key < featured.length - 1 ? 12 : 0),
-                child: opportunityCard(
-                  lp: lp,
-                  title: oppTitle(opp, lp),
-                  subtitle: oppSubtitle(opp),
-                  progress: funded.clamp(0.0, 1.0),
-                  delay: e.key * 80,
-                  opportunityId: oppId(opp),
-                  roiLabel: oppRoiRange(opp),
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _OpportunityCard(
+                  title: _oppTitle(opp, isFr),
+                  subtitle: _oppSubtitle(opp),
+                  returnRate: _oppReturnRate(opp),
+                  minInvestment: _oppMinInvestment(opp),
+                  progress: _oppProgress(opp),
+                  opportunityId: _oppId(opp),
+                  isFr: isFr,
                 ),
               );
             }),
-          const SizedBox(height: 28),
-          _invSectionTitle(
-            lp.t('How AfriYield works', 'Comment fonctionne AfriYield'),
-          ),
-          const SizedBox(height: 12),
-          _howStep(
-            lp,
-            '1',
-            lp.t('Discover vetted opportunities', 'Découvrir des opportunités validées'),
-            lp.t(
-              'Browse cooperatives and commodities with transparent funding targets.',
-              'Parcourez coopératives et produits avec des objectifs clairs.',
-            ),
-          ),
-          const SizedBox(height: 10),
-          _howStep(
-            lp,
-            '2',
-            lp.t('Invest on the secure web platform', 'Investir sur la plateforme web sécurisée'),
-            lp.t(
-              'Complete KYC and payments with escrow-protected milestones.',
-              'Complétez la vérification et les paiements avec séquestre par étapes.',
-            ),
-          ),
-          const SizedBox(height: 10),
-          _howStep(
-            lp,
-            '3',
-            lp.t('Track payouts & impact', 'Suivre les paiements et l’impact'),
-            lp.t(
-              'Follow schedules, alerts, and market updates in this app.',
-              'Suivez échéances, alertes et actualités marché dans cette app.',
-            ),
-          ),
-          const SizedBox(height: 28),
-          _invSectionTitle(
-            lp.t('My investments', 'Mes investissements'),
-          ),
-          const SizedBox(height: 12),
-          if (investments.isEmpty)
-            _invGlassCard(
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutAfriYieldCard extends StatefulWidget {
+  const _AboutAfriYieldCard({required this.isFr});
+
+  final bool isFr;
+
+  @override
+  State<_AboutAfriYieldCard> createState() => _AboutAfriYieldCardState();
+}
+
+class _AboutAfriYieldCardState extends State<_AboutAfriYieldCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_surface, _surface2]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _gold.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: _Inv.gold.withValues(alpha: 0.12),
+                      color: _gold.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      Icons.savings_outlined,
-                      color: _Inv.gold.withValues(alpha: 0.9),
-                      size: 28,
+                    child: const Center(
+                      child: Text('💰', style: TextStyle(fontSize: 22)),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          lp.t('No positions yet', 'Aucune position'),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                        const Text(
+                          'AfriYield Exchange',
+                          style: TextStyle(
+                            color: _text,
                             fontSize: 15,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 4),
                         Text(
-                          lp.t(
-                            'Start with Featured opportunities or open the Exchange tab.',
-                            'Commencez par les opportunités à la une ou l’onglet Bourse.',
-                          ),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            fontSize: 12,
-                            height: 1.4,
-                          ),
+                          isFr
+                              ? 'Investir dans l\'agriculture africaine'
+                              : 'Invest in African agriculture',
+                          style: const TextStyle(color: _muted, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: _gold,
+                  ),
                 ],
               ),
-            )
-          else
-            ...investments.take(3).map((inv) {
-              final name =
-                  inv['investorName']?.toString() ?? lp.t('Investment', 'Investissement');
-              final amt =
-                  num.tryParse(inv['amountDeployed']?.toString() ?? '0') ?? 0;
-              final cur = inv['currency']?.toString() ?? 'EUR';
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _invGlassCard(
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '€ ${amt.toStringAsFixed(0)} · $cur',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 12,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      color: _Inv.gold.withValues(alpha: 0.6),
+            ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(color: _border, height: 1),
+                  const SizedBox(height: 12),
+                  Text(
+                    isFr
+                        ? 'AfriYield Exchange est la plateforme d\'investissement agricole de Sahel AgriConnect. Elle permet aux membres de la diaspora et aux investisseurs du monde entier de financer des coopératives agricoles certifiées en Afrique de l\'Ouest et de recevoir des rendements attractifs.\n\n'
+                            '• Investissez à partir de 500\$\n'
+                            '• Rendements moyens: 12-18% par an\n'
+                            '• Coopératives certifiées et vérifiées\n'
+                            '• Transparence totale sur l\'utilisation des fonds\n'
+                            '• Impact direct sur les communautés rurales'
+                        : 'AfriYield Exchange is the agricultural investment platform of Sahel AgriConnect. It enables diaspora members and global investors to fund certified West African farming cooperatives and receive attractive returns.\n\n'
+                            '• Invest from \$500\n'
+                            '• Average returns: 12-18% per year\n'
+                            '• Certified and vetted cooperatives\n'
+                            '• Full transparency on fund use\n'
+                            '• Direct impact on rural communities',
+                    style: const TextStyle(
+                      color: _muted,
+                      fontSize: 13,
+                      height: 1.6,
                     ),
                   ),
-                ),
-              );
-            }),
-          const SizedBox(height: 28),
-          _invSectionTitle(
-            lp.t('Updates & alerts', 'Mises à jour et alertes'),
-          ),
-          const SizedBox(height: 12),
-          _UpdateGlassCard(
-            icon: Icons.notifications_active_outlined,
-            title: lp.t('Investment alerts', 'Alertes investissement'),
-            subtitle: lp.t(
-              'Milestones, payouts, and opportunity status — configure on the web portal.',
-              'Jalons, paiements et statut des opportunités — sur le portail web.',
-            ),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => InAppWebViewScreen(
-                  title: lp.t('Investor portal', 'Portail investisseur'),
-                  url: 'https://sahelagriconnect.com/afri-yield/investor-portal',
-                ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _infoPill('🌍', isFr ? 'Pan-africain' : 'Pan-African'),
+                      const SizedBox(width: 8),
+                      _infoPill('📈', isFr ? '12-18% retour' : '12-18% return'),
+                      const SizedBox(width: 8),
+                      _infoPill('✅', isFr ? 'Certifié' : 'Certified'),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          _UpdateGlassCard(
-            icon: Icons.show_chart,
-            title: lp.t('Market movements', 'Mouvements de marché'),
-            subtitle: lp.t(
-              'Shea, sesame, cashew benchmarks and diaspora demand signals.',
-              'Références karité, sésame, cajou et demande diaspora.',
-            ),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => InAppWebViewScreen(
-                  title: lp.t('AfriYield Exchange', 'AfriYield Exchange'),
-                  url: 'https://sahelagriconnect.com/afri-yield/marketplace',
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _UpdateGlassCard(
-            icon: Icons.campaign_outlined,
-            title: lp.t('Platform news', 'Actualités plateforme'),
-            subtitle: lp.t(
-              'Roadmap, partner announcements, and compliance updates.',
-              'Feuille de route, partenaires et conformité.',
-            ),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => InAppWebViewScreen(
-                  title: lp.t('Investor updates', 'Actualités investisseurs'),
-                  url: 'https://sahelagriconnect.com/afri-yield/investor-updates',
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 28),
-          _invSectionTitle(lp.t('Risk disclaimer', 'Avertissement sur les risques')),
-          const SizedBox(height: 8),
-          Text(
-            lp.t(
-              'Investments in agricultural value chains carry risk including crop failure, '
-              'currency fluctuation, and counterparty default. Past performance does not '
-              'guarantee future returns. Review all documents on the web platform and '
-              'consult independent advisors before investing.',
-              'Les investissements agricoles comportent des risques (récolte, devise, contrepartie). '
-              'Les résultats passés ne préjugent pas des gains futurs. Consultez les documents '
-              'sur le web et des conseillers indépendants avant d’investir.',
-            ),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
-              fontSize: 11,
-              height: 1.5,
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _howStep(
-    LanguageProvider lp,
-    String step,
-    String title,
-    String body,
-  ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: _Inv.cardGrad,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _Inv.gold.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              step,
+  Widget _infoPill(String emoji, String label) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: _gold.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _gold.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 12)),
+            const SizedBox(width: 4),
+            Text(
+              label,
               style: const TextStyle(
-                color: _Inv.gold,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
+                color: _gold,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
               ),
             ),
+          ],
+        ),
+      );
+}
+
+class _InvestmentCard extends StatelessWidget {
+  const _InvestmentCard({required this.inv, required this.isFr});
+
+  final Map<String, dynamic> inv;
+  final bool isFr;
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = num.tryParse(inv['amountDeployed']?.toString() ?? '0') ?? 0;
+    final roi = num.tryParse(inv['expectedROIPercent']?.toString() ?? '0') ?? 0;
+    final name = inv['opportunityName']?.toString() ??
+        inv['cooperativeName']?.toString() ??
+        inv['investorName']?.toString() ??
+        (isFr ? 'Investissement' : 'Investment');
+    final status = inv['status']?.toString() ?? 'active';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_surface, _surface2]),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: _gold.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.trending_up, color: _gold, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -827,113 +831,1101 @@ class _InvestorHomeBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  name,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                    color: _text,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
                 Text(
-                  body,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
+                  '\$$amount deployed · $roi% ROI',
+                  style: const TextStyle(color: _muted, fontSize: 11),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _invSectionTitle(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: _Inv.gold,
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 0.2,
-      ),
-    );
-  }
-
-  Widget _invGlassCard({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF1a2744).withValues(alpha: 0.85),
-            const Color(0xFF0f1a33).withValues(alpha: 0.95),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              status == 'active' ? (isFr ? 'Actif' : 'Active') : status,
+              style: const TextStyle(
+                color: Colors.green,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
-      child: child,
     );
   }
 }
 
-class _UpdateGlassCard extends StatelessWidget {
-  const _UpdateGlassCard({
-    required this.icon,
+class _OpportunityCard extends StatefulWidget {
+  const _OpportunityCard({
     required this.title,
     required this.subtitle,
+    required this.returnRate,
+    required this.minInvestment,
+    required this.progress,
+    required this.opportunityId,
+    required this.isFr,
+  });
+
+  final String title;
+  final String subtitle;
+  final double returnRate;
+  final int minInvestment;
+  final double progress;
+  final String opportunityId;
+  final bool isFr;
+
+  @override
+  State<_OpportunityCard> createState() => _OpportunityCardState();
+}
+
+class _OpportunityCardState extends State<_OpportunityCard> {
+  bool _showInvestForm = false;
+  final _amountCtrl = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _invest() async {
+    final amount = double.tryParse(_amountCtrl.text);
+    if (amount == null || amount < widget.minInvestment) return;
+    final auth = context.read<AuthState>();
+    setState(() => _submitting = true);
+    try {
+      await ApiService.post('/api/investors/investment-intent', {
+        'name': auth.displayName,
+        'email': auth.displayEmail,
+        'amount': amount,
+        'opportunityId': widget.opportunityId,
+        'message': 'Mobile app investment request for ${widget.title}',
+      });
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _showInvestForm = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.isFr
+                ? '✅ Demande d\'investissement soumise ! Notre équipe vous contactera.'
+                : '✅ Investment request submitted! Our team will contact you.',
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.isFr
+                  ? 'Échec de l\'envoi. Réessayez.'
+                  : 'Submission failed. Please try again.',
+            ),
+            backgroundColor: Colors.red.shade800,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_surface, _surface2]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _gold.withValues(alpha: 0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: const TextStyle(
+                      color: _text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _gold.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${widget.returnRate.toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      color: _gold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.subtitle,
+              style: const TextStyle(color: _muted, fontSize: 12),
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: widget.progress,
+                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                color: _gold,
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${(widget.progress * 100).toInt()}% ${widget.isFr ? 'financé' : 'funded'}',
+                  style: const TextStyle(color: _muted, fontSize: 10),
+                ),
+                Text(
+                  'Min: \$${widget.minInvestment}',
+                  style: const TextStyle(color: _muted, fontSize: 10),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (!_showInvestForm)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _gold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: () => setState(() => _showInvestForm = true),
+                  child: Text(
+                    widget.isFr ? 'Investir maintenant' : 'Invest Now',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              )
+            else ...[
+              TextField(
+                controller: _amountCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: _text),
+                decoration: InputDecoration(
+                  hintText: widget.isFr
+                      ? 'Montant en \$ (min \$${widget.minInvestment})'
+                      : 'Amount in \$ (min \$${widget.minInvestment})',
+                  hintStyle: const TextStyle(color: _muted, fontSize: 13),
+                  filled: true,
+                  fillColor: _bg,
+                  prefixIcon: const Icon(Icons.attach_money, color: _gold),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: _gold.withValues(alpha: 0.4)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: _gold.withValues(alpha: 0.4)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _gold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: _muted.withValues(alpha: 0.3)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () => setState(() => _showInvestForm = false),
+                      child: Text(
+                        widget.isFr ? 'Annuler' : 'Cancel',
+                        style: const TextStyle(color: _muted),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _gold,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: _submitting ? null : _invest,
+                      child: _submitting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              widget.isFr ? 'Confirmer' : 'Confirm',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QA extends StatelessWidget {
+  const _QA({
+    required this.emoji,
+    required this.title,
+    required this.color,
     required this.onTap,
   });
 
-  final IconData icon;
+  final String emoji;
   final String title;
-  final String subtitle;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [_surface, _surface2]),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 20)),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              title,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 1: EXCHANGE
+// ══════════════════════════════════════════════════════════════
+class _ExchangeTab extends StatelessWidget {
+  const _ExchangeTab({
+    required this.opportunities,
+    required this.loading,
+    required this.isFr,
+    required this.onRefresh,
+  });
+
+  final List<Map<String, dynamic>> opportunities;
+  final bool loading;
+  final bool isFr;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final commodities = [
+      {
+        'name': isFr ? 'Beurre de karité' : 'Shea Butter',
+        'price': '450 XOF/kg',
+        'change': '+12%',
+        'up': true,
+      },
+      {
+        'name': isFr ? 'Sésame' : 'Sesame',
+        'price': '380 XOF/kg',
+        'change': '+3%',
+        'up': true,
+      },
+      {
+        'name': isFr ? 'Noix de cajou' : 'Cashew',
+        'price': '920 XOF/kg',
+        'change': '+8%',
+        'up': true,
+      },
+      {
+        'name': isFr ? 'Arachides' : 'Groundnuts',
+        'price': '280 XOF/kg',
+        'change': '-1%',
+        'up': false,
+      },
+      {
+        'name': isFr ? 'Coton' : 'Cotton',
+        'price': '265 XOF/kg',
+        'change': '+5%',
+        'up': true,
+      },
+      {
+        'name': isFr ? 'Mil' : 'Millet',
+        'price': '185 XOF/kg',
+        'change': '+2%',
+        'up': true,
+      },
+    ];
+
+    return RefreshIndicator(
+      color: _gold,
+      backgroundColor: _surface,
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        children: [
+          Text(
+            isFr ? 'Mouvements du marché' : 'Market Movement',
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isFr
+                ? 'Prix des matières premières africaines — mis à jour quotidiennement'
+                : 'African commodity prices — updated daily',
+            style: const TextStyle(color: _muted, fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          ...commodities.map((c) {
+            final up = c['up'] as bool;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [_surface, _surface2]),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.eco_outlined,
+                    color: Color(0xFF10B981),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      c['name'] as String,
+                      style: const TextStyle(
+                        color: _text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    c['price'] as String,
+                    style: const TextStyle(color: _muted, fontSize: 12),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (up ? Colors.green : Colors.red)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      c['change'] as String,
+                      style: TextStyle(
+                        color: up ? Colors.green : Colors.red,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 20),
+          Text(
+            isFr
+                ? 'Opportunités d\'investissement'
+                : 'Investment Opportunities',
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (loading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(color: _gold),
+              ),
+            )
+          else if (opportunities.isEmpty) ...[
+            _OpportunityCard(
+              title: isFr ? 'Coopérative Karité Mali' : 'Mali Shea Cooperative',
+              subtitle: isFr
+                  ? 'Beurre de karité certifié bio'
+                  : 'Certified organic shea butter',
+              returnRate: 15.0,
+              minInvestment: 500,
+              progress: 0.65,
+              opportunityId: 'demo-shea-mali',
+              isFr: isFr,
+            ),
+            const SizedBox(height: 10),
+            _OpportunityCard(
+              title: isFr ? 'Union Sésame Sahel' : 'Sahel Sesame Union',
+              subtitle: isFr
+                  ? 'Export sésame Europe & Asie'
+                  : 'Sesame export Europe & Asia',
+              returnRate: 12.5,
+              minInvestment: 1000,
+              progress: 0.42,
+              opportunityId: 'demo-sesame',
+              isFr: isFr,
+            ),
+            const SizedBox(height: 10),
+            _OpportunityCard(
+              title:
+                  isFr ? 'Projet Noix Cajou Sikasso' : 'Sikasso Cashew Project',
+              subtitle: isFr
+                  ? 'Transformation locale noix de cajou'
+                  : 'Local cashew processing',
+              returnRate: 18.0,
+              minInvestment: 2500,
+              progress: 0.28,
+              opportunityId: 'demo-cashew',
+              isFr: isFr,
+            ),
+          ] else
+            ...opportunities.map((opp) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _OpportunityCard(
+                  title: _oppTitle(opp, isFr),
+                  subtitle: _oppSubtitle(opp),
+                  returnRate: _oppReturnRate(opp),
+                  minInvestment: _oppMinInvestment(opp),
+                  progress: _oppProgress(opp),
+                  opportunityId: _oppId(opp),
+                  isFr: isFr,
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 2: ACTIVITY
+// ══════════════════════════════════════════════════════════════
+class _ActivityTab extends StatelessWidget {
+  const _ActivityTab({
+    required this.investments,
+    required this.isFr,
+  });
+
+  final List<Map<String, dynamic>> investments;
+  final bool isFr;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        Text(
+          isFr ? 'Mon activité' : 'My Activity',
+          style: const TextStyle(
+            color: _text,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (investments.isEmpty)
+          _emptyState(
+            Icons.receipt_long_outlined,
+            isFr ? 'Aucune activité' : 'No activity yet',
+            isFr
+                ? 'Vos investissements apparaîtront ici'
+                : 'Your investments will appear here',
+          )
+        else
+          ...investments.map((inv) {
+            final name = inv['opportunityName']?.toString() ??
+                inv['cooperativeName']?.toString() ??
+                (isFr ? 'Investissement' : 'Investment');
+            final schedule = inv['payoutSchedule'];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [_surface, _surface2]),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            color: _text,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          isFr ? 'Actif' : 'Active',
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _invStat(
+                        '\$${inv['amountDeployed'] ?? 0}',
+                        isFr ? 'Déployé' : 'Deployed',
+                      ),
+                      const SizedBox(width: 16),
+                      _invStat(
+                        '${inv['expectedROIPercent'] ?? 0}%',
+                        isFr ? 'ROI attendu' : 'Expected ROI',
+                      ),
+                      const SizedBox(width: 16),
+                      _invStat(
+                        inv['deploymentDate']?.toString().split('T').first ??
+                            '—',
+                        isFr ? 'Déploiement' : 'Deployed',
+                      ),
+                    ],
+                  ),
+                  if (schedule is List && schedule.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      isFr ? 'Échéancier' : 'Payout schedule',
+                      style: const TextStyle(
+                        color: _muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    ...schedule.map((p) {
+                      if (p is! Map) return const SizedBox.shrink();
+                      final m = Map<String, dynamic>.from(p);
+                      final status = m['status']?.toString() ?? '';
+                      final dateStr =
+                          m['payoutDate']?.toString().split('T').first ?? '';
+                      final isPaid = status == 'paid';
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                dateStr,
+                                style: const TextStyle(
+                                  color: _muted,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              isPaid
+                                  ? (isFr ? 'payé' : 'paid')
+                                  : (isFr ? 'prévu' : 'scheduled'),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: isPaid ? Colors.greenAccent : _gold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _invStat(String val, String label) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            val,
+            style: const TextStyle(
+              color: _gold,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(label, style: const TextStyle(color: _muted, fontSize: 10)),
+        ],
+      );
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 3: UPDATES
+// ══════════════════════════════════════════════════════════════
+class _UpdatesTab extends StatefulWidget {
+  const _UpdatesTab({required this.isFr});
+
+  final bool isFr;
+
+  @override
+  State<_UpdatesTab> createState() => _UpdatesTabState();
+}
+
+class _UpdatesTabState extends State<_UpdatesTab> {
+  bool _alertsEnabled = false;
+  final _alertPriceCtrl = TextEditingController();
+  String _alertCrop = 'shea';
+
+  @override
+  void dispose() {
+    _alertPriceCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    final news = [
+      {
+        'emoji': '📈',
+        'title': isFr
+            ? 'AfriYield atteint 1000 investisseurs'
+            : 'AfriYield reaches 1,000 investors',
+        'body': isFr
+            ? 'La plateforme AfriYield Exchange a franchi le cap des 1000 investisseurs actifs, avec 5,2M\$ déployés dans les coopératives d\'Afrique de l\'Ouest.'
+            : 'The AfriYield Exchange platform has surpassed 1,000 active investors, with \$5.2M deployed across West African cooperatives.',
+        'date': isFr ? 'Il y a 2 jours' : '2 days ago',
+        'color': _gold,
+      },
+      {
+        'emoji': '🌾',
+        'title': isFr
+            ? 'Saison karité 2026 — Perspectives'
+            : 'Shea Season 2026 — Outlook',
+        'body': isFr
+            ? 'Les prévisions de production de beurre de karité pour 2026 indiquent une hausse de 15% en Mali et au Burkina Faso.'
+            : 'Shea butter production forecasts for 2026 show a 15% increase in Mali and Burkina Faso.',
+        'date': isFr ? 'Il y a 5 jours' : '5 days ago',
+        'color': const Color(0xFF10B981),
+      },
+      {
+        'emoji': '🤝',
+        'title': isFr
+            ? 'Nouveau partenariat — Union Européenne'
+            : 'New Partnership — European Union',
+        'body': isFr
+            ? 'Sahel AgriConnect a signé un accord avec l\'UE pour certifier les coopératives partenaires selon les standards bio européens.'
+            : 'Sahel AgriConnect has signed an agreement with the EU to certify partner cooperatives to European organic standards.',
+        'date': isFr ? 'Il y a 1 semaine' : '1 week ago',
+        'color': const Color(0xFF2196F3),
+      },
+      {
+        'emoji': '💰',
+        'title': isFr
+            ? 'Paiements Q1 2026 — Confirmés'
+            : 'Q1 2026 Payouts — Confirmed',
+        'body': isFr
+            ? 'Les paiements du premier trimestre 2026 ont été confirmés pour les investisseurs actifs.'
+            : 'Q1 2026 payouts have been confirmed for active investors.',
+        'date': isFr ? 'Il y a 2 semaines' : '2 weeks ago',
+        'color': const Color(0xFF7B61FF),
+      },
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        Text(
+          isFr ? 'Alertes de prix' : 'Price Alerts',
+          style: const TextStyle(
+            color: _text,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF1a2744).withValues(alpha: 0.9),
-                const Color(0xFF0f1a33).withValues(alpha: 0.95),
+            gradient: const LinearGradient(colors: [_surface, _surface2]),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.notifications_active_outlined,
+                    color: _gold,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isFr
+                          ? 'Activer les alertes de prix'
+                          : 'Enable price alerts',
+                      style: const TextStyle(
+                        color: _text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: _alertsEnabled,
+                    activeTrackColor: _gold.withValues(alpha: 0.5),
+                    activeThumbColor: _gold,
+                    onChanged: (v) => setState(() => _alertsEnabled = v),
+                  ),
+                ],
+              ),
+              if (_alertsEnabled) ...[
+                const Divider(color: _border),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _alertCrop,
+                  dropdownColor: _surface,
+                  style: const TextStyle(color: _text),
+                  decoration: InputDecoration(
+                    labelText: isFr ? 'Produit' : 'Commodity',
+                    labelStyle: const TextStyle(color: _muted),
+                    filled: true,
+                    fillColor: _bg,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'shea',
+                      child: Text(
+                        isFr ? 'Beurre de karité' : 'Shea Butter',
+                        style: const TextStyle(color: _text),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'sesame',
+                      child: Text(
+                        isFr ? 'Sésame' : 'Sesame',
+                        style: const TextStyle(color: _text),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'cashew',
+                      child: Text(
+                        isFr ? 'Noix de cajou' : 'Cashew',
+                        style: const TextStyle(color: _text),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _alertCrop = v ?? 'shea'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _alertPriceCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: _text),
+                  decoration: InputDecoration(
+                    labelText: isFr
+                        ? 'Alerte si prix > (XOF/kg)'
+                        : 'Alert when price > (XOF/kg)',
+                    labelStyle: const TextStyle(color: _muted),
+                    filled: true,
+                    fillColor: _bg,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _gold,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isFr ? '✅ Alerte enregistrée !' : '✅ Alert saved!',
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      isFr ? 'Enregistrer l\'alerte' : 'Save Alert',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          isFr ? 'Actualités de la plateforme' : 'Platform News',
+          style: const TextStyle(
+            color: _text,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...news.map((n) {
+          final color = n['color'] as Color;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [_surface, _surface2]),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _border),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(top: 5),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        n['title'] as String,
+                        style: const TextStyle(
+                          color: _text,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        n['body'] as String,
+                        style: const TextStyle(
+                          color: _muted,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        n['date'] as String,
+                        style: TextStyle(
+                          color: _muted.withValues(alpha: 0.5),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _Inv.gold.withValues(alpha: 0.15),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 4: ACCOUNT
+// ══════════════════════════════════════════════════════════════
+class _InvestorAccountTab extends StatelessWidget {
+  const _InvestorAccountTab({
+    required this.isFr,
+    required this.onTabChange,
+  });
+
+  final bool isFr;
+  final ValueChanged<int> onTabChange;
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final name = auth.displayName.isNotEmpty ? auth.displayName : 'Investor';
+    final initial = name[0].toUpperCase();
+
+    return ListView(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 100,
+      ),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1a2744), Color(0xFF243358)],
             ),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: _Inv.gold.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [_gold, Color(0xFFE8B84B)],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: _gold.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: _Inv.gold, size: 22),
+                child: Center(
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -941,478 +1933,37 @@ class _UpdateGlassCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      name,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 12,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.open_in_new,
-                size: 16,
-                color: Colors.white.withValues(alpha: 0.35),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InvestorBottomNav extends StatelessWidget {
-  const _InvestorBottomNav({
-    required this.tab,
-    required this.lp,
-    required this.onChanged,
-  });
-
-  final int tab;
-  final LanguageProvider lp;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _Inv.bg,
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.06),
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: BottomNavigationBar(
-          currentIndex: tab.clamp(0, 3),
-          onTap: onChanged,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: _Inv.bg,
-          selectedItemColor: AppColors.gold,
-          unselectedItemColor: Colors.white38,
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
-              activeIcon: const Icon(Icons.home),
-              label: lp.t('Home', 'Accueil'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.trending_up_outlined),
-              activeIcon: const Icon(Icons.trending_up),
-              label: lp.t('Exchange', 'Bourse'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.pie_chart_outline),
-              activeIcon: const Icon(Icons.pie_chart),
-              label: lp.t('Portfolio', 'Portefeuille'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.manage_accounts_outlined),
-              activeIcon: const Icon(Icons.manage_accounts),
-              label: lp.t('Account', 'Compte'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DealsTab extends StatelessWidget {
-  const _DealsTab({
-    required this.opportunities,
-    required this.loading,
-    required this.opportunityCard,
-    required this.fundedFraction,
-    required this.oppTitle,
-    required this.oppSubtitle,
-    required this.oppId,
-    required this.oppRoiRange,
-  });
-
-  final List<Map<String, dynamic>> opportunities;
-  final bool loading;
-  final _OppCardBuilder opportunityCard;
-  final double Function(Map<String, dynamic>) fundedFraction;
-  final String Function(Map<String, dynamic>, LanguageProvider) oppTitle;
-  final String Function(Map<String, dynamic>) oppSubtitle;
-  final String Function(Map<String, dynamic>) oppId;
-  final String Function(Map<String, dynamic>) oppRoiRange;
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    if (loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: _Inv.gold),
-      );
-    }
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      children: [
-        Text(
-          lp.t('Exchange opportunities', 'Opportunités boursières'),
-          style: const TextStyle(
-            color: _Inv.gold,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (opportunities.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: Text(
-                lp.t(
-                  'No open opportunities right now.',
-                  'Aucune opportunité pour le moment.',
-                ),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-        ...opportunities.asMap().entries.map((entry) {
-          final i = entry.key;
-          final opp = entry.value;
-          final funded = fundedFraction(opp);
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: i < opportunities.length - 1 ? 12 : 0,
-            ),
-            child: opportunityCard(
-              lp: lp,
-              title: oppTitle(opp, lp),
-              subtitle: oppSubtitle(opp),
-              progress: funded.clamp(0.0, 1.0),
-              delay: i * 60,
-              opportunityId: oppId(opp),
-              roiLabel: oppRoiRange(opp),
-            ),
-          );
-        }),
-        Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: GestureDetector(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => InAppWebViewScreen(
-                  title: lp.t('AfriYield Exchange', 'AfriYield Exchange'),
-                  url: 'https://sahelagriconnect.com/afri-yield/marketplace',
-                ),
-              ),
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: _Inv.gold.withValues(alpha: 0.4),
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.open_in_browser,
-                    size: 16,
-                    color: _Inv.gold.withValues(alpha: 0.95),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    lp.t('Open full marketplace', 'Ouvrir la place de marché'),
-                    style: const TextStyle(
-                      color: _Inv.gold,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PortfolioInvestmentsTab extends StatelessWidget {
-  const _PortfolioInvestmentsTab({
-    required this.investments,
-    required this.loading,
-    required this.lp,
-  });
-
-  final List<Map<String, dynamic>> investments;
-  final bool loading;
-  final LanguageProvider lp;
-
-  @override
-  Widget build(BuildContext context) {
-    if (loading) {
-      return const Center(child: CircularProgressIndicator(color: _Inv.gold));
-    }
-    if (investments.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            lp.t(
-              'No investment activity yet. Visit the Exchange tab to deploy capital.',
-              'Aucun investissement pour l’instant. Onglet Bourse pour investir.',
-            ),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 14,
-            ),
-          ),
-        ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: investments.length + 1,
-      itemBuilder: (ctx, i) {
-        if (i == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              lp.t('My portfolio', 'Mon portefeuille'),
-              style: const TextStyle(
-                color: _Inv.gold,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          );
-        }
-        final inv = investments[i - 1];
-        final name =
-            inv['investorName']?.toString() ?? lp.t('Investment', 'Investissement');
-        final amt = num.tryParse(inv['amountDeployed']?.toString() ?? '0') ?? 0;
-        final cur = inv['currency']?.toString() ?? 'EUR';
-        final schedule = inv['payoutSchedule'];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: _Inv.cardGrad,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '€ ${amt.toStringAsFixed(0)} ${lp.t('deployed', 'déployés')} · $cur',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 12,
-                ),
-              ),
-              if (schedule is List && schedule.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                ...schedule.map((p) {
-                  if (p is! Map) return const SizedBox.shrink();
-                  final m = Map<String, dynamic>.from(p);
-                  final status = m['status']?.toString() ?? '';
-                  final dateStr = m['payoutDate']?.toString() ?? '';
-                  final isPaid = status == 'paid';
-                  final isScheduled = status == 'scheduled';
-                  final statusLabel = isPaid
-                      ? lp.t('paid', 'payé')
-                      : isScheduled
-                          ? lp.t('scheduled', 'prévu')
-                          : status;
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            dateStr,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isPaid
-                                ? Colors.green.withValues(alpha: 0.2)
-                                : isScheduled
-                                    ? Colors.amber.withValues(alpha: 0.2)
-                                    : Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            statusLabel,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: isPaid
-                                  ? Colors.greenAccent
-                                  : isScheduled
-                                      ? Colors.amber.shade200
-                                      : Colors.white70,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _InvestorAccountTab extends StatelessWidget {
-  const _InvestorAccountTab({
-    required this.lp,
-    required this.onBackToDashboard,
-  });
-
-  final LanguageProvider lp;
-  final VoidCallback onBackToDashboard;
-
-  static const _cardStart = Color(0xFF1a2744);
-  static const _cardEnd = Color(0xFF0f1a33);
-
-  Future<void> _openWeb() async {
-    final uri = Uri.parse('https://sahelagriconnect.com');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthState>();
-    final initial =
-        auth.displayName.isNotEmpty ? auth.displayName[0].toUpperCase() : '?';
-
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          expandedHeight: 188,
-          pinned: true,
-          backgroundColor: const Color(0xFF1a2744),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: onBackToDashboard,
-          ),
-          flexibleSpace: FlexibleSpaceBar(
-            background: Container(
-              decoration: const BoxDecoration(gradient: _Inv.headerGrad),
-              child: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            _Inv.gold,
-                            _Inv.gold.withValues(alpha: 0.65),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _Inv.gold.withValues(alpha: 0.35),
-                            blurRadius: 18,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          initial,
-                          style: const TextStyle(
-                            color: Color(0xFF0A1628),
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      auth.displayName.isNotEmpty
-                          ? auth.displayName
-                          : lp.t('Investor', 'Investisseur'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
+                        color: _text,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    Text(
+                      auth.displayEmail,
+                      style: const TextStyle(color: _muted, fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
+                        horizontal: 10,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: _Inv.gold.withValues(alpha: 0.15),
+                        color: _gold.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: _Inv.gold.withValues(alpha: 0.35),
+                          color: _gold.withValues(alpha: 0.4),
                         ),
                       ),
                       child: Text(
-                        lp.t('💼 AfriYield Investor', '💼 Investisseur AfriYield'),
+                        isFr
+                            ? '💰 Investisseur AfriYield'
+                            : '💰 AfriYield Investor',
                         style: const TextStyle(
-                          color: _Inv.gold,
-                          fontSize: 12,
+                          color: _gold,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1420,301 +1971,791 @@ class _InvestorAccountTab extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-          ),
-          title: Text(
-            lp.t('Account', 'Compte'),
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            ],
           ),
         ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              dashboardAccountScrollBottom(context),
+        const SizedBox(height: 20),
+        _section(isFr ? 'NAVIGATION' : 'NAVIGATION', [
+          _tile(
+            context,
+            Icons.account_balance_wallet_outlined,
+            const Color(0xFF10B981),
+            isFr ? 'Retour au portefeuille' : 'Back to Portfolio',
+            isFr ? 'Vue principale investisseur' : 'Main investor view',
+            () => onTabChange(0),
+          ),
+          _tile(
+            context,
+            Icons.exit_to_app_outlined,
+            _muted,
+            isFr ? 'Quitter vers l\'accueil' : 'Exit to Main Home',
+            isFr
+                ? 'Page principale de la plateforme'
+                : 'Main platform home page',
+            () => context.go('/platform'),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        _section(isFr ? 'MON PROFIL' : 'MY PROFILE', [
+          _tile(
+            context,
+            Icons.person_outline,
+            _gold,
+            isFr ? 'Modifier le profil' : 'Edit Profile',
+            isFr ? 'Nom, pays, préférences' : 'Name, country, preferences',
+            () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => _EditProfileScreen(isFr: isFr),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (auth.displayEmail.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Text(
-                      auth.displayEmail,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                DashboardAccountNavHeader(
-                  accent: _Inv.gold,
-                  cardStart: _cardStart,
-                  cardEnd: _cardEnd,
-                  onBackToDashboard: onBackToDashboard,
+          ),
+          _tile(
+            context,
+            Icons.language_outlined,
+            const Color(0xFF9C27B0),
+            isFr ? 'Langue' : 'Language',
+            'English / Français',
+            () => context.go('/profile/language'),
+          ),
+          _tile(
+            context,
+            Icons.notifications_outlined,
+            const Color(0xFFFF9800),
+            isFr ? 'Notifications' : 'Notifications',
+            isFr ? 'Gérer les alertes' : 'Manage alerts',
+            () => context.go('/profile/notifications'),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        _section(isFr ? 'SÉCURITÉ' : 'SECURITY', [
+          _tile(
+            context,
+            Icons.phone_outlined,
+            const Color(0xFF2196F3),
+            isFr ? 'Mettre à jour le téléphone' : 'Update Phone',
+            isFr ? 'Changer votre numéro' : 'Change your number',
+            () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => _UpdateCredentialScreen(
+                  isFr: isFr,
+                  type: 'phone',
                 ),
-                _InvAccountSection(
-                  title: lp.t('Profile', 'Profil'),
-                  children: [
-                    _InvAccountTile(
-                      icon: Icons.person_outline,
-                      iconColor: _Inv.gold,
-                      title: lp.t('Edit Profile', 'Modifier le profil'),
-                      subtitle: lp.t(
-                        'Name and public details',
-                        'Nom et informations publiques',
-                      ),
-                      onTap: () => context.push('/profile/edit'),
-                    ),
-                    _InvAccountTile(
-                      icon: Icons.language_outlined,
-                      iconColor: const Color(0xFF7E9CCF),
-                      title: lp.t('Language', 'Langue'),
-                      subtitle: lp.t('English / Français', 'Anglais / Français'),
-                      onTap: () => context.push('/profile/language'),
-                    ),
-                    _InvAccountTile(
-                      icon: Icons.notifications_outlined,
-                      iconColor: const Color(0xFFFFB74D),
-                      title: lp.t('Notifications', 'Notifications'),
-                      subtitle: lp.t('Alerts and email preferences', 'Alertes et e-mail'),
-                      onTap: () => context.push('/profile/notifications'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _InvAccountSection(
-                  title: lp.t('Security & account', 'Sécurité et compte'),
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: _Inv.cardGrad,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.06),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          WebActionTile(
-                            title: lp.t('Delete my account', 'Supprimer mon compte'),
-                            description: lp.t(
-                              'Permanently remove your investor data',
-                              'Supprimer définitivement vos données investisseur',
-                            ),
-                            action: 'delete-account',
-                            icon: Icons.delete_outline,
-                            isDangerous: true,
-                            titleColor: Colors.white,
-                            subtitleColor: Colors.white70,
-                          ),
-                          Divider(
-                            height: 1,
-                            color: Colors.white.withValues(alpha: 0.06),
-                          ),
-                          WebActionTile(
-                            title: lp.t('Update credentials', 'Mettre à jour les identifiants'),
-                            description: lp.t(
-                              'Change password on the secure web portal',
-                              'Changer le mot de passe sur le portail web',
-                            ),
-                            action: 'account/security',
-                            icon: Icons.lock_outline,
-                            titleColor: Colors.white,
-                            subtitleColor: Colors.white70,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _InvAccountSection(
-                  title: lp.t('Support', 'Support'),
-                  children: [
-                    _InvAccountTile(
-                      icon: Icons.help_outline,
-                      iconColor: const Color(0xFF81C784),
-                      title: lp.t('Help Center', 'Centre d’aide'),
-                      subtitle: lp.t('FAQs for investors', 'FAQ investisseurs'),
-                      onTap: () => context.push('/help'),
-                    ),
-                    _InvAccountTile(
-                      icon: Icons.gavel_outlined,
-                      iconColor: Colors.white54,
-                      title: lp.t('Terms of Service', 'Conditions d’utilisation'),
-                      subtitle: lp.t('Legal terms', 'Mentions légales'),
-                      onTap: () => context.push('/terms?view=1&tab=0'),
-                    ),
-                    _InvAccountTile(
-                      icon: Icons.privacy_tip_outlined,
-                      iconColor: Colors.white54,
-                      title: lp.t('Privacy Policy', 'Confidentialité'),
-                      subtitle: lp.t('How we use your data', 'Traitement des données'),
-                      onTap: () => context.push('/terms?view=1&tab=1'),
-                    ),
-                    _InvAccountTile(
-                      icon: Icons.language,
-                      iconColor: const Color(0xFF64B5F6),
-                      title: lp.t('Visit web portal', 'Portail web'),
-                      subtitle: 'sahelagriconnect.com',
-                      trailing: _InvWebBadge(lp: lp),
-                      onTap: _openWeb,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Center(
-                  child: Text(
-                    lp.t('AfriYield Exchange', 'AfriYield Exchange'),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                const DashboardSignOutButton(
-                  dialogBackground: Color(0xFF1a2744),
-                ),
-              ],
+              ),
             ),
+          ),
+          _tile(
+            context,
+            Icons.email_outlined,
+            const Color(0xFF2196F3),
+            isFr ? 'Mettre à jour l\'email' : 'Update Email',
+            isFr ? 'Changer votre adresse email' : 'Change your email',
+            () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => _UpdateCredentialScreen(
+                  isFr: isFr,
+                  type: 'email',
+                ),
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        _section('SUPPORT', [
+          _tile(
+            context,
+            Icons.help_outline,
+            const Color(0xFF4CAF50),
+            isFr ? 'Centre d\'aide' : 'Help Center',
+            isFr ? 'FAQ et guides' : 'FAQs and guides',
+            () => context.go('/help'),
+          ),
+          _tile(
+            context,
+            Icons.gavel_outlined,
+            _muted,
+            isFr ? 'Conditions d\'utilisation' : 'Terms of Service',
+            isFr ? 'Voir les conditions' : 'View terms',
+            () => context.push('/terms?view=1&tab=0'),
+          ),
+          _tile(
+            context,
+            Icons.privacy_tip_outlined,
+            _muted,
+            isFr ? 'Politique de confidentialité' : 'Privacy Policy',
+            isFr
+                ? 'Comment nous utilisons vos données'
+                : 'How we use your data',
+            () => context.push('/terms?view=1&tab=1'),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        Center(
+          child: Column(
+            children: [
+              Text(
+                'AfriYield Exchange v1.1.0',
+                style: TextStyle(
+                  color: _muted.withValues(alpha: 0.4),
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '💰 Invest. Grow. Impact.',
+                style: TextStyle(
+                  color: _muted.withValues(alpha: 0.25),
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.logout, color: Colors.red, size: 18),
+            label: Text(
+              isFr ? 'Se déconnecter' : 'Sign Out',
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  backgroundColor: _surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: Text(
+                    isFr ? 'Se déconnecter ?' : 'Sign out?',
+                    style: const TextStyle(color: _text),
+                  ),
+                  content: Text(
+                    isFr
+                        ? 'Vous serez redirigé vers l\'accueil.'
+                        : 'You will be returned to the home screen.',
+                    style: const TextStyle(color: _muted),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      child: Text(
+                        isFr ? 'Annuler' : 'Cancel',
+                        style: const TextStyle(color: _muted),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      child: Text(
+                        isFr ? 'Se déconnecter' : 'Sign out',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true && context.mounted) {
+                await context.read<AuthState>().logout();
+                if (context.mounted) context.go('/platform');
+              }
+            },
           ),
         ),
       ],
     );
   }
-}
 
-class _InvAccountSection extends StatelessWidget {
-  const _InvAccountSection({
-    required this.title,
-    required this.children,
-  });
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+  Widget _section(String title, List<Widget> items) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
-            title.toUpperCase(),
+            title,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: _muted.withValues(alpha: 0.55),
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            gradient: _Inv.cardGrad,
+            gradient: const LinearGradient(colors: [_surface, _surface2]),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: _border),
           ),
           child: Column(
-            children: children.asMap().entries.map((e) {
-              final last = e.key == children.length - 1;
+            children: items.asMap().entries.map((e) {
               return Column(
                 children: [
                   e.value,
-                  if (!last)
-                    Divider(
-                      height: 1,
-                      indent: 56,
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
+                  if (e.key < items.length - 1)
+                    const Divider(height: 1, color: _border, indent: 56),
                 ],
               );
             }).toList(),
           ),
         ),
-      ],
-    );
-  }
+      ]);
+
+  Widget _tile(
+    BuildContext ctx,
+    IconData icon,
+    Color iconColor,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) =>
+      ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        leading: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(icon, color: iconColor, size: 17),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: _text,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: _muted, fontSize: 12),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 13,
+          color: _muted.withValues(alpha: 0.3),
+        ),
+      );
 }
 
-class _InvAccountTile extends StatelessWidget {
-  const _InvAccountTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.trailing,
+class _EditProfileScreen extends StatefulWidget {
+  const _EditProfileScreen({required this.isFr});
+
+  final bool isFr;
+
+  @override
+  State<_EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<_EditProfileScreen> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _countryCtrl;
+  late final TextEditingController _phoneCtrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthState>();
+    _nameCtrl = TextEditingController(text: auth.displayName);
+    _countryCtrl = TextEditingController(text: auth.displayCountry);
+    _phoneCtrl = TextEditingController(text: auth.displayPhone);
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _countryCtrl.dispose();
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    context.read<AuthState>().updateLocalProfile(
+          name: _nameCtrl.text.trim(),
+          phone: _phoneCtrl.text.trim(),
+          country: _countryCtrl.text.trim(),
+        );
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    setState(() => _saving = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          widget.isFr
+              ? '✅ Profil mis à jour avec succès'
+              : '✅ Profile updated successfully',
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return Scaffold(
+      backgroundColor: _bg,
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1a2744),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: _text),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          isFr ? 'Modifier le profil' : 'Edit Profile',
+          style: const TextStyle(
+            color: _text,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.of(context).viewInsets.bottom + 100,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [_surface, _surface2]),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _lbl(isFr ? 'Nom complet' : 'Full Name'),
+              _tf(_nameCtrl, isFr ? 'Votre nom' : 'Your name'),
+              const SizedBox(height: 14),
+              _lbl(isFr ? 'Pays' : 'Country'),
+              _tf(_countryCtrl, isFr ? 'Votre pays' : 'Your country'),
+              const SizedBox(height: 14),
+              _lbl(isFr ? 'Téléphone' : 'Phone'),
+              _tf(
+                _phoneCtrl,
+                '+1 / +33 / +223...',
+                type: TextInputType.phone,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _gold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.black,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          isFr ? 'Enregistrer' : 'Save Changes',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _lbl(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          t,
+          style: const TextStyle(
+            color: _muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+
+  Widget _tf(
+    TextEditingController c,
+    String hint, {
+    TextInputType type = TextInputType.text,
+  }) =>
+      TextField(
+        controller: c,
+        keyboardType: type,
+        style: const TextStyle(color: _text, fontSize: 14),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: _muted, fontSize: 13),
+          filled: true,
+          fillColor: _bg,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _gold),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
+        ),
+      );
+}
+
+class _UpdateCredentialScreen extends StatefulWidget {
+  const _UpdateCredentialScreen({
+    required this.isFr,
+    required this.type,
   });
 
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final Widget? trailing;
+  final bool isFr;
+  final String type;
+
+  @override
+  State<_UpdateCredentialScreen> createState() =>
+      _UpdateCredentialScreenState();
+}
+
+class _UpdateCredentialScreenState extends State<_UpdateCredentialScreen> {
+  final _newCtrl = TextEditingController();
+  final _otpCtrl = TextEditingController();
+  bool _otpSent = false;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _newCtrl.dispose();
+    _otpCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendOtp() async {
+    if (_newCtrl.text.isEmpty) return;
+    setState(() => _saving = true);
+    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    setState(() => _saving = false);
+    setState(() => _otpSent = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          widget.isFr
+              ? '📱 Code envoyé à ${_newCtrl.text}'
+              : '📱 Code sent to ${_newCtrl.text}',
+        ),
+        backgroundColor: const Color(0xFF2196F3),
+      ),
+    );
+  }
+
+  Future<void> _confirm() async {
+    if (_otpCtrl.text.length < 4) return;
+    setState(() => _saving = true);
+    final auth = context.read<AuthState>();
+    if (widget.type == 'phone') {
+      auth.updateLocalProfile(phone: _newCtrl.text.trim());
+    } else {
+      auth.updateLocalProfile(email: _newCtrl.text.trim());
+    }
+    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          widget.isFr
+              ? '✅ ${widget.type == 'phone' ? 'Téléphone' : 'Email'} mis à jour !'
+              : '✅ ${widget.type == 'phone' ? 'Phone' : 'Email'} updated!',
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: iconColor.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
+    final isFr = widget.isFr;
+    final isPhone = widget.type == 'phone';
+    return Scaffold(
+      backgroundColor: _bg,
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1a2744),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: _text),
+          onPressed: () => Navigator.pop(context),
         ),
-        child: Icon(icon, color: iconColor, size: 18),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.45),
-          fontSize: 12,
+        title: Text(
+          isFr
+              ? (isPhone
+                  ? 'Mettre à jour le téléphone'
+                  : 'Mettre à jour l\'email')
+              : (isPhone ? 'Update Phone' : 'Update Email'),
+          style: const TextStyle(
+            color: _text,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
-      trailing:
-          trailing ?? Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.25)),
+      body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.of(context).viewInsets.bottom + 100,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [_surface, _surface2]),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isFr
+                    ? (isPhone
+                        ? 'Nouveau numéro de téléphone'
+                        : 'Nouvelle adresse email')
+                    : (isPhone ? 'New Phone Number' : 'New Email Address'),
+                style: const TextStyle(
+                  color: _muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _newCtrl,
+                enabled: !_otpSent,
+                keyboardType:
+                    isPhone ? TextInputType.phone : TextInputType.emailAddress,
+                style: const TextStyle(color: _text),
+                decoration: InputDecoration(
+                  hintText:
+                      isPhone ? '+1 / +33 / +223...' : 'email@example.com',
+                  hintStyle: const TextStyle(color: _muted, fontSize: 13),
+                  filled: true,
+                  fillColor: _bg,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _gold),
+                  ),
+                ),
+              ),
+              if (!_otpSent) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _gold,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _saving ? null : _sendOtp,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            isFr ? 'Envoyer le code' : 'Send Code',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 14),
+                Text(
+                  isFr ? 'Code de vérification' : 'Verification Code',
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _otpCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 18,
+                    letterSpacing: 4,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '••••••',
+                    hintStyle: const TextStyle(color: _muted),
+                    filled: true,
+                    fillColor: _bg,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: _gold),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: _gold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: _muted.withValues(alpha: 0.3),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () => setState(() => _otpSent = false),
+                        child: Text(
+                          isFr ? 'Changer' : 'Change',
+                          style: const TextStyle(color: _muted),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _gold,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: _saving ? null : _confirm,
+                        child: _saving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: Colors.black,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                isFr ? 'Confirmer' : 'Confirm',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
-class _InvWebBadge extends StatelessWidget {
-  const _InvWebBadge({required this.lp});
-
-  final LanguageProvider lp;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+Widget _emptyState(IconData icon, String title, String subtitle) => Container(
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(6),
+        gradient: const LinearGradient(colors: [_surface, _surface2]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
       ),
-      child: Text(
-        lp.t('WEB', 'WEB'),
-        style: const TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          color: Colors.lightBlueAccent,
-        ),
+      child: Column(
+        children: [
+          Icon(icon, color: _muted, size: 48),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              color: _text,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _muted, fontSize: 12),
+          ),
+        ],
       ),
     );
-  }
-}
-

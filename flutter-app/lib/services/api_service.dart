@@ -156,6 +156,27 @@ class ApiService {
         token: token,
       );
 
+  /// Investor dashboard: portfolio + open opportunities.
+  static Future<Map<String, dynamic>> getInvestorPortal(
+    String token, {
+    String? email,
+  }) async {
+    final opportunities = await getOpportunities(token: token);
+    if (email == null || email.isEmpty) {
+      return {
+        ...opportunities,
+        'investments': <dynamic>[],
+      };
+    }
+    final portfolio = await getInvestorPortfolio(email, token);
+    return {
+      'investments': portfolio['investments'] ?? <dynamic>[],
+      'opportunities': opportunities['opportunities'] ??
+          opportunities['data'] ??
+          <dynamic>[],
+    };
+  }
+
   // ── Cooperatives ──────────────────────────────────────────
   static Future<Map<String, dynamic>> coopLogin(
     String email,
