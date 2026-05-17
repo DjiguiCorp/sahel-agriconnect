@@ -45,7 +45,7 @@ GoRouter buildRouter(
 ) {
   appRouter = GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/home',
+    initialLocation: '/',
     refreshListenable: Listenable.merge([authState, ageGate, termsGate]),
     // Navigation logic:
     // - Unauthenticated (guest): /home and /guest/* allowed
@@ -58,7 +58,12 @@ GoRouter buildRouter(
           loc == '/terms' && state.uri.queryParameters['view'] == '1';
       final isPrivacyRoute = loc == '/privacy';
 
-      if (authState.loading) return '/';
+      if (authState.loading) {
+        return loc == '/' ? null : '/';
+      }
+
+      // SplashScreen owns navigation from `/` after its entrance/exit animation.
+      if (loc == '/') return null;
 
       if (!termsGate.accepted) {
         if (isTermsView || isPrivacyRoute) {

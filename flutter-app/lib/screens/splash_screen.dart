@@ -2,12 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../core/auth_state.dart';
 import '../core/glass.dart';
 import '../core/theme.dart';
+import '../screens/shared/terms_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -67,19 +66,19 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _navigate() async {
     final prefs = await SharedPreferences.getInstance();
-    final termsAccepted = prefs.getBool('terms_accepted') ?? false;
+    final termsAccepted =
+        prefs.getBool(TermsScreen.termsAcceptedKey) ?? false;
     final langSelected = prefs.getBool('language_selected') ?? false;
     if (!mounted) return;
-    final auth = context.read<AuthState>();
     if (!termsAccepted) {
       context.go('/terms');
-    } else if (!langSelected) {
-      context.go('/language');
-    } else if (auth.isLoggedIn) {
-      context.go('/home');
-    } else {
-      context.go('/home');
+      return;
     }
+    if (!langSelected) {
+      context.go('/language');
+      return;
+    }
+    context.go('/home');
   }
 
   @override
