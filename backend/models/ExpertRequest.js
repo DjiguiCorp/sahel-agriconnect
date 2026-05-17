@@ -11,6 +11,12 @@ const expertRequestSchema = new mongoose.Schema({
   diseaseDetected: { type: String, trim: true },
   cooperativeMember: { type: Boolean, default: false },
   cooperativeName: { type: String, trim: true },
+  cooperativeId: { type: String, trim: true },
+  routedTo: {
+    type: String,
+    enum: ['admin', 'cooperative_and_admin'],
+    default: 'admin',
+  },
   preferredContactMethod: {
     type: String,
     enum: ['email', 'phone', 'whatsapp'],

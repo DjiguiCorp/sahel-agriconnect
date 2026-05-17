@@ -41,14 +41,10 @@ class _TermsScreenState extends State<TermsScreen>
   @override
   void initState() {
     super.initState();
-    final tabFromRoute = int.tryParse(
-          GoRouterState.of(context).uri.queryParameters['tab'] ?? '') ??
-        widget.initialTabIndex;
-    final tabIndex = tabFromRoute.clamp(0, 2);
     _tabController = TabController(
       length: 3,
       vsync: this,
-      initialIndex: tabIndex,
+      initialIndex: widget.initialTabIndex.clamp(0, 2),
     );
   }
 
@@ -66,7 +62,7 @@ class _TermsScreenState extends State<TermsScreen>
       await prefs.setBool(TermsScreen.termsAcceptedKey, true);
       if (!mounted) return;
       context.read<TermsRefresh>().onAccepted();
-      context.go('/home');
+      context.go('/platform');
     } finally {
       if (mounted) setState(() => _saving = false);
     }

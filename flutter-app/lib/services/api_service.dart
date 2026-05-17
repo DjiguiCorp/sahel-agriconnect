@@ -217,4 +217,41 @@ class ApiService {
   // ── Marketplace ───────────────────────────────────────────
   static Future<Map<String, dynamic>> getMarketplacePrices() =>
       get('/api/marketplace/prices');
+
+  // ── Expert requests (Think Tank, disease detection, etc.) ─
+  static Future<Map<String, dynamic>> submitExpertRequest({
+    required String farmerName,
+    required String farmerEmail,
+    required String problemDescription,
+    String? farmerPhone,
+    String? country,
+    String? region,
+    String? cropType,
+    String? diseaseDetected,
+    bool cooperativeMember = false,
+    String? cooperativeName,
+    String? cooperativeId,
+    String preferredContactMethod = 'email',
+    String urgency = 'within_week',
+    String source = 'think_tank',
+  }) =>
+      post('/api/experts/request', {
+        'farmerName': farmerName,
+        'farmerEmail': farmerEmail,
+        'problemDescription': problemDescription,
+        if (farmerPhone != null && farmerPhone.isNotEmpty) 'farmerPhone': farmerPhone,
+        if (country != null && country.isNotEmpty) 'country': country,
+        if (region != null && region.isNotEmpty) 'region': region,
+        if (cropType != null && cropType.isNotEmpty) 'cropType': cropType,
+        if (diseaseDetected != null && diseaseDetected.isNotEmpty)
+          'diseaseDetected': diseaseDetected,
+        'cooperativeMember': cooperativeMember,
+        if (cooperativeMember && cooperativeName != null && cooperativeName.isNotEmpty)
+          'cooperativeName': cooperativeName,
+        if (cooperativeId != null && cooperativeId.isNotEmpty)
+          'cooperativeId': cooperativeId,
+        'preferredContactMethod': preferredContactMethod,
+        'urgency': urgency,
+        'source': source,
+      });
 }

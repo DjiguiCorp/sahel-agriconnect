@@ -22,6 +22,20 @@ const _green = Color(0xFF1D9E75);
 const _text = Colors.white;
 const _textMuted = Color(0x80FFFFFF);
 
+/// Supplies dashboard "home" navigation to screens pushed on top of tabs.
+class _FarmerToolScope extends InheritedWidget {
+  const _FarmerToolScope({required this.onHome, required super.child});
+
+  final VoidCallback onHome;
+
+  static _FarmerToolScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_FarmerToolScope>();
+
+  @override
+  bool updateShouldNotify(_FarmerToolScope oldWidget) =>
+      onHome != oldWidget.onHome;
+}
+
 // ══════════════════════════════════════════════════════════════
 // MAIN FARMER DASHBOARD
 // ══════════════════════════════════════════════════════════════
@@ -87,6 +101,22 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
 
   void _goTab(int i) => setState(() => _tab = i);
 
+  void _returnToDashboardHome() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    _goTab(0);
+  }
+
+  Widget _wrapFarmerTool(Widget child) =>
+      _FarmerToolScope(onHome: _returnToDashboardHome, child: child);
+
+  void _pushFarmerTool(Widget child) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => _wrapFarmerTool(child)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFr = context.watch<LanguageProvider>().locale.languageCode == 'fr';
@@ -96,7 +126,10 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) context.go('/platform');
       },
-      child: Scaffold(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Scaffold(
         backgroundColor: _bg,
         body: Column(
           children: [
@@ -119,15 +152,24 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                     prices: _prices,
                     isFr: isFr,
                     onTabChange: _goTab,
+                    onPushTool: _pushFarmerTool,
                   ),
                   _FarmerProduceTab(
                     farmer: _farmer,
                     cultures: _cultures,
                     loading: _loadingFarmer,
                     isFr: isFr,
+                    onGoHome: _returnToDashboardHome,
                   ),
-                  _FarmerAIToolsTab(isFr: isFr),
-                  _FarmerBenefitsTab(isFr: isFr),
+                  _FarmerAIToolsTab(
+                    isFr: isFr,
+                    farmer: _farmer,
+                    onPushTool: _pushFarmerTool,
+                  ),
+                  _FarmerBenefitsTab(
+                    isFr: isFr,
+                    onPushTool: _pushFarmerTool,
+                  ),
                   _FarmerAccountTab(isFr: isFr, onTabChange: _goTab),
                 ],
               ),
@@ -177,6 +219,8 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 ),
               ],
             ),
+          ),
+        ),
           ),
         ),
       ),
@@ -250,24 +294,49 @@ class _FarmerHeader extends StatelessWidget {
                               fontWeight: FontWeight.bold, letterSpacing: -0.5)),
                         ],
                       ),
-                      // Notification bell
-                      Stack(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 40, height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
+                          Tooltip(
+                            message: isFr
+                                ? 'Retour à l\'accueil principal'
+                                : 'Back to main platform',
+                            child: GestureDetector(
+                              onTap: () => context.go('/platform'),
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _gold.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: _gold.withValues(alpha: 0.45),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.home_outlined,
+                                  color: _gold,
+                                  size: 20,
+                                ),
+                              ),
                             ),
-                            child: const Icon(Icons.notifications_outlined,
-                              color: Colors.white, size: 20),
                           ),
-                          Positioned(
-                            right: 8, top: 8,
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () =>
+                                context.go('/profile/notifications'),
                             child: Container(
-                              width: 8, height: 8,
-                              decoration: const BoxDecoration(
-                                color: Colors.red, shape: BoxShape.circle),
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.notifications_outlined,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ],
@@ -332,11 +401,13 @@ class _FarmerHomeTab extends StatelessWidget {
   final List<Map<String, dynamic>> prices;
   final bool isFr;
   final Function(int) onTabChange;
+  final void Function(Widget screen) onPushTool;
 
   const _FarmerHomeTab({
     required this.farmer, required this.loading,
     required this.cultures, required this.prices,
     required this.isFr, required this.onTabChange,
+    required this.onPushTool,
   });
 
   @override
@@ -381,8 +452,7 @@ class _FarmerHomeTab extends StatelessWidget {
               emoji: '🤝',
               title: isFr ? 'Coopérative' : 'Join Cooperative',
               color: const Color(0xFF1D9E75),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => _JoinCooperativeScreen(isFr: isFr))),
+              onTap: () => onPushTool(_JoinCooperativeScreen(isFr: isFr)),
             ),
           ],
         ),
@@ -592,8 +662,14 @@ class _FarmerProduceTab extends StatefulWidget {
   final List<String> cultures;
   final bool loading;
   final bool isFr;
-  const _FarmerProduceTab({required this.farmer, required this.cultures,
-    required this.loading, required this.isFr});
+  final VoidCallback onGoHome;
+  const _FarmerProduceTab({
+    required this.farmer,
+    required this.cultures,
+    required this.loading,
+    required this.isFr,
+    required this.onGoHome,
+  });
   @override State<_FarmerProduceTab> createState() => _FarmerProduceTabState();
 }
 
@@ -707,15 +783,13 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
 
         // DECLARATION FORM (native, no webview)
         if (_showForm) ...[
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: _text),
-                onPressed: () => setState(() => _showForm = false)),
-              Text(isFr ? 'Déclarer une récolte' : 'Declare Produce',
-                style: const TextStyle(color: _text, fontSize: 17,
-                  fontWeight: FontWeight.bold)),
-            ],
+          _FormNavBar(
+            title: isFr ? 'Déclarer une récolte' : 'Declare Produce',
+            onBack: () => setState(() => _showForm = false),
+            onHome: () {
+              setState(() => _showForm = false);
+              widget.onGoHome();
+            },
           ),
           const SizedBox(height: 8),
           _formCard(children: [
@@ -864,7 +938,13 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
 // ══════════════════════════════════════════════════════════════
 class _FarmerAIToolsTab extends StatelessWidget {
   final bool isFr;
-  const _FarmerAIToolsTab({required this.isFr});
+  final Map<String, dynamic>? farmer;
+  final void Function(Widget screen) onPushTool;
+  const _FarmerAIToolsTab({
+    required this.isFr,
+    required this.farmer,
+    required this.onPushTool,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -885,7 +965,7 @@ class _FarmerAIToolsTab extends StatelessWidget {
         emoji: '🧠', title: 'Think Tank',
         desc: isFr ? 'Conseiller IA' : 'AI Advisor',
         color: const Color(0xFF7B61FF),
-        screen: _ThinkTankScreen(isFr: isFr),
+        screen: _ThinkTankScreen(isFr: isFr, farmer: farmer),
       ),
       _AiTool(
         emoji: '💧', title: isFr ? 'Irrigation' : 'Irrigation',
@@ -928,8 +1008,7 @@ class _FarmerAIToolsTab extends StatelessWidget {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => e.value.screen)),
+                onTap: () => onPushTool(e.value.screen),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.all(14),
@@ -976,8 +1055,7 @@ class _FarmerAIToolsTab extends StatelessWidget {
           subtitle: isFr
             ? 'Planifiez une session avec nos experts agricoles'
             : 'Schedule a session with our agricultural experts',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => _TrainingBookingScreen(isFr: isFr))),
+          onTap: () => onPushTool(_TrainingBookingScreen(isFr: isFr)),
         ),
       ],
     );
@@ -997,7 +1075,8 @@ class _AiTool {
 // ══════════════════════════════════════════════════════════════
 class _FarmerBenefitsTab extends StatelessWidget {
   final bool isFr;
-  const _FarmerBenefitsTab({required this.isFr});
+  final void Function(Widget screen) onPushTool;
+  const _FarmerBenefitsTab({required this.isFr, required this.onPushTool});
 
   @override
   Widget build(BuildContext context) {
@@ -1074,8 +1153,7 @@ class _FarmerBenefitsTab extends StatelessWidget {
           subtitle: isFr
             ? 'Trouvez et rejoignez une coopérative près de chez vous'
             : 'Find and join a cooperative near you',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => _JoinCooperativeScreen(isFr: isFr))),
+          onTap: () => onPushTool(_JoinCooperativeScreen(isFr: isFr)),
         ),
       ],
     );
@@ -1812,36 +1890,73 @@ Our agronomists can help with a personalized treatment plan.''',
   }
 }
 
-// ── THINK TANK (AI Chat) ─────────────────────────────────────
+// ── THINK TANK (AI Chat + expert messaging) ───────────────────
 class _ThinkTankScreen extends StatefulWidget {
   final bool isFr;
-  const _ThinkTankScreen({required this.isFr});
+  final Map<String, dynamic>? farmer;
+  const _ThinkTankScreen({required this.isFr, this.farmer});
   @override State<_ThinkTankScreen> createState() => _ThinkTankScreenState();
 }
 
 class _ThinkTankScreenState extends State<_ThinkTankScreen> {
+  static const _purple = Color(0xFF7B61FF);
+
+  int _mode = 0; // 0 = AI advisor, 1 = message expert
   final _msgCtrl = TextEditingController();
+  final _expertProblemCtrl = TextEditingController();
+  final _expertCropCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   final List<Map<String, String>> _messages = [];
   bool _loading = false;
+  bool _submittingExpert = false;
+  bool _expertSent = false;
+  String _urgency = 'within_week';
 
   final List<String> _suggestions = [];
+
+  bool get _cooperativeMember {
+    final f = widget.farmer;
+    if (f == null) return false;
+    if (f['lienCooperative'] == 'Oui') return true;
+    final name = f['nomCooperative']?.toString() ?? '';
+    if (name.isNotEmpty) return true;
+    return f['cooperativeId'] != null;
+  }
+
+  String? get _cooperativeName {
+    final name = widget.farmer?['nomCooperative']?.toString() ?? '';
+    return name.isNotEmpty ? name : null;
+  }
+
+  String? get _cooperativeId => widget.farmer?['cooperativeId']?.toString();
 
   @override
   void initState() {
     super.initState();
+    final cultures = (widget.farmer?['cultures'] as List?)?.cast<String>();
+    if (cultures != null && cultures.isNotEmpty) {
+      _expertCropCtrl.text = cultures.first;
+    }
     _suggestions.addAll(widget.isFr
       ? ['Quel engrais pour le mil ?', 'Comment prévenir les maladies du karité ?',
          'Meilleure période de semis ?', 'Comment améliorer mon rendement ?']
       : ['Best fertilizer for millet?', 'How to prevent shea butter diseases?',
          'Best planting season?', 'How to improve my yield?']);
-    // Initial greeting
     _messages.add({
       'role': 'assistant',
       'content': widget.isFr
-        ? '👋 Bonjour ! Je suis votre conseiller agricole IA. Posez-moi n\'importe quelle question sur votre exploitation !'
-        : '👋 Hello! I\'m your AI agricultural advisor. Ask me anything about your farm!',
+        ? '👋 Bonjour ! Je suis votre conseiller agricole IA. Posez-moi n\'importe quelle question sur votre exploitation !\n\nBesoin d\'un humain ? Passez à « Message expert ».'
+        : '👋 Hello! I\'m your AI agricultural advisor. Ask me anything about your farm!\n\nNeed a person? Switch to "Message expert".',
     });
+  }
+
+  @override
+  void dispose() {
+    _msgCtrl.dispose();
+    _expertProblemCtrl.dispose();
+    _expertCropCtrl.dispose();
+    _scrollCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _send(String text) async {
@@ -1893,13 +2008,276 @@ class _ThinkTankScreenState extends State<_ThinkTankScreen> {
     });
   }
 
+  Future<void> _submitExpertRequest() async {
+    final isFr = widget.isFr;
+    final problem = _expertProblemCtrl.text.trim();
+    if (problem.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isFr
+            ? 'Décrivez votre problème pour l\'expert'
+            : 'Describe your issue for the expert'),
+        backgroundColor: Colors.orange,
+      ));
+      return;
+    }
+
+    final auth = context.read<AuthState>();
+    final name = auth.displayName.isNotEmpty
+        ? auth.displayName
+        : (widget.farmer?['nom']?.toString() ?? 'Farmer');
+    final email = auth.displayEmail;
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isFr
+            ? 'E-mail requis — complétez votre profil'
+            : 'Email required — complete your profile'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+
+    setState(() => _submittingExpert = true);
+    try {
+      final res = await ApiService.submitExpertRequest(
+        farmerName: name,
+        farmerEmail: email,
+        farmerPhone: widget.farmer?['telephone']?.toString() ?? auth.displayPhone,
+        country: widget.farmer?['country']?.toString() ?? auth.displayCountry,
+        region: widget.farmer?['region']?.toString(),
+        cropType: _expertCropCtrl.text.trim(),
+        problemDescription: problem,
+        cooperativeMember: _cooperativeMember,
+        cooperativeName: _cooperativeName,
+        cooperativeId: _cooperativeId,
+        urgency: _urgency,
+        source: 'think_tank',
+      );
+
+      if (!mounted) return;
+      final ok = res['success'] == true || res['id'] != null;
+      if (ok) {
+        setState(() => _expertSent = true);
+        final note = res['routingNote']?.toString() ??
+            (isFr
+                ? (_cooperativeMember
+                    ? 'Votre coopérative et l\'administration ont été notifiées.'
+                    : 'L\'administration a reçu votre demande.')
+                : (_cooperativeMember
+                    ? 'Your cooperative and admin were notified.'
+                    : 'The admin team received your request.'));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(note),
+          backgroundColor: const Color(0xFF2d6a4f),
+          duration: const Duration(seconds: 5),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(res['error']?.toString() ??
+              (isFr ? 'Envoi impossible' : 'Could not send')),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isFr ? 'Erreur réseau' : 'Network error'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _submittingExpert = false);
+    }
+  }
+
+  Widget _modeChip(String label, int mode) {
+    final sel = _mode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _mode = mode),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: sel ? _purple.withValues(alpha: 0.25) : _surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: sel ? _purple : Colors.white.withValues(alpha: 0.12),
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: sel ? _purple : _textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpertPanel(bool isFr) {
+    if (_expertSent) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.check_circle, color: _green, size: 56),
+              const SizedBox(height: 16),
+              Text(
+                isFr ? 'Demande envoyée !' : 'Request sent!',
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isFr
+                    ? (_cooperativeMember
+                        ? 'Votre coopérative et l\'équipe admin vous contacteront sous 48 h.'
+                        : 'L\'équipe admin Sahel AgriConnect traitera votre demande.')
+                    : (_cooperativeMember
+                        ? 'Your cooperative and admin will contact you within 48 hours.'
+                        : 'Sahel AgriConnect admin will handle your request.'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _textMuted, fontSize: 13, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: (_cooperativeMember ? _green : Colors.orange)
+                .withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: (_cooperativeMember ? _green : Colors.orange)
+                  .withValues(alpha: 0.35),
+            ),
+          ),
+          child: Text(
+            isFr
+                ? (_cooperativeMember
+                    ? '✓ Membre coopératif — votre message est envoyé à votre coopérative et à l\'administration.'
+                    : 'Votre message est envoyé directement à l\'administration Sahel AgriConnect.')
+                : (_cooperativeMember
+                    ? '✓ Cooperative member — your message goes to your cooperative and admin.'
+                    : 'Your message goes directly to Sahel AgriConnect admin.'),
+            style: TextStyle(
+              color: _cooperativeMember ? _green : Colors.orange,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _fieldLabel(isFr ? 'Décrivez votre problème *' : 'Describe your issue *'),
+        TextField(
+          controller: _expertProblemCtrl,
+          maxLines: 5,
+          style: const TextStyle(color: _text),
+          decoration: _inputDecoration(
+            isFr ? 'Ex: maladie sur mes plants de sésame...' : 'e.g. disease on my sesame plants...',
+          ),
+        ),
+        const SizedBox(height: 12),
+        _fieldLabel(isFr ? 'Culture concernée' : 'Crop (optional)'),
+        TextField(
+          controller: _expertCropCtrl,
+          style: const TextStyle(color: _text),
+          decoration: _inputDecoration(isFr ? 'Mil, karité, sésame...' : 'Millet, shea, sesame...'),
+        ),
+        const SizedBox(height: 12),
+        _fieldLabel(isFr ? 'Urgence' : 'Urgency'),
+        DropdownButtonFormField<String>(
+          value: _urgency,
+          dropdownColor: _surface,
+          style: const TextStyle(color: _text),
+          decoration: _inputDecoration(''),
+          items: [
+            DropdownMenuItem(
+              value: 'immediate',
+              child: Text(isFr ? 'Immédiate' : 'Immediate'),
+            ),
+            DropdownMenuItem(
+              value: 'within_week',
+              child: Text(isFr ? 'Cette semaine' : 'Within a week'),
+            ),
+            DropdownMenuItem(
+              value: 'seasonal',
+              child: Text(isFr ? 'Saisonnière' : 'Seasonal'),
+            ),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => _urgency = v);
+          },
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _submittingExpert ? null : _submitExpertRequest,
+            icon: _submittingExpert
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.support_agent, size: 20),
+            label: Text(
+              isFr ? 'Envoyer à un expert' : 'Send to an expert',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _purple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return _ToolScaffold(
       title: 'Think Tank', emoji: '🧠',
-      color: const Color(0xFF7B61FF),
+      color: _purple,
+      scrollable: false,
       child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              _modeChip(isFr ? 'Conseiller IA' : 'AI Advisor', 0),
+              const SizedBox(width: 8),
+              _modeChip(isFr ? 'Message expert' : 'Message expert', 1),
+            ],
+          ),
+        ),
+        if (_mode == 1)
+          Expanded(child: _buildExpertPanel(isFr))
+        else ...[
         // Suggestions
         if (_messages.length == 1) ...[
           Padding(
@@ -1973,34 +2351,60 @@ class _ThinkTankScreenState extends State<_ThinkTankScreen> {
           padding: EdgeInsets.fromLTRB(
             16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
           color: _bg,
-          child: Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _msgCtrl,
-                style: const TextStyle(color: _text),
-                onSubmitted: _send,
-                decoration: InputDecoration(
-                  hintText: isFr ? 'Posez votre question...' : 'Ask your question...',
-                  hintStyle: const TextStyle(color: _textMuted),
-                  filled: true, fillColor: _surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _mode = 1),
+                  icon: const Icon(Icons.support_agent, size: 16, color: _gold),
+                  label: Text(
+                    isFr ? 'Parler à un expert humain' : 'Talk to a human expert',
+                    style: const TextStyle(color: _gold, fontSize: 12),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _send(_msgCtrl.text),
-              child: Container(
-                width: 42, height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF7B61FF), shape: BoxShape.circle),
-                child: const Icon(Icons.send, color: Colors.white, size: 18)),
-            ),
-          ]),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _msgCtrl,
+                    style: const TextStyle(color: _text),
+                    onSubmitted: _send,
+                    decoration: InputDecoration(
+                      hintText: isFr ? 'Posez votre question...' : 'Ask your question...',
+                      hintStyle: const TextStyle(color: _textMuted),
+                      filled: true,
+                      fillColor: _surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _send(_msgCtrl.text),
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      color: _purple,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.send, color: Colors.white, size: 18),
+                  ),
+                ),
+              ]),
+            ],
+          ),
         ),
+        ],
       ]),
     );
   }
@@ -2478,13 +2882,52 @@ class _JoinCooperativeScreen extends StatefulWidget {
 }
 
 class _JoinCooperativeScreenState extends State<_JoinCooperativeScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+  final _localityCtrl = TextEditingController();
+  final _nationalIdCtrl = TextEditingController();
+  final _areaCtrl = TextEditingController();
+  final _yearsCtrl = TextEditingController();
   final _msgCtrl = TextEditingController();
-  String _region = 'koulikoro';
-  String? _selectedCoop;
+  String _filterRegion = 'all';
+  String _farmRegion = 'koulikoro';
+  String _country = 'Mali';
+  String _areaUnit = 'hectares';
+  String _irrigation = 'non';
+  String? _selectedCoopId;
+  String? _selectedCoopName;
+  final Set<String> _selectedCrops = {};
+  bool _alreadyMember = false;
+  bool _consent = false;
   bool _submitting = false;
   bool _submitted = false;
+  bool _prefilled = false;
+
+  static const _cropOptions = [
+    'Mil',
+    'Sorgho',
+    'Maïs',
+    'Arachide',
+    'Coton',
+    'Niébé',
+    'Riz',
+    'Karité',
+    'Sésame',
+    'Cajou',
+  ];
+
+  static const _countries = [
+    'Mali',
+    'Burkina Faso',
+    'Senegal',
+    'Côte d\'Ivoire',
+    'Niger',
+    'Ghana',
+    'Benin',
+    'Togo',
+  ];
 
   final _coops = [
     {'id': '1', 'name': 'Coopérative Karité Mali', 'region': 'koulikoro', 'members': 145},
@@ -2495,8 +2938,113 @@ class _JoinCooperativeScreenState extends State<_JoinCooperativeScreen> {
   ];
 
   List<Map<String, dynamic>> get _filteredCoops =>
-    _coops.where((c) => _region == 'all' || c['region'] == _region).toList()
-      .cast<Map<String, dynamic>>();
+      _coops
+          .where((c) => _filterRegion == 'all' || c['region'] == _filterRegion)
+          .toList()
+          .cast<Map<String, dynamic>>();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_prefilled) return;
+    _prefilled = true;
+    final auth = context.read<AuthState>();
+    if (auth.displayName.isNotEmpty) _nameCtrl.text = auth.displayName;
+    if (auth.displayEmail.isNotEmpty) _emailCtrl.text = auth.displayEmail;
+    if (auth.displayCountry.isNotEmpty) _country = auth.displayCountry;
+    final region = auth.user?['region']?.toString();
+    if (region != null && region.isNotEmpty) {
+      _farmRegion = region.toLowerCase();
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _localityCtrl.dispose();
+    _nationalIdCtrl.dispose();
+    _areaCtrl.dispose();
+    _yearsCtrl.dispose();
+    _msgCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final isFr = widget.isFr;
+    if (_selectedCoopId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isFr
+            ? 'Sélectionnez une coopérative'
+            : 'Select a cooperative'),
+        backgroundColor: Colors.orange,
+      ));
+      return;
+    }
+    if (_selectedCrops.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isFr
+            ? 'Sélectionnez au moins une culture'
+            : 'Select at least one crop'),
+        backgroundColor: Colors.orange,
+      ));
+      return;
+    }
+    if (!_consent) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isFr
+            ? 'Vous devez accepter le traitement des données'
+            : 'You must accept data processing'),
+        backgroundColor: Colors.orange,
+      ));
+      return;
+    }
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _submitting = true);
+    try {
+      final auth = context.read<AuthState>();
+      final queue = context.read<OfflineQueue>();
+      await queue.enqueue(
+        path: '/api/cooperative-membership/applications',
+        body: {
+          'cooperativeId': _selectedCoopId,
+          'cooperativeName': _selectedCoopName,
+          'farmerEmail': auth.displayEmail,
+          'fullName': _nameCtrl.text.trim(),
+          'email': _emailCtrl.text.trim(),
+          'phone': _phoneCtrl.text.trim(),
+          'country': _country,
+          'region': _farmRegion,
+          'locality': _localityCtrl.text.trim(),
+          'nationalId': _nationalIdCtrl.text.trim(),
+          'crops': _selectedCrops.toList(),
+          'areaHectares': double.tryParse(_areaCtrl.text) ?? 0,
+          'areaUnit': _areaUnit,
+          'hasIrrigation': _irrigation,
+          'yearsFarming': int.tryParse(_yearsCtrl.text) ?? 0,
+          'alreadyCooperativeMember': _alreadyMember,
+          'message': _msgCtrl.text.trim(),
+          'consent': _consent,
+        },
+        label: 'Cooperative membership application',
+        token: auth.token,
+      );
+      if (mounted) setState(() => _submitted = true);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isFr
+              ? 'Échec de l\'envoi. Réessayez.'
+              : 'Submission failed. Please try again.'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2505,141 +3053,412 @@ class _JoinCooperativeScreenState extends State<_JoinCooperativeScreen> {
       title: isFr ? 'Rejoindre une coopérative' : 'Join a Cooperative',
       emoji: '🤝', color: _green,
       child: _submitted
-        ? _ResultView(
-            result: isFr
-              ? '''✅ **Demande envoyée !**
+          ? _ResultView(
+              result: isFr
+                  ? '''✅ **Demande envoyée !**
 
-Vous avez demandé à rejoindre:
-**$_selectedCoop**
+Coopérative: **$_selectedCoopName**
+Nom: **${_nameCtrl.text}**
+Téléphone: **${_phoneCtrl.text}**
+Email: **${_emailCtrl.text}**
 
-Participant: **${_nameCtrl.text}**
-Contact: **${_phoneCtrl.text}**
+**La coopérative vous contactera sous 48-72h** pour valider votre adhésion.'''
+                  : '''✅ **Application Submitted!**
 
-**La coopérative vous contactera sous 48-72h** pour valider votre adhésion.
+Cooperative: **$_selectedCoopName**
+Name: **${_nameCtrl.text}**
+Phone: **${_phoneCtrl.text}**
+Email: **${_emailCtrl.text}**
 
-Vous recevrez une notification dès que votre demande sera traitée.'''
-              : '''✅ **Request Sent!**
-
-You've requested to join:
-**$_selectedCoop**
-
-Participant: **${_nameCtrl.text}**
-Contact: **${_phoneCtrl.text}**
-
-**The cooperative will contact you within 48-72 hours** to validate your membership.
-
-You'll receive a notification once your request is processed.''',
-            isFr: isFr,
-            onReset: () => setState(() { _submitted = false; _selectedCoop = null; }),
-          )
-        : Column(children: [
-            // Filter by region
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: DropdownButtonFormField<String>(
-                value: _region,
-                dropdownColor: _surface,
-                style: const TextStyle(color: _text),
-                decoration: _inputDecoration(isFr ? 'Filtrer par région' : 'Filter by region'),
-                items: [
-                  DropdownMenuItem(value: 'all',
-                    child: Text(isFr ? 'Toutes les régions' : 'All regions',
-                      style: const TextStyle(color: _text))),
-                  ...['koulikoro', 'segou', 'sikasso', 'mopti', 'gao'].map((r) =>
-                    DropdownMenuItem(value: r,
-                      child: Text(r[0].toUpperCase() + r.substring(1),
-                        style: const TextStyle(color: _text)))),
-                ],
-                onChanged: (v) => setState(() { _region = v ?? 'all'; _selectedCoop = null; }),
-              ),
-            ),
-
-            // Cooperative list
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+**The cooperative will contact you within 48-72 hours** to validate your membership.''',
+              isFr: isFr,
+              onReset: () => setState(() {
+                _submitted = false;
+                _selectedCoopId = null;
+                _selectedCoopName = null;
+              }),
+            )
+          : Form(
+              key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(isFr ? 'Coopératives disponibles' : 'Available Cooperatives',
-                    style: const TextStyle(color: _text, fontSize: 15, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 10),
-                  ..._filteredCoops.map((c) => GestureDetector(
-                    onTap: () => setState(() => _selectedCoop = c['name'] as String),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [_surface, _surface2]),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: _selectedCoop == c['name']
-                            ? _green
-                            : _border,
-                          width: _selectedCoop == c['name'] ? 2 : 1),
-                      ),
-                      child: Row(children: [
-                        Container(
-                          width: 40, height: 40,
-                          decoration: BoxDecoration(
-                            color: _green.withValues(alpha: 0.15),
-                            shape: BoxShape.circle),
-                          child: const Icon(Icons.groups, color: _green, size: 20)),
-                        const SizedBox(width: 12),
-                        Expanded(child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(c['name'] as String, style: const TextStyle(
-                              color: _text, fontSize: 13, fontWeight: FontWeight.w600)),
-                            Text(
-                              '${c['members']} ${isFr ? 'membres' : 'members'} · ${(c['region'] as String)[0].toUpperCase()}${(c['region'] as String).substring(1)}',
-                              style: const TextStyle(color: _textMuted, fontSize: 11)),
-                          ],
-                        )),
-                        if (_selectedCoop == c['name'])
-                          const Icon(Icons.check_circle, color: _green, size: 22),
-                      ]),
+                  DropdownButtonFormField<String>(
+                    initialValue: _filterRegion,
+                    dropdownColor: _surface,
+                    style: const TextStyle(color: _text),
+                    decoration: _inputDecoration(
+                      isFr ? 'Filtrer coopératives par région' : 'Filter cooperatives by region',
                     ),
-                  )),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'all',
+                        child: Text(
+                          isFr ? 'Toutes les régions' : 'All regions',
+                          style: const TextStyle(color: _text),
+                        ),
+                      ),
+                      ...['koulikoro', 'segou', 'sikasso', 'mopti', 'gao'].map(
+                        (r) => DropdownMenuItem(
+                          value: r,
+                          child: Text(
+                            r[0].toUpperCase() + r.substring(1),
+                            style: const TextStyle(color: _text),
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() {
+                      _filterRegion = v ?? 'all';
+                      _selectedCoopId = null;
+                      _selectedCoopName = null;
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    isFr ? 'Coopératives disponibles' : 'Available Cooperatives',
+                    style: const TextStyle(
+                      color: _text,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ..._filteredCoops.map((c) {
+                    final id = c['id'] as String;
+                    final selected = _selectedCoopId == id;
+                    return GestureDetector(
+                      onTap: () => setState(() {
+                        _selectedCoopId = id;
+                        _selectedCoopName = c['name'] as String;
+                      }),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [_surface, _surface2],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: selected ? _green : _border,
+                            width: selected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: _green.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.groups, color: _green, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    c['name'] as String,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: _text,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${c['members']} ${isFr ? 'membres' : 'members'} · ${(c['region'] as String)[0].toUpperCase()}${(c['region'] as String).substring(1)}',
+                                    style: const TextStyle(
+                                      color: _textMuted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (selected)
+                              const Icon(Icons.check_circle, color: _green, size: 22),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  if (_selectedCoopId != null) ...[
+                    const SizedBox(height: 20),
+                    _formCard(
+                      children: [
+                        Text(
+                          isFr ? 'Candidature complète' : 'Full Application',
+                          style: const TextStyle(
+                            color: _text,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isFr
+                              ? 'Tous les champs marqués * sont requis pour traiter votre demande.'
+                              : 'All fields marked * are required to process your application.',
+                          style: const TextStyle(color: _textMuted, fontSize: 12),
+                        ),
+                        const SizedBox(height: 14),
+                        _fieldLabel(isFr ? 'Nom complet *' : 'Full name *'),
+                        _validatedField(
+                          _nameCtrl,
+                          isFr ? 'Prénom et nom' : 'First and last name',
+                          (v) => (v == null || v.trim().length < 2)
+                              ? (isFr ? 'Nom requis' : 'Name required')
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Email *' : 'Email *'),
+                        _validatedField(
+                          _emailCtrl,
+                          'email@example.com',
+                          (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return isFr ? 'Email requis' : 'Email required';
+                            }
+                            if (!v.contains('@')) {
+                              return isFr ? 'Email invalide' : 'Invalid email';
+                            }
+                            return null;
+                          },
+                          type: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Téléphone *' : 'Phone *'),
+                        _validatedField(
+                          _phoneCtrl,
+                          '+22376123456',
+                          (v) {
+                            if (v == null || v.trim().length < 8) {
+                              return isFr ? 'Téléphone requis' : 'Phone required';
+                            }
+                            if (!v.trim().startsWith('+')) {
+                              return isFr
+                                  ? 'Format international (+indicatif)'
+                                  : 'Use international format (+country code)';
+                            }
+                            return null;
+                          },
+                          type: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Pays *' : 'Country *'),
+                        DropdownButtonFormField<String>(
+                          initialValue: _country,
+                          dropdownColor: _surface,
+                          style: const TextStyle(color: _text),
+                          decoration: _inputDecoration(isFr ? 'Pays' : 'Country'),
+                          items: _countries
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c, style: const TextStyle(color: _text)),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(() => _country = v ?? _country),
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Région / commune *' : 'Region / district *'),
+                        DropdownButtonFormField<String>(
+                          initialValue: _farmRegion,
+                          dropdownColor: _surface,
+                          style: const TextStyle(color: _text),
+                          decoration: _inputDecoration(isFr ? 'Région' : 'Region'),
+                          items: ['koulikoro', 'segou', 'sikasso', 'mopti', 'gao', 'bamako']
+                              .map(
+                                (r) => DropdownMenuItem(
+                                  value: r,
+                                  child: Text(
+                                    r[0].toUpperCase() + r.substring(1),
+                                    style: const TextStyle(color: _text),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(() => _farmRegion = v ?? _farmRegion),
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Village / localité' : 'Village / locality'),
+                        _textField(
+                          _localityCtrl,
+                          isFr ? 'Ex: Sirakoro' : 'e.g. Sirakoro',
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'N° pièce d\'identité' : 'National ID number'),
+                        _textField(
+                          _nationalIdCtrl,
+                          isFr ? 'Carte NINA / passeport' : 'National ID / passport',
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Cultures principales *' : 'Main crops *'),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _cropOptions.map((crop) {
+                            final on = _selectedCrops.contains(crop);
+                            return FilterChip(
+                              label: Text(crop),
+                              selected: on,
+                              onSelected: (sel) => setState(() {
+                                if (sel) {
+                                  _selectedCrops.add(crop);
+                                } else {
+                                  _selectedCrops.remove(crop);
+                                }
+                              }),
+                              selectedColor: _green.withValues(alpha: 0.25),
+                              checkmarkColor: _green,
+                              labelStyle: TextStyle(
+                                color: on ? _text : _textMuted,
+                                fontSize: 12,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Superficie cultivée *' : 'Farm area *'),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: _validatedField(
+                                _areaCtrl,
+                                isFr ? 'Ex: 2.5' : 'e.g. 2.5',
+                                (v) {
+                                  final n = double.tryParse(v ?? '');
+                                  if (n == null || n <= 0) {
+                                    return isFr
+                                        ? 'Superficie requise'
+                                        : 'Valid area required';
+                                  }
+                                  return null;
+                                },
+                                type: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                initialValue: _areaUnit,
+                                dropdownColor: _surface,
+                                style: const TextStyle(color: _text),
+                                decoration: _inputDecoration(''),
+                                items: [
+                                  DropdownMenuItem(
+                                    value: 'hectares',
+                                    child: Text(
+                                      isFr ? 'ha' : 'ha',
+                                      style: const TextStyle(color: _text),
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'acres',
+                                    child: Text(
+                                      isFr ? 'acres' : 'acres',
+                                      style: const TextStyle(color: _text),
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (v) =>
+                                    setState(() => _areaUnit = v ?? 'hectares'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Irrigation *' : 'Irrigation *'),
+                        DropdownButtonFormField<String>(
+                          initialValue: _irrigation,
+                          dropdownColor: _surface,
+                          style: const TextStyle(color: _text),
+                          decoration: _inputDecoration(''),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'oui',
+                              child: Text(
+                                isFr ? 'Oui' : 'Yes',
+                                style: const TextStyle(color: _text),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'non',
+                              child: Text(
+                                isFr ? 'Non' : 'No',
+                                style: const TextStyle(color: _text),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'partiel',
+                              child: Text(
+                                isFr ? 'Partiel' : 'Partial',
+                                style: const TextStyle(color: _text),
+                              ),
+                            ),
+                          ],
+                          onChanged: (v) => setState(() => _irrigation = v ?? 'non'),
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Années d\'expérience' : 'Years of experience'),
+                        _textField(_yearsCtrl, '5', type: TextInputType.number),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            isFr
+                                ? 'Déjà membre d\'une coopérative'
+                                : 'Already a cooperative member',
+                            style: const TextStyle(color: _text, fontSize: 13),
+                          ),
+                          value: _alreadyMember,
+                          activeTrackColor: _green.withValues(alpha: 0.5),
+                          onChanged: (v) => setState(() => _alreadyMember = v),
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel(isFr ? 'Message / motivation' : 'Message / motivation'),
+                        _textField(
+                          _msgCtrl,
+                          isFr
+                              ? 'Pourquoi rejoindre cette coopérative ?'
+                              : 'Why do you want to join this cooperative?',
+                          maxLines: 4,
+                        ),
+                        const SizedBox(height: 12),
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: _consent,
+                          activeColor: _green,
+                          onChanged: (v) => setState(() => _consent = v ?? false),
+                          title: Text(
+                            isFr
+                                ? 'J\'accepte que mes données soient utilisées pour traiter cette candidature *'
+                                : 'I agree my data may be used to process this application *',
+                            style: const TextStyle(color: _textMuted, fontSize: 12),
+                          ),
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                        const SizedBox(height: 16),
+                        _submitBtn(
+                          isFr ? 'Envoyer ma candidature' : 'Submit Application',
+                          _submitting,
+                          _submit,
+                          _green,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
-
-            // Application form (shows when coop selected)
-            if (_selectedCoop != null) ...[
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _formCard(children: [
-                  Text(isFr ? 'Votre candidature' : 'Your Application',
-                    style: const TextStyle(color: _text, fontSize: 14,
-                      fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 14),
-                  _fieldLabel(isFr ? 'Votre nom *' : 'Your Name *'),
-                  _textField(_nameCtrl, isFr ? 'Prénom et nom' : 'Full name'),
-                  const SizedBox(height: 12),
-                  _fieldLabel(isFr ? 'Téléphone *' : 'Phone *'),
-                  _textField(_phoneCtrl, '+223...', type: TextInputType.phone),
-                  const SizedBox(height: 12),
-                  _fieldLabel(isFr ? 'Message (optionnel)' : 'Message (optional)'),
-                  _textField(_msgCtrl,
-                    isFr ? 'Pourquoi voulez-vous rejoindre cette coopérative ?'
-                         : 'Why do you want to join this cooperative?',
-                    maxLines: 3),
-                  const SizedBox(height: 16),
-                  _submitBtn(
-                    isFr ? 'Envoyer ma candidature' : 'Submit Application',
-                    _submitting,
-                    () async {
-                      if (_nameCtrl.text.isEmpty || _phoneCtrl.text.isEmpty) return;
-                      setState(() => _submitting = true);
-                      await Future.delayed(const Duration(seconds: 1));
-                      if (mounted) setState(() { _submitting = false; _submitted = true; });
-                    }, _green),
-                ]),
-              ),
-            ],
-            const SizedBox(height: 80),
-          ]),
     );
   }
 }
@@ -2648,38 +3467,119 @@ You'll receive a notification once your request is processed.''',
 // SHARED UTILITY WIDGETS
 // ══════════════════════════════════════════════════════════════
 
+// Back + home bar for in-tab forms (e.g. declare produce).
+class _FormNavBar extends StatelessWidget {
+  final String title;
+  final VoidCallback onBack;
+  final VoidCallback onHome;
+
+  const _FormNavBar({
+    required this.title,
+    required this.onBack,
+    required this.onHome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr =
+        Localizations.localeOf(context).languageCode == 'fr';
+    return Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.arrow_back, color: _text),
+          tooltip: isFr ? 'Retour' : 'Back',
+          onPressed: onBack,
+        ),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.home_outlined, color: _gold),
+          tooltip: isFr ? 'Accueil tableau de bord' : 'Dashboard home',
+          onPressed: onHome,
+        ),
+      ],
+    );
+  }
+}
+
 // Tool screen scaffold (shared by all AI tools)
 class _ToolScaffold extends StatelessWidget {
   final String title, emoji;
   final Color color;
   final Widget child;
-  const _ToolScaffold({required this.title, required this.emoji,
-    required this.color, required this.child});
+  final bool scrollable;
+  const _ToolScaffold({
+    required this.title,
+    required this.emoji,
+    required this.color,
+    required this.child,
+    this.scrollable = true,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isFr =
+        Localizations.localeOf(context).languageCode == 'fr';
+    final onHome = _FarmerToolScope.maybeOf(context)?.onHome;
+    final bottomPad = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
       backgroundColor: _bg,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1a3c2e),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: _text),
-          onPressed: () => Navigator.of(context).pop()),
+          tooltip: isFr ? 'Retour' : 'Back',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Row(
           children: [
             Text(emoji, style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
-            Text(title, style: const TextStyle(
-              color: _text, fontSize: 17, fontWeight: FontWeight.w600)),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_outlined, color: _gold),
+            tooltip: isFr ? 'Accueil tableau de bord' : 'Dashboard home',
+            onPressed: onHome ?? () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 100),
-        child: child,
-      ),
+      body: scrollable
+          ? SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad + 120),
+              child: child,
+            )
+          : Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPad + 8),
+              child: child,
+            ),
     );
   }
 }
@@ -2758,6 +3658,22 @@ Widget _textField(TextEditingController ctrl, String hint, {
   style: const TextStyle(color: _text, fontSize: 14),
   decoration: _inputDecoration(hint),
 );
+
+Widget _validatedField(
+  TextEditingController ctrl,
+  String hint,
+  String? Function(String?) validator, {
+  TextInputType type = TextInputType.text,
+  int maxLines = 1,
+}) =>
+    TextFormField(
+      controller: ctrl,
+      keyboardType: type,
+      maxLines: maxLines,
+      style: const TextStyle(color: _text, fontSize: 14),
+      validator: validator,
+      decoration: _inputDecoration(hint),
+    );
 
 InputDecoration _inputDecoration(String hint) => InputDecoration(
   hintText: hint,

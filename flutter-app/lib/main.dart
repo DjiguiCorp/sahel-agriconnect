@@ -36,7 +36,7 @@ void main() async {
   buildRouter(authState, ageGate, termsGate);
   onAuthSessionExpired = () {
     authState.logoutAll();
-    appRouter.go('/home');
+    appRouter.go('/platform');
   };
 
   try {

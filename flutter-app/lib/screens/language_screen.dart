@@ -13,7 +13,7 @@ class LanguageScreen extends StatelessWidget {
     await context.read<LanguageProvider>().setLang(locale.languageCode);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('language_selected', true);
-    if (context.mounted) context.go('/home');
+    if (context.mounted) context.go('/platform');
   }
 
   @override

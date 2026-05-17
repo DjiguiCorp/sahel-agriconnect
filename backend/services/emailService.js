@@ -161,6 +161,46 @@ export async function notifyAdminNewCooperative(cooperative) {
   });
 }
 
+export async function notifyCooperativeExpertRequest(request) {
+  const resend = getResend();
+  if (!resend) return;
+
+  const CooperativePlatformRegistration = (
+    await import('../models/CooperativePlatformRegistration.js')
+  ).default;
+
+  const name = request.cooperativeName || '';
+  const filter = request.cooperativeId
+    ? { _id: request.cooperativeId }
+    : {
+        $or: [
+          { cooperativeName: new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+        ],
+      };
+
+  const coop = await CooperativePlatformRegistration.findOne(filter).lean();
+  if (!coop?.email) return;
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: coop.email,
+    subject: `👨‍🌾 Demande expert membre — ${request.farmerName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3c2e;padding:20px;border-radius:8px 8px 0 0;">
+          <h1 style="color:white;margin:0;font-size:18px;">Nouvelle demande d'un membre</h1>
+        </div>
+        <div style="padding:20px;background:#f9f9f9;border:1px solid #e0e0e0;">
+          <p style="color:#333;"><strong>${request.farmerName}</strong> a demandé l'aide d'un expert via Think Tank.</p>
+          <p style="color:#555;">${request.problemDescription}</p>
+          <p style="color:#555;">Urgence: ${request.urgency} · Culture: ${request.cropType || '—'}</p>
+          <p style="color:#555;">Contact: ${request.farmerEmail} ${request.farmerPhone ? '| ' + request.farmerPhone : ''}</p>
+        </div>
+      </div>
+    `,
+  });
+}
+
 export async function notifyAdminExpertRequest(request) {
   const resend = getResend();
   if (!resend) return;

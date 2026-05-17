@@ -107,7 +107,7 @@ GoRouter buildRouter(
       }
 
       if (loggedIn && loc == '/role') {
-        return '/home';
+        return '/platform';
       }
 
       if (loggedIn && _routeMismatch(authState.role, loc)) {
@@ -151,7 +151,8 @@ GoRouter buildRouter(
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
       // Public & dashboards: /home, /guest/*, /farmer, /investor, /cooperative,
       // /government, /ngo, /processor, /notifications, /profile.
-      GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+      GoRoute(path: '/platform', builder: (_, __) => const HomeScreen()),
+      GoRoute(path: '/home', builder: (_, __) => const RoleScreen()),
       GoRoute(
         path: '/guest/farmer',
         builder: (_, __) => const HomeScreen(initialGuestCategory: 0),
@@ -259,7 +260,7 @@ GoRouter buildRouter(
     ],
   );
   authState.onLogout = () {
-    Future.microtask(() => appRouter.go('/home'));
+    Future.microtask(() => appRouter.go('/platform'));
   };
   return appRouter;
 }
@@ -304,6 +305,7 @@ String _loginPathFor(String loc) {
 }
 
 bool _routeMismatch(AuthRole role, String loc) {
+  if (loc == '/platform') return false;
   if (loc == '/webview') return false;
   if (loc == '/privacy' || loc == '/terms') return false;
   if (_isGlobalUtilityPath(loc)) return false;

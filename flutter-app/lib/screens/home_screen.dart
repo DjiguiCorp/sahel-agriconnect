@@ -267,6 +267,105 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  List<({String title, String subtitle, Color accent})> _exploreInsights(
+    LanguageProvider lp,
+    int chip,
+  ) {
+    switch (chip) {
+      case 1:
+        return [
+          (
+            title: lp.t('West Africa spot prices', 'Prix spot Afrique de l\'Ouest'),
+            subtitle: lp.t(
+              'Shea, cashew and sesame benchmarks updated weekly.',
+              'Références karité, cajou et sésame mises à jour chaque semaine.',
+            ),
+            accent: const Color(0xFF185FA5),
+          ),
+          (
+            title: lp.t('Bamako wholesale index', 'Indice gros Bamako'),
+            subtitle: lp.t(
+              'Grain and legume prices from cooperative depots.',
+              'Prix céréales et légumineuses aux dépôts coopératifs.',
+            ),
+            accent: const Color(0xFF2d6a4f),
+          ),
+        ];
+      case 2:
+        return [
+          (
+            title: lp.t('Kati women\'s cooperative', 'Coopérative féminine de Kati'),
+            subtitle: lp.t(
+              'Shea processing — 240 members, export-ready traceability.',
+              'Transformation karité — 240 membres, traçabilité export.',
+            ),
+            accent: const Color(0xFF7B61FF),
+          ),
+          (
+            title: lp.t('Sikasso sesame union', 'Union sésame Sikasso'),
+            subtitle: lp.t(
+              'Collective bargaining and shared cold storage.',
+              'Négociation collective et stockage frigorifique partagé.',
+            ),
+            accent: const Color(0xFF3B6D11),
+          ),
+        ];
+      case 3:
+        return [
+          (
+            title: lp.t('AfriYield — live lots', 'AfriYield — lots en direct'),
+            subtitle: lp.t(
+              'Track sesame and shea cycles across Mali & Burkina.',
+              'Suivez le sésame et le karité au Mali et au Burkina.',
+            ),
+            accent: AppColors.gold,
+          ),
+          (
+            title: lp.t('Impact fund pipeline', 'Pipeline fonds à impact'),
+            subtitle: lp.t(
+              'Agri-SME deals in vetting — avg. ticket €45k.',
+              'Opérations PME agro en vérification — ticket moy. 45 k€.',
+            ),
+            accent: const Color(0xFF185FA5),
+          ),
+        ];
+      case 0:
+      default:
+        return [
+          (
+            title: lp.t('Millet — Sahel outlook', 'Millet — perspectives Sahel'),
+            subtitle: lp.t(
+              'Rain-fed yields trending +6% vs. last season in Mali south.',
+              'Rendements pluviaux +6 % vs saison passée au sud Mali.',
+            ),
+            accent: const Color(0xFF3B6D11),
+          ),
+          (
+            title: lp.t('Shea flowering alert', 'Alerte floraison karité'),
+            subtitle: lp.t(
+              'Peak harvest window in Burkina Faso: 6–8 weeks.',
+              'Fenêtre de récolte pic Burkina Faso : 6–8 semaines.',
+            ),
+            accent: AppColors.gold,
+          ),
+        ];
+    }
+  }
+
+  String _exploreTrendsTitle(LanguageProvider lp, int chip) {
+    switch (chip) {
+      case 1:
+        return lp.t('Price trends', 'Tendances des prix');
+      case 2:
+        return lp.t('Cooperative activity', 'Activité coopérative');
+      case 3:
+        return lp.t('Investment flow', 'Flux d\'investissement');
+      case 0:
+      default:
+        return lp.t('Crop trends', 'Tendances cultures');
+    }
+  }
+
   void _openCategory(int index, AuthState auth) {
     if (auth.isLoggedIn &&
         _categoryIndexForRole(auth.role) == index) {
@@ -401,12 +500,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final lp = context.read<LanguageProvider>();
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: const Color(0xFF1a3c2e),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          24 + MediaQuery.paddingOf(sheetContext).bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -518,7 +624,10 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         });
       },
-      child: Scaffold(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Scaffold(
         resizeToAvoidBottomInset: true,
         extendBody: true,
         backgroundColor: AppColors.darkBg,
@@ -584,6 +693,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildAlertsTab(lp, auth),
             _buildProfileTab(lp, auth),
           ],
+        ),
+          ),
         ),
       ),
     );
@@ -1231,79 +1342,42 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
             sliver: SliverToBoxAdapter(
               child: Column(
+                key: ValueKey<int>(_exploreChip),
                 children: [
-                  GlassCard(
-                    padding: const EdgeInsets.all(12),
-                    borderColor: AppColors.gold.withValues(alpha: 0.35),
-                    backgroundColor: AppColors.gold.withValues(alpha: 0.06),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          lp.t('AfriYield — live lots',
-                              'AfriYield — lots en direct'),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                  for (final item in _exploreInsights(lp, _exploreChip)) ...[
+                    GlassCard(
+                      padding: const EdgeInsets.all(12),
+                      borderColor: item.accent.withValues(alpha: 0.4),
+                      backgroundColor: item.accent.withValues(alpha: 0.08),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          lp.t(
-                            'Track sesame and shea cycles across Mali & Burkina.',
-                            'Suivez le sésame et le karité au Mali et au Burkina.',
+                          const SizedBox(height: 8),
+                          Text(
+                            item.subtitle,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 12,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  GlassCard(
-                    padding: const EdgeInsets.all(12),
-                    borderColor: const Color(0xFF185FA5).withValues(alpha: 0.4),
-                    backgroundColor:
-                        const Color(0xFF185FA5).withValues(alpha: 0.08),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          lp.t('West Africa spot prices',
-                              'Prix spot Afrique de l\'Ouest'),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          lp.t(
-                            'Shea, cashew and sesame benchmarks updated weekly.',
-                            'Références karité, cajou et sésame mises à jour chaque semaine.',
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 12,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                    const SizedBox(height: 12),
+                  ],
                 ],
               ),
             ),
@@ -1312,7 +1386,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
             sliver: SliverToBoxAdapter(
               child: Text(
-                lp.t('Market trends', 'Tendances marché'),
+                _exploreTrendsTitle(lp, _exploreChip),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 17,
@@ -1620,7 +1694,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          if (auth.isGuest) ...[
+          if (!auth.isLoggedIn) ...[
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               sliver: SliverToBoxAdapter(
@@ -1772,15 +1846,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: Icons.description_outlined,
                       label:
                           lp.t('Terms of Service', 'Conditions d\'utilisation'),
-                      onTap: () => context.push('/terms?view=1'),
+                      onTap: () => context.push('/terms?view=1&tab=0'),
                     ),
                     _Divider(),
                     _ProfileLink(
                       icon: Icons.privacy_tip_outlined,
                       label: lp.t(
                           'Privacy Policy', 'Politique de confidentialité'),
-                      onTap: () => context.push('/terms?view=1'),
+                      onTap: () => context.push('/terms?view=1&tab=1'),
                     ),
+                    if (auth.isLoggedIn) ...[
+                      _Divider(),
+                      _ProfileLink(
+                        icon: Icons.edit_outlined,
+                        label: lp.t('Edit profile', 'Modifier le profil'),
+                        onTap: () => context.push('/profile/edit'),
+                      ),
+                    ],
                     _Divider(),
                     _ProfileLink(
                       icon: Icons.help_outline_rounded,

@@ -2,7 +2,10 @@ import express from 'express';
 import mongoose from 'mongoose';
 import ExpertRequest from '../models/ExpertRequest.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { notifyAdminExpertRequest } from '../services/emailService.js';
+import {
+  notifyAdminExpertRequest,
+  notifyCooperativeExpertRequest,
+} from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 
 const router = express.Router();
@@ -21,10 +24,13 @@ router.post('/request', async (req, res) => {
       diseaseDetected,
       cooperativeMember,
       cooperativeName,
+      cooperativeId,
       preferredContactMethod,
       urgency,
       source,
     } = req.body || {};
+
+    const isCoopMember = Boolean(cooperativeMember);
 
     if (!farmerName || !farmerEmail || !problemDescription) {
       return res.status(400).json({
@@ -41,8 +47,10 @@ router.post('/request', async (req, res) => {
       cropType: cropType != null ? String(cropType) : undefined,
       problemDescription: String(problemDescription),
       diseaseDetected: diseaseDetected != null ? String(diseaseDetected) : undefined,
-      cooperativeMember: Boolean(cooperativeMember),
-      cooperativeName: cooperativeMember && cooperativeName ? String(cooperativeName) : undefined,
+      cooperativeMember: isCoopMember,
+      cooperativeName: isCoopMember && cooperativeName ? String(cooperativeName) : undefined,
+      cooperativeId: isCoopMember && cooperativeId ? String(cooperativeId) : undefined,
+      routedTo: isCoopMember ? 'cooperative_and_admin' : 'admin',
       preferredContactMethod: ['email', 'phone', 'whatsapp'].includes(preferredContactMethod)
         ? preferredContactMethod
         : 'email',
@@ -52,6 +60,9 @@ router.post('/request', async (req, res) => {
     });
 
     notifyAdminExpertRequest(doc).catch(console.error);
+    if (isCoopMember) {
+      notifyCooperativeExpertRequest(doc).catch(console.error);
+    }
     queueNotification({
       name: doc.farmerName,
       phone: doc.farmerPhone,
@@ -64,9 +75,15 @@ router.post('/request', async (req, res) => {
       success: true,
       message: 'Request received',
       id: doc._id,
+      routedTo: doc.routedTo,
     };
     if (!doc.cooperativeMember) {
       payload.cooperativeNote = 'Joining a cooperative gives you priority access to experts';
+      payload.routingNote =
+        'Your request was sent to the Sahel AgriConnect admin team for follow-up.';
+    } else {
+      payload.routingNote =
+        'Your cooperative and the admin team have been notified. An expert will follow up within 48 hours.';
     }
     return res.status(201).json(payload);
   } catch (e) {

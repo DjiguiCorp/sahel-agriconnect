@@ -208,4 +208,24 @@ class AuthState extends ChangeNotifier {
     _token = null;
     notifyListeners();
   }
+
+  /// Updates display fields locally (until a profile API is wired).
+  void updateLocalProfile({
+    String? name,
+    String? email,
+    String? phone,
+    String? country,
+  }) {
+    _user ??= <String, dynamic>{};
+    if (name != null) {
+      _user!['name'] = name;
+      _user!['nom'] = name;
+    }
+    if (email != null) _user!['email'] = email;
+    if (phone != null) _user!['phone'] = phone;
+    if (country != null) _user!['country'] = country;
+    notifyListeners();
+  }
+
+  String get displayPhone => _user?['phone']?.toString() ?? '';
 }

@@ -103,11 +103,11 @@ class _SplashScreenState extends State<SplashScreen>
         case AuthRole.processor:
           context.go('/processor');
         case AuthRole.none:
-          context.go('/home');
-      }
+          context.go('/platform');
+        }
       return;
     }
-    context.go('/home');
+    context.go('/platform');
   }
 
   @override
