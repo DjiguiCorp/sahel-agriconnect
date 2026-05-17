@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -6,33 +7,77 @@ import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
-import '../../widgets/dashboard_account_nav_header.dart';
-import '../../widgets/dashboard_sign_out_button.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
 
+const _bg      = Color(0xFF1a1200);
+const _surface = Color(0xFF2a1a00);
+const _surface2 = Color(0xFF1f1200);
+const _amber   = Color(0xFFF59E0B);
+const _gold    = AppColors.gold;
+const _green   = Color(0xFF1D9E75);
+const _blue    = Color(0xFF3B82F6);
+const _border  = Color(0x14FFFFFF);
+const _text    = Colors.white;
+const _muted   = Color(0x99FFFFFF);
+
+// ══════════════════════════════════════════════════════════════
+// MAIN PROCESSOR DASHBOARD
+// ══════════════════════════════════════════════════════════════
 class ProcessorDashboard extends StatefulWidget {
   const ProcessorDashboard({super.key});
-
-  @override
-  State<ProcessorDashboard> createState() => _ProcessorDashboardState();
+  @override State<ProcessorDashboard> createState() =>
+    _ProcessorDashboardState();
 }
 
 class _ProcessorDashboardState extends State<ProcessorDashboard> {
   int _tab = 0;
-  Map<String, dynamic>? _processor;
-  List<Map<String, dynamic>> _farmers = [];
-  final List<_ProcBatch> _batches = [];
-  final List<_ScheduleEntry> _schedule = [];
+  Map<String, dynamic>? _data;
   bool _loading = true;
 
-  static const _bg = Color(0xFF1a1200);
-  static const _headerStart = Color(0xFF2d1f00);
-  static const _headerEnd = Color(0xFF3d2800);
-  static const _accent = Color(0xFFF59E0B);
-  static const _cardStart = Color(0xFF2a1a00);
-  static const _cardEnd = Color(0xFF1f1200);
+  // State lists — always show demo data
+  final List<Map<String, dynamic>> _batches = [
+    {'id': 'BAT-001', 'crop': 'Shea Butter', 'rawKg': 2400,
+     'outputKg': 960, 'status': 'processing', 'quality': 'A',
+     'startDate': 'May 12, 2026', 'processor': 'Unit 1',
+     'certified': false},
+    {'id': 'BAT-002', 'crop': 'Sesame', 'rawKg': 1800,
+     'outputKg': 1440, 'status': 'certified', 'quality': 'A',
+     'startDate': 'May 8, 2026', 'processor': 'Unit 2',
+     'certified': true},
+    {'id': 'BAT-003', 'crop': 'Cashew', 'rawKg': 3200,
+     'outputKg': 0, 'status': 'pending', 'quality': 'B',
+     'startDate': 'May 15, 2026', 'processor': 'Unit 1',
+     'certified': false},
+  ];
 
-  bool get _hasPortal => _processor != null;
+  final List<Map<String, dynamic>> _supplyRequests = [
+    {'id': 'SUP-001', 'crop': 'Shea Butter', 'qtyKg': 5000,
+     'quality': 'A', 'source': 'Ségou Region', 'status': 'confirmed',
+     'deliveryDate': 'May 20, 2026'},
+    {'id': 'SUP-002', 'crop': 'Sesame', 'qtyKg': 3000,
+     'quality': 'A', 'source': 'Sikasso Region', 'status': 'pending',
+     'deliveryDate': 'May 25, 2026'},
+  ];
+
+  final List<Map<String, dynamic>> _schedule = [
+    {'type': 'pickup', 'crop': 'Shea Butter', 'quantity': '2,000 kg',
+     'partner': 'Coop Karité Ségou', 'date': 'May 19, 2026',
+     'time': '08:00', 'location': 'Ségou, Mali', 'status': 'confirmed'},
+    {'type': 'delivery', 'crop': 'Sesame Oil', 'quantity': '800 L',
+     'partner': 'Export Mali SA', 'date': 'May 21, 2026',
+     'time': '10:00', 'location': 'Bamako, Mali', 'status': 'scheduled'},
+    {'type': 'pickup', 'crop': 'Cashew', 'quantity': '3,200 kg',
+     'partner': 'Union Cajou Sikasso', 'date': 'May 23, 2026',
+     'time': '07:30', 'location': 'Sikasso, Mali', 'status': 'pending'},
+  ];
+
+  int get _activeBatches => _batches
+    .where((b) => b['status'] == 'processing').length;
+  int get _certifiedBatches => _batches
+    .where((b) => b['certified'] == true).length;
+  double get _totalOutput => _batches.fold(0,
+    (s, b) => s + (b['outputKg'] as int).toDouble());
 
   @override
   void initState() {
@@ -41,1911 +86,2000 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    final auth = context.read<AuthState>();
     try {
-      final auth = context.read<AuthState>();
-      final token = auth.token;
-      if (token != null && token.isNotEmpty) {
-        final results = await Future.wait([
-          ApiService.getProcessorPortal(
-            token,
-            country:
-                auth.displayCountry.isNotEmpty ? auth.displayCountry : null,
-          ),
-          ApiService.getPublicStats(),
-        ]);
-        final portal = results[0];
-        final farmersData = results[1];
-        final raw = portal['processor'];
-        final map = raw is Map ? Map<String, dynamic>.from(raw) : null;
-        final recent = farmersData['recent'];
-        final farmers = <Map<String, dynamic>>[];
-        if (recent is List) {
-          for (final f in recent) {
-            if (f is Map) farmers.add(Map<String, dynamic>.from(f));
-          }
-        }
-        if (mounted) {
-          setState(() {
-            _processor = map;
-            _farmers = farmers;
-            _seedBatchesAndSchedule(
-              map,
-              context.read<LanguageProvider>(),
-            );
-            _loading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _loading = false);
-      }
+      final res = await ApiService.getProcessorPortal(
+        auth.token ?? '',
+        country: auth.displayCountry.isNotEmpty
+          ? auth.displayCountry : null);
+      if (mounted) setState(() { _data = res; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _seedBatchesAndSchedule(Map<String, dynamic>? p, LanguageProvider lp) {
-    _batches.clear();
-    _schedule.clear();
-    final active = (p?['activeLots'] as num?)?.toInt() ?? 0;
-    final certified = (p?['certifiedBatches'] as num?)?.toInt() ?? 0;
-    final now = DateTime.now();
-    for (var i = 0; i < active; i++) {
-      _batches.add(
-        _ProcBatch(
-          id: 'LOT-${now.year}-${i + 1}',
-          crop: i.isEven
-              ? lp.t('Shea nuts', 'Noix de karité')
-              : lp.t('Sesame', 'Sésame'),
-          quantityKg: 800 + i * 120,
-          status: _BatchStatus.active,
-          startedAt: now.subtract(Duration(days: i + 1)),
-        ),
-      );
+  void _goTab(int i) {
+    AuthService.resetActivity();
+    setState(() => _tab = i);
+  }
+
+  void _addBatch(Map<String, dynamic> b) =>
+    setState(() => _batches.insert(0, b));
+  void _addSupply(Map<String, dynamic> s) =>
+    setState(() => _supplyRequests.insert(0, s));
+  void _addSchedule(Map<String, dynamic> s) =>
+    setState(() => _schedule.insert(0, s));
+
+  Future<void> _onBackPressed() async {
+    if (_tab != 0) {
+      setState(() => _tab = 0);
+      return;
     }
-    for (var i = 0; i < certified; i++) {
-      _batches.add(
-        _ProcBatch(
-          id: 'CERT-${now.year}-${i + 1}',
-          crop: i.isEven
-              ? lp.t('Cashew', 'Cajou')
-              : lp.t('Shea butter', 'Beurre de karité'),
-          quantityKg: 500 + i * 80,
-          status: _BatchStatus.completed,
-          startedAt: now.subtract(Duration(days: 10 + i)),
+    final isFr =
+        context.read<LanguageProvider>().locale.languageCode == 'fr';
+    final exit = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: Text(isFr ? 'Quitter ?' : 'Exit?',
+            style: const TextStyle(color: _text)),
+        content: Text(
+          isFr
+              ? 'Voulez-vous quitter le centre de traitement ?'
+              : 'Do you want to exit the processing center?',
+          style: const TextStyle(color: _muted),
         ),
-      );
-    }
-    _schedule.addAll([
-      _ScheduleEntry(
-        date: now.add(const Duration(days: 1)),
-        title: lp.t('Shea intake — Lot A', 'Réception karité — Lot A'),
-        type: _ScheduleType.processing,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(isFr ? 'Rester' : 'Stay',
+                style: const TextStyle(color: _muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(isFr ? 'Quitter' : 'Exit',
+                style: const TextStyle(color: _amber)),
+          ),
+        ],
       ),
-      _ScheduleEntry(
-        date: now.add(const Duration(days: 3)),
-        title: lp.t('Quality training — HACCP', 'Formation qualité — HACCP'),
-        type: _ScheduleType.training,
-      ),
-      _ScheduleEntry(
-        date: now.add(const Duration(days: 5)),
-        title: lp.t('Sesame drying line', 'Ligne séchage sésame'),
-        type: _ScheduleType.processing,
-      ),
-    ]);
+    );
+    if (exit == true && mounted) context.go('/platform');
   }
-
-  void _addBatch(_ProcBatch batch) {
-    setState(() => _batches.insert(0, batch));
-  }
-
-  void _addSchedule(_ScheduleEntry entry) {
-    setState(() => _schedule.add(entry));
-  }
-
-  String get _rawMaterials =>
-      _loading ? '…' : '${_processor?['activeLots'] ?? _activeBatchCount}';
-
-  String get _processed =>
-      _loading ? '…' : '${_processor?['certifiedBatches'] ?? _completedCount}';
-
-  String get _outputReady => _loading
-      ? '…'
-      : (_processor?['capacity']?.toString() ?? '$_completedCount t');
-
-  String get _revenue => _loading ? '…' : '—';
-
-  int get _activeBatchCount =>
-      _batches.where((b) => b.status == _BatchStatus.active).length;
-
-  int get _completedCount =>
-      _batches.where((b) => b.status == _BatchStatus.completed).length;
 
   @override
   Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    final auth = context.watch<AuthState>();
-    final name = auth.displayName.isNotEmpty
-        ? auth.displayName
-        : (_processor?['name']?.toString() ??
-            lp.t('Processing Center', 'Centre de traitement'));
-    final location = (_processor?['location'] ?? auth.displayCountry).toString();
+    final isFr = context.watch<LanguageProvider>()
+      .locale.languageCode == 'fr';
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/platform');
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onBackPressed();
       },
-      child: Scaffold(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Scaffold(
         backgroundColor: _bg,
-        body: Column(
-          children: [
-            const OfflineBanner(),
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [_headerStart, _headerEnd],
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: -40,
-                    right: -40,
-                    child: Container(
-                      width: 170,
-                      height: 170,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _accent.withValues(alpha: 0.07),
-                      ),
-                    ),
-                  ),
-                  SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                lp.t('Processing Center', 'Centre de traitement'),
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.65),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (location.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  location,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.55),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              _headerStat(
-                                lp.t('Raw in', 'Entrée brute'),
-                                _rawMaterials,
-                              ),
-                              const SizedBox(width: 8),
-                              _headerStat(
-                                lp.t('Processed', 'Traités'),
-                                _processed,
-                              ),
-                              const SizedBox(width: 8),
-                              _headerStat(
-                                lp.t('Output', 'Sortie'),
-                                _outputReady,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: _loading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: _accent),
-                    )
-                  : RefreshIndicator(
-                      color: _accent,
-                      onRefresh: _load,
-                      child: IndexedStack(
-                        index: _tab,
-                        children: [
-                          _HomeTab(
-                            accent: _accent,
-                            cardStart: _cardStart,
-                            cardEnd: _cardEnd,
-                            raw: _rawMaterials,
-                            processed: _processed,
-                            output: _outputReady,
-                            revenue: _revenue,
-                            onTabChange: (i) => setState(() => _tab = i),
-                            onMarketPrices: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    lp.t(
-                                      'Shea 450 XOF/kg · Sesame 380 · '
-                                      'Cashew 920 (reference).',
-                                      'Karité 450 XOF/kg · Sésame 380 · '
-                                      'Cajou 920 (référence).',
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          _SupplyTab(
-                            accent: _accent,
-                            cardStart: _cardStart,
-                            cardEnd: _cardEnd,
-                            farmers: _farmers,
-                            hasPortal: _hasPortal,
-                            onRequestSupply: () =>
-                                _showRequestSupplySheet(context),
-                          ),
-                          _ProcessingTab(
-                            accent: _accent,
-                            cardStart: _cardStart,
-                            cardEnd: _cardEnd,
-                            batches: _batches,
-                            onLogBatch: () => _showLogBatchSheet(context),
-                          ),
-                          _ScheduleTab(
-                            accent: _accent,
-                            cardStart: _cardStart,
-                            cardEnd: _cardEnd,
-                            schedule: _schedule,
-                            onBookTraining: () =>
-                                _showBookTrainingSheet(context),
-                          ),
-                          _AccountTab(
-                            accent: _accent,
-                            cardStart: _cardStart,
-                            cardEnd: _cardEnd,
-                            onBackToDashboard: () => setState(() => _tab = 0),
-                          ),
-                        ],
-                      ),
-                    ),
-            ),
-          ],
-        ),
+        body: Column(children: [
+          const OfflineBanner(),
+          _ProcessorHeader(
+            data: _data, loading: _loading,
+            activeBatches: _activeBatches,
+            certifiedBatches: _certifiedBatches,
+            totalOutput: _totalOutput,
+            isFr: isFr),
+          Expanded(
+            child: IndexedStack(index: _tab, children: [
+              _HomeTab(batches: _batches, schedule: _schedule,
+                isFr: isFr, onTabChange: _goTab),
+              _SupplyTab(requests: _supplyRequests,
+                isFr: isFr, onAdd: _addSupply),
+              _ProcessingTab(batches: _batches,
+                isFr: isFr, onAdd: _addBatch),
+              _ScheduleTab(schedule: _schedule,
+                isFr: isFr, onAdd: _addSchedule),
+              _ProcessorAccountTab(isFr: isFr, onTabChange: _goTab),
+            ]),
+          ),
+        ]),
         bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF120c00),
-            border: Border(
-              top: BorderSide(
-                color: Colors.white.withValues(alpha: 0.08),
-                width: 1,
-              ),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: BottomNavigationBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              selectedItemColor: _accent,
-              unselectedItemColor: Colors.white30,
-              type: BottomNavigationBarType.fixed,
-              selectedLabelStyle: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: const TextStyle(fontSize: 10),
-              currentIndex: _tab,
-              onTap: (i) => setState(() => _tab = i),
-              items: [
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.home_outlined),
-                  activeIcon: const Icon(Icons.home),
-                  label: lp.t('Home', 'Accueil'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.local_shipping_outlined),
-                  activeIcon: const Icon(Icons.local_shipping),
-                  label: lp.t('Supply', 'Approvisionnement'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.precision_manufacturing_outlined),
-                  activeIcon: const Icon(Icons.precision_manufacturing),
-                  label: lp.t('Processing', 'Traitement'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  activeIcon: const Icon(Icons.calendar_month),
-                  label: lp.t('Schedule', 'Calendrier'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.manage_accounts_outlined),
-                  activeIcon: const Icon(Icons.manage_accounts),
-                  label: lp.t('Account', 'Compte'),
-                ),
-              ],
+          decoration: const BoxDecoration(
+            color: Color(0xFF120d00),
+            border: Border(top: BorderSide(color: _border, width: 1))),
+          child: SafeArea(top: false,
+            child: NavigationBar(
+              backgroundColor: Colors.transparent, elevation: 0,
+              selectedIndex: _tab,
+              onDestinationSelected: _goTab,
+              indicatorColor: _amber.withValues(alpha: 0.2),
+              labelBehavior:
+                NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: [
+                NavigationDestination(
+                  icon: const Icon(Icons.home_outlined, color: _muted),
+                  selectedIcon: const Icon(Icons.home, color: _amber),
+                  label: isFr ? 'Accueil' : 'Home'),
+                NavigationDestination(
+                  icon: const Icon(Icons.inventory_2_outlined, color: _muted),
+                  selectedIcon: const Icon(Icons.inventory_2, color: _amber),
+                  label: isFr ? 'Approvisionnement' : 'Supply'),
+                NavigationDestination(
+                  icon: const Icon(Icons.factory_outlined, color: _muted),
+                  selectedIcon: const Icon(Icons.factory, color: _amber),
+                  label: isFr ? 'Traitement' : 'Processing'),
+                NavigationDestination(
+                  icon: const Icon(Icons.calendar_month_outlined,
+                    color: _muted),
+                  selectedIcon: const Icon(Icons.calendar_month,
+                    color: _amber),
+                  label: isFr ? 'Planning' : 'Schedule'),
+                NavigationDestination(
+                  icon: const Icon(Icons.manage_accounts_outlined,
+                    color: _muted),
+                  selectedIcon: const Icon(Icons.manage_accounts,
+                    color: _amber),
+                  label: isFr ? 'Compte' : 'Account'),
+              ])),
             ),
           ),
         ),
       ),
     );
   }
-
-  Widget _headerStat(String label, String value) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 9,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showRequestSupplySheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF2a1a00),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _RequestSupplySheet(
-        accent: _accent,
-        onSubmit: () {
-          Navigator.pop(ctx);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.read<LanguageProvider>().t(
-                  'Supply request sent to farmers.',
-                  'Demande d’approvisionnement envoyée aux agriculteurs.',
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showLogBatchSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF2a1a00),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _LogBatchSheet(
-        accent: _accent,
-        onSubmit: (crop, qty) {
-          Navigator.pop(ctx);
-          _addBatch(
-            _ProcBatch(
-              id: 'LOT-${DateTime.now().millisecondsSinceEpoch}',
-              crop: crop,
-              quantityKg: qty,
-              status: _BatchStatus.active,
-              startedAt: DateTime.now(),
-            ),
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.read<LanguageProvider>().t(
-                  'Batch logged on processing floor.',
-                  'Lot enregistré sur le plancher de traitement.',
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showBookTrainingSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF2a1a00),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _BookTrainingSheet(
-        accent: _accent,
-        onSubmit: (name, date, topic) {
-          Navigator.pop(ctx);
-          _addSchedule(
-            _ScheduleEntry(
-              date: date,
-              title: context.read<LanguageProvider>().t(
-                'Training — $topic ($name)',
-                'Formation — $topic ($name)',
-              ),
-              type: _ScheduleType.training,
-            ),
-          );
-          showDialog<void>(
-            context: context,
-            builder: (dCtx) {
-              final lp = context.read<LanguageProvider>();
-              return AlertDialog(
-                backgroundColor: const Color(0xFF2a1a00),
-                title: Text(
-                  lp.t('Request received', 'Demande reçue'),
-                  style: const TextStyle(color: Colors.white),
-                ),
-                content: Text(
-                  lp.t(
-                    'Our team will contact you to confirm your $topic session.',
-                    'Notre équipe vous contactera pour confirmer votre session $topic.',
-                  ),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.75),
-                    height: 1.4,
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dCtx),
-                    child: const Text('OK', style: TextStyle(color: _accent)),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
 }
 
-enum _BatchStatus { active, completed }
-
-class _ProcBatch {
-  _ProcBatch({
-    required this.id,
-    required this.crop,
-    required this.quantityKg,
-    required this.status,
-    required this.startedAt,
-  });
-
-  final String id;
-  final String crop;
-  final int quantityKg;
-  final _BatchStatus status;
-  final DateTime startedAt;
-}
-
-enum _ScheduleType { processing, training }
-
-class _ScheduleEntry {
-  _ScheduleEntry({
-    required this.date,
-    required this.title,
-    required this.type,
-  });
-
-  final DateTime date;
-  final String title;
-  final _ScheduleType type;
-}
-
-// ———————————————————————————————————————————————————————————— Home
-class _HomeTab extends StatelessWidget {
-  const _HomeTab({
-    required this.accent,
-    required this.cardStart,
-    required this.cardEnd,
-    required this.raw,
-    required this.processed,
-    required this.output,
-    required this.revenue,
-    required this.onTabChange,
-    required this.onMarketPrices,
-  });
-
-  final Color accent;
-  final Color cardStart;
-  final Color cardEnd;
-  final String raw;
-  final String processed;
-  final String output;
-  final String revenue;
-  final ValueChanged<int> onTabChange;
-  final VoidCallback onMarketPrices;
+// ══════════════════════════════════════════════════════════════
+// HEADER
+// ══════════════════════════════════════════════════════════════
+class _ProcessorHeader extends StatelessWidget {
+  final Map<String, dynamic>? data;
+  final bool loading, isFr;
+  final int activeBatches, certifiedBatches;
+  final double totalOutput;
+  const _ProcessorHeader({required this.data, required this.loading,
+    required this.activeBatches, required this.certifiedBatches,
+    required this.totalOutput, required this.isFr});
 
   @override
   Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          lp.t('Operations snapshot', 'Aperçu des opérations'),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _metric(
-              lp.t('Raw materials', 'Matières premières'),
-              raw,
-              Icons.inventory_2_outlined,
-            ),
-            const SizedBox(width: 10),
-            _metric(
-              lp.t('Batches processed', 'Lots traités'),
-              processed,
-              Icons.factory_outlined,
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            _metric(
-              lp.t('Output ready', 'Sortie prête'),
-              output,
-              Icons.local_shipping_outlined,
-            ),
-            const SizedBox(width: 10),
-            _metric(
-              lp.t('Revenue', 'Revenus'),
-              revenue,
-              Icons.payments_outlined,
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Text(
-          lp.t('Quick actions', 'Actions rapides'),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _action(
-          Icons.shopping_basket_outlined,
-          lp.t('Source produce', 'S’approvisionner'),
-          lp.t(
-            'Find farmers and request intake',
-            'Trouver des agriculteurs et demander une réception',
-          ),
-          () => onTabChange(1),
-        ),
-        const SizedBox(height: 8),
-        _action(
-          Icons.playlist_add_outlined,
-          lp.t('Log batch', 'Enregistrer un lot'),
-          lp.t(
-            'Register a new processing lot',
-            'Enregistrer un nouveau lot de traitement',
-          ),
-          () => onTabChange(2),
-        ),
-        const SizedBox(height: 8),
-        _action(
-          Icons.calendar_month_outlined,
-          lp.t('View schedule', 'Voir le calendrier'),
-          lp.t(
-            'Processing runs and training',
-            'Cycles de traitement et formations',
-          ),
-          () => onTabChange(3),
-        ),
-        const SizedBox(height: 8),
-        _action(
-          Icons.price_change_outlined,
-          lp.t('Market prices', 'Prix du marché'),
-          lp.t(
-            'Commodity reference benchmarks',
-            'Références des matières premières',
-          ),
-          onMarketPrices,
-        ),
-      ],
-    );
-  }
+    final auth = context.watch<AuthState>();
+    final name = auth.displayName.isNotEmpty
+      ? auth.displayName : (isFr ? 'Centre de traitement'
+        : 'Processing Center');
+    final location = auth.displayCountry.isNotEmpty
+      ? auth.displayCountry : (data?['location']?.toString() ?? '—');
 
-  Widget _metric(String label, String value, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [cardStart, cardEnd]),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: accent, size: 20),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _action(IconData icon, String title, String sub, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [cardStart, cardEnd]),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: accent),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      sub,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.white.withValues(alpha: 0.25),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ———————————————————————————————————————————————————————————— Supply
-class _SupplyTab extends StatelessWidget {
-  const _SupplyTab({
-    required this.accent,
-    required this.cardStart,
-    required this.cardEnd,
-    required this.farmers,
-    required this.hasPortal,
-    required this.onRequestSupply,
-  });
-
-  final Color accent;
-  final Color cardStart;
-  final Color cardEnd;
-  final List<Map<String, dynamic>> farmers;
-  final bool hasPortal;
-  final VoidCallback onRequestSupply;
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: accent,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.add_shopping_cart_outlined),
-            label: Text(
-              lp.t('Request supply', 'Demander un approvisionnement'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            onPressed: onRequestSupply,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          lp.t('Available farmers', 'Agriculteurs disponibles'),
-          style: TextStyle(
-            color: accent,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (!hasPortal)
-          _empty(
-            Icons.lock_outline,
-            lp.t(
-              'Sign in to source from the farmer network.',
-              'Connectez-vous pour vous approvisionner auprès du réseau.',
-            ),
-          )
-        else if (farmers.isEmpty)
-          _empty(
-            Icons.agriculture_outlined,
-            lp.t('No farmers listed yet.', 'Aucun agriculteur listé pour l’instant.'),
-          )
-        else
-          ...farmers.take(20).map((f) {
-            final name = f['nom']?.toString() ?? lp.t('Farmer', 'Agriculteur');
-            final crops =
-                (f['cultures'] as List?)?.map((e) => e.toString()).join(', ') ??
-                    '—';
-            final qty = f['superficie'] != null
-                ? '${f['superficie']} ha'
-                : lp.t('Available', 'Disponible');
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [cardStart, cardEnd]),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: accent.withValues(alpha: 0.2),
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          crops,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    qty,
-                    style: TextStyle(
-                      color: accent,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-      ],
-    );
-  }
-
-  Widget _empty(IconData icon, String msg) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [Color(0xFF2d1f00), Color(0xFF3d2800),
+            Color(0xFF2d1f00)],
+          stops: [0.0, 0.5, 1.0])),
+      child: Stack(children: [
+        Positioned(top: -30, right: -30,
+          child: Container(width: 160, height: 160,
+            decoration: BoxDecoration(shape: BoxShape.circle,
+              color: _amber.withValues(alpha: 0.08)))),
+        SafeArea(bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          const Icon(Icons.factory_outlined,
+                            color: _amber, size: 14),
+                          const SizedBox(width: 4),
+                          Text(isFr ? 'Centre de traitement'
+                            : 'Processing Center',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.65),
+                              fontSize: 12, fontWeight: FontWeight.w600,
+                              letterSpacing: 0.8)),
+                        ]),
+                        const SizedBox(height: 4),
+                        Text(name, style: const TextStyle(
+                          color: _text, fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5)),
+                        Text(location, style: const TextStyle(
+                          color: _muted, fontSize: 12)),
+                      ]),
+                    GestureDetector(
+                      onTap: () => context.go('/platform'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2))),
+                        child: Row(mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.home_outlined,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              size: 15),
+                            const SizedBox(width: 4),
+                            Text(isFr ? 'Accueil' : 'Home',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: 13)),
+                          ]))),
+                  ]),
+                const SizedBox(height: 14),
+                Row(children: [
+                  _stat('$activeBatches',
+                    isFr ? 'Lots actifs' : 'Active Lots',
+                    Icons.factory_outlined),
+                  const SizedBox(width: 8),
+                  _stat('$certifiedBatches',
+                    isFr ? 'Certifiés' : 'Certified',
+                    Icons.verified_outlined),
+                  const SizedBox(width: 8),
+                  _stat('${totalOutput.toStringAsFixed(0)} kg',
+                    isFr ? 'Production' : 'Output',
+                    Icons.scale_outlined),
+                ]),
+              ]))),
+      ]),
+    );
+  }
+
+  Widget _stat(String val, String label, IconData icon) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [cardStart, cardEnd]),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.white38, size: 40),
-          const SizedBox(height: 10),
-          Text(
-            msg,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
-          ),
-        ],
-      ),
-    );
-  }
+          Icon(icon, color: _amber, size: 16),
+          const SizedBox(height: 4),
+          Text(val, style: const TextStyle(color: _amber, fontSize: 15,
+            fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.55), fontSize: 9)),
+        ])));
 }
 
-class _RequestSupplySheet extends StatefulWidget {
-  const _RequestSupplySheet({
-    required this.accent,
-    required this.onSubmit,
-  });
-
-  final Color accent;
-  final VoidCallback onSubmit;
-
-  @override
-  State<_RequestSupplySheet> createState() => _RequestSupplySheetState();
-}
-
-class _RequestSupplySheetState extends State<_RequestSupplySheet> {
-  final _crop = TextEditingController();
-  final _qty = TextEditingController();
-  final _date = TextEditingController();
-  final _notes = TextEditingController();
-
-  @override
-  void dispose() {
-    _crop.dispose();
-    _qty.dispose();
-    _date.dispose();
-    _notes.dispose();
-    super.dispose();
-  }
+// ══════════════════════════════════════════════════════════════
+// TAB 0: HOME — unique from tabs, adds real value
+// ══════════════════════════════════════════════════════════════
+class _HomeTab extends StatelessWidget {
+  final List<Map<String, dynamic>> batches, schedule;
+  final bool isFr;
+  final Function(int) onTabChange;
+  const _HomeTab({required this.batches, required this.schedule,
+    required this.isFr, required this.onTabChange});
 
   @override
   Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _handle(),
-            const SizedBox(height: 16),
-            Text(
-              lp.t('Request supply', 'Demander un approvisionnement'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _field(_crop, lp.t('Crop type', 'Type de culture')),
-            const SizedBox(height: 12),
-            _field(
-              _qty,
-              lp.t('Quantity needed (kg)', 'Quantité requise (kg)'),
-              keyboard: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            _field(_date, lp.t('Delivery date', 'Date de livraison')),
-            const SizedBox(height: 12),
-            _field(_notes, lp.t('Notes', 'Notes'), maxLines: 3),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.accent,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              onPressed: widget.onSubmit,
-              child: Text(
-                lp.t('Submit request', 'Envoyer la demande'),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _field(
-    TextEditingController c,
-    String label, {
-    int maxLines = 1,
-    TextInputType? keyboard,
-  }) {
-    return TextField(
-      controller: c,
-      maxLines: maxLines,
-      keyboardType: keyboard,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: widget.accent),
-        ),
-      ),
-    );
-  }
-
-  Widget _handle() => Center(
-        child: Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: Colors.white24,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      );
-}
-
-// ———————————————————————————————————————————————————————————— Processing
-class _ProcessingTab extends StatelessWidget {
-  const _ProcessingTab({
-    required this.accent,
-    required this.cardStart,
-    required this.cardEnd,
-    required this.batches,
-    required this.onLogBatch,
-  });
-
-  final Color accent;
-  final Color cardStart;
-  final Color cardEnd;
-  final List<_ProcBatch> batches;
-  final VoidCallback onLogBatch;
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    final active =
-        batches.where((b) => b.status == _BatchStatus.active).toList();
-    final history =
-        batches.where((b) => b.status == _BatchStatus.completed).toList();
-
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4CAF50),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.add_circle_outline),
-            label: Text(
-              lp.t('Log new batch', 'Enregistrer un nouveau lot'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            onPressed: onLogBatch,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          lp.t('Active batches', 'Lots actifs'),
-          style: TextStyle(
-            color: accent,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (active.isEmpty)
-          _batchEmpty(
-            lp.t(
-              'No active batches on the floor.',
-              'Aucun lot actif sur le plancher.',
-            ),
-          )
-        else
-          ...active.map(
-            (b) => _batchCard(b, accent, cardStart, cardEnd, true, lp),
-          ),
-        const SizedBox(height: 16),
-        Text(
-          lp.t('Batch history', 'Historique des lots'),
-          style: TextStyle(
-            color: accent,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (history.isEmpty)
-          _batchEmpty(
-            lp.t(
-              'Completed batches will appear here.',
-              'Les lots terminés apparaîtront ici.',
-            ),
-          )
-        else
-          ...history.map(
-            (b) => _batchCard(b, accent, cardStart, cardEnd, false, lp),
-          ),
-      ],
-    );
+        // Market intelligence — unique to home tab
+        _secTitle(isFr ? 'Intelligence marché' : 'Market Intelligence'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: _cardDeco(),
+          child: Column(children: [
+            _marketRow(isFr ? '🌰 Beurre de karité brut'
+              : '🌰 Raw Shea Butter',
+              isFr ? 'Acheter à:' : 'Buy at:',
+              '280 XOF/kg',
+              isFr ? 'Vendre à:' : 'Sell at:',
+              '450 XOF/kg', '+61%'),
+            const Divider(color: _border, height: 16),
+            _marketRow(isFr ? '🌿 Sésame brut' : '🌿 Raw Sesame',
+              isFr ? 'Acheter à:' : 'Buy at:',
+              '220 XOF/kg',
+              isFr ? 'Vendre à:' : 'Sell at:',
+              '380 XOF/kg', '+73%'),
+            const Divider(color: _border, height: 16),
+            _marketRow(isFr ? '🥜 Noix cajou brut' : '🥜 Raw Cashew',
+              isFr ? 'Acheter à:' : 'Buy at:',
+              '540 XOF/kg',
+              isFr ? 'Vendre à:' : 'Sell at:',
+              '920 XOF/kg', '+70%'),
+          ])).animate().fadeIn(duration: 400.ms),
+        const SizedBox(height: 20),
+
+        // Quick actions — DIFFERENT from tabs (strategic decisions)
+        _secTitle(isFr ? 'Actions rapides' : 'Quick Actions'),
+        const SizedBox(height: 12),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10,
+          childAspectRatio: 1.3,
+          children: [
+            _QA(emoji: '📦',
+              title: isFr ? 'Demander approvisionnement'
+                : 'Request Supply',
+              subtitle: isFr ? 'Acheter chez agriculteurs'
+                : 'Source from farmers',
+              color: _amber, onTap: () => onTabChange(1)),
+            _QA(emoji: '⚙️',
+              title: isFr ? 'Nouveau lot' : 'New Batch',
+              subtitle: isFr ? 'Lancer le traitement'
+                : 'Start processing',
+              color: const Color(0xFF10B981),
+              onTap: () => onTabChange(2)),
+            _QA(emoji: '📅',
+              title: isFr ? 'Planifier livraison'
+                : 'Schedule Delivery',
+              subtitle: isFr ? 'Pickup & livraison'
+                : 'Pickup & delivery',
+              color: _blue, onTap: () => onTabChange(3)),
+            _QA(emoji: '✅',
+              title: isFr ? 'Demander certification'
+                : 'Request Certification',
+              subtitle: isFr ? 'Qualité & normes'
+                : 'Quality & standards',
+              color: const Color(0xFF7B61FF),
+              onTap: () => _showCertification(context)),
+          ]),
+        const SizedBox(height: 20),
+
+        // Batch overview — different level of detail from Processing tab
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _secTitle(isFr ? 'Lots récents' : 'Recent Batches'),
+            GestureDetector(onTap: () => onTabChange(2),
+              child: const Text('See all',
+                style: TextStyle(color: _gold, fontSize: 12))),
+          ]),
+        const SizedBox(height: 12),
+        ...batches.take(2).map((b) =>
+          _BatchPreviewCard(b: b, isFr: isFr)),
+        const SizedBox(height: 20),
+
+        // Today's schedule — different from Schedule tab
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _secTitle(isFr ? 'Planning du jour' : 'Today\'s Schedule'),
+            GestureDetector(onTap: () => onTabChange(3),
+              child: const Text('View all',
+                style: TextStyle(color: _gold, fontSize: 12))),
+          ]),
+        const SizedBox(height: 12),
+        ...schedule.take(2).map((s) =>
+          _SchedulePreviewCard(s: s, isFr: isFr)),
+        const SizedBox(height: 20),
+
+        // Processing performance — unique insight
+        _secTitle(isFr ? 'Performance de traitement'
+          : 'Processing Performance'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: _cardDeco(),
+          child: Column(children: [
+            _perfRow(isFr ? 'Taux de conversion moyen'
+              : 'Average Conversion Rate',
+              '42%', 0.42, _amber),
+            const SizedBox(height: 12),
+            _perfRow(isFr ? 'Lots certifiés ce mois'
+              : 'Certified Batches This Month',
+              '3/5', 0.60, _green),
+            const SizedBox(height: 12),
+            _perfRow(isFr ? 'Capacité utilisée'
+              : 'Capacity Utilization',
+              '78%', 0.78, _blue),
+          ])),
+      ]);
   }
 
-  static Widget _batchEmpty(String msg) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        msg,
-        style: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
-      ),
-    );
+  void _showCertification(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _CertificationSheet(isFr: isFr));
   }
 
-  static Widget _batchCard(
-    _ProcBatch b,
-    Color accent,
-    Color start,
-    Color end,
-    bool active,
-    LanguageProvider lp,
-  ) {
+  Widget _marketRow(String crop, String buyL, String buy,
+    String sellL, String sell, String margin) =>
+    Row(children: [
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(crop, style: const TextStyle(color: _text,
+            fontSize: 12, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Row(children: [
+            Text('$buyL ', style: const TextStyle(color: _muted,
+              fontSize: 10)),
+            Text(buy, style: const TextStyle(color: _text,
+              fontSize: 11, fontWeight: FontWeight.w600)),
+          ]),
+          Row(children: [
+            Text('$sellL ', style: const TextStyle(color: _muted,
+              fontSize: 10)),
+            Text(sell, style: const TextStyle(color: _green,
+              fontSize: 11, fontWeight: FontWeight.w600)),
+          ]),
+        ])),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: _green.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8)),
+        child: Column(children: [
+          Text(margin, style: const TextStyle(color: _green,
+            fontSize: 13, fontWeight: FontWeight.bold)),
+          Text(isFr ? 'marge' : 'margin',
+            style: const TextStyle(color: _green, fontSize: 9)),
+        ])),
+    ]);
+
+  Widget _perfRow(String label, String val, double pct, Color col) =>
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Expanded(child: Text(label, style: const TextStyle(
+          color: _text, fontSize: 12, fontWeight: FontWeight.w600))),
+        Text(val, style: TextStyle(color: col,
+          fontWeight: FontWeight.bold)),
+      ]),
+      const SizedBox(height: 6),
+      ClipRRect(borderRadius: BorderRadius.circular(4),
+        child: LinearProgressIndicator(
+          value: pct, color: col,
+          backgroundColor: Colors.white.withValues(alpha: 0.08),
+          minHeight: 5)),
+    ]);
+}
+
+class _BatchPreviewCard extends StatelessWidget {
+  final Map<String, dynamic> b;
+  final bool isFr;
+  const _BatchPreviewCard({required this.b, required this.isFr});
+
+  Color _statusColor(String s) => s == 'certified'
+    ? _green : s == 'processing' ? _amber : _blue;
+  String _statusLabel(String s, bool isFr) => isFr
+    ? (s == 'certified' ? 'Certifié'
+      : s == 'processing' ? 'En traitement' : 'En attente')
+    : (s == 'certified' ? 'Certified'
+      : s == 'processing' ? 'Processing' : 'Pending');
+
+  @override
+  Widget build(BuildContext context) {
+    final status = b['status'] as String;
+    final col = _statusColor(status);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [start, end]),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: active ? accent.withValues(alpha: 0.35) : Colors.white12,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            active ? Icons.precision_manufacturing : Icons.verified_outlined,
-            color: accent,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  b.id,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-                Text(
-                  '${b.crop} · ${b.quantityKg} kg',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: (active ? Colors.orange : Colors.green)
-                  .withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              active ? lp.t('Active', 'Actif') : lp.t('Done', 'Terminé'),
-              style: TextStyle(
-                color: active ? Colors.orange : Colors.green,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+      decoration: _cardDeco(),
+      child: Row(children: [
+        Container(width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: col.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10)),
+          child: Icon(Icons.inventory_2_outlined, color: col, size: 20)),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('${b['id']} · ${b['crop']}',
+            style: const TextStyle(color: _text, fontSize: 13,
+              fontWeight: FontWeight.w700)),
+          Text('${b['rawKg']} kg → ${b['outputKg']} kg output',
+            style: const TextStyle(color: _muted, fontSize: 11)),
+        ])),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: col.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8)),
+          child: Text(_statusLabel(status, isFr),
+            style: TextStyle(color: col, fontSize: 10,
+              fontWeight: FontWeight.bold))),
+      ]));
   }
 }
 
-class _LogBatchSheet extends StatefulWidget {
-  const _LogBatchSheet({
-    required this.accent,
-    required this.onSubmit,
-  });
-
-  final Color accent;
-  final void Function(String crop, int qty) onSubmit;
+class _SchedulePreviewCard extends StatelessWidget {
+  final Map<String, dynamic> s;
+  final bool isFr;
+  const _SchedulePreviewCard({required this.s, required this.isFr});
 
   @override
-  State<_LogBatchSheet> createState() => _LogBatchSheetState();
+  Widget build(BuildContext context) {
+    final isPickup = s['type'] == 'pickup';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDeco(),
+      child: Row(children: [
+        Container(width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: (isPickup ? _amber : _blue).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10)),
+          child: Icon(
+            isPickup ? Icons.arrow_downward_outlined
+              : Icons.arrow_upward_outlined,
+            color: isPickup ? _amber : _blue, size: 20)),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(isFr
+            ? (isPickup ? 'Collecte · ${s['crop']}'
+              : 'Livraison · ${s['crop']}')
+            : (isPickup ? 'Pickup · ${s['crop']}'
+              : 'Delivery · ${s['crop']}'),
+            style: const TextStyle(color: _text, fontSize: 13,
+              fontWeight: FontWeight.w700)),
+          Text('${s['date']} ${s['time']} · ${s['quantity']}',
+            style: const TextStyle(color: _muted, fontSize: 11)),
+          Text(s['partner'] as String,
+            style: const TextStyle(color: _muted, fontSize: 10)),
+        ])),
+      ]));
+  }
 }
 
-class _LogBatchSheetState extends State<_LogBatchSheet> {
-  final _crop = TextEditingController();
-  final _qty = TextEditingController();
+// ══════════════════════════════════════════════════════════════
+// TAB 1: SUPPLY — source from farmers & cooperatives
+// ══════════════════════════════════════════════════════════════
+class _SupplyTab extends StatefulWidget {
+  final List<Map<String, dynamic>> requests;
+  final bool isFr;
+  final Function(Map<String, dynamic>) onAdd;
+  const _SupplyTab({required this.requests, required this.isFr,
+    required this.onAdd});
+  @override State<_SupplyTab> createState() => _SupplyTabState();
+}
+
+class _SupplyTabState extends State<_SupplyTab> {
+  bool _showForm = false;
+  final _cropCtrl = TextEditingController();
+  final _qtyCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  final _sourceCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  String _quality = 'A';
+  DateTime? _deliveryDate;
+  bool _submitting = false;
 
   @override
   void dispose() {
-    _crop.dispose();
-    _qty.dispose();
+    _cropCtrl.dispose(); _qtyCtrl.dispose(); _priceCtrl.dispose();
+    _sourceCtrl.dispose(); _notesCtrl.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            lp.t('Log processing batch', 'Enregistrer un lot de traitement'),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _crop,
-            style: const TextStyle(color: Colors.white),
-            decoration: _decoration(lp.t('Crop / product', 'Culture / produit')),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _qty,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(color: Colors.white),
-            decoration: _decoration(lp.t('Quantity (kg)', 'Quantité (kg)')),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.accent,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            onPressed: () {
-              final crop = _crop.text.trim().isEmpty
-                  ? lp.t('Mixed', 'Mixte')
-                  : _crop.text.trim();
-              final qty = int.tryParse(_qty.text.trim()) ?? 0;
-              widget.onSubmit(crop, qty);
-            },
-            child: Text(
-              lp.t('Submit batch', 'Enregistrer le lot'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
+  Future<void> _submit() async {
+    if (_cropCtrl.text.isEmpty || _qtyCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? 'Culture et quantité sont requis'
+          : 'Crop and quantity are required'),
+        backgroundColor: Colors.red));
+      return;
+    }
+    setState(() => _submitting = true);
+    final supply = {
+      'id': 'SUP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      'crop': _cropCtrl.text.trim(),
+      'qtyKg': int.tryParse(_qtyCtrl.text) ?? 0,
+      'quality': _quality,
+      'source': _sourceCtrl.text.trim(),
+      'priceOffered': double.tryParse(_priceCtrl.text) ?? 0,
+      'deliveryDate': _deliveryDate != null
+        ? '${_deliveryDate!.day}/${_deliveryDate!.month}/${_deliveryDate!.year}'
+        : (widget.isFr ? 'À confirmer' : 'TBD'),
+      'status': 'pending',
+      'notes': _notesCtrl.text.trim(),
+    };
+    await Future.delayed(const Duration(milliseconds: 800));
+    widget.onAdd(supply);
+    if (mounted) {
+      setState(() { _submitting = false; _showForm = false;
+        _cropCtrl.clear(); _qtyCtrl.clear(); _priceCtrl.clear();
+        _sourceCtrl.clear(); _notesCtrl.clear(); _deliveryDate = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? '✅ Demande d\'approvisionnement envoyée !'
+          : '✅ Supply request sent!'),
+        backgroundColor: _amber));
+    }
   }
 
-  InputDecoration _decoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: widget.accent),
-      ),
-    );
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        if (!_showForm)
+          _primaryBtn(
+            isFr ? 'Demander un approvisionnement'
+              : 'Request New Supply',
+            Icons.add_circle_outline, _amber,
+            () => setState(() => _showForm = true)),
+
+        if (_showForm) ...[
+          Row(children: [
+            IconButton(icon: const Icon(Icons.arrow_back, color: _text),
+              onPressed: () => setState(() => _showForm = false)),
+            Text(isFr ? 'Demande d\'approvisionnement'
+              : 'Supply Request',
+              style: const TextStyle(color: _text, fontSize: 17,
+                fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 8),
+          _card(children: [
+            _secLabel(isFr ? '🌾 Produit recherché'
+              : '🌾 Required Product'),
+            _lbl(isFr ? 'Type de culture *' : 'Crop Type *'),
+            _tf(_cropCtrl, isFr ? 'Ex: Karité, Sésame, Cajou'
+              : 'e.g. Shea, Sesame, Cashew'),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(flex: 2, child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _lbl(isFr ? 'Quantité (kg) *' : 'Quantity (kg) *'),
+                _tf(_qtyCtrl, isFr ? 'Ex: 5000' : 'e.g. 5000',
+                  type: TextInputType.number),
+              ])),
+              const SizedBox(width: 10),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _lbl(isFr ? 'Qualité' : 'Quality'),
+                DropdownButtonFormField<String>(
+                  value: _quality, dropdownColor: _surface,
+                  style: const TextStyle(color: _text),
+                  decoration: _dec(''),
+                  items: ['A', 'B', 'C'].map((q) => DropdownMenuItem(
+                    value: q, child: Text('Grade $q',
+                      style: const TextStyle(color: _text)))).toList(),
+                  onChanged: (v) => setState(() => _quality = v ?? 'A')),
+              ])),
+            ]),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Prix offert (XOF/kg)' : 'Offered Price (XOF/kg)'),
+            _tf(_priceCtrl, isFr ? 'Ex: 280' : 'e.g. 280',
+              type: TextInputType.number),
+            const SizedBox(height: 16),
+            _secLabel(isFr ? '📍 Source & livraison'
+              : '📍 Source & Delivery'),
+            _lbl(isFr ? 'Région/Source souhaitée' : 'Preferred Source Region'),
+            _tf(_sourceCtrl,
+              isFr ? 'Ex: Ségou, Sikasso, Mali'
+                   : 'e.g. Segou, Sikasso, Mali'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Date de livraison souhaitée'
+              : 'Preferred Delivery Date'),
+            _dateField(context,
+              isFr ? 'Choisir une date' : 'Choose a date',
+              _deliveryDate,
+              (d) => setState(() => _deliveryDate = d)),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Notes supplémentaires' : 'Additional Notes'),
+            _tf(_notesCtrl,
+              isFr ? 'Exigences particulières...'
+                   : 'Special requirements...',
+              maxLines: 3),
+            const SizedBox(height: 20),
+            _btn(isFr ? 'Soumettre la demande' : 'Submit Request',
+              _submitting, _submit, _amber),
+          ]),
+        ],
+
+        const SizedBox(height: 20),
+        _secTitle('${isFr ? 'Demandes en cours' : 'Active Supply Requests'} '
+          '(${widget.requests.length})'),
+        const SizedBox(height: 12),
+        widget.requests.isEmpty
+          ? _empty(Icons.inventory_2_outlined,
+              isFr ? 'Aucune demande' : 'No supply requests',
+              isFr ? 'Créez votre première demande ci-dessus'
+                   : 'Create your first request above')
+          : Column(children: widget.requests.asMap().entries.map((e) {
+              final r = e.value;
+              final status = r['status'] as String;
+              final col = status == 'confirmed' ? _green
+                : status == 'pending' ? _amber : _blue;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: _cardDeco(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  Row(children: [
+                    Container(width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: col.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10)),
+                      child: const Icon(Icons.inventory_2_outlined,
+                        color: _amber, size: 18)),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                      Text('${r['id']} · ${r['crop']}',
+                        style: const TextStyle(color: _text,
+                          fontSize: 13, fontWeight: FontWeight.w700)),
+                      Text('${r['qtyKg']} kg · Grade ${r['quality']}',
+                        style: const TextStyle(color: _muted,
+                          fontSize: 11)),
+                    ])),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: col.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8)),
+                      child: Text(
+                        isFr ? (status == 'confirmed' ? 'Confirmé'
+                          : 'En attente')
+                          : (status == 'confirmed' ? 'Confirmed'
+                          : 'Pending'),
+                        style: TextStyle(color: col, fontSize: 10,
+                          fontWeight: FontWeight.bold))),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    const Icon(Icons.location_on_outlined,
+                      color: _muted, size: 12),
+                    const SizedBox(width: 4),
+                    Text('${r['source']}',
+                      style: const TextStyle(color: _muted,
+                        fontSize: 11)),
+                    const Spacer(),
+                    const Icon(Icons.calendar_today_outlined,
+                      color: _muted, size: 12),
+                    const SizedBox(width: 4),
+                    Text('${r['deliveryDate']}',
+                      style: const TextStyle(color: _muted,
+                        fontSize: 11)),
+                  ]),
+                ])).animate(delay: Duration(milliseconds: 50 * e.key))
+                  .fadeIn(duration: 300.ms);
+            }).toList()),
+      ]);
   }
 }
 
-// ———————————————————————————————————————————————————————————— Schedule
-class _ScheduleTab extends StatelessWidget {
-  const _ScheduleTab({
-    required this.accent,
-    required this.cardStart,
-    required this.cardEnd,
-    required this.schedule,
-    required this.onBookTraining,
-  });
+// ══════════════════════════════════════════════════════════════
+// TAB 2: PROCESSING — batch management & QC
+// ══════════════════════════════════════════════════════════════
+class _ProcessingTab extends StatefulWidget {
+  final List<Map<String, dynamic>> batches;
+  final bool isFr;
+  final Function(Map<String, dynamic>) onAdd;
+  const _ProcessingTab({required this.batches, required this.isFr,
+    required this.onAdd});
+  @override State<_ProcessingTab> createState() => _ProcessingTabState();
+}
 
-  final Color accent;
-  final Color cardStart;
-  final Color cardEnd;
-  final List<_ScheduleEntry> schedule;
-  final VoidCallback onBookTraining;
+class _ProcessingTabState extends State<_ProcessingTab> {
+  bool _showForm = false;
+  final _cropCtrl = TextEditingController();
+  final _rawCtrl = TextEditingController();
+  final _methodCtrl = TextEditingController();
+  final _unitCtrl = TextEditingController();
+  String _quality = 'A';
+  String _processorUnit = 'Unit 1';
+  DateTime? _startDate;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _cropCtrl.dispose(); _rawCtrl.dispose();
+    _methodCtrl.dispose(); _unitCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_cropCtrl.text.isEmpty || _rawCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? 'Culture et quantité brute sont requis'
+          : 'Crop and raw quantity are required'),
+        backgroundColor: Colors.red));
+      return;
+    }
+    setState(() => _submitting = true);
+    final rawKg = int.tryParse(_rawCtrl.text) ?? 0;
+    final batch = {
+      'id': 'BAT-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      'crop': _cropCtrl.text.trim(),
+      'rawKg': rawKg,
+      'outputKg': 0,
+      'status': 'processing',
+      'quality': _quality,
+      'startDate': _startDate != null
+        ? '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
+        : 'Today',
+      'processor': _processorUnit,
+      'method': _methodCtrl.text.trim(),
+      'certified': false,
+    };
+    await Future.delayed(const Duration(milliseconds: 800));
+    widget.onAdd(batch);
+    if (mounted) {
+      setState(() { _submitting = false; _showForm = false;
+        _cropCtrl.clear(); _rawCtrl.clear();
+        _methodCtrl.clear(); _startDate = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? '✅ Lot de traitement créé !'
+          : '✅ Processing batch created!'),
+        backgroundColor: _green));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    final sorted = [...schedule]..sort((a, b) => a.date.compareTo(b.date));
-    final now = DateTime.now();
-    final weekStart = DateTime(now.year, now.month, now.day);
+    final isFr = widget.isFr;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        if (!_showForm)
+          _primaryBtn(isFr ? 'Créer un nouveau lot' : 'Log New Batch',
+            Icons.add_circle_outline, _green,
+            () => setState(() => _showForm = true)),
+
+        if (_showForm) ...[
+          Row(children: [
+            IconButton(icon: const Icon(Icons.arrow_back, color: _text),
+              onPressed: () => setState(() => _showForm = false)),
+            Text(isFr ? 'Nouveau lot de traitement' : 'New Processing Batch',
+              style: const TextStyle(color: _text, fontSize: 17,
+                fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 8),
+          _card(children: [
+            _secLabel(isFr ? '🌾 Matière première' : '🌾 Raw Material'),
+            _lbl(isFr ? 'Type de culture *' : 'Crop Type *'),
+            _tf(_cropCtrl, isFr ? 'Ex: Karité, Sésame, Cajou'
+              : 'e.g. Shea, Sesame, Cashew'),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(flex: 2, child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _lbl(isFr ? 'Quantité brute (kg) *'
+                  : 'Raw Quantity (kg) *'),
+                _tf(_rawCtrl, isFr ? 'Ex: 2400' : 'e.g. 2400',
+                  type: TextInputType.number),
+              ])),
+              const SizedBox(width: 10),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _lbl(isFr ? 'Qualité' : 'Quality'),
+                DropdownButtonFormField<String>(
+                  value: _quality, dropdownColor: _surface,
+                  style: const TextStyle(color: _text),
+                  decoration: _dec(''),
+                  items: ['A', 'B', 'C'].map((q) => DropdownMenuItem(
+                    value: q, child: Text('Grade $q',
+                      style: const TextStyle(color: _text)))).toList(),
+                  onChanged: (v) => setState(() => _quality = v ?? 'A')),
+              ])),
+            ]),
+            const SizedBox(height: 16),
+            _secLabel(isFr ? '⚙️ Paramètres de traitement'
+              : '⚙️ Processing Parameters'),
+            _lbl(isFr ? 'Méthode de traitement' : 'Processing Method'),
+            _tf(_methodCtrl,
+              isFr ? 'Ex: Extraction à froid, pressage, raffinage'
+                   : 'e.g. Cold extraction, pressing, refining'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Unité de production' : 'Production Unit'),
+            DropdownButtonFormField<String>(
+              value: _processorUnit, dropdownColor: _surface,
+              style: const TextStyle(color: _text),
+              decoration: _dec(''),
+              items: ['Unit 1', 'Unit 2', 'Unit 3']
+                .map((u) => DropdownMenuItem(value: u,
+                  child: Text(u, style: const TextStyle(color: _text))))
+                .toList(),
+              onChanged: (v) =>
+                setState(() => _processorUnit = v ?? 'Unit 1')),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Date de début' : 'Start Date'),
+            _dateField(context,
+              isFr ? 'Choisir une date' : 'Choose date',
+              _startDate, (d) => setState(() => _startDate = d)),
+            const SizedBox(height: 20),
+            _btn(isFr ? 'Lancer le traitement' : 'Start Processing',
+              _submitting, _submit, _green),
+          ]),
+        ],
+
+        const SizedBox(height: 20),
+        _secTitle('${isFr ? 'Tous les lots' : 'All Batches'} '
+          '(${widget.batches.length})'),
+        const SizedBox(height: 12),
+        ...widget.batches.asMap().entries.map((e) {
+          final b = e.value;
+          final status = b['status'] as String;
+          final col = status == 'certified' ? _green
+            : status == 'processing' ? _amber : _blue;
+          final rawKg = b['rawKg'] as int;
+          final outKg = b['outputKg'] as int;
+          final pct = rawKg > 0 ? outKg / rawKg : 0.0;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: _cardDeco(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: col.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10)),
+                child: Icon(Icons.factory_outlined, color: col, size: 20)),
+              const SizedBox(width: 12),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${b['id']} · ${b['crop']}',
+                  style: const TextStyle(color: _text, fontSize: 14,
+                    fontWeight: FontWeight.w700)),
+                Text('${b['processor']} · ${b['startDate']}',
+                  style: const TextStyle(color: _muted, fontSize: 11)),
+              ])),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: col.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8)),
+                child: Text(
+                  isFr ? (status == 'certified' ? 'Certifié'
+                    : status == 'processing' ? 'En cours' : 'En attente')
+                    : (status == 'certified' ? 'Certified'
+                    : status == 'processing' ? 'Processing' : 'Pending'),
+                  style: TextStyle(color: col, fontSize: 10,
+                    fontWeight: FontWeight.bold))),
+            ]),
+            const SizedBox(height: 12),
+            Row(children: [
+              _batchStat('$rawKg kg',
+                isFr ? 'Matière brute' : 'Raw Input', _amber),
+              _batchStat('→', '', Colors.transparent),
+              _batchStat('$outKg kg',
+                isFr ? 'Production' : 'Output', _green),
+              _batchStat('Grade ${b['quality']}',
+                isFr ? 'Qualité' : 'Quality', _blue),
+            ]),
+            if (status == 'processing') ...[
+              const SizedBox(height: 10),
+              ClipRRect(borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (pct > 0 ? pct : 0.45).clamp(0.0, 1.0),
+                  backgroundColor: Colors.white.withValues(alpha: 0.08),
+                  color: _amber, minHeight: 5)),
+              const SizedBox(height: 4),
+              Text(isFr
+                ? 'Traitement: ${((pct > 0 ? pct : 0.45) * 100).round()}% complété'
+                : 'Processing: ${((pct > 0 ? pct : 0.45) * 100).round()}% complete',
+                style: const TextStyle(color: _muted, fontSize: 10)),
+            ],
+            if (!(b['certified'] as bool) && status != 'pending') ...[
+              const SizedBox(height: 10),
+              SizedBox(width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: _green.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8))),
+                  icon: const Icon(Icons.verified_outlined,
+                    color: _green, size: 16),
+                  label: Text(
+                    isFr ? 'Demander certification'
+                         : 'Request Certification',
+                    style: const TextStyle(color: _green,
+                      fontSize: 12, fontWeight: FontWeight.w600)),
+                  onPressed: () => ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(
+                      content: Text(isFr
+                        ? '✅ Demande de certification soumise pour ${b['id']}'
+                        : '✅ Certification request submitted for ${b['id']}'),
+                      backgroundColor: _green)))),
+            ],
+          ])).animate(delay: Duration(milliseconds: 50 * e.key))
+            .fadeIn(duration: 300.ms);
+        }),
+      ]);
+  }
+
+  Widget _batchStat(String val, String label, Color col) => Expanded(
+    child: Column(children: [
+      Text(val, style: TextStyle(color: col == Colors.transparent
+        ? _muted : col, fontWeight: FontWeight.bold, fontSize: 12)),
+      if (label.isNotEmpty)
+        Text(label, style: const TextStyle(color: _muted, fontSize: 9)),
+    ]));
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 3: SCHEDULE — pickup & delivery management
+// ══════════════════════════════════════════════════════════════
+class _ScheduleTab extends StatefulWidget {
+  final List<Map<String, dynamic>> schedule;
+  final bool isFr;
+  final Function(Map<String, dynamic>) onAdd;
+  const _ScheduleTab({required this.schedule, required this.isFr,
+    required this.onAdd});
+  @override State<_ScheduleTab> createState() => _ScheduleTabState();
+}
+
+class _ScheduleTabState extends State<_ScheduleTab> {
+  bool _showForm = false;
+  final _partnerCtrl = TextEditingController();
+  final _cropCtrl = TextEditingController();
+  final _qtyCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  String _type = 'pickup';
+  DateTime? _date;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _partnerCtrl.dispose(); _cropCtrl.dispose();
+    _qtyCtrl.dispose(); _locationCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_partnerCtrl.text.isEmpty || _cropCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? 'Partenaire et produit sont requis'
+          : 'Partner and crop are required'),
+        backgroundColor: Colors.red));
+      return;
+    }
+    setState(() => _submitting = true);
+    final entry = {
+      'type': _type,
+      'crop': _cropCtrl.text.trim(),
+      'quantity': '${_qtyCtrl.text} kg',
+      'partner': _partnerCtrl.text.trim(),
+      'date': _date != null
+        ? '${_date!.day}/${_date!.month}/${_date!.year}'
+        : (widget.isFr ? 'À confirmer' : 'TBD'),
+      'time': '08:00',
+      'location': _locationCtrl.text.trim(),
+      'status': 'scheduled',
+    };
+    await Future.delayed(const Duration(milliseconds: 600));
+    widget.onAdd(entry);
+    if (mounted) {
+      setState(() { _submitting = false; _showForm = false;
+        _partnerCtrl.clear(); _cropCtrl.clear();
+        _qtyCtrl.clear(); _locationCtrl.clear(); _date = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? '✅ Entrée de planning ajoutée !'
+          : '✅ Schedule entry added!'),
+        backgroundColor: _blue));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    final pickups = widget.schedule
+      .where((s) => s['type'] == 'pickup').toList();
+    final deliveries = widget.schedule
+      .where((s) => s['type'] == 'delivery').toList();
 
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
-        Text(
-          lp.t('Processing calendar', 'Calendrier de traitement'),
-          style: TextStyle(
-            color: accent,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          lp.t(
-            'Next 7 days — runs and training (in-app only).',
-            '7 prochains jours — cycles et formations (dans l’app uniquement).',
-          ),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...List.generate(7, (i) {
-          final day = weekStart.add(Duration(days: i));
-          final dayEvents = sorted.where((e) {
-            return e.date.year == day.year &&
-                e.date.month == day.month &&
-                e.date.day == day.day;
-          }).toList();
-          final dayLabel = _dayLabel(day, now, lp);
-          return Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [cardStart, cardEnd]),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  dayLabel,
-                  style: TextStyle(
-                    color: accent,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (dayEvents.isEmpty)
-                  Text(
-                    lp.t('No events scheduled', 'Aucun événement planifié'),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 12,
-                    ),
-                  )
-                else
-                  ...dayEvents.map(
-                    (e) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: [
-                          Icon(
-                            e.type == _ScheduleType.training
-                                ? Icons.school_outlined
-                                : Icons.factory_outlined,
-                            color: accent,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              e.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }),
-        const SizedBox(height: 16),
-        Text(
-          lp.t('Training sessions', 'Sessions de formation'),
-          style: TextStyle(
-            color: accent,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [cardStart, cardEnd]),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: accent.withValues(alpha: 0.25)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                lp.t(
-                  'On-site quality & safety training',
-                  'Formation qualité et sécurité sur site',
-                ),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                lp.t(
-                  'Book HACCP, equipment, or traceability workshops — '
-                  'confirmed by our extension team.',
-                  'Réserver ateliers HACCP, équipement ou traçabilité — '
-                  'confirmé par notre équipe de vulgarisation.',
-                ),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 12,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  icon: const Icon(Icons.school_outlined),
-                  label: Text(
-                    lp.t('Book training session', 'Réserver une formation'),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  onPressed: onBookTraining,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+        if (!_showForm)
+          _primaryBtn(isFr ? 'Ajouter une entrée de planning'
+            : 'Add Schedule Entry',
+            Icons.add_circle_outline, _blue,
+            () => setState(() => _showForm = true)),
 
-  String _dayLabel(DateTime day, DateTime now, LanguageProvider lp) {
-    final days = [
-      lp.t('Mon', 'Lun'),
-      lp.t('Tue', 'Mar'),
-      lp.t('Wed', 'Mer'),
-      lp.t('Thu', 'Jeu'),
-      lp.t('Fri', 'Ven'),
-      lp.t('Sat', 'Sam'),
-      lp.t('Sun', 'Dim'),
-    ];
-    final name = days[day.weekday - 1];
-    if (day.year == now.year &&
-        day.month == now.month &&
-        day.day == now.day) {
-      return lp.t(
-        'Today · $name ${day.day}/${day.month}',
-        'Aujourd’hui · $name ${day.day}/${day.month}',
-      );
-    }
-    return '$name ${day.day}/${day.month}';
+        if (_showForm) ...[
+          Row(children: [
+            IconButton(icon: const Icon(Icons.arrow_back, color: _text),
+              onPressed: () => setState(() => _showForm = false)),
+            Text(isFr ? 'Nouvelle entrée de planning'
+              : 'New Schedule Entry',
+              style: const TextStyle(color: _text, fontSize: 17,
+                fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 8),
+          _card(children: [
+            _lbl(isFr ? 'Type d\'opération' : 'Operation Type'),
+            DropdownButtonFormField<String>(
+              value: _type, dropdownColor: _surface,
+              style: const TextStyle(color: _text),
+              decoration: _dec(''),
+              items: [
+                DropdownMenuItem(value: 'pickup',
+                  child: Text(isFr ? '🚛 Collecte (Pickup)'
+                    : '🚛 Pickup from supplier',
+                    style: const TextStyle(color: _text))),
+                DropdownMenuItem(value: 'delivery',
+                  child: Text(isFr ? '📦 Livraison (Delivery)'
+                    : '📦 Delivery to buyer',
+                    style: const TextStyle(color: _text))),
+              ],
+              onChanged: (v) => setState(() => _type = v ?? 'pickup')),
+            const SizedBox(height: 12),
+            _lbl(isFr
+              ? (_type == 'pickup' ? 'Nom du fournisseur/coopérative'
+                : 'Nom de l\'acheteur')
+              : (_type == 'pickup' ? 'Supplier/Cooperative Name'
+                : 'Buyer Name')),
+            _tf(_partnerCtrl,
+              isFr ? 'Ex: Coop Karité Ségou' : 'e.g. Karité Coop Segou'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Produit *' : 'Product *'),
+            _tf(_cropCtrl,
+              isFr ? 'Ex: Karité brut, Huile sésame'
+                   : 'e.g. Raw shea, Sesame oil'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Quantité estimée' : 'Estimated Quantity'),
+            _tf(_qtyCtrl, isFr ? 'Ex: 2000' : 'e.g. 2000',
+              type: TextInputType.number),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Lieu' : 'Location'),
+            _tf(_locationCtrl,
+              isFr ? 'Ex: Ségou, Mali' : 'e.g. Segou, Mali'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Date' : 'Date'),
+            _dateField(context,
+              isFr ? 'Choisir une date' : 'Choose date',
+              _date, (d) => setState(() => _date = d)),
+            const SizedBox(height: 20),
+            _btn(isFr ? 'Confirmer l\'entrée' : 'Confirm Entry',
+              _submitting, _submit, _blue),
+          ]),
+        ],
+
+        const SizedBox(height: 20),
+        // Pickups section
+        _secTitle('🚛 ${isFr ? 'Collectes planifiées' : 'Planned Pickups'} '
+          '(${pickups.length})'),
+        const SizedBox(height: 12),
+        pickups.isEmpty
+          ? _empty(Icons.arrow_downward_outlined,
+              isFr ? 'Aucune collecte planifiée' : 'No pickups scheduled',
+              isFr ? 'Ajoutez une collecte ci-dessus'
+                   : 'Add a pickup above')
+          : Column(children: pickups.map((s) =>
+              _ScheduleCard(s: s, isFr: isFr)).toList()),
+        const SizedBox(height: 20),
+
+        // Deliveries section
+        _secTitle('📦 ${isFr ? 'Livraisons planifiées' : 'Planned Deliveries'} '
+          '(${deliveries.length})'),
+        const SizedBox(height: 12),
+        deliveries.isEmpty
+          ? _empty(Icons.arrow_upward_outlined,
+              isFr ? 'Aucune livraison planifiée' : 'No deliveries scheduled',
+              isFr ? 'Ajoutez une livraison ci-dessus'
+                   : 'Add a delivery above')
+          : Column(children: deliveries.map((s) =>
+              _ScheduleCard(s: s, isFr: isFr)).toList()),
+      ]);
   }
 }
 
-class _BookTrainingSheet extends StatefulWidget {
-  const _BookTrainingSheet({
-    required this.accent,
-    required this.onSubmit,
-  });
-
-  final Color accent;
-  final void Function(String name, DateTime date, String topic) onSubmit;
+class _ScheduleCard extends StatelessWidget {
+  final Map<String, dynamic> s;
+  final bool isFr;
+  const _ScheduleCard({required this.s, required this.isFr});
 
   @override
-  State<_BookTrainingSheet> createState() => _BookTrainingSheetState();
+  Widget build(BuildContext context) {
+    final isPickup = s['type'] == 'pickup';
+    final status = s['status'] as String;
+    final col = status == 'confirmed' ? _green
+      : status == 'scheduled' ? _blue : _amber;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDeco(),
+      child: Row(children: [
+        Container(width: 44, height: 44,
+          decoration: BoxDecoration(
+            color: (isPickup ? _amber : _blue).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12)),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+            Icon(isPickup ? Icons.arrow_downward_outlined
+              : Icons.arrow_upward_outlined,
+              color: isPickup ? _amber : _blue, size: 18),
+            Text(s['time'] as String,
+              style: TextStyle(color: isPickup ? _amber : _blue,
+                fontSize: 8, fontWeight: FontWeight.bold)),
+          ])),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(s['partner'] as String,
+            style: const TextStyle(color: _text, fontSize: 13,
+              fontWeight: FontWeight.w700)),
+          Text('${s['crop']} · ${s['quantity']}',
+            style: const TextStyle(color: _muted, fontSize: 11)),
+          Text('${s['date']} · ${s['location']}',
+            style: const TextStyle(color: _muted, fontSize: 10)),
+        ])),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: col.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8)),
+          child: Text(
+            isFr ? (status == 'confirmed' ? 'Confirmé'
+              : status == 'scheduled' ? 'Planifié' : 'En attente')
+              : (status == 'confirmed' ? 'Confirmed'
+              : status == 'scheduled' ? 'Scheduled' : 'Pending'),
+            style: TextStyle(color: col, fontSize: 9,
+              fontWeight: FontWeight.bold))),
+      ])).animate().fadeIn(duration: 300.ms);
+  }
 }
 
-class _BookTrainingSheetState extends State<_BookTrainingSheet> {
-  final _name = TextEditingController();
-  final _phone = TextEditingController();
-  String _topicEn = 'HACCP basics';
-  DateTime _date = DateTime.now().add(const Duration(days: 7));
+// ══════════════════════════════════════════════════════════════
+// TAB 4: ACCOUNT
+// ══════════════════════════════════════════════════════════════
+class _ProcessorAccountTab extends StatelessWidget {
+  final bool isFr;
+  final Function(int) onTabChange;
+  const _ProcessorAccountTab({required this.isFr, required this.onTabChange});
 
-  static const _topics = [
-    ('HACCP basics', 'Bases HACCP'),
-    ('Quality control', 'Contrôle qualité'),
-    ('Equipment maintenance', 'Maintenance équipement'),
-    ('Traceability & certification', 'Traçabilité et certification'),
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final name = auth.displayName.isNotEmpty
+      ? auth.displayName : (isFr ? 'Centre de traitement'
+        : 'Processing Center');
+    final initial = name[0].toUpperCase();
+
+    return ListView(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 100),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [Color(0xFF2d1f00), Color(0xFF3d2800)]),
+            borderRadius: BorderRadius.circular(20)),
+          child: Row(children: [
+            Container(width: 56, height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [_amber, Color(0xFFD97706)]),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(
+                  color: _amber.withValues(alpha: 0.4), blurRadius: 12)]),
+              child: Center(child: Text(initial, style: const TextStyle(
+                color: Colors.white, fontSize: 22,
+                fontWeight: FontWeight.bold)))),
+            const SizedBox(width: 14),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(name, style: const TextStyle(color: _text,
+                fontSize: 17, fontWeight: FontWeight.bold)),
+              Text(auth.displayEmail,
+                style: const TextStyle(color: _muted, fontSize: 12)),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _amber.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _amber.withValues(alpha: 0.4))),
+                child: Text(isFr ? '🏭 Transformateur agro'
+                  : '🏭 Agro-Processor',
+                  style: const TextStyle(color: _amber, fontSize: 11,
+                    fontWeight: FontWeight.w600))),
+            ])),
+          ])),
+        const SizedBox(height: 20),
+
+        _sec(isFr ? 'NAVIGATION' : 'NAVIGATION', [
+          _tile(context, Icons.home_outlined, _amber,
+            isFr ? 'Retour au tableau de bord' : 'Back to Dashboard',
+            isFr ? 'Vue principale du centre'
+                 : 'Main processing center view',
+            () => onTabChange(0)),
+          _tile(context, Icons.exit_to_app_outlined, _muted,
+            isFr ? 'Quitter vers l\'accueil' : 'Exit to Main Home',
+            isFr ? 'Page principale de la plateforme'
+                 : 'Main platform home page',
+            () => context.go('/platform')),
+        ]),
+        const SizedBox(height: 14),
+
+        _sec(isFr ? 'MON ENTREPRISE' : 'MY COMPANY', [
+          _tile(context, Icons.business_outlined, _gold,
+            isFr ? 'Profil de l\'entreprise' : 'Company Profile',
+            isFr ? 'Infos, capacités & certifications'
+                 : 'Info, capacity & certifications',
+            () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => _ProcessorEditProfileScreen(isFr: isFr)))),
+          _tile(context, Icons.language_outlined,
+            const Color(0xFF9C27B0),
+            isFr ? 'Langue' : 'Language', 'English / Français',
+            () => context.push('/profile/language')),
+          _tile(context, Icons.notifications_outlined,
+            const Color(0xFFFF9800),
+            isFr ? 'Notifications' : 'Notifications',
+            isFr ? 'Alertes et mises à jour' : 'Alerts and updates',
+            () => context.push('/profile/notifications')),
+        ]),
+        const SizedBox(height: 14),
+
+        _sec(isFr ? 'SÉCURITÉ' : 'SECURITY', [
+          _tile(context, Icons.phone_outlined, _blue,
+            isFr ? 'Mettre à jour le téléphone' : 'Update Phone',
+            isFr ? 'Numéro de contact' : 'Contact number',
+            () => context.push('/profile/change-phone')),
+          _tile(context, Icons.email_outlined, _blue,
+            isFr ? 'Mettre à jour l\'email' : 'Update Email',
+            isFr ? 'Email professionnel' : 'Business email',
+            () => context.push('/profile/change-email')),
+        ]),
+        const SizedBox(height: 14),
+
+        _sec('SUPPORT', [
+          _tile(context, Icons.help_outline, _green,
+            isFr ? 'Centre d\'aide' : 'Help Center',
+            isFr ? 'FAQ et guides' : 'FAQs and guides',
+            () => context.go('/help')),
+          _tile(context, Icons.gavel_outlined, _muted,
+            isFr ? 'Conditions d\'utilisation' : 'Terms of Service',
+            isFr ? 'Voir les conditions' : 'View terms',
+            () => context.push('/terms?view=1&tab=0')),
+          _tile(context, Icons.privacy_tip_outlined, _muted,
+            isFr ? 'Politique de confidentialité' : 'Privacy Policy',
+            isFr ? 'Vos données' : 'Your data',
+            () => context.push('/terms?view=1&tab=1')),
+        ]),
+        const SizedBox(height: 16),
+
+        Center(child: Column(children: [
+          Text('Sahel AgriConnect — Processor v1.1.0',
+            style: TextStyle(color: _muted.withValues(alpha: 0.4),
+              fontSize: 12)),
+          const SizedBox(height: 2),
+          Text('🏭 Source. Process. Deliver.',
+            style: TextStyle(color: _muted.withValues(alpha: 0.25),
+              fontSize: 11, fontStyle: FontStyle.italic)),
+        ])),
+        const SizedBox(height: 16),
+
+        SizedBox(width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12))),
+            icon: const Icon(Icons.logout, color: Colors.red, size: 18),
+            label: Text(isFr ? 'Se déconnecter' : 'Sign Out',
+              style: const TextStyle(color: Colors.red,
+                fontWeight: FontWeight.bold, fontSize: 15)),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  backgroundColor: _surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                  title: Text(isFr ? 'Se déconnecter ?' : 'Sign out?',
+                    style: const TextStyle(color: _text)),
+                  content: Text(isFr
+                    ? 'Vous serez redirigé vers l\'accueil.'
+                    : 'You will be returned to the home screen.',
+                    style: const TextStyle(color: _muted)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(isFr ? 'Annuler' : 'Cancel',
+                        style: const TextStyle(color: _muted))),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text(isFr ? 'Se déconnecter' : 'Sign out',
+                        style: const TextStyle(color: Colors.red))),
+                  ]));
+              if (confirm == true && context.mounted) {
+                await context.read<AuthState>().logout();
+              }
+            })),
+      ]);
+  }
+
+  Widget _sec(String title, List<Widget> items) =>
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(title, style: TextStyle(
+          color: _muted.withValues(alpha: 0.55), fontSize: 11,
+          fontWeight: FontWeight.w700, letterSpacing: 1.2))),
+      Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [_surface, _surface2]),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border)),
+        child: Column(
+          children: items.asMap().entries.map((e) => Column(children: [
+            e.value,
+            if (e.key < items.length - 1)
+              const Divider(height: 1, color: _border, indent: 56),
+          ])).toList())),
+    ]);
+
+  Widget _tile(BuildContext ctx, IconData icon, Color iconColor,
+    String title, String subtitle, VoidCallback onTap) =>
+    ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      leading: Container(width: 34, height: 34,
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(9)),
+        child: Icon(icon, color: iconColor, size: 17)),
+      title: Text(title, style: const TextStyle(color: _text,
+        fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: Text(subtitle, style: const TextStyle(
+        color: _muted, fontSize: 12)),
+      trailing: Icon(Icons.arrow_forward_ios, size: 13,
+        color: _muted.withValues(alpha: 0.3)));
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROCESSOR EDIT PROFILE — company-level, comprehensive
+// ══════════════════════════════════════════════════════════════
+class _ProcessorEditProfileScreen extends StatefulWidget {
+  final bool isFr;
+  const _ProcessorEditProfileScreen({required this.isFr});
+  @override State<_ProcessorEditProfileScreen> createState() =>
+    _ProcessorEditProfileScreenState();
+}
+
+class _ProcessorEditProfileScreenState
+    extends State<_ProcessorEditProfileScreen> {
+  late TextEditingController _companyCtrl;
+  late TextEditingController _emailCtrl;
+  late TextEditingController _phoneCtrl;
+  late TextEditingController _countryCtrl;
+  late TextEditingController _regionCtrl;
+  late TextEditingController _licenseCtrl;
+  late TextEditingController _regNumCtrl;
+  late TextEditingController _capacityCtrl;
+  late TextEditingController _productsCtrl;
+  late TextEditingController _equipCtrl;
+  late TextEditingController _contactNameCtrl;
+  late TextEditingController _contactTitleCtrl;
+  late TextEditingController _addressCtrl;
+  String _companyType = 'processor';
+  final List<String> _certifications = [];
+  bool _saving = false;
+
+  final _availableCerts = [
+    'ISO 9001', 'ISO 22000', 'Organic (EU)',
+    'Fair Trade', 'HACCP', 'Halal', 'Kosher',
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthState>();
+    _companyCtrl = TextEditingController(text: auth.displayName);
+    _emailCtrl = TextEditingController(text: auth.displayEmail);
+    _phoneCtrl = TextEditingController(text: auth.displayPhone);
+    _countryCtrl = TextEditingController(text: auth.displayCountry);
+    _regionCtrl = TextEditingController();
+    _licenseCtrl = TextEditingController();
+    _regNumCtrl = TextEditingController();
+    _capacityCtrl = TextEditingController();
+    _productsCtrl = TextEditingController();
+    _equipCtrl = TextEditingController();
+    _contactNameCtrl = TextEditingController();
+    _contactTitleCtrl = TextEditingController();
+    _addressCtrl = TextEditingController();
+  }
+
+  @override
   void dispose() {
-    _name.dispose();
-    _phone.dispose();
+    _companyCtrl.dispose(); _emailCtrl.dispose(); _phoneCtrl.dispose();
+    _countryCtrl.dispose(); _regionCtrl.dispose(); _licenseCtrl.dispose();
+    _regNumCtrl.dispose(); _capacityCtrl.dispose(); _productsCtrl.dispose();
+    _equipCtrl.dispose(); _contactNameCtrl.dispose();
+    _contactTitleCtrl.dispose(); _addressCtrl.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    final topicLabel = _topics
-        .firstWhere((t) => t.$1 == _topicEn, orElse: () => _topics.first);
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              lp.t('Book training session', 'Réserver une formation'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _name,
-              style: const TextStyle(color: Colors.white),
-              decoration: _decoration(lp.t('Your name', 'Votre nom')),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _topicEn,
-              dropdownColor: const Color(0xFF2a1a00),
-              style: const TextStyle(color: Colors.white),
-              decoration: _decoration(lp.t('Topic', 'Thème')),
-              items: _topics
-                  .map(
-                    (t) => DropdownMenuItem(
-                      value: t.$1,
-                      child: Text(lp.t(t.$1, t.$2)),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _topicEn = v);
-              },
-            ),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                lp.t(
-                  'Preferred date: ${_date.day}/${_date.month}/${_date.year}',
-                  'Date souhaitée : ${_date.day}/${_date.month}/${_date.year}',
-                ),
-                style: const TextStyle(color: Colors.white),
-              ),
-              trailing: Icon(Icons.calendar_today, color: widget.accent),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _date,
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                  builder: (ctx, child) => Theme(
-                    data: ThemeData.dark().copyWith(
-                      colorScheme: ColorScheme.dark(
-                        primary: widget.accent,
-                        surface: const Color(0xFF2a1a00),
-                      ),
-                    ),
-                    child: child!,
-                  ),
-                );
-                if (picked != null) setState(() => _date = picked);
-              },
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              style: const TextStyle(color: Colors.white),
-              decoration: _decoration(lp.t('Phone', 'Téléphone')),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              lp.t(
-                'Our team will contact you to confirm.',
-                'Notre équipe vous contactera pour confirmer.',
-              ),
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.accent,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              onPressed: () {
-                final name = _name.text.trim().isEmpty
-                    ? lp.t('Processor', 'Processeur')
-                    : _name.text.trim();
-                widget.onSubmit(name, _date, lp.t(topicLabel.$1, topicLabel.$2));
-              },
-              child: Text(
-                lp.t('Submit booking', 'Envoyer la réservation'),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _save() async {
+    if (_companyCtrl.text.isEmpty || _emailCtrl.text.isEmpty ||
+        _licenseCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? 'Nom de l\'entreprise, email et numéro de licence sont requis'
+          : 'Company name, email and license number are required'),
+        backgroundColor: Colors.red));
+      return;
+    }
+    setState(() => _saving = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (mounted) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isFr
+          ? '✅ Profil entreprise mis à jour !'
+          : '✅ Company profile updated!'),
+        backgroundColor: _amber));
+      Navigator.pop(context);
+    }
   }
 
-  InputDecoration _decoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: widget.accent),
-      ),
-    );
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2d1f00), elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: _text),
+          onPressed: () => Navigator.pop(context)),
+        title: Text(isFr ? 'Profil de l\'entreprise' : 'Company Profile',
+          style: const TextStyle(color: _text, fontSize: 17,
+            fontWeight: FontWeight.w600))),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 100),
+        child: Column(children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _amber.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _amber.withValues(alpha: 0.2))),
+            child: Row(children: [
+              const Icon(Icons.factory_outlined, color: _amber, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(
+                isFr
+                  ? 'Ce profil représente votre centre de traitement sur la plateforme. Il est visible par les coopératives, agriculteurs et acheteurs.'
+                  : 'This profile represents your processing center on the platform. It is visible to cooperatives, farmers and buyers.',
+                style: const TextStyle(color: _amber, fontSize: 11,
+                  height: 1.4))),
+            ])),
+          const SizedBox(height: 16),
+          _card(children: [
+            _secLabel(isFr ? '🏭 Identité de l\'entreprise'
+              : '🏭 Company Identity'),
+            _lbl(isFr ? 'Nom de l\'entreprise *' : 'Company Name *'),
+            _tf(_companyCtrl, isFr ? 'Ex: Sahel Butter Processing SARL'
+              : 'e.g. Sahel Butter Processing LLC'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Type d\'entreprise' : 'Company Type'),
+            DropdownButtonFormField<String>(
+              value: _companyType, dropdownColor: _surface,
+              style: const TextStyle(color: _text),
+              decoration: _dec(''),
+              items: [
+                DropdownMenuItem(value: 'processor',
+                  child: Text(isFr ? 'Transformateur' : 'Processor',
+                    style: const TextStyle(color: _text))),
+                DropdownMenuItem(value: 'exporter',
+                  child: Text(isFr ? 'Exportateur' : 'Exporter',
+                    style: const TextStyle(color: _text))),
+                DropdownMenuItem(value: 'processor_exporter',
+                  child: Text(isFr ? 'Transformateur-Exportateur'
+                    : 'Processor-Exporter',
+                    style: const TextStyle(color: _text))),
+                DropdownMenuItem(value: 'industrial',
+                  child: Text(isFr ? 'Industrie agroalimentaire'
+                    : 'Food Industry',
+                    style: const TextStyle(color: _text))),
+              ],
+              onChanged: (v) =>
+                setState(() => _companyType = v ?? 'processor')),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Numéro de licence opérationnelle *'
+              : 'Operating License Number *'),
+            _tf(_licenseCtrl,
+              isFr ? 'Numéro de licence officiel'
+                   : 'Official license number'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Numéro d\'enregistrement commercial'
+              : 'Commercial Registration Number'),
+            _tf(_regNumCtrl,
+              isFr ? 'RCCM ou équivalent' : 'RCCM or equivalent'),
+            const SizedBox(height: 20),
+
+            _secLabel(isFr ? '⚙️ Capacités de traitement'
+              : '⚙️ Processing Capabilities'),
+            _lbl(isFr ? 'Capacité journalière (tonnes/jour)'
+              : 'Daily Capacity (tons/day)'),
+            _tf(_capacityCtrl, isFr ? 'Ex: 10' : 'e.g. 10',
+              type: TextInputType.number),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Produits transformés'
+              : 'Products Processed'),
+            _tf(_productsCtrl,
+              isFr ? 'Ex: Beurre de karité, Huile sésame, Noix cajou'
+                   : 'e.g. Shea butter, Sesame oil, Cashew nuts',
+              maxLines: 2),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Équipements principaux' : 'Main Equipment'),
+            _tf(_equipCtrl,
+              isFr ? 'Ex: Presse hydraulique, extracteur, réfrigérateur'
+                   : 'e.g. Hydraulic press, extractor, cold storage',
+              maxLines: 2),
+            const SizedBox(height: 16),
+
+            _secLabel(isFr ? '📋 Certifications' : '📋 Certifications'),
+            Text(isFr ? 'Sélectionnez vos certifications :'
+              : 'Select your certifications:',
+              style: const TextStyle(color: _muted, fontSize: 12)),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8,
+              children: _availableCerts.map((c) {
+                final has = _certifications.contains(c);
+                return GestureDetector(
+                  onTap: () => setState(() {
+                    if (has) _certifications.remove(c);
+                    else _certifications.add(c);
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: has ? _amber.withValues(alpha: 0.2)
+                        : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: has ? _amber : _border)),
+                    child: Text(c, style: TextStyle(
+                      color: has ? _amber : _muted,
+                      fontSize: 12, fontWeight: has
+                        ? FontWeight.w600 : FontWeight.w400))));
+              }).toList()),
+            const SizedBox(height: 20),
+
+            _secLabel(isFr ? '📞 Contact & localisation'
+              : '📞 Contact & Location'),
+            _lbl(isFr ? 'Email professionnel *' : 'Business Email *'),
+            _tf(_emailCtrl, 'contact@entreprise.com',
+              type: TextInputType.emailAddress),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Téléphone' : 'Phone'),
+            _tf(_phoneCtrl, '+223...',
+              type: TextInputType.phone),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Adresse complète' : 'Full Address'),
+            _tf(_addressCtrl,
+              isFr ? 'Adresse, ville, pays'
+                   : 'Address, city, country',
+              maxLines: 2),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Pays' : 'Country'),
+            _tf(_countryCtrl,
+              isFr ? 'Ex: Mali, Sénégal, Burkina Faso'
+                   : 'e.g. Mali, Senegal, Burkina Faso'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Région' : 'Region'),
+            _tf(_regionCtrl,
+              isFr ? 'Ex: Ségou, Koulikoro' : 'e.g. Segou, Koulikoro'),
+            const SizedBox(height: 20),
+
+            _secLabel(isFr ? '👤 Responsable principal'
+              : '👤 Primary Contact Person'),
+            _lbl(isFr ? 'Nom du responsable' : 'Contact Name'),
+            _tf(_contactNameCtrl,
+              isFr ? 'Prénom et nom' : 'First and last name'),
+            const SizedBox(height: 12),
+            _lbl(isFr ? 'Titre / Poste' : 'Title / Position'),
+            _tf(_contactTitleCtrl,
+              isFr ? 'Ex: Directeur, Gérant, Responsable production'
+                   : 'e.g. Director, Manager, Production Lead'),
+            const SizedBox(height: 20),
+            _btn(isFr ? 'Enregistrer le profil' : 'Save Profile',
+              _saving, _save, _amber),
+          ]),
+        ])));
   }
 }
 
-// ———————————————————————————————————————————————————————————— Account
-class _AccountTab extends StatelessWidget {
-  const _AccountTab({
-    required this.accent,
-    required this.cardStart,
-    required this.cardEnd,
-    required this.onBackToDashboard,
-  });
+// ══════════════════════════════════════════════════════════════
+// CERTIFICATION BOTTOM SHEET
+// ══════════════════════════════════════════════════════════════
+class _CertificationSheet extends StatefulWidget {
+  final bool isFr;
+  const _CertificationSheet({required this.isFr});
+  @override State<_CertificationSheet> createState() =>
+    _CertificationSheetState();
+}
 
-  final Color accent;
-  final Color cardStart;
-  final Color cardEnd;
-  final VoidCallback onBackToDashboard;
+class _CertificationSheetState extends State<_CertificationSheet> {
+  String _certType = 'iso9001';
+  final _batchCtrl = TextEditingController();
+  bool _submitting = false;
+  bool _submitted = false;
+
+  @override
+  void dispose() { _batchCtrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: dashboardAccountScrollBottom(context),
-      ),
-      children: [
-        DashboardAccountNavHeader(
-          accent: accent,
-          cardStart: cardStart,
-          cardEnd: cardEnd,
-          onBackToDashboard: onBackToDashboard,
-        ),
-        _section(lp.t('Profile', 'Profil'), [
-          _tile(
-            context,
-            Icons.person_outline,
-            AppColors.gold,
-            lp.t('Edit Profile', 'Modifier le profil'),
-            lp.t('Update your details', 'Mettre à jour vos informations'),
-            () => context.push('/profile/edit'),
-          ),
-          _tile(
-            context,
-            Icons.language_outlined,
-            const Color(0xFF9C27B0),
-            lp.t('Language', 'Langue'),
-            lp.t('English / Français', 'English / Français'),
-            () => context.push('/profile/language'),
-          ),
-          _tile(
-            context,
-            Icons.notifications_outlined,
-            const Color(0xFFFF9800),
-            lp.t('Notifications', 'Notifications'),
-            lp.t('Manage alerts', 'Gérer les alertes'),
-            () => context.push('/profile/notifications'),
-          ),
-        ]),
+    final isFr = widget.isFr;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 40, height: 4,
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.24),
+            borderRadius: BorderRadius.circular(2))),
         const SizedBox(height: 16),
-        _section(lp.t('Account management', 'Gestion du compte'), [
-          _tile(
-            context,
-            Icons.email_outlined,
-            accent,
-            lp.t('Update email', 'Modifier l’e-mail'),
-            lp.t('Change contact email', 'Changer l’e-mail de contact'),
-            () => context.push('/profile/change-email'),
-          ),
-          _tile(
-            context,
-            Icons.phone_outlined,
-            accent,
-            lp.t('Update phone', 'Modifier le téléphone'),
-            lp.t('Change contact phone', 'Changer le téléphone de contact'),
-            () => context.push('/profile/change-phone'),
-          ),
-          _tile(
-            context,
-            Icons.delete_outline,
-            Colors.red,
-            lp.t('Delete account', 'Supprimer le compte'),
-            lp.t(
-              'Permanently remove processor account',
-              'Supprimer définitivement le compte processeur',
-            ),
-            () => context.push('/profile/delete-account'),
-          ),
-        ]),
+        Text(isFr ? '✅ Demande de certification'
+          : '✅ Certification Request',
+          style: const TextStyle(color: _text, fontSize: 18,
+            fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
-        _section(lp.t('Support', 'Support'), [
-          _tile(
-            context,
-            Icons.help_outline,
-            accent,
-            lp.t('Help Center', 'Centre d’aide'),
-            lp.t('FAQs and guides', 'FAQ et guides'),
-            () => context.push('/help'),
-          ),
-          _tile(
-            context,
-            Icons.gavel_outlined,
-            Colors.white54,
-            lp.t('Terms of Service', 'Conditions d’utilisation'),
-            lp.t('View terms', 'Voir les conditions'),
-            () => context.push('/terms?view=1&tab=0'),
-          ),
-          _tile(
-            context,
-            Icons.privacy_tip_outlined,
-            Colors.white54,
-            lp.t('Privacy Policy', 'Politique de confidentialité'),
-            lp.t('View privacy', 'Voir la confidentialité'),
-            () => context.push('/terms?view=1&tab=1'),
-          ),
-        ]),
-        const DashboardSignOutButton(
-          dialogBackground: Color(0xFF1a1200),
-        ),
-      ],
-    );
+        if (_submitted)
+          Column(children: [
+            const Icon(Icons.check_circle_outline,
+              color: _green, size: 48),
+            const SizedBox(height: 12),
+            Text(isFr ? 'Demande soumise avec succès !'
+              : 'Request submitted successfully!',
+              style: const TextStyle(color: _text, fontSize: 15,
+                fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text(isFr
+              ? 'Notre équipe de certification vous contactera sous 48h.'
+              : 'Our certification team will contact you within 48 hours.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _muted, fontSize: 13)),
+            const SizedBox(height: 16),
+          ])
+        else ...[
+          DropdownButtonFormField<String>(
+            value: _certType, dropdownColor: _surface,
+            style: const TextStyle(color: _text),
+            decoration: _dec(isFr ? 'Type de certification'
+              : 'Certification type'),
+            items: [
+              DropdownMenuItem(value: 'iso9001',
+                child: Text('ISO 9001 — Quality Management',
+                  style: const TextStyle(color: _text))),
+              DropdownMenuItem(value: 'iso22000',
+                child: Text('ISO 22000 — Food Safety',
+                  style: const TextStyle(color: _text))),
+              DropdownMenuItem(value: 'organic',
+                child: Text('Organic EU — Bio Certification',
+                  style: const TextStyle(color: _text))),
+              DropdownMenuItem(value: 'fairtrade',
+                child: Text('Fair Trade',
+                  style: const TextStyle(color: _text))),
+              DropdownMenuItem(value: 'haccp',
+                child: Text('HACCP — Food Safety Plan',
+                  style: const TextStyle(color: _text))),
+            ],
+            onChanged: (v) =>
+              setState(() => _certType = v ?? 'iso9001')),
+          const SizedBox(height: 12),
+          _tf(_batchCtrl,
+            isFr ? 'ID du lot concerné (ex: BAT-001)'
+                 : 'Batch ID (e.g. BAT-001)'),
+          const SizedBox(height: 16),
+          SizedBox(width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _amber, foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12))),
+              onPressed: _submitting ? null : () async {
+                setState(() => _submitting = true);
+                await Future.delayed(const Duration(seconds: 1));
+                if (mounted) setState(() {
+                  _submitting = false; _submitted = true; });
+              },
+              child: _submitting
+                ? const SizedBox(width: 18, height: 18,
+                    child: CircularProgressIndicator(
+                      color: Colors.black, strokeWidth: 2))
+                : Text(isFr ? 'Soumettre la demande' : 'Submit Request',
+                    style: const TextStyle(fontWeight: FontWeight.bold)))),
+        ],
+      ]));
   }
+}
 
-  Widget _section(String title, List<Widget> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        Container(
+// ══════════════════════════════════════════════════════════════
+// SHARED HELPERS
+// ══════════════════════════════════════════════════════════════
+BoxDecoration _cardDeco() => BoxDecoration(
+  gradient: const LinearGradient(colors: [_surface, _surface2]),
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(color: _border));
+
+Widget _card({required List<Widget> children}) => Container(
+  width: double.infinity, padding: const EdgeInsets.all(20),
+  decoration: _cardDeco(),
+  child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+    children: children));
+
+Widget _secTitle(String t) => Text(t, style: const TextStyle(
+  color: _text, fontSize: 17, fontWeight: FontWeight.w700));
+
+Widget _secLabel(String t) => Padding(
+  padding: const EdgeInsets.only(bottom: 12),
+  child: Text(t, style: const TextStyle(color: _text, fontSize: 14,
+    fontWeight: FontWeight.w700)));
+
+Widget _lbl(String t) => Padding(
+  padding: const EdgeInsets.only(bottom: 6),
+  child: Text(t, style: const TextStyle(color: _muted, fontSize: 13,
+    fontWeight: FontWeight.w600)));
+
+Widget _tf(TextEditingController c, String hint,
+  {TextInputType type = TextInputType.text, int maxLines = 1}) =>
+  TextField(controller: c, keyboardType: type, maxLines: maxLines,
+    style: const TextStyle(color: _text, fontSize: 14),
+    decoration: InputDecoration(hintText: hint,
+      hintStyle: const TextStyle(color: _muted, fontSize: 13),
+      filled: true, fillColor: _bg,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(
+          color: Colors.white.withValues(alpha: 0.15))),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(
+          color: Colors.white.withValues(alpha: 0.15))),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _amber)),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 12, vertical: 12)));
+
+InputDecoration _dec(String hint) => InputDecoration(hintText: hint,
+  hintStyle: const TextStyle(color: _muted),
+  filled: true, fillColor: _bg,
+  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15))),
+  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15))),
+  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+    borderSide: const BorderSide(color: _amber)),
+  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12));
+
+Widget _btn(String label, bool loading, VoidCallback onTap, Color col) =>
+  SizedBox(width: double.infinity,
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: col,
+        foregroundColor: col == _amber ? Colors.black : Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12))),
+      onPressed: loading ? null : onTap,
+      child: loading
+        ? SizedBox(width: 20, height: 20,
+            child: CircularProgressIndicator(
+              color: col == _amber ? Colors.black : Colors.white,
+              strokeWidth: 2))
+        : Text(label, style: const TextStyle(
+            fontWeight: FontWeight.bold, fontSize: 15))));
+
+Widget _primaryBtn(String label, IconData icon, Color col,
+  VoidCallback onTap) =>
+  SizedBox(width: double.infinity,
+    child: ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: col,
+        foregroundColor: col == _amber ? Colors.black : Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12))),
+      icon: Icon(icon),
+      label: Text(label, style: const TextStyle(
+        fontWeight: FontWeight.bold, fontSize: 15)),
+      onPressed: onTap));
+
+Widget _dateField(BuildContext context, String hint, DateTime? val,
+  Function(DateTime) onPick) =>
+  InkWell(
+    onTap: () async {
+      final d = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime(2028),
+        builder: (_, child) => Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: _amber, surface: _surface)),
+          child: child!));
+      if (d != null) onPick(d);
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: _bg, borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15))),
+      child: Row(children: [
+        const Icon(Icons.calendar_today_outlined, color: _muted, size: 16),
+        const SizedBox(width: 8),
+        Text(val != null
+          ? '${val.day}/${val.month}/${val.year}'
+          : hint,
+          style: TextStyle(
+            color: val != null ? _text : _muted, fontSize: 14)),
+      ])));
+
+Widget _empty(IconData icon, String title, String subtitle) =>
+  Container(
+    padding: const EdgeInsets.all(24), decoration: _cardDeco(),
+    child: Column(children: [
+      Icon(icon, color: _muted, size: 48),
+      const SizedBox(height: 12),
+      Text(title, style: const TextStyle(color: _text, fontSize: 15,
+        fontWeight: FontWeight.w600)),
+      const SizedBox(height: 4),
+      Text(subtitle, textAlign: TextAlign.center,
+        style: const TextStyle(color: _muted, fontSize: 12)),
+    ]));
+
+class _QA extends StatelessWidget {
+  final String emoji, title, subtitle;
+  final Color color;
+  final VoidCallback onTap;
+  const _QA({required this.emoji, required this.title,
+    required this.subtitle, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_surface, _surface2]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.25))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+        Container(width: 36, height: 36,
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [cardStart, cardEnd]),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Column(
-            children: items.asMap().entries.map((e) {
-              final isLast = e.key == items.length - 1;
-              return Column(
-                children: [
-                  e.value,
-                  if (!isLast)
-                    Divider(
-                      height: 1,
-                      indent: 56,
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _tile(
-    BuildContext ctx,
-    IconData icon,
-    Color color,
-    String title,
-    String sub,
-    VoidCallback onTap,
-  ) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      leading: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Icon(icon, color: color, size: 17),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        sub,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.45),
-          fontSize: 12,
-        ),
-      ),
-      trailing: Icon(
-        Icons.arrow_forward_ios,
-        size: 13,
-        color: Colors.white.withValues(alpha: 0.25),
-      ),
-    );
-  }
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(10)),
+          child: Center(child: Text(emoji,
+            style: const TextStyle(fontSize: 18)))),
+        const Spacer(),
+        Text(title, style: TextStyle(color: color, fontSize: 11,
+          fontWeight: FontWeight.w700)),
+        Text(subtitle, style: const TextStyle(color: _muted,
+          fontSize: 9)),
+      ]))).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1);
 }
