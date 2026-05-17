@@ -300,6 +300,7 @@ String _loginPathFor(String loc) {
   if (loc.startsWith('/investor')) return '/login/investor';
   if (loc.startsWith('/cooperative')) return '/login/cooperative';
   if (loc.startsWith('/government')) return '/login/government';
+  if (loc.startsWith('/ngo')) return '/login/ngo';
   if (loc.startsWith('/processor')) return '/login/processor';
   return '/home';
 }
