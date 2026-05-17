@@ -50,7 +50,15 @@ class _Category {
 
   /// Sample teaser items displayed in the preview panel. Static for now —
   /// real API content can replace these once the preview endpoints exist.
-  final List<({String label, String sublabel, String? meta})> previewItems;
+  final List<
+      ({
+        String labelEn,
+        String labelFr,
+        String subEn,
+        String subFr,
+        String? metaEn,
+        String? metaFr,
+      })> previewItems;
 
   /// Localised label for the "do the thing" CTA that triggers the
   /// sign-in-required modal for guests.
@@ -115,9 +123,30 @@ class _HomeScreenState extends State<HomeScreen> {
       ctaEn: 'List my produce',
       ctaFr: 'Annoncer ma production',
       previewItems: [
-        (label: 'Shea Butter', sublabel: 'High demand in EU', meta: '+12%'),
-        (label: 'Sesame', sublabel: 'Stable export prices', meta: '+3%'),
-        (label: 'Cashew', sublabel: 'Premium grade wanted', meta: '+8%'),
+        (
+          labelEn: 'Shea Butter',
+          labelFr: 'Beurre de karité',
+          subEn: 'High demand in EU',
+          subFr: 'Forte demande UE',
+          metaEn: '+12%',
+          metaFr: '+12%',
+        ),
+        (
+          labelEn: 'Sesame',
+          labelFr: 'Sésame',
+          subEn: 'Stable export prices',
+          subFr: 'Prix export stables',
+          metaEn: '+3%',
+          metaFr: '+3%',
+        ),
+        (
+          labelEn: 'Cashew',
+          labelFr: 'Noix de cajou',
+          subEn: 'Premium grade wanted',
+          subFr: 'Qualité premium recherchée',
+          metaEn: '+8%',
+          metaFr: '+8%',
+        ),
       ],
     ),
     _Category(
@@ -133,19 +162,28 @@ class _HomeScreenState extends State<HomeScreen> {
       ctaFr: 'Voir les lots',
       previewItems: [
         (
-          label: 'Mali Shea Lot #214',
-          sublabel: 'Target 14% yield · 6 mo',
-          meta: 'OPEN',
+          labelEn: 'Mali Shea Lot #214',
+          labelFr: 'Lot karité Mali #214',
+          subEn: 'Target 14% yield · 6 mo',
+          subFr: 'Rendement visé 14 % · 6 mois',
+          metaEn: 'OPEN',
+          metaFr: 'OUVERT',
         ),
         (
-          label: 'Burkina Sesame Lot #198',
-          sublabel: 'Target 11% yield · 9 mo',
-          meta: 'OPEN',
+          labelEn: 'Burkina Sesame Lot #198',
+          labelFr: 'Lot sésame Burkina #198',
+          subEn: 'Target 11% yield · 9 mo',
+          subFr: 'Rendement visé 11 % · 9 mois',
+          metaEn: 'OPEN',
+          metaFr: 'OUVERT',
         ),
         (
-          label: 'Senegal Cashew Lot #176',
-          sublabel: 'Target 16% yield · 12 mo',
-          meta: 'FILLING',
+          labelEn: 'Senegal Cashew Lot #176',
+          labelFr: 'Lot cajou Sénégal #176',
+          subEn: 'Target 16% yield · 12 mo',
+          subFr: 'Rendement visé 16 % · 12 mois',
+          metaEn: 'FILLING',
+          metaFr: 'EN COURS',
         ),
       ],
     ),
@@ -162,19 +200,28 @@ class _HomeScreenState extends State<HomeScreen> {
       ctaFr: 'Ouvrir mon portail',
       previewItems: [
         (
-          label: 'Coop Sikasso Karité',
-          sublabel: '420 members · Mali',
-          meta: 'Certified',
+          labelEn: 'Coop Sikasso Karité',
+          labelFr: 'Coop Sikasso Karité',
+          subEn: '420 members · Mali',
+          subFr: '420 membres · Mali',
+          metaEn: 'Certified',
+          metaFr: 'Certifié',
         ),
         (
-          label: 'Coop Bobo Sésame',
-          sublabel: '215 members · Burkina Faso',
-          meta: 'Organic',
+          labelEn: 'Coop Bobo Sesame',
+          labelFr: 'Coop Bobo Sésame',
+          subEn: '215 members · Burkina Faso',
+          subFr: '215 membres · Burkina Faso',
+          metaEn: 'Organic',
+          metaFr: 'Bio',
         ),
         (
-          label: 'Coop Casamance Cajou',
-          sublabel: '380 members · Senegal',
-          meta: 'Fairtrade',
+          labelEn: 'Coop Casamance Cashew',
+          labelFr: 'Coop Casamance Cajou',
+          subEn: '380 members · Senegal',
+          subFr: '380 membres · Sénégal',
+          metaEn: 'Fairtrade',
+          metaFr: 'Commerce équitable',
         ),
       ],
     ),
@@ -190,9 +237,30 @@ class _HomeScreenState extends State<HomeScreen> {
       ctaEn: 'Set price alerts',
       ctaFr: 'Créer des alertes',
       previewItems: [
-        (label: 'Shea (kg)', sublabel: 'Bamako · Mali', meta: 'CFA 1,250'),
-        (label: 'Sesame (kg)', sublabel: 'Ouagadougou · BF', meta: 'CFA 980'),
-        (label: 'Cashew (kg)', sublabel: 'Dakar · Senegal', meta: 'CFA 1,420'),
+        (
+          labelEn: 'Shea (kg)',
+          labelFr: 'Karité (kg)',
+          subEn: 'Bamako · Mali',
+          subFr: 'Bamako · Mali',
+          metaEn: 'CFA 1,250',
+          metaFr: 'CFA 1 250',
+        ),
+        (
+          labelEn: 'Sesame (kg)',
+          labelFr: 'Sésame (kg)',
+          subEn: 'Ouagadougou · BF',
+          subFr: 'Ouagadougou · BF',
+          metaEn: 'CFA 980',
+          metaFr: 'CFA 980',
+        ),
+        (
+          labelEn: 'Cashew (kg)',
+          labelFr: 'Cajou (kg)',
+          subEn: 'Dakar · Senegal',
+          subFr: 'Dakar · Sénégal',
+          metaEn: 'CFA 1,420',
+          metaFr: 'CFA 1 420',
+        ),
       ],
     ),
   ];
@@ -662,26 +730,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 break;
             }
           },
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: lp.t('Home', 'Accueil'),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.explore_outlined),
-              activeIcon: Icon(Icons.explore),
-              label: 'Explore',
+              icon: const Icon(Icons.explore_outlined),
+              activeIcon: const Icon(Icons.explore),
+              label: lp.t('Explore', 'Explorer'),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined),
-              activeIcon: Icon(Icons.notifications),
-              label: 'Alerts',
+              icon: const Icon(Icons.notifications_outlined),
+              activeIcon: const Icon(Icons.notifications),
+              label: lp.t('Alerts', 'Alertes'),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: lp.t('Profile', 'Profil'),
             ),
           ],
         ),
@@ -1108,9 +1176,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       (item) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _PreviewRow(
-                          label: item.label,
-                          sublabel: item.sublabel,
-                          meta: item.meta,
+                          label: lp.t(item.labelEn, item.labelFr),
+                          sublabel: lp.t(item.subEn, item.subFr),
+                          meta: item.metaEn != null
+                              ? lp.t(item.metaEn!, item.metaFr ?? item.metaEn!)
+                              : null,
                           accent: cat.accent,
                         ),
                       ),

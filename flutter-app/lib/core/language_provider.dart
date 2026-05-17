@@ -12,7 +12,7 @@ import '../main.dart';
 class LanguageProvider extends ChangeNotifier {
   static const _key = 'app_locale';
 
-  String _lang = 'en';
+  String _lang = 'fr';
 
   String get lang => _lang;
   bool get isFr => _lang == 'fr';
@@ -32,9 +32,11 @@ class LanguageProvider extends ChangeNotifier {
         _lang = saved!;
         notifyListeners();
         SahelApp.updateLocale(Locale(_lang));
+      } else {
+        SahelApp.updateLocale(const Locale('fr'));
       }
     } catch (_) {
-      // Keep default 'en' if storage fails.
+      // Keep default 'fr' if storage fails.
     }
   }
 
