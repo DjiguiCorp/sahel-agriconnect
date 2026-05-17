@@ -2,21 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { API_ENDPOINTS } from '../../config/api';
 import { useGeolocation } from '../../hooks/useGeolocation';
 
-const COUNTRIES = [
-  'Sénégal',
-  'Mali',
-  "Côte d'Ivoire",
-  'Ghana',
-  'Nigeria',
-  'Burkina Faso',
-  'Niger',
-  'Guinée',
-  'Togo',
-  'Bénin',
-  'Kenya',
-  'Éthiopie',
-  'Cameroun',
-];
+import { ALL_COUNTRIES } from '../../data/africanCountries';
+
+const COUNTRIES = ALL_COUNTRIES;
 
 export default function FarmerNeedsTab({ token, isFr }) {
   const [needs, setNeeds] = useState([]);

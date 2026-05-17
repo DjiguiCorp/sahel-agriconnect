@@ -10,6 +10,7 @@ import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/offline_queue.dart';
+import '../../widgets/country_picker.dart';
 import '../../widgets/offline_banner.dart';
 
 // ── COLOR CONSTANTS ────────────────────────────────────────────
@@ -2918,16 +2919,6 @@ class _JoinCooperativeScreenState extends State<_JoinCooperativeScreen> {
     'Cajou',
   ];
 
-  static const _countries = [
-    'Mali',
-    'Burkina Faso',
-    'Senegal',
-    'Côte d\'Ivoire',
-    'Niger',
-    'Ghana',
-    'Benin',
-    'Togo',
-  ];
 
   final _coops = [
     {'id': '1', 'name': 'Coopérative Karité Mali', 'region': 'koulikoro', 'members': 145},
@@ -3257,7 +3248,7 @@ Email: **${_emailCtrl.text}**
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
                           decoration: _inputDecoration(isFr ? 'Pays' : 'Country'),
-                          items: _countries
+                          items: allCountries
                               .map(
                                 (c) => DropdownMenuItem(
                                   value: c,

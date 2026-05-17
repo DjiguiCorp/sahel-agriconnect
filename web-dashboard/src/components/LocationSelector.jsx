@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
-import { ALL_COUNTRIES, legacyCountryToAppName, regionsForAppCountry } from '../data/africanCountries';
+import {
+  AFRICAN_COUNTRY_GROUPS,
+  ALL_COUNTRY_OPTIONS,
+  DIASPORA_COUNTRIES,
+  legacyCountryToAppName,
+  regionsForAppCountry,
+} from '../data/africanCountries';
 import { useGeolocation } from '../hooks/useGeolocation';
 
 export default function LocationSelector({
@@ -14,10 +20,10 @@ export default function LocationSelector({
   const { i18n } = useTranslation();
   const { country: detectedCountry, region: detectedRegion, detected, source } = useGeolocation();
   const [showBanner, setShowBanner] = useState(true);
+  const isFr = i18n.language === 'fr';
 
   const detectedAppCountry = legacyCountryToAppName(detectedCountry);
 
-  // Auto-fill when detected
   useEffect(() => {
     if (detected && detectedAppCountry && !value.country && showBanner) {
       const regions = regionsForAppCountry(detectedAppCountry);
@@ -29,6 +35,9 @@ export default function LocationSelector({
   }, [detected, detectedAppCountry, detectedRegion, onChange, showBanner, value.country]);
 
   const regions = regionsForAppCountry(value.country);
+
+  const flagFor = (name) =>
+    ALL_COUNTRY_OPTIONS.find((c) => c.name === name)?.flag ?? '🌍';
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -44,7 +53,7 @@ export default function LocationSelector({
           >
             <span className="flex items-center gap-1.5 text-green-700">
               <MapPin className="w-3.5 h-3.5" />
-              {i18n.language === 'fr' ? `Localisation détectée : ${value.country}` : `Location detected: ${value.country}`}
+              {isFr ? `Localisation détectée : ${value.country}` : `Location detected: ${value.country}`}
               {source === 'ip' && <span className="text-green-500"> (IP)</span>}
             </span>
             <button
@@ -55,14 +64,14 @@ export default function LocationSelector({
               }}
               className="text-green-600 hover:text-green-800 font-medium"
             >
-              {i18n.language === 'fr' ? 'Changer' : 'Change'}
+              {isFr ? 'Changer' : 'Change'}
             </button>
           </div>
         )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          {i18n.language === 'fr' ? 'Pays' : 'Country'}
+          {isFr ? 'Pays' : 'Country'}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
         <select
@@ -71,30 +80,69 @@ export default function LocationSelector({
           required={required}
           className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-[#B5850A]"
         >
-          <option value="">{i18n.language === 'fr' ? 'Sélectionnez un pays' : 'Select a country'}</option>
-          {ALL_COUNTRIES.map((c) => (
-            <option key={c.code} value={c.name}>
-              {c.flag} {c.name}
-            </option>
-          ))}
+          <option value="">{isFr ? 'Sélectionnez un pays' : 'Select a country'}</option>
+          <optgroup label={isFr ? 'Afrique de l\'Ouest' : 'West Africa'}>
+            {AFRICAN_COUNTRY_GROUPS.westAfrica.map((c) => (
+              <option key={c} value={c}>
+                {flagFor(c)} {c}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={isFr ? 'Afrique centrale' : 'Central Africa'}>
+            {AFRICAN_COUNTRY_GROUPS.centralAfrica.map((c) => (
+              <option key={c} value={c}>
+                {flagFor(c)} {c}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={isFr ? 'Afrique de l\'Est' : 'East Africa'}>
+            {AFRICAN_COUNTRY_GROUPS.eastAfrica.map((c) => (
+              <option key={c} value={c}>
+                {flagFor(c)} {c}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={isFr ? 'Afrique australe' : 'Southern Africa'}>
+            {AFRICAN_COUNTRY_GROUPS.southernAfrica.map((c) => (
+              <option key={c} value={c}>
+                {flagFor(c)} {c}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={isFr ? 'Afrique du Nord' : 'North Africa'}>
+            {AFRICAN_COUNTRY_GROUPS.northAfrica.map((c) => (
+              <option key={c} value={c}>
+                {flagFor(c)} {c}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={isFr ? '🌐 Autres pays' : '🌐 Other Countries'}>
+            {DIASPORA_COUNTRIES.map((c) => (
+              <option key={c} value={c}>
+                {flagFor(c)} {c}
+              </option>
+            ))}
+          </optgroup>
         </select>
       </div>
 
       {value.country && regions.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{i18n.language === 'fr' ? 'Région / Ville' : 'Region / City'}</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {isFr ? 'Région / Ville' : 'Region / City'}
+          </label>
           <select
             value={value.region}
             onChange={(e) => onChange({ ...value, region: e.target.value })}
             className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-[#B5850A]"
           >
-            <option value="">{i18n.language === 'fr' ? 'Sélectionnez une région' : 'Select a region'}</option>
+            <option value="">{isFr ? 'Sélectionnez une région' : 'Select a region'}</option>
             {regions.map((r) => (
               <option key={r} value={r}>
                 {r}
               </option>
             ))}
-            <option value="Autre">{i18n.language === 'fr' ? 'Autre' : 'Other'}</option>
+            <option value="Autre">{isFr ? 'Autre' : 'Other'}</option>
           </select>
         </div>
       )}

@@ -181,41 +181,78 @@ class PhonePrefixDropdown extends StatelessWidget {
   }
 }
 
-/// West Africa, East/Central Africa, and diaspora countries — sorted by [name].
-/// Used for registration / investor cooperative country pickers.
-const List<Map<String, String>> allCountries = [
-  {'code': 'BE', 'name': 'Belgium', 'flag': '🇧🇪'},
-  {'code': 'BJ', 'name': 'Benin', 'flag': '🇧🇯'},
-  {'code': 'BR', 'name': 'Brazil', 'flag': '🇧🇷'},
-  {'code': 'BF', 'name': 'Burkina Faso', 'flag': '🇧🇫'},
-  {'code': 'CM', 'name': 'Cameroon', 'flag': '🇨🇲'},
-  {'code': 'CA', 'name': 'Canada', 'flag': '🇨🇦'},
-  {'code': 'CI', 'name': "Côte d'Ivoire", 'flag': '🇨🇮'},
-  {'code': 'ET', 'name': 'Ethiopia', 'flag': '🇪🇹'},
-  {'code': 'FR', 'name': 'France', 'flag': '🇫🇷'},
-  {'code': 'GM', 'name': 'Gambia', 'flag': '🇬🇲'},
-  {'code': 'GH', 'name': 'Ghana', 'flag': '🇬🇭'},
-  {'code': 'GN', 'name': 'Guinea', 'flag': '🇬🇳'},
-  {'code': 'GW', 'name': 'Guinea-Bissau', 'flag': '🇬🇼'},
-  {'code': 'IT', 'name': 'Italy', 'flag': '🇮🇹'},
-  {'code': 'KE', 'name': 'Kenya', 'flag': '🇰🇪'},
-  {'code': 'LR', 'name': 'Liberia', 'flag': '🇱🇷'},
-  {'code': 'ML', 'name': 'Mali', 'flag': '🇲🇱'},
-  {'code': 'MR', 'name': 'Mauritania', 'flag': '🇲🇷'},
-  {'code': 'NE', 'name': 'Niger', 'flag': '🇳🇪'},
-  {'code': 'NG', 'name': 'Nigeria', 'flag': '🇳🇬'},
-  {'code': 'SN', 'name': 'Senegal', 'flag': '🇸🇳'},
-  {'code': 'SL', 'name': 'Sierra Leone', 'flag': '🇸🇱'},
-  {'code': 'TZ', 'name': 'Tanzania', 'flag': '🇹🇿'},
-  {'code': 'TG', 'name': 'Togo', 'flag': '🇹🇬'},
-  {'code': 'UG', 'name': 'Uganda', 'flag': '🇺🇬'},
-  {'code': 'GB', 'name': 'United Kingdom', 'flag': '🇬🇧'},
-  {'code': 'US', 'name': 'United States', 'flag': '🇺🇸'},
+/// 54 African Union member states — alphabetical English names.
+const List<String> africanCountries = [
+  'Algeria',
+  'Angola',
+  'Benin',
+  'Botswana',
+  'Burkina Faso',
+  'Burundi',
+  'Cabo Verde',
+  'Cameroon',
+  'Central African Republic',
+  'Chad',
+  'Comoros',
+  'Congo',
+  "Côte d'Ivoire",
+  'Democratic Republic of the Congo',
+  'Djibouti',
+  'Egypt',
+  'Equatorial Guinea',
+  'Eritrea',
+  'Eswatini',
+  'Ethiopia',
+  'Gabon',
+  'Gambia',
+  'Ghana',
+  'Guinea',
+  'Guinea-Bissau',
+  'Kenya',
+  'Lesotho',
+  'Liberia',
+  'Libya',
+  'Madagascar',
+  'Malawi',
+  'Mali',
+  'Mauritania',
+  'Mauritius',
+  'Morocco',
+  'Mozambique',
+  'Namibia',
+  'Niger',
+  'Nigeria',
+  'Rwanda',
+  'São Tomé and Príncipe',
+  'Senegal',
+  'Seychelles',
+  'Sierra Leone',
+  'Somalia',
+  'South Africa',
+  'South Sudan',
+  'Sudan',
+  'Tanzania',
+  'Togo',
+  'Tunisia',
+  'Uganda',
+  'Zambia',
+  'Zimbabwe',
 ];
 
-/// Canonical English country names for [CountryDropdown] (alphabetical).
-final List<String> appCountryNames =
-    List<String>.unmodifiable(allCountries.map((m) => m['name']!).toList());
+const List<String> diasporaCountries = [
+  'Canada',
+  'France',
+  'United Kingdom',
+  'United States',
+];
+
+const List<String> allCountries = [
+  ...africanCountries,
+  ...diasporaCountries,
+];
+
+/// Canonical English country names for [CountryDropdown].
+final List<String> appCountryNames = List<String>.unmodifiable(allCountries);
 
 /// Reusable country dropdown for registration and role-specific forms.
 class CountryDropdown extends StatelessWidget {
@@ -226,7 +263,7 @@ class CountryDropdown extends StatelessWidget {
     this.hint,
     List<String>? countries,
     this.fillColor = const Color(0xFFF8F4E3),
-  }) : countries = countries ?? appCountryNames;
+  }) : countries = countries ?? allCountries;
 
   /// Currently selected country name. Empty string means "no selection",
   /// in which case the [hint] is shown.
@@ -273,17 +310,38 @@ class CountryDropdown extends StatelessWidget {
                     color: Color(0xFFAAAAAA),
                   ),
                 ),
-          items: countries
-              .map(
-                (c) => DropdownMenuItem<String>(
-                  value: c,
-                  child: Text(
-                    c,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+          items: [
+            ...africanCountries.map(
+              (c) => DropdownMenuItem<String>(
+                value: c,
+                child: Text(c, style: const TextStyle(fontSize: 14)),
+              ),
+            ),
+            const DropdownMenuItem<String>(
+              enabled: false,
+              value: '__diaspora__',
+              child: Divider(height: 1),
+            ),
+            DropdownMenuItem<String>(
+              enabled: false,
+              value: '__diaspora_label__',
+              child: Text(
+                '🌐 Other Countries',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey,
+                  letterSpacing: 0.5,
                 ),
-              )
-              .toList(),
+              ),
+            ),
+            ...diasporaCountries.map(
+              (c) => DropdownMenuItem<String>(
+                value: c,
+                child: Text(c, style: const TextStyle(fontSize: 14)),
+              ),
+            ),
+          ],
           onChanged: onChanged,
         ),
       ),

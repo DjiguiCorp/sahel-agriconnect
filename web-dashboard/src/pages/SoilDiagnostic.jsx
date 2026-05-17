@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import ExpertRequestModal from '../components/ExpertRequestModal';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { regionsByCountry } from '../data/sahelRegions';
-import { AFRICAN_COUNTRIES } from '../data/africanCountries';
+import { ALL_COUNTRIES } from '../data/africanCountries';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import {
   Sprout,
@@ -255,7 +255,7 @@ export default function SoilDiagnostic() {
                   }}
                   className="w-full border rounded-lg px-3 py-2"
                 >
-                  {AFRICAN_COUNTRIES.map((c) => (
+                  {ALL_COUNTRIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>

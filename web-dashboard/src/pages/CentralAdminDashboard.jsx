@@ -1801,6 +1801,15 @@ const CentralAdminDashboard = () => {
                   </option>
                 ))}
               </optgroup>
+              <optgroup
+                label={i18n.language === 'fr' ? '🌐 Autres pays' : '🌐 Other Countries'}
+              >
+                {['Canada', 'France', 'United Kingdom', 'United States'].map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </optgroup>
             </select>
             {globalCountryFilter ? (
               <button type="button" onClick={() => setGlobalCountryFilter('')} className="text-xs text-gray-400 hover:text-gray-600">

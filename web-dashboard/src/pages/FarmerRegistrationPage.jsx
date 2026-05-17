@@ -9,7 +9,7 @@ import {
   step2Fields,
 } from '../schemas/farmerRegistrationSchema';
 import { regionsByCountry } from '../data/sahelRegions';
-import { AFRICAN_COUNTRIES } from '../data/africanCountries';
+import { ALL_COUNTRIES } from '../data/africanCountries';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { CheckCircle, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
@@ -216,7 +216,7 @@ export default function FarmerRegistrationPage() {
                     onChange: () => setValue('region', ''),
                   })}
                 >
-                  {AFRICAN_COUNTRIES.map((c) => (
+                  {ALL_COUNTRIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>

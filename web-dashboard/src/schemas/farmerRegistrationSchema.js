@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AFRICAN_COUNTRIES } from '../data/africanCountries.js';
+import { ALL_COUNTRIES } from '../data/africanCountries.js';
 
 export const cropOptions = ['Mil', 'Sorgho', 'Maïs', 'Arachide', 'Coton', 'Niébé', 'Riz', 'Autre'];
 
@@ -17,7 +17,7 @@ export const farmerRegistrationSchema = z
     country: z
       .string()
       .min(1, 'Choisissez un pays')
-      .refine((c) => AFRICAN_COUNTRIES.includes(c), { message: 'Choisissez un pays valide' }),
+      .refine((c) => ALL_COUNTRIES.includes(c), { message: 'Choisissez un pays valide' }),
     crops: z.array(z.string()).min(1, 'Sélectionnez au moins une culture principale'),
     area_hectares: z.preprocess(
       (v) => (v === '' || v === undefined ? undefined : Number(v)),
