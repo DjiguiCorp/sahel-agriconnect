@@ -2015,7 +2015,7 @@ class _InvestorAccountTab extends StatelessWidget {
             const Color(0xFF9C27B0),
             isFr ? 'Langue' : 'Language',
             'English / Français',
-            () => context.go('/profile/language'),
+            () => context.push('/profile/language'),
           ),
           _tile(
             context,
@@ -2023,7 +2023,7 @@ class _InvestorAccountTab extends StatelessWidget {
             const Color(0xFFFF9800),
             isFr ? 'Notifications' : 'Notifications',
             isFr ? 'Gérer les alertes' : 'Manage alerts',
-            () => context.go('/profile/notifications'),
+            () => context.push('/profile/notifications'),
           ),
         ]),
         const SizedBox(height: 14),
@@ -2067,7 +2067,7 @@ class _InvestorAccountTab extends StatelessWidget {
             const Color(0xFF4CAF50),
             isFr ? 'Centre d\'aide' : 'Help Center',
             isFr ? 'FAQ et guides' : 'FAQs and guides',
-            () => context.go('/help'),
+            () => context.push('/help'),
           ),
           _tile(
             context,

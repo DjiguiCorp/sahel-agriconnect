@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/language_provider.dart';
+import '../../core/theme.dart';
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -135,14 +137,21 @@ class _HelpScreenState extends State<HelpScreen> {
         )
         .toList();
 
+    final lp = context.watch<LanguageProvider>();
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFFF8F4E3),
+      backgroundColor: AppColors.darkBg,
       appBar: AppBar(
-        title: const Text('Help center'),
+        title: Text(lp.t('Help center', 'Centre d\'aide')),
         backgroundColor: const Color(0xFF1a3c2e),
         foregroundColor: Colors.white,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -151,7 +160,10 @@ class _HelpScreenState extends State<HelpScreen> {
             controller: _searchCtrl,
             onChanged: (v) => setState(() => _search = v),
             decoration: InputDecoration(
-              hintText: 'Search help articles...',
+              hintText: lp.t(
+                'Search help articles...',
+                'Rechercher dans l\'aide...',
+              ),
               hintStyle: TextStyle(color: Colors.grey[400]),
               filled: true,
               fillColor: Colors.white,

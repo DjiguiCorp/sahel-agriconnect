@@ -1470,9 +1470,9 @@ class _ProductionTabState extends State<_ProductionTab> {
               ),
               const SizedBox(height: 12),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    flex: 3,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1483,22 +1483,28 @@ class _ProductionTabState extends State<_ProductionTab> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
+                  SizedBox(
+                    width: 96,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _lbl(isFr ? 'Unité' : 'Unit'),
                         DropdownButtonFormField<String>(
                           value: _unit,
+                          isExpanded: true,
+                          isDense: true,
                           dropdownColor: _surface,
-                          style: const TextStyle(color: _text),
+                          style: const TextStyle(color: _text, fontSize: 13),
                           decoration: _dec(''),
                           items: ['kg', 'tonne', 'L', 'sac']
                               .map(
                                 (u) => DropdownMenuItem(
                                   value: u,
-                                  child: Text(u,
-                                      style: const TextStyle(color: _text)),
+                                  child: Text(
+                                    u,
+                                    style: const TextStyle(color: _text),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               )
                               .toList(),
@@ -2234,7 +2240,7 @@ class _CoopAccountTab extends StatelessWidget {
             const Color(0xFF9C27B0),
             isFr ? 'Langue' : 'Language',
             'English / Français',
-            () => context.go('/profile/language'),
+            () => context.push('/profile/language'),
           ),
           _tile(
             context,
@@ -2242,7 +2248,7 @@ class _CoopAccountTab extends StatelessWidget {
             const Color(0xFFFF9800),
             isFr ? 'Notifications' : 'Notifications',
             isFr ? 'Gérer les alertes' : 'Manage alerts',
-            () => context.go('/profile/notifications'),
+            () => context.push('/profile/notifications'),
           ),
         ]),
         const SizedBox(height: 14),
@@ -2253,7 +2259,7 @@ class _CoopAccountTab extends StatelessWidget {
             const Color(0xFF2196F3),
             isFr ? 'Mettre à jour le téléphone' : 'Update Phone',
             isFr ? 'Changer votre numéro' : 'Change your number',
-            () => context.go('/profile/change-phone'),
+            () => context.push('/profile/change-phone'),
           ),
           _tile(
             context,
@@ -2261,7 +2267,7 @@ class _CoopAccountTab extends StatelessWidget {
             const Color(0xFF2196F3),
             isFr ? 'Mettre à jour l\'email' : 'Update Email',
             isFr ? 'Changer votre adresse email' : 'Change your email',
-            () => context.go('/profile/change-email'),
+            () => context.push('/profile/change-email'),
           ),
         ]),
         const SizedBox(height: 14),
@@ -2272,7 +2278,7 @@ class _CoopAccountTab extends StatelessWidget {
             const Color(0xFF4CAF50),
             isFr ? 'Centre d\'aide' : 'Help Center',
             isFr ? 'FAQ et guides' : 'FAQs and guides',
-            () => context.go('/help'),
+            () => context.push('/help'),
           ),
           _tile(
             context,

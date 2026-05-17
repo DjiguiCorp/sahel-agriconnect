@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
+import '../../core/theme.dart';
 
 /// Edit profile — shows session data and allows local updates.
 class EditProfileScreen extends StatefulWidget {
@@ -70,12 +71,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFFF8F4E3),
+      backgroundColor: AppColors.darkBg,
       appBar: AppBar(
         title: Text(lp.t('Edit profile', 'Modifier le profil')),
         backgroundColor: const Color(0xFF1a3c2e),
         foregroundColor: Colors.white,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -108,8 +110,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       'Your account (${auth.role.name})',
                       'Votre compte (${auth.role.name})',
                     ),
-                    style: TextStyle(
-                      color: Colors.black.withValues(alpha: 0.5),
+                    style: const TextStyle(
+                      color: Color(0x99FFFFFF),
                       fontSize: 13,
                     ),
                   ),
@@ -175,12 +177,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       controller: controller,
       keyboardType: keyboard,
       validator: validator,
-      style: const TextStyle(color: Color(0xFF1a3c2e)),
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.black.withValues(alpha: 0.5)),
+        labelStyle: const TextStyle(color: Color(0x99FFFFFF)),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: const Color(0xFF1a3530),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

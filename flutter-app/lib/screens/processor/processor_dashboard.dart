@@ -1780,7 +1780,7 @@ class _AccountTab extends StatelessWidget {
             AppColors.gold,
             lp.t('Edit Profile', 'Modifier le profil'),
             lp.t('Update your details', 'Mettre à jour vos informations'),
-            () => context.go('/profile/edit'),
+            () => context.push('/profile/edit'),
           ),
           _tile(
             context,
@@ -1788,7 +1788,7 @@ class _AccountTab extends StatelessWidget {
             const Color(0xFF9C27B0),
             lp.t('Language', 'Langue'),
             lp.t('English / Français', 'English / Français'),
-            () => context.go('/profile/language'),
+            () => context.push('/profile/language'),
           ),
           _tile(
             context,
@@ -1796,7 +1796,7 @@ class _AccountTab extends StatelessWidget {
             const Color(0xFFFF9800),
             lp.t('Notifications', 'Notifications'),
             lp.t('Manage alerts', 'Gérer les alertes'),
-            () => context.go('/profile/notifications'),
+            () => context.push('/profile/notifications'),
           ),
         ]),
         const SizedBox(height: 16),
@@ -1807,7 +1807,7 @@ class _AccountTab extends StatelessWidget {
             accent,
             lp.t('Update email', 'Modifier l’e-mail'),
             lp.t('Change contact email', 'Changer l’e-mail de contact'),
-            () => context.go('/profile/change-email'),
+            () => context.push('/profile/change-email'),
           ),
           _tile(
             context,
@@ -1815,7 +1815,7 @@ class _AccountTab extends StatelessWidget {
             accent,
             lp.t('Update phone', 'Modifier le téléphone'),
             lp.t('Change contact phone', 'Changer le téléphone de contact'),
-            () => context.go('/profile/change-phone'),
+            () => context.push('/profile/change-phone'),
           ),
           _tile(
             context,
@@ -1826,7 +1826,7 @@ class _AccountTab extends StatelessWidget {
               'Permanently remove processor account',
               'Supprimer définitivement le compte processeur',
             ),
-            () => context.go('/profile/delete-account'),
+            () => context.push('/profile/delete-account'),
           ),
         ]),
         const SizedBox(height: 16),
@@ -1837,7 +1837,7 @@ class _AccountTab extends StatelessWidget {
             accent,
             lp.t('Help Center', 'Centre d’aide'),
             lp.t('FAQs and guides', 'FAQ et guides'),
-            () => context.go('/help'),
+            () => context.push('/help'),
           ),
           _tile(
             context,

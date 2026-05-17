@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/language_provider.dart';
@@ -51,12 +52,17 @@ class LanguageScreen extends StatelessWidget {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: AppColors.cream,
+      backgroundColor: AppColors.darkBg,
       appBar: AppBar(
         title: Text(lp.t('Language', 'Langue')),
         backgroundColor: AppColors.forestGreen,
         foregroundColor: Colors.white,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
