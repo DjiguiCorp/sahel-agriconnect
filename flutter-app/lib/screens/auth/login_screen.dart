@@ -88,8 +88,8 @@ class _LoginScreenState extends State<LoginScreen> {
       hint: 'cooperative@email.com or +223...',
     ),
     AuthRole.government: (
-      title: 'Government / NGO',
-      subtitle: 'Institutional portal',
+      title: 'Government',
+      subtitle: 'Government portal',
       emoji: '🏛️',
       color: const Color(0xFF378ADD),
       bg: const [Color(0xFF0d1a2e), Color(0xFF1a3c2e)],
@@ -646,7 +646,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _config.subtitle,
+                                    _localizedSubtitle(lp),
                                     style: TextStyle(
                                       color:
                                           Colors.white.withValues(alpha: 0.5),
@@ -1149,6 +1149,17 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
+  String _localizedSubtitle(LanguageProvider lp) {
+    switch (widget.role) {
+      case AuthRole.government:
+        return lp.t('Government portal', 'Portail gouvernemental');
+      case AuthRole.ngo:
+        return lp.t('Partner programs', 'Programmes partenaires');
+      default:
+        return _config.subtitle;
+    }
+  }
+
   String _localizedTitle(LanguageProvider lp) {
     switch (widget.role) {
       case AuthRole.cooperative:
@@ -1156,7 +1167,7 @@ class _LoginScreenState extends State<LoginScreen> {
       case AuthRole.investor:
         return lp.t('AfriYield Exchange', 'AfriYield Exchange');
       case AuthRole.government:
-        return lp.t('Government / NGO', 'Gouvernement / ONG');
+        return lp.t('Government', 'Gouvernement');
       case AuthRole.ngo:
         return lp.t('NGO / Partner', 'ONG / Partenaire');
       case AuthRole.processor:

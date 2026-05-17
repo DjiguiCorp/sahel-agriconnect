@@ -1254,6 +1254,7 @@ class _PolicyTabState extends State<_PolicyTab> {
   final _ministryCtrl = TextEditingController();
   final _subjectCtrl = TextEditingController();
   final _msgCtrl = TextEditingController();
+  String _audience = 'all';
   bool _submitting = false;
   bool _submitted = false;
 
@@ -1280,7 +1281,7 @@ class _PolicyTabState extends State<_PolicyTab> {
               'active'),
             _secBtn(isFr ? 'Sécurité alimentaire' : 'Food Security',
               'food'),
-            _secBtn(isFr ? 'Enquête' : 'Inquiry', 'inquiry'),
+            _secBtn(isFr ? 'Diffusion' : 'Broadcast', 'inquiry'),
           ])),
         const SizedBox(height: 16),
 
@@ -1484,21 +1485,21 @@ class _PolicyTabState extends State<_PolicyTab> {
   ]);
 
   Widget _buildInquiryForm(bool isFr) => Column(children: [
-    // Important notice — government officials only
     Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _gold.withValues(alpha: 0.08),
+        color: _blue.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _gold.withValues(alpha: 0.3))),
+        border: Border.all(color: _blue.withValues(alpha: 0.3))),
       child: Row(children: [
-        const Icon(Icons.info_outline, color: _gold, size: 20),
+        const Icon(Icons.campaign_outlined, color: _blue, size: 20),
         const SizedBox(width: 10),
         Expanded(child: Text(
           isFr
-            ? 'Ce formulaire est réservé aux agents gouvernementaux accrédités. Les soumissions sont examinées par l\'équipe de politique agricole de Sahel AgriConnect et traitées sous 72 heures ouvrables.'
-            : 'This form is reserved for accredited government officials. Submissions are reviewed by the Sahel AgriConnect agricultural policy team and processed within 72 business hours.',
-          style: const TextStyle(color: _gold, fontSize: 12, height: 1.5))),
+            ? 'En tant qu\'agent gouvernemental, vous pouvez diffuser des directives politiques directement aux coopératives, agriculteurs et partenaires enregistrés sur la plateforme.'
+            : 'As a government official, you can broadcast policy directives directly to cooperatives, farmers and registered partners on the platform.',
+          style: const TextStyle(color: _blue, fontSize: 12,
+            height: 1.5))),
       ])),
     const SizedBox(height: 16),
     if (_submitted) ...[
@@ -1511,14 +1512,14 @@ class _PolicyTabState extends State<_PolicyTab> {
         child: Column(children: [
           const Icon(Icons.check_circle_outline, color: _green, size: 48),
           const SizedBox(height: 12),
-          Text(isFr ? 'Enquête soumise avec succès'
-            : 'Inquiry submitted successfully',
+          Text(isFr ? 'Directive diffusée avec succès'
+            : 'Directive broadcast successfully',
             style: const TextStyle(color: _text, fontSize: 16,
               fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           Text(isFr
-            ? 'Notre équipe de politique examinera votre demande et vous répondra sous 72 heures ouvrables.'
-            : 'Our policy team will review your request and respond within 72 business hours.',
+            ? 'Votre directive a été diffusée aux destinataires sélectionnés sur la plateforme. Les utilisateurs seront notifiés immédiatement.'
+            : 'Your directive has been broadcast to selected recipients on the platform. Users will be notified immediately.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: _muted, fontSize: 13,
               height: 1.4)),
@@ -1527,11 +1528,16 @@ class _PolicyTabState extends State<_PolicyTab> {
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: _green.withValues(alpha: 0.4))),
             onPressed: () => setState(() => _submitted = false),
-            child: Text(isFr ? 'Nouvelle enquête' : 'New Inquiry',
+            child: Text(isFr ? 'Nouvelle directive' : 'New Directive',
               style: const TextStyle(color: _green))),
         ])),
     ] else ...[
       _card(children: [
+        Text(isFr ? 'Diffuser une directive politique'
+          : 'Broadcast a Policy Directive',
+          style: const TextStyle(color: _text, fontSize: 16,
+            fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
         _lbl(isFr ? '👤 Votre nom complet *' : '👤 Full Name *'),
         _tf(_nameCtrl, isFr ? 'Prénom et nom' : 'First and last name'),
         const SizedBox(height: 12),
@@ -1546,31 +1552,47 @@ class _PolicyTabState extends State<_PolicyTab> {
           isFr ? 'Ex: Ministère de l\'Agriculture du Mali'
                : 'e.g. Ministry of Agriculture, Mali'),
         const SizedBox(height: 12),
-        _lbl(isFr ? '📋 Sujet de la politique *'
-          : '📋 Policy Subject *'),
+        _lbl(isFr ? '📋 Titre de la directive *'
+          : '📋 Directive Title *'),
         _tf(_subjectCtrl,
           isFr ? 'Ex: Subvention intrants, Traçabilité...'
                : 'e.g. Input subsidy, Traceability...'),
         const SizedBox(height: 12),
-        _lbl(isFr ? '✉️ Message / Enquête *' : '✉️ Message / Inquiry *'),
+        _lbl(isFr ? '✉️ Contenu de la directive *'
+          : '✉️ Directive Content *'),
         _tf(_msgCtrl,
-          isFr ? 'Décrivez votre enquête en détail...'
-               : 'Describe your inquiry in detail...',
+          isFr ? 'Rédigez le contenu de votre directive...'
+               : 'Write the content of your directive...',
           maxLines: 5),
+        const SizedBox(height: 12),
+        _lbl(isFr ? '🎯 Destinataires' : '🎯 Target Audience'),
+        DropdownButtonFormField<String>(
+          value: _audience,
+          dropdownColor: _surface,
+          style: const TextStyle(color: _text),
+          decoration: _dec(isFr ? 'Choisir les destinataires'
+            : 'Select recipients'),
+          items: [
+            DropdownMenuItem(value: 'all',
+              child: Text(isFr ? 'Tous — agriculteurs, coopératives, ONG'
+                : 'All — farmers, cooperatives, NGOs',
+                style: const TextStyle(color: _text))),
+            DropdownMenuItem(value: 'cooperatives',
+              child: Text(isFr ? 'Coopératives uniquement'
+                : 'Cooperatives only',
+                style: const TextStyle(color: _text))),
+            DropdownMenuItem(value: 'farmers',
+              child: Text(isFr ? 'Agriculteurs uniquement'
+                : 'Farmers only',
+                style: const TextStyle(color: _text))),
+            DropdownMenuItem(value: 'investors',
+              child: Text(isFr ? 'Investisseurs uniquement'
+                : 'Investors only',
+                style: const TextStyle(color: _text))),
+          ],
+          onChanged: (v) => setState(() => _audience = v ?? 'all'),
+        ),
         const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _blue.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _blue.withValues(alpha: 0.2))),
-          child: Text(
-            isFr
-              ? '🔒 Vos informations sont vérifiées par notre équipe avant traitement. Seuls les agents gouvernementaux accrédités ont accès à cette fonctionnalité.'
-              : '🔒 Your information is verified by our team before processing. Only accredited government agents have access to this feature.',
-            style: const TextStyle(color: _muted, fontSize: 11,
-              height: 1.4))),
-        const SizedBox(height: 16),
         SizedBox(width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1598,7 +1620,7 @@ class _PolicyTabState extends State<_PolicyTab> {
               ? const SizedBox(width: 20, height: 20,
                   child: CircularProgressIndicator(
                     color: Colors.white, strokeWidth: 2))
-              : Text(isFr ? 'Soumettre l\'enquête' : 'Submit Inquiry',
+              : Text(isFr ? 'Diffuser la directive' : 'Broadcast Directive',
                   style: const TextStyle(fontWeight: FontWeight.bold,
                     fontSize: 15)))),
       ]),
