@@ -726,6 +726,8 @@ class _ProgramsTabState extends State<_ProgramsTab> {
             const SizedBox(height: 12),
             _lbl(isFr ? 'Type de programme' : 'Program Type'),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              isDense: true,
               value: _type, dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),
@@ -1113,6 +1115,8 @@ class _NetworkTabState extends State<_NetworkTab> {
                   children: [
                     _lbl(isFr ? 'Genre' : 'Gender'),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      isDense: true,
                       value: _gender, dropdownColor: _surface,
                       style: const TextStyle(color: _text),
                       decoration: _dec(''),
@@ -1877,6 +1881,8 @@ class _NgoEditProfileScreenState extends State<_NgoEditProfileScreen> {
             const SizedBox(height: 12),
             _lbl(isFr ? 'Type d\'organisation' : 'Organization Type'),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              isDense: true,
               value: _orgType, dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),
@@ -1920,6 +1926,8 @@ class _NgoEditProfileScreenState extends State<_NgoEditProfileScreen> {
               : '🎯 Areas of Intervention'),
             _lbl(isFr ? 'Domaine principal' : 'Primary Focus'),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              isDense: true,
               value: _focus, dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),

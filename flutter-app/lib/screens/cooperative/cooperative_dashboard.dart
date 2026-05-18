@@ -1032,6 +1032,8 @@ class _MembersTabState extends State<_MembersTab> {
                       children: [
                         _lbl(isFr ? 'Genre' : 'Gender'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          isDense: true,
                           value: _gender,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
@@ -1072,6 +1074,8 @@ class _MembersTabState extends State<_MembersTab> {
                       children: [
                         _lbl(isFr ? 'Rôle' : 'Role'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          isDense: true,
                           value: _role,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
@@ -1524,6 +1528,8 @@ class _ProductionTabState extends State<_ProductionTab> {
                       children: [
                         _lbl(isFr ? 'Qualité' : 'Quality'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          isDense: true,
                           value: _quality,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
@@ -1564,6 +1570,8 @@ class _ProductionTabState extends State<_ProductionTab> {
                       children: [
                         _lbl(isFr ? 'Saison' : 'Season'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          isDense: true,
                           value: _season,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),

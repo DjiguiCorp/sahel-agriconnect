@@ -730,17 +730,21 @@ class _SupplyTabState extends State<_SupplyTab> {
               : 'e.g. Shea, Sesame, Cashew'),
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(flex: 2, child: Column(
+              Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 _lbl(isFr ? 'Quantité (kg) *' : 'Quantity (kg) *'),
                 _tf(_qtyCtrl, isFr ? 'Ex: 5000' : 'e.g. 5000',
                   type: TextInputType.number),
               ])),
               const SizedBox(width: 10),
-              Expanded(child: Column(
+              SizedBox(
+                width: 90,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 _lbl(isFr ? 'Qualité' : 'Quality'),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  isDense: true,
                   value: _quality, dropdownColor: _surface,
                   style: const TextStyle(color: _text),
                   decoration: _dec(''),
@@ -748,7 +752,9 @@ class _SupplyTabState extends State<_SupplyTab> {
                     value: q, child: Text('Grade $q',
                       style: const TextStyle(color: _text)))).toList(),
                   onChanged: (v) => setState(() => _quality = v ?? 'A')),
-              ])),
+                ],
+              ),
+            ),
             ]),
             const SizedBox(height: 12),
             _lbl(isFr ? 'Prix offert (XOF/kg)' : 'Offered Price (XOF/kg)'),
@@ -953,7 +959,7 @@ class _ProcessingTabState extends State<_ProcessingTab> {
               : 'e.g. Shea, Sesame, Cashew'),
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(flex: 2, child: Column(
+              Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 _lbl(isFr ? 'Quantité brute (kg) *'
                   : 'Raw Quantity (kg) *'),
@@ -961,10 +967,14 @@ class _ProcessingTabState extends State<_ProcessingTab> {
                   type: TextInputType.number),
               ])),
               const SizedBox(width: 10),
-              Expanded(child: Column(
+              SizedBox(
+                width: 90,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 _lbl(isFr ? 'Qualité' : 'Quality'),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  isDense: true,
                   value: _quality, dropdownColor: _surface,
                   style: const TextStyle(color: _text),
                   decoration: _dec(''),
@@ -972,7 +982,9 @@ class _ProcessingTabState extends State<_ProcessingTab> {
                     value: q, child: Text('Grade $q',
                       style: const TextStyle(color: _text)))).toList(),
                   onChanged: (v) => setState(() => _quality = v ?? 'A')),
-              ])),
+                ],
+              ),
+            ),
             ]),
             const SizedBox(height: 16),
             _secLabel(isFr ? '⚙️ Paramètres de traitement'
@@ -984,6 +996,8 @@ class _ProcessingTabState extends State<_ProcessingTab> {
             const SizedBox(height: 12),
             _lbl(isFr ? 'Unité de production' : 'Production Unit'),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              isDense: true,
               value: _processorUnit, dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),
@@ -1209,6 +1223,8 @@ class _ScheduleTabState extends State<_ScheduleTab> {
           _card(children: [
             _lbl(isFr ? 'Type d\'opération' : 'Operation Type'),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              isDense: true,
               value: _type, dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),
@@ -1682,6 +1698,8 @@ class _ProcessorEditProfileScreenState
             const SizedBox(height: 12),
             _lbl(isFr ? 'Type d\'entreprise' : 'Company Type'),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              isDense: true,
               value: _companyType, dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),
@@ -1864,6 +1882,8 @@ class _CertificationSheetState extends State<_CertificationSheet> {
           ])
         else ...[
           DropdownButtonFormField<String>(
+            isExpanded: true,
+            isDense: true,
             value: _certType, dropdownColor: _surface,
             style: const TextStyle(color: _text),
             decoration: _dec(isFr ? 'Type de certification'

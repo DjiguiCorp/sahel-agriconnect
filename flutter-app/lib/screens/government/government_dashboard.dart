@@ -1567,6 +1567,8 @@ class _PolicyTabState extends State<_PolicyTab> {
         const SizedBox(height: 12),
         _lbl(isFr ? '🎯 Destinataires' : '🎯 Target Audience'),
         DropdownButtonFormField<String>(
+          isExpanded: true,
+          isDense: true,
           value: _audience,
           dropdownColor: _surface,
           style: const TextStyle(color: _text),
@@ -2014,6 +2016,8 @@ class _GovEditProfileScreenState extends State<_GovEditProfileScreen> {
             const SizedBox(height: 12),
             _lbl2(isFr ? 'Niveau d\'accès' : 'Access Level'),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              isDense: true,
               value: _accessLevel, dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),

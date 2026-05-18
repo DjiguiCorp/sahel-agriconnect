@@ -800,20 +800,24 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
             _fieldLabel(isFr ? 'Quantité *' : 'Quantity *'),
             Row(
               children: [
-                Expanded(flex: 3,
+                Expanded(
                   child: _textField(_qtyCtrl,
                     isFr ? 'Ex: 500' : 'e.g. 500',
                     type: TextInputType.number)),
                 const SizedBox(width: 8),
-                Expanded(
+                SizedBox(
+                  width: 90,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    isDense: true,
                     value: _unit,
                     dropdownColor: _surface,
-                    style: const TextStyle(color: _text),
+                    style: const TextStyle(color: _text, fontSize: 13),
                     decoration: _inputDecoration(''),
                     items: ['kg', 'tonne', 'L']
                       .map((u) => DropdownMenuItem(value: u,
-                        child: Text(u, style: const TextStyle(color: _text))))
+                        child: Text(u,
+                          style: const TextStyle(color: _text, fontSize: 13))))
                       .toList(),
                     onChanged: (v) => setState(() => _unit = v ?? 'kg'),
                   ),
@@ -823,6 +827,8 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
             const SizedBox(height: 14),
             _fieldLabel(isFr ? 'Qualité' : 'Quality Grade'),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              isDense: true,
               value: _quality,
               dropdownColor: _surface,
               style: const TextStyle(color: _text),
@@ -1677,6 +1683,8 @@ Submit your request for an in-depth analysis by our agronomists.''';
             _formCard(children: [
               _fieldLabel(isFr ? 'Type de sol *' : 'Soil Type *'),
               DropdownButtonFormField<String>(
+                isExpanded: true,
+                isDense: true,
                 value: _soilType,
                 dropdownColor: _surface,
                 style: const TextStyle(color: _text),
@@ -1703,6 +1711,8 @@ Submit your request for an in-depth analysis by our agronomists.''';
               const SizedBox(height: 14),
               _fieldLabel(isFr ? 'Saison de culture' : 'Growing Season'),
               DropdownButtonFormField<String>(
+                isExpanded: true,
+                isDense: true,
                 value: _season,
                 dropdownColor: _surface,
                 style: const TextStyle(color: _text),
@@ -1853,6 +1863,8 @@ Our agronomists can help with a personalized treatment plan.''',
               const SizedBox(height: 14),
               _fieldLabel(isFr ? 'Partie affectée' : 'Affected Part'),
               DropdownButtonFormField<String>(
+                isExpanded: true,
+                isDense: true,
                 value: _affected,
                 dropdownColor: _surface,
                 style: const TextStyle(color: _text),
@@ -2203,6 +2215,8 @@ class _ThinkTankScreenState extends State<_ThinkTankScreen> {
         const SizedBox(height: 12),
         _fieldLabel(isFr ? 'Urgence' : 'Urgency'),
         DropdownButtonFormField<String>(
+          isExpanded: true,
+          isDense: true,
           value: _urgency,
           dropdownColor: _surface,
           style: const TextStyle(color: _text),
@@ -2490,6 +2504,8 @@ Sun: Maintenance and inspection
               const SizedBox(height: 14),
               _fieldLabel(isFr ? 'Système d\'irrigation' : 'Irrigation System'),
               DropdownButtonFormField<String>(
+                isExpanded: true,
+                isDense: true,
                 value: _system,
                 dropdownColor: _surface,
                 style: const TextStyle(color: _text),
@@ -2517,6 +2533,8 @@ Sun: Maintenance and inspection
               const SizedBox(height: 14),
               _fieldLabel(isFr ? 'Saison' : 'Season'),
               DropdownButtonFormField<String>(
+                isExpanded: true,
+                isDense: true,
                 value: _season,
                 dropdownColor: _surface,
                 style: const TextStyle(color: _text),
@@ -2814,6 +2832,8 @@ Thank you for registering! We look forward to working with you.''',
               const SizedBox(height: 14),
               _fieldLabel(isFr ? 'Thème de formation *' : 'Training Topic *'),
               DropdownButtonFormField<String>(
+                isExpanded: true,
+                isDense: true,
                 value: _topic,
                 dropdownColor: _surface,
                 style: const TextStyle(color: _text),
@@ -3075,6 +3095,8 @@ Email: **${_emailCtrl.text}**
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    isDense: true,
                     initialValue: _filterRegion,
                     dropdownColor: _surface,
                     style: const TextStyle(color: _text),
@@ -3244,6 +3266,8 @@ Email: **${_emailCtrl.text}**
                         const SizedBox(height: 12),
                         _fieldLabel(isFr ? 'Pays *' : 'Country *'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          isDense: true,
                           initialValue: _country,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
@@ -3261,6 +3285,8 @@ Email: **${_emailCtrl.text}**
                         const SizedBox(height: 12),
                         _fieldLabel(isFr ? 'Région / commune *' : 'Region / district *'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          isDense: true,
                           initialValue: _farmRegion,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
@@ -3321,7 +3347,6 @@ Email: **${_emailCtrl.text}**
                         Row(
                           children: [
                             Expanded(
-                              flex: 3,
                               child: _validatedField(
                                 _areaCtrl,
                                 isFr ? 'Ex: 2.5' : 'e.g. 2.5',
@@ -3338,11 +3363,14 @@ Email: **${_emailCtrl.text}**
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
+                            SizedBox(
+                              width: 90,
                               child: DropdownButtonFormField<String>(
+                                isExpanded: true,
+                                isDense: true,
                                 initialValue: _areaUnit,
                                 dropdownColor: _surface,
-                                style: const TextStyle(color: _text),
+                                style: const TextStyle(color: _text, fontSize: 13),
                                 decoration: _inputDecoration(''),
                                 items: [
                                   DropdownMenuItem(
@@ -3369,6 +3397,8 @@ Email: **${_emailCtrl.text}**
                         const SizedBox(height: 12),
                         _fieldLabel(isFr ? 'Irrigation *' : 'Irrigation *'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          isDense: true,
                           initialValue: _irrigation,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),

@@ -2,4 +2,5 @@
 <resources>
   <color name="ic_launcher_background">#1a3c2e</color>
   <color name="darkBackground">#0d1f17</color>
+  <color name="appBackground">#060f0a</color>
 </resources>

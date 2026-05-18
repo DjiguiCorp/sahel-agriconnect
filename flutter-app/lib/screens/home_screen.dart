@@ -295,28 +295,23 @@ class _HomeScreenState extends State<HomeScreen> {
       context.go('/home');
       return;
     }
-    final route = _dashboardRouteForRole(auth.role);
-    if (route != null) {
-      context.go(route);
-    } else {
-      context.go('/home');
-    }
+    context.go(_dashboardRoute(auth.role));
   }
 
-  int? _categoryIndexForRole(AuthRole role) {
-    switch (role) {
-      case AuthRole.farmer:
-        return 0;
-      case AuthRole.investor:
-        return 1;
-      case AuthRole.cooperative:
-        return 2;
+  AuthRole? _roleForCategoryIndex(int index) {
+    switch (index) {
+      case 0:
+        return AuthRole.farmer;
+      case 1:
+        return AuthRole.investor;
+      case 2:
+        return AuthRole.cooperative;
       default:
         return null;
     }
   }
 
-  String? _dashboardRouteForRole(AuthRole role) {
+  String _dashboardRoute(AuthRole role) {
     switch (role) {
       case AuthRole.farmer:
         return '/farmer';
@@ -331,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case AuthRole.processor:
         return '/processor';
       default:
-        return null;
+        return '/home';
     }
   }
 
@@ -435,13 +430,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openCategory(int index, AuthState auth) {
-    if (auth.isLoggedIn &&
-        _categoryIndexForRole(auth.role) == index) {
-      final route = _dashboardRouteForRole(auth.role);
-      if (route != null) {
-        context.go(route);
-        return;
-      }
+    if (auth.isLoggedIn) {
+      context.go(_dashboardRoute(auth.role));
+      return;
     }
     context.go(_guestPaths[index]);
   }
@@ -698,7 +689,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Scaffold(
         resizeToAvoidBottomInset: true,
         extendBody: true,
-        backgroundColor: AppColors.darkBg,
+        backgroundColor: const Color(0xFF0d1f17),
         bottomNavigationBar: BottomNavigationBar(
           backgroundColor: const Color(0xFF1a3c2e),
           selectedItemColor: AppColors.gold,
@@ -1052,7 +1043,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Text(
-                  lp.t('Tap to preview', 'Toucher pour aperçu'),
+                  auth.isLoggedIn
+                      ? lp.t('Tap to open your portal', 'Ouvrir votre portail')
+                      : lp.t('Tap to preview', 'Toucher pour aperçu'),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 11,
@@ -1072,10 +1065,14 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, i) {
                 final c = _categories[i];
                 final selected = i == _selectedCategory;
+                final cardRole = _roleForCategoryIndex(i);
                 return _CategoryCard(
                   category: c,
                   selected: selected,
                   isFr: lp.isFr,
+                  showSignedInBadge: auth.isLoggedIn &&
+                      cardRole != null &&
+                      auth.role == cardRole,
                   onTap: () {
                     setState(() {
                       _selectedCategory = i;
@@ -1194,15 +1191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 if (auth.isLoggedIn) {
-                                  final route =
-                                      _dashboardRouteForRole(auth.role);
-                                  if (route != null &&
-                                      _categoryIndexForRole(auth.role) ==
-                                          _selectedCategory) {
-                                    context.go(route);
-                                    return;
-                                  }
-                                  _goSignIn(cat.loginRoute);
+                                  context.go(_dashboardRoute(auth.role));
                                   return;
                                 }
                                 _showSignInRequiredModal(
@@ -2178,12 +2167,14 @@ class _CategoryCard extends StatelessWidget {
   final _Category category;
   final bool selected;
   final bool isFr;
+  final bool showSignedInBadge;
   final VoidCallback onTap;
 
   const _CategoryCard({
     required this.category,
     required this.selected,
     required this.isFr,
+    this.showSignedInBadge = false,
     required this.onTap,
   });
 
@@ -2202,44 +2193,84 @@ class _CategoryCard extends StatelessWidget {
         backgroundColor: selected
             ? category.accent.withValues(alpha: 0.14)
             : Colors.white.withValues(alpha: 0.04),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: category.accent.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(category.emoji, style: const TextStyle(fontSize: 18)),
-            ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  isFr ? category.titleFr : category.titleEn,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: category.accent.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  child: Text(category.emoji,
+                      style: const TextStyle(fontSize: 18)),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  isFr ? category.descFr : category.descEn,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 10.5,
-                    height: 1.3,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isFr ? category.titleFr : category.titleEn,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isFr ? category.descFr : category.descEn,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontSize: 10.5,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
+            if (showSignedInBadge)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1D9E75).withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        isFr ? 'Connecté' : 'Signed in',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),

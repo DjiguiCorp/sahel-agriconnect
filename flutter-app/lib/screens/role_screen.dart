@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../core/auth_state.dart';
 import '../core/language_provider.dart';
 import '../core/theme.dart';
 import '../core/glass.dart';
@@ -90,12 +91,33 @@ class RoleScreen extends StatelessWidget {
     ),
   ];
 
+  static String _dashboardRoute(AuthRole role) {
+    switch (role) {
+      case AuthRole.farmer:
+        return '/farmer';
+      case AuthRole.investor:
+        return '/investor';
+      case AuthRole.cooperative:
+        return '/cooperative';
+      case AuthRole.government:
+        return '/government';
+      case AuthRole.ngo:
+        return '/ngo';
+      case AuthRole.processor:
+        return '/processor';
+      default:
+        return '/home';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final langProvider = context.watch<LanguageProvider>();
+    final auth = context.watch<AuthState>();
     final isFr = langProvider.locale.languageCode == 'fr';
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0d1f17),
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: IconButton(
@@ -202,7 +224,13 @@ class RoleScreen extends StatelessWidget {
                         backgroundColor: role.isHighlighted
                             ? role.accent.withValues(alpha: 0.08)
                             : Colors.white.withValues(alpha: 0.05),
-                        onTap: () => context.go(role.route),
+                        onTap: () {
+                          if (auth.isLoggedIn) {
+                            context.go(_dashboardRoute(auth.role));
+                          } else {
+                            context.go(role.route);
+                          }
+                        },
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

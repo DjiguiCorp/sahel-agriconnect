@@ -130,14 +130,14 @@ class _SahelAppState extends State<SahelApp> {
       child: MaterialApp.router(
         title: 'Sahel AgriConnect',
         debugShowCheckedModeBanner: false,
-        color: AppColors.darkBg,
+        color: const Color(0xFF060f0a),
         theme: AppTheme.light.copyWith(
-          scaffoldBackgroundColor: AppColors.darkBg,
-          canvasColor: AppColors.darkBg,
+          scaffoldBackgroundColor: const Color(0xFF060f0a),
+          canvasColor: const Color(0xFF060f0a),
         ),
         darkTheme: AppTheme.dark.copyWith(
-          scaffoldBackgroundColor: AppColors.darkBg,
-          canvasColor: AppColors.darkBg,
+          scaffoldBackgroundColor: const Color(0xFF060f0a),
+          canvasColor: const Color(0xFF060f0a),
         ),
         themeMode: ThemeMode.dark,
         routerConfig: appRouter,
