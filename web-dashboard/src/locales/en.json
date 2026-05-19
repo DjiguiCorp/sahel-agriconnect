@@ -38,6 +38,12 @@
     "logout": "Logout",
     "registerFarmer": "Farmer registration"
   },
+  "cookies": {
+    "message": "We use cookies for session management only.",
+    "privacyPolicy": "Privacy Policy",
+    "decline": "Decline",
+    "accept": "Accept"
+  },
   "home": {
     "title": "Sahel AgriConnect",
     "hero": {
