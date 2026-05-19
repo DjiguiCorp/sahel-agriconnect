@@ -56,7 +56,7 @@ const Header = () => {
   );
 
   const navLinkClass =
-    'text-lg text-gray-700 hover:text-brand-forest transition-colors font-medium py-2 md:py-0';
+    'text-base text-gray-700 hover:text-brand-forest transition-colors font-medium px-2 py-2 lg:px-3 whitespace-nowrap';
 
   const closeMenu = () => {
     setIsMenuOpen(false);
@@ -110,8 +110,8 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-white shadow-md">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-50">
-        <div className="flex items-center justify-between min-h-[4rem] gap-2">
-          <Link to="/" className="flex items-center gap-3 flex-shrink-0" onClick={closeMenu}>
+        <div className="flex items-center justify-between min-h-[4rem] gap-4 lg:gap-6">
+          <Link to="/" className="flex items-center gap-3 shrink-0 min-w-0 max-w-[42%] sm:max-w-none" onClick={closeMenu}>
             <img
               src="/sahel-logo.png"
               alt="Sahel AgriConnect"
@@ -122,7 +122,11 @@ const Header = () => {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center flex-wrap justify-end gap-x-3 gap-y-2 lg:gap-x-4">
+          <div
+            role="navigation"
+            className="hidden lg:flex flex-1 items-center justify-center gap-0.5 xl:gap-1 min-w-0 px-6"
+            aria-label={isFr ? 'Navigation principale' : 'Main navigation'}
+          >
             <Link to="/" className={navLinkClass}>
               {t('nav.home')}
             </Link>
@@ -207,21 +211,22 @@ const Header = () => {
 
             <Link
               to="/afri-yield"
-              className="text-lg font-semibold py-2 md:py-0 text-[#B5850A] hover:text-[#9a7109] transition-colors"
+              className={`${navLinkClass} font-semibold text-[#B5850A] hover:text-[#9a7109]`}
             >
               {isFr ? 'Investir' : 'Invest'}
             </Link>
+          </div>
 
+          <div className="hidden md:flex items-center gap-4 lg:gap-5 shrink-0 pl-4 lg:pl-6 border-l border-gray-200">
             {isRegistered && (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-500 max-w-[10rem] truncate" title={userName || ''}>
-                  {isFr ? 'Bonjour' : 'Hi'}{' '}
-                  {userName?.split(' ')[0] || ''}
+              <div className="hidden xl:flex items-center gap-2 max-w-[9rem]">
+                <span className="text-sm text-gray-500 truncate" title={userName || ''}>
+                  {isFr ? 'Bonjour' : 'Hi'} {userName?.split(' ')[0] || ''}
                 </span>
                 <button
                   type="button"
                   onClick={clearUser}
-                  className="text-xs text-gray-400 hover:text-gray-600 transition"
+                  className="text-xs text-gray-400 hover:text-gray-600 transition shrink-0"
                   title={isFr ? 'Se déconnecter' : 'Sign out'}
                 >
                   ×
@@ -231,13 +236,16 @@ const Header = () => {
 
             <LanguageSelector />
 
-            <Link to="/inscription" className="btn-primary text-base whitespace-nowrap">
+            <Link
+              to="/inscription"
+              className="btn-primary text-sm lg:text-base whitespace-nowrap px-5 py-2.5 shadow-sm"
+            >
               {isFr ? 'Rejoindre' : 'Join'}
             </Link>
 
             <button
               type="button"
-              className="text-sm font-medium text-gray-500 hover:text-brand-forest whitespace-nowrap"
+              className="hidden lg:inline text-sm font-medium text-gray-600 hover:text-brand-forest whitespace-nowrap border-l border-gray-200 pl-5"
               onClick={handleDownloadApp}
             >
               {t('nav.downloadApp')}
@@ -342,6 +350,10 @@ const Header = () => {
               <button type="button" className={`${navLinkClass} text-left`} onClick={handleDownloadApp}>
                 {t('nav.downloadApp')}
               </button>
+
+              <div className="pt-4">
+                <LanguageSelector />
+              </div>
 
               {isRegistered ? (
                 <button

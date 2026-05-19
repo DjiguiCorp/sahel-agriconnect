@@ -4,8 +4,8 @@ const LanguageSelector = () => {
   const { i18n } = useTranslation();
 
   const languages = [
-    { code: 'fr', name: 'FR', nativeName: 'Français' },
-    { code: 'en', name: 'EN', nativeName: 'English' }
+    { code: 'fr', label: 'FR' },
+    { code: 'en', label: 'EN' },
   ];
 
   const changeLanguage = (lng) => {
@@ -19,22 +19,31 @@ const LanguageSelector = () => {
   })();
 
   return (
-    <div className="relative">
-      <select
-        value={activeCode}
-        onChange={(e) => changeLanguage(e.target.value)}
-        className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent cursor-pointer"
-        aria-label="Sélectionner la langue"
-      >
-        {languages.map((lang) => (
-          <option key={lang.code} value={lang.code}>
-            {lang.name} - {lang.nativeName}
-          </option>
-        ))}
-      </select>
+    <div
+      role="group"
+      aria-label="Language"
+      className="inline-flex shrink-0 rounded-lg border border-gray-200 bg-gray-50/80 p-0.5"
+    >
+      {languages.map((lang) => {
+        const active = activeCode === lang.code;
+        return (
+          <button
+            key={lang.code}
+            type="button"
+            onClick={() => changeLanguage(lang.code)}
+            className={`min-w-[2.5rem] rounded-md px-3 py-1.5 text-xs font-semibold tracking-wide transition ${
+              active
+                ? 'bg-white text-brand-forest shadow-sm'
+                : 'text-gray-500 hover:text-brand-forest'
+            }`}
+            aria-pressed={active}
+          >
+            {lang.label}
+          </button>
+        );
+      })}
     </div>
   );
 };
 
 export default LanguageSelector;
-

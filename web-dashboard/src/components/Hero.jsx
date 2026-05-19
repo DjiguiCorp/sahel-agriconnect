@@ -89,17 +89,17 @@ const Hero = () => {
       <HeroBackdrop />
 
       <div className="section-container relative z-10 py-20 md:py-28 lg:py-32">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/90 backdrop-blur-sm animate-fade-up">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-amber animate-hero-pulse" aria-hidden />
+        <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
+          <HeroIcon />
+
+          <p className="mt-6 flex max-w-md items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-[11px] font-semibold uppercase leading-snug tracking-wider text-white/90 backdrop-blur-sm sm:text-xs animate-fade-up [animation-delay:100ms]">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-amber animate-hero-pulse" aria-hidden />
             {t('home.hero.badge')}
           </p>
 
-          <HeroIcon />
-
           <h1
             id="hero-heading"
-            className="mb-6 text-4xl font-bold italic leading-tight tracking-wide text-brand-amber md:text-5xl lg:text-6xl animate-fade-up [animation-delay:120ms]"
+            className="mt-8 mb-6 text-4xl font-bold italic leading-tight tracking-wide text-brand-amber md:text-5xl lg:text-6xl animate-fade-up [animation-delay:160ms]"
           >
             {t('home.hero.tagline')}
           </h1>
@@ -149,8 +149,8 @@ const Hero = () => {
 
 function HeroIcon() {
   return (
-    <div className="mb-8 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-lg backdrop-blur-md animate-fade-up [animation-delay:80ms]">
-      <Sprout className="h-9 w-9 text-brand-cream" aria-hidden />
+    <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-lg backdrop-blur-md animate-fade-up">
+      <Sprout className="h-10 w-10 text-brand-cream" aria-hidden />
     </div>
   );
 }
