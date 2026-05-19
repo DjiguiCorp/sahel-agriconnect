@@ -88,11 +88,11 @@ const Hero = () => {
     <section className="relative overflow-hidden text-white" aria-labelledby="hero-heading">
       <HeroBackdrop />
 
-      <div className="section-container relative z-10 py-20 md:py-28 lg:py-32">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
         <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
           <HeroIcon />
 
-          <p className="mt-6 flex max-w-md items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-[11px] font-semibold uppercase leading-snug tracking-wider text-white/90 backdrop-blur-sm sm:text-xs animate-fade-up [animation-delay:100ms]">
+          <p className="mt-4 flex max-w-md items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-[11px] font-semibold uppercase leading-snug tracking-wider text-white/90 backdrop-blur-sm sm:text-xs animate-fade-up [animation-delay:100ms]">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-amber animate-hero-pulse" aria-hidden />
             {t('home.hero.badge')}
           </p>
@@ -104,7 +104,7 @@ const Hero = () => {
             {t('home.hero.tagline')}
           </h1>
 
-          <p className="mx-auto mb-10 max-w-2xl text-lg font-light leading-relaxed text-white/90 md:text-xl animate-fade-up [animation-delay:180ms]">
+          <p className="mx-auto mb-6 max-w-2xl text-lg font-light leading-relaxed text-white/90 md:text-xl animate-fade-up [animation-delay:180ms]">
             {t('home.hero.lead')}
           </p>
 
@@ -112,7 +112,7 @@ const Hero = () => {
 
           <div
             id="get-app"
-            className="mx-auto mb-12 max-w-lg rounded-2xl border border-white/15 bg-black/15 p-6 backdrop-blur-md animate-fade-up [animation-delay:300ms]"
+            className="mx-auto mb-8 max-w-lg rounded-2xl border border-white/15 bg-black/15 p-5 backdrop-blur-md animate-fade-up [animation-delay:300ms]"
           >
             <div className="mb-4 flex items-center justify-center gap-2 text-brand-amber">
               <Smartphone className="h-5 w-5" aria-hidden />
@@ -157,7 +157,7 @@ function HeroIcon() {
 
 function HeroCta({ joinLabel }) {
   return (
-    <div className="mb-14 flex justify-center animate-fade-up [animation-delay:240ms]">
+    <div className="mb-8 flex justify-center animate-fade-up [animation-delay:240ms]">
       <Link
         to="/cooperative-registration"
         className="inline-flex items-center justify-center rounded-xl bg-brand-cream px-10 py-4 text-base font-semibold text-brand-forest shadow-lg transition hover:-translate-y-0.5 hover:bg-white hover:shadow-xl"

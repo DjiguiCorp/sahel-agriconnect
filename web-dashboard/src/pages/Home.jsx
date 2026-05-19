@@ -178,7 +178,7 @@ const Home = () => {
             : 'Choose your profile to get started on the pan-African platform'
         }
       >
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 lg:gap-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 md:gap-4">
           {roleCards.map((card) => (
             <GlassRoleCard key={card.title} {...card} />
           ))}
@@ -195,7 +195,7 @@ const Home = () => {
             : 'Sahel AgriConnect addresses major agricultural challenges across Africa and the diaspora'
         }
       >
-        <div className="grid gap-6 md:grid-cols-2 md:gap-7 lg:grid-cols-3 lg:gap-8">
+        <div className="grid gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
           {problemCards.map((card, index) => (
             <GlassFeatureCard
               key={card.title}
@@ -218,7 +218,7 @@ const Home = () => {
             : 'Complete, sovereign, and secure agricultural infrastructure — designed for Africa.'
         }
       >
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
           {platformFeatures.map((f) => (
             <GlassEmojiFeature key={f.title} icon={f.icon} title={f.title} description={f.desc} />
           ))}
@@ -235,7 +235,7 @@ const Home = () => {
             : 'Built and supported by institutions committed to sovereign agricultural transformation in Africa.'
         }
       >
-        <div className="grid gap-6 md:grid-cols-3 lg:gap-8">
+        <div className="grid gap-4 md:grid-cols-3 lg:gap-6">
           <GlassPartnerCard
             monogram="DC"
             title="Djigui Corporation"
@@ -292,7 +292,7 @@ const Home = () => {
           processorStats={processorStats}
           isFr={isFr}
         />
-        <div className="mt-10 grid gap-5 md:grid-cols-3 lg:gap-6">
+        <div className="mt-6 grid gap-4 md:grid-cols-3 lg:gap-5">
           {[
             {
               icon: '✅',
@@ -321,21 +321,21 @@ const Home = () => {
         </div>
       </HomeSection>
 
-      <section id="rejoindre" className="relative overflow-hidden py-16 md:py-24">
+      <section id="rejoindre" className="relative overflow-hidden py-10 md:py-14">
         <div
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(82,183,136,0.12),transparent),radial-gradient(ellipse_60%_50%_at_0%_100%,rgba(233,196,106,0.1),transparent)]"
           aria-hidden
         />
-        <div className="section-container relative z-10 max-w-5xl">
-          <div className="mb-10 text-center">
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-forest/70">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="mb-6 text-center">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-forest/70">
               {isFr ? 'Rejoindre' : 'Join us'}
             </p>
             <h2 className="text-3xl font-bold text-brand-forest md:text-4xl">
               {isFr ? 'Prêt à transformer l\'agriculture ?' : 'Ready to transform agriculture?'}
             </h2>
           </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
+          <div className="grid gap-4 md:grid-cols-2 lg:gap-6">
             <GlassCtaPanel
               variant="forest"
               eyebrow={isFr ? 'Agriculteurs & Coopératives' : 'Farmers & Cooperatives'}
@@ -415,7 +415,7 @@ function MissionStats({ farmerStats, coopStats, processorStats, isFr }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
       {stats.map((stat) => (
         <GlassStat key={stat.label} icon={stat.icon} value={stat.value} label={stat.label} />
       ))}

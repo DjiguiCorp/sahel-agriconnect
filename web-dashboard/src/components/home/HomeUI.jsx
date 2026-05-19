@@ -36,12 +36,12 @@ export function HomeSection({
   const alignClass = align === 'center' ? 'text-center mx-auto' : 'text-left';
 
   return (
-    <section id={id} className={`py-16 md:py-24 lg:py-28 ${bg} ${className}`}>
-      <div className="section-container relative z-10">
+    <section id={id} className={`py-10 md:py-14 lg:py-16 ${bg} ${className}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {(eyebrow || title || subtitle) && (
-          <header className={`mb-12 md:mb-16 max-w-3xl ${alignClass}`}>
+          <header className={`mb-8 md:mb-10 max-w-3xl ${alignClass}`}>
             {eyebrow ? (
-              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-forest/10 bg-white/50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-forest/80 backdrop-blur-md">
+              <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-brand-forest/10 bg-white/50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-forest/80 backdrop-blur-md">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-amber" aria-hidden />
                 {eyebrow}
               </p>
@@ -54,7 +54,7 @@ export function HomeSection({
               </h2>
             ) : null}
             {subtitle ? (
-              <p className={`mt-4 text-base md:text-lg leading-relaxed ${subtitleClassName}`}>{subtitle}</p>
+              <p className={`mt-3 text-base leading-relaxed ${subtitleClassName}`}>{subtitle}</p>
             ) : null}
           </header>
         )}
@@ -68,7 +68,7 @@ export function GlassCard({
   children,
   className = '',
   hover = true,
-  padding = 'p-6 md:p-8',
+  padding = 'p-5 md:p-6',
   as: Tag = 'div',
   ...rest
 }) {
@@ -101,7 +101,7 @@ export function GlassFeatureCard({ icon: Icon, title, description, index = 0, cl
 
   return (
     <GlassCard className={className}>
-      <div className="mb-5 flex items-start gap-4">
+      <div className="mb-4 flex items-start gap-3">
         <span
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg shadow-brand-forest/15`}
         >
@@ -116,7 +116,7 @@ export function GlassFeatureCard({ icon: Icon, title, description, index = 0, cl
 
 export function GlassEmojiFeature({ icon, title, description, className = '' }) {
   return (
-    <GlassCard className={`flex gap-4 !p-5 md:!p-6 ${className}`}>
+    <GlassCard className={`flex gap-3 !p-4 md:!p-5 ${className}`}>
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/80 bg-white/60 text-xl backdrop-blur-sm">
         {icon}
       </span>
@@ -135,16 +135,16 @@ export function GlassPartnerCard({ monogram, title, description, badge, accent =
       : 'bg-gradient-to-br from-brand-forest to-[#2d5a45]';
 
   return (
-    <GlassCard className="flex flex-col items-center text-center !p-8">
+    <GlassCard className="flex flex-col items-center text-center !p-6">
       <span
-        className={`mb-5 flex h-16 w-16 items-center justify-center rounded-2xl ${monogramBg} text-xl font-bold text-white shadow-lg`}
+        className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${monogramBg} text-lg font-bold text-white shadow-lg`}
       >
         {monogram}
       </span>
       <h3 className="text-lg font-bold text-brand-forest">{title}</h3>
-      <p className="mt-3 text-sm leading-relaxed text-gray-600">{description}</p>
+      <p className="mt-2 text-sm leading-relaxed text-gray-600">{description}</p>
       {badge ? (
-        <span className="mt-5 inline-flex rounded-full border border-brand-amber/30 bg-brand-amber/15 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-brand-forest">
+        <span className="mt-4 inline-flex rounded-full border border-brand-amber/30 bg-brand-amber/15 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-brand-forest">
           {badge}
         </span>
       ) : null}
@@ -154,8 +154,8 @@ export function GlassPartnerCard({ monogram, title, description, badge, accent =
 
 export function GlassRoleCard({ emoji, title, description, to }) {
   return (
-    <GlassCard as={Link} to={to} className="flex flex-col items-center text-center !p-6 md:!p-7">
-      <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/80 bg-gradient-to-br from-white/80 to-brand-iconBg/80 text-3xl shadow-inner">
+    <GlassCard as={Link} to={to} className="flex flex-col items-center text-center !p-5 md:!p-6">
+      <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/80 bg-gradient-to-br from-white/80 to-brand-iconBg/80 text-3xl shadow-inner">
         {emoji}
       </span>
       <h3 className="font-bold text-brand-forest">{title}</h3>
@@ -166,7 +166,7 @@ export function GlassRoleCard({ emoji, title, description, to }) {
 
 export function GlassStat({ icon, value, label }) {
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-white/15 bg-white/10 px-4 py-6 text-center backdrop-blur-md">
+    <div className="flex flex-col items-center rounded-2xl border border-white/15 bg-white/10 px-3 py-4 text-center backdrop-blur-md">
       <span className="mb-2 text-2xl" aria-hidden>
         {icon}
       </span>
@@ -178,7 +178,7 @@ export function GlassStat({ icon, value, label }) {
 
 export function GlassDarkCard({ icon, title, description }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/15 bg-white/10 p-6 backdrop-blur-xl transition duration-300 hover:border-brand-amber/40 hover:bg-white/15">
+    <div className="group relative overflow-hidden rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-xl transition duration-300 hover:border-brand-amber/40 hover:bg-white/15">
       <div
         className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-brand-amber/10 blur-2xl transition group-hover:bg-brand-amber/20"
         aria-hidden
@@ -198,7 +198,7 @@ export function GlassCtaPanel({ variant, eyebrow, title, description, children }
 
   return (
     <div
-      className={`relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/20 p-8 md:p-10 backdrop-blur-sm ${shell}`}
+      className={`relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/20 p-6 md:p-8 backdrop-blur-sm ${shell}`}
     >
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(255,255,255,0.12),transparent_50%)]"
@@ -210,12 +210,12 @@ export function GlassCtaPanel({ variant, eyebrow, title, description, children }
         >
           {eyebrow}
         </span>
-        <h3 className="mt-3 text-2xl font-bold">{title}</h3>
-        <p className={`mt-3 text-sm leading-relaxed ${isForest ? 'text-gray-300' : 'text-brand-forest/80'}`}>
+        <h3 className="mt-2 text-xl font-bold md:text-2xl">{title}</h3>
+        <p className={`mt-2 text-sm leading-relaxed ${isForest ? 'text-gray-300' : 'text-brand-forest/80'}`}>
           {description}
         </p>
       </div>
-      <div className="relative mt-8 flex flex-col gap-3">{children}</div>
+      <div className="relative mt-6 flex flex-col gap-2.5">{children}</div>
     </div>
   );
 }
