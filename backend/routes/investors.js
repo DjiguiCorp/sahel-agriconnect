@@ -6,6 +6,7 @@ import { authenticateInvestor, authenticateToken } from '../middleware/auth.js';
 import { confirmInvestorRegistration, notifyAdminNewInvestor } from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import jwt from 'jsonwebtoken';
+import { normalizeInvestorResidence } from '../constants/investorResidenceCountries.js';
 
 const router = express.Router();
 
@@ -67,11 +68,20 @@ router.post('/register', async (req, res) => {
     } = req.body;
     const heardFrom = req.body.heardFrom ?? req.body.heardAbout ?? '';
 
+    const residence = normalizeInvestorResidence(countryOfResidence);
+    if (!residence) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Country of residence must be United States, France, Canada, or United Kingdom for AfriYield investor registration.',
+      });
+    }
+
     const investor = await Investor.create({
       fullName,
       email,
       phone,
-      countryOfResidence,
+      countryOfResidence: residence,
       investmentTrack: mapInvestmentTrack(investmentTrack),
       commodityInterest: mapCommodityInterest(req.body),
       investmentRange,

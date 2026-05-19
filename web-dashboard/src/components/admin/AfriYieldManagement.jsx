@@ -36,9 +36,6 @@ const COUNTRIES = [
   'France',
   'United Kingdom',
   'United States',
-  'UAE',
-  'Netherlands',
-  'Belgium',
 ];
 
 const INVESTOR_STATUSES = [

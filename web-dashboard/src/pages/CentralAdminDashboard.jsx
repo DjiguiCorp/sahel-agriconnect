@@ -27,6 +27,7 @@ import Modal from '../components/Modal';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
 import { useGeolocation } from '../hooks/useGeolocation';
+import { DEFAULT_INVESTOR_RESIDENCE, INVESTOR_RESIDENCE_COUNTRIES } from '../data/investorResidenceCountries';
 import {
   Sprout,
   Handshake,
@@ -201,7 +202,7 @@ function OverviewControlTower({ onGoTab }) {
     fullName: '',
     email: '',
     phone: '',
-    countryOfResidence: '',
+    countryOfResidence: DEFAULT_INVESTOR_RESIDENCE,
     investmentTrack: 'Both Tracks',
     commodityInterest: ['Both'],
     investmentRange: '',
@@ -671,11 +672,17 @@ function OverviewControlTower({ onGoTab }) {
           </label>
           <label className="block space-y-1">
             <span className="text-sm font-medium text-gray-700">{t('adminDashboard.investorForm.country')}</span>
-            <input
+            <select
               value={investorForm.countryOfResidence}
               onChange={(e) => setInvestorForm((p) => ({ ...p, countryOfResidence: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
-            />
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange bg-white"
+            >
+              {INVESTOR_RESIDENCE_COUNTRIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="block space-y-1">
             <span className="text-sm font-medium text-gray-700">{t('adminDashboard.investorForm.range')}</span>

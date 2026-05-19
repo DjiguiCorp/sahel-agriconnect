@@ -115,7 +115,7 @@ const Home = () => {
       desc: isFr
         ? 'Suivi des politiques agricoles et données nationales'
         : 'Monitor agricultural policies and national data',
-      to: '/government-portal',
+      to: '/platform-licensing?type=government',
     },
   ];
 

@@ -6,7 +6,9 @@ import Farmer from '../models/Farmer.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import Processor from '../models/Processor.js';
 import PendingNotification from '../models/PendingNotification.js';
+import GovernmentDirective from '../models/GovernmentDirective.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { buildTerritoryIntelligence } from '../services/governmentTerritoryService.js';
 
 // Accepted institutional domain patterns — covers all 54 African countries.
 const GOVERNMENT_DOMAINS = [
@@ -143,6 +145,103 @@ function validateInstitutionalEmail(email, orgType) {
   }
 
   return { valid: true };
+}
+
+function validateOfficialKyc(kyc) {
+  if (!kyc || typeof kyc !== 'object') {
+    return { valid: false, error: 'Official verification (KYC) is required for this action.' };
+  }
+  const required = [
+    'fullLegalName',
+    'officialTitle',
+    'ministryDepartment',
+    'governmentIdNumber',
+    'authorizationReference',
+    'officialPhone',
+    'officialEmail',
+  ];
+  for (const field of required) {
+    if (!String(kyc[field] || '').trim()) {
+      return { valid: false, error: `Missing required field: ${field}` };
+    }
+  }
+  if (!kyc.digitalSignatureAck) {
+    return { valid: false, error: 'Digital authorization acknowledgment is required.' };
+  }
+  return { valid: true };
+}
+
+async function broadcastDirectiveNotifications(directive, country) {
+  const targets = directive.targetAudience?.length ? directive.targetAudience : ['all'];
+  const regionFilter = directive.targetRegions?.length
+    ? {
+        $or: directive.targetRegions.map((r) => ({
+          $or: [{ region: new RegExp(r, 'i') }, { zone: new RegExp(r, 'i') }],
+        })),
+      }
+    : null;
+
+  let broadcastCount = 0;
+  const notifications = [];
+  const org = directive.organization || 'Government';
+  const msg = `🏛️ ${org} (${country}) — ${directive.title}\n\n${directive.body}\n\nConsultez Sahel AgriConnect pour les détails officiels.`;
+
+  const farmerBase = { $or: [{ country }, { pays: country }] };
+  if (regionFilter) Object.assign(farmerBase, regionFilter);
+
+  if (targets.includes('farmers') || targets.includes('all')) {
+    const farmers = await Farmer.find(farmerBase).select('nom telephone email').lean();
+    farmers.forEach((f) => {
+      notifications.push({
+        recipientName: f.nom,
+        recipientPhone: f.telephone,
+        recipientEmail: f.email,
+        message: msg,
+        source: `government_directive_${directive.directiveType}`,
+        status: 'pending',
+      });
+      broadcastCount++;
+    });
+  }
+
+  if (targets.includes('cooperatives') || targets.includes('all')) {
+    const coopFilter = { country };
+    if (directive.assignedCooperativeIds?.length) {
+      coopFilter._id = { $in: directive.assignedCooperativeIds };
+    }
+    const coops = await CooperativePlatformRegistration.find(coopFilter)
+      .select('cooperativeName nomCooperative email phone')
+      .lean();
+    coops.forEach((c) => {
+      notifications.push({
+        recipientName: c.cooperativeName || c.nomCooperative,
+        recipientEmail: c.email,
+        recipientPhone: c.phone,
+        message: msg,
+        source: `government_directive_${directive.directiveType}`,
+        status: 'pending',
+      });
+      broadcastCount++;
+    });
+  }
+
+  if (targets.includes('processors') || targets.includes('all')) {
+    const processors = await Processor.find({ country }).select('nom email telephone').lean();
+    processors.forEach((p) => {
+      notifications.push({
+        recipientName: p.nom,
+        recipientEmail: p.email,
+        recipientPhone: p.telephone,
+        message: msg,
+        source: `government_directive_${directive.directiveType}`,
+        status: 'pending',
+      });
+      broadcastCount++;
+    });
+  }
+
+  if (notifications.length) await PendingNotification.insertMany(notifications);
+  return broadcastCount;
 }
 
 const router = express.Router();
@@ -364,6 +463,8 @@ router.get('/dashboard', authGov, async (req, res) => {
         .lean(),
     ]);
 
+    const territory = await buildTerritoryIntelligence(country);
+
     res.json({
       success: true,
       country,
@@ -376,7 +477,10 @@ router.get('/dashboard', authGov, async (req, res) => {
         projects,
         activeProjects,
         totalResponses: totalResponses[0]?.total || 0,
+        totalArableHa: territory.summary.totalArableHa,
+        activeFarmers: territory.summary.activeFarmers,
       },
+      territorySummary: territory.summary,
       recentNotifications,
       projects: recentProjects,
     });
@@ -568,6 +672,166 @@ router.post('/projects/:id/respond', async (req, res) => {
     });
     await project.save();
     res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// GET /api/government/territory — regional intelligence (country-scoped)
+router.get('/territory', authGov, async (req, res) => {
+  try {
+    const { region } = req.query;
+    const data = await buildTerritoryIntelligence(req.govAdmin.country, { region });
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/government/directives
+router.get('/directives', authGov, async (req, res) => {
+  try {
+    const directives = await GovernmentDirective.find({ country: req.govAdmin.country })
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json({ success: true, directives });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/government/directives — official action with enhanced KYC
+router.post('/directives', authGov, async (req, res) => {
+  try {
+    const kycCheck = validateOfficialKyc(req.body.officialKyc);
+    if (!kycCheck.valid) return res.status(400).json({ success: false, error: kycCheck.error });
+
+    const {
+      directiveType,
+      title,
+      titleFr,
+      body,
+      bodyFr,
+      targetAudience,
+      targetRegions,
+      assignedCooperativeIds,
+      linkedProjectId,
+      effectiveDate,
+      reviewDate,
+      priority,
+      broadcastNow,
+    } = req.body;
+
+    if (!directiveType || !title?.trim() || !body?.trim()) {
+      return res.status(400).json({ success: false, error: 'directiveType, title, and body are required' });
+    }
+
+    const directive = await GovernmentDirective.create({
+      country: req.govAdmin.country,
+      countryCode: req.govAdmin.countryCode,
+      createdBy: req.govAdmin.id,
+      createdByName: req.govAdmin.name,
+      organization: req.govAdmin.organization,
+      directiveType,
+      title: title.trim(),
+      titleFr,
+      body: body.trim(),
+      bodyFr,
+      targetAudience: targetAudience?.length ? targetAudience : ['cooperatives', 'farmers'],
+      targetRegions: targetRegions || [],
+      assignedCooperativeIds: assignedCooperativeIds || [],
+      linkedProjectId,
+      effectiveDate,
+      reviewDate,
+      priority: priority || 'medium',
+      officialKyc: {
+        ...req.body.officialKyc,
+        fullLegalName: String(req.body.officialKyc.fullLegalName).trim(),
+        officialEmail: String(req.body.officialKyc.officialEmail).trim().toLowerCase(),
+        signedAt: new Date(),
+      },
+      status: 'draft',
+    });
+
+    if (broadcastNow) {
+      const count = await broadcastDirectiveNotifications(directive, req.govAdmin.country);
+      directive.status = 'broadcast';
+      directive.broadcastSentAt = new Date();
+      directive.broadcastCount = count;
+      await directive.save();
+    }
+
+    res.status(201).json({ success: true, directive });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/government/directives/:id/broadcast
+router.post('/directives/:id/broadcast', authGov, async (req, res) => {
+  try {
+    const directive = await GovernmentDirective.findOne({
+      _id: req.params.id,
+      country: req.govAdmin.country,
+    });
+    if (!directive) return res.status(404).json({ error: 'Not found' });
+
+    const count = await broadcastDirectiveNotifications(directive, req.govAdmin.country);
+    directive.status = 'broadcast';
+    directive.broadcastSentAt = new Date();
+    directive.broadcastCount = count;
+    await directive.save();
+
+    res.json({ success: true, broadcastCount: count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/government/projects/:id/delegate — assign cooperatives to a national project
+router.post('/projects/:id/delegate', authGov, async (req, res) => {
+  try {
+    const kycCheck = validateOfficialKyc(req.body.officialKyc);
+    if (!kycCheck.valid) return res.status(400).json({ success: false, error: kycCheck.error });
+
+    const { cooperativeIds = [], notes } = req.body;
+    if (!Array.isArray(cooperativeIds) || cooperativeIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'Select at least one cooperative' });
+    }
+
+    const project = await NationalProject.findOneAndUpdate(
+      { _id: req.params.id, country: req.govAdmin.country },
+      {
+        assignedCooperativeIds: cooperativeIds,
+        delegationNotes: notes || '',
+        delegatedAt: new Date(),
+        delegatedBy: req.govAdmin.id,
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const coops = await CooperativePlatformRegistration.find({
+      _id: { $in: cooperativeIds },
+      country: req.govAdmin.country,
+    })
+      .select('cooperativeName email phone')
+      .lean();
+
+    const msg = `🏛️ Délégation de projet — ${project.title}\n\nVotre coopérative est désignée pour ce programme national. Connectez-vous à Sahel AgriConnect.\n\n${notes || ''}`;
+
+    const notifications = coops.map((c) => ({
+      recipientName: c.cooperativeName,
+      recipientEmail: c.email,
+      recipientPhone: c.phone,
+      message: msg,
+      source: 'government_project_delegation',
+      status: 'pending',
+    }));
+    if (notifications.length) await PendingNotification.insertMany(notifications);
+
+    res.json({ success: true, project, notifiedCooperatives: notifications.length });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

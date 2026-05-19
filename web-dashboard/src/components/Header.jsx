@@ -24,7 +24,14 @@ const Header = () => {
   const navigate = useNavigate();
   const { isRegistered, userName, isCoopPendingPayment, isCoopActive, clearUser } = useRegisteredUser();
   const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
-  const hasAdminToken = Boolean(localStorage.getItem('adminToken'));
+  const [hasGovSession, setHasGovSession] = useState(() => Boolean(localStorage.getItem('gov_token')));
+
+  useEffect(() => {
+    const syncGov = () => setHasGovSession(Boolean(localStorage.getItem('gov_token')));
+    syncGov();
+    window.addEventListener('storage', syncGov);
+    return () => window.removeEventListener('storage', syncGov);
+  }, [location.pathname]);
 
   const platformItems = useMemo(
     () => [
@@ -48,11 +55,11 @@ const Header = () => {
         : []),
       { to: '/afri-yield/marketplace', label: 'Marketplace' },
       { to: '/trace', label: isFr ? 'Traçabilité' : 'Traceability' },
-      ...(hasAdminToken
+      ...(hasGovSession
         ? [{ to: '/government-portal', label: isFr ? 'Portail pays' : 'Country portal' }]
         : []),
     ],
-    [t, isRegistered, isCoopPendingPayment, isCoopActive, hasAdminToken, isFr]
+    [t, isRegistered, isCoopPendingPayment, isCoopActive, hasGovSession, isFr]
   );
 
   const navLinkClass =

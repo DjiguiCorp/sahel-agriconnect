@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LogOut, Send, Plus, Search, Loader2, Check, X } from 'lucide-react';
+import GovernmentDirectiveModal from '../components/government/GovernmentDirectiveModal';
+import { GovernmentTerritoryTab, GovernmentDirectivesTab } from '../components/government/GovernmentPortalTabs';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -54,6 +56,7 @@ function LoginScreen({ onLogin, isFr }) {
       if (!r.ok) throw new Error(d.error || 'Login failed');
       localStorage.setItem('gov_token', d.token);
       localStorage.setItem('gov_admin', JSON.stringify(d.admin));
+      window.dispatchEvent(new Event('storage'));
       onLogin(d.token, d.admin);
     } catch (err) {
       setError(err.message);
@@ -189,6 +192,10 @@ export default function GovernmentPortal() {
   });
   const [broadcasting, setBroadcasting] = useState(null);
   const [broadcastResult, setBroadcastResult] = useState(null);
+  const [territory, setTerritory] = useState(null);
+  const [territoryRegion, setTerritoryRegion] = useState('');
+  const [directives, setDirectives] = useState([]);
+  const [directiveModal, setDirectiveModal] = useState(null);
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -199,6 +206,7 @@ export default function GovernmentPortal() {
   const handleLogout = () => {
     localStorage.removeItem('gov_token');
     localStorage.removeItem('gov_admin');
+    window.dispatchEvent(new Event('storage'));
     setToken(null);
     setAdmin(null);
   };
@@ -207,7 +215,7 @@ export default function GovernmentPortal() {
     if (!token || !admin) return;
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, activeTab]);
+  }, [token, activeTab, territoryRegion]);
 
   const loadData = async () => {
     setLoading(true);
@@ -216,6 +224,20 @@ export default function GovernmentPortal() {
         const r = await fetch(`${API}/api/government/dashboard`, { headers });
         const d = await r.json();
         if (d.success) setStats(d.stats);
+      } else if (activeTab === 'territory') {
+        const q = territoryRegion ? `?region=${encodeURIComponent(territoryRegion)}` : '';
+        const r = await fetch(`${API}/api/government/territory${q}`, { headers });
+        const d = await r.json();
+        if (d.success) setTerritory(d);
+      } else if (activeTab === 'directives') {
+        const r = await fetch(`${API}/api/government/directives`, { headers });
+        const d = await r.json();
+        if (d.success) setDirectives(d.directives);
+        if (cooperatives.length === 0) {
+          const cr = await fetch(`${API}/api/government/cooperatives`, { headers });
+          const cd = await cr.json();
+          if (cd.success) setCooperatives(cd.cooperatives);
+        }
       } else if (activeTab === 'farmers') {
         const r = await fetch(`${API}/api/government/farmers?limit=100`, { headers });
         const d = await r.json();
@@ -293,6 +315,8 @@ export default function GovernmentPortal() {
 
   const tabs = [
     { key: 'overview', label: isFr ? '🏠 Aperçu' : '🏠 Overview' },
+    { key: 'territory', label: isFr ? '🗺️ Territoire & cultures' : '🗺️ Territory & crops' },
+    { key: 'directives', label: isFr ? '📜 Directives officielles' : '📜 Official directives' },
     { key: 'farmers', label: isFr ? `👩‍🌾 Agriculteurs (${stats?.farmers ?? '—'})` : `👩‍🌾 Farmers (${stats?.farmers ?? '—'})` },
     {
       key: 'cooperatives',
@@ -375,24 +399,34 @@ export default function GovernmentPortal() {
           ]
         : [
             {
-              icon: '🌾',
-              label: isFr ? 'Lancer un programme agricole' : 'Launch crop program',
-              action: () => openProjectForm(),
+              icon: '📜',
+              label: isFr ? 'Diffuser une directive politique' : 'Broadcast policy directive',
+              action: () => setDirectiveModal('policy_directive'),
             },
             {
-              icon: '📚',
-              label: isFr ? 'Organiser une formation' : 'Organize training',
-              action: () => openProjectForm({ projectType: 'training' }),
+              icon: '🤝',
+              label: isFr ? 'Campagne enregistrement coopératives' : 'Cooperative registration drive',
+              action: () => setDirectiveModal('coop_registration_drive'),
             },
             {
               icon: '🌍',
-              label: isFr ? 'Liaison export pays' : 'Country export liaison',
-              action: () => openProjectForm({ projectType: 'export_liaison' }),
+              label: isFr ? 'Opportunité export coopératives' : 'Cooperative export opportunity',
+              action: () => setDirectiveModal('export_opportunity'),
             },
             {
-              icon: '💰',
-              label: isFr ? 'Engager la diaspora' : 'Engage diaspora',
-              action: () => openProjectForm({ projectType: 'diaspora_initiative', targetAudience: ['diaspora'] }),
+              icon: '🔗',
+              label: isFr ? 'Mandat traçabilité nationale' : 'National traceability mandate',
+              action: () => setDirectiveModal('traceability_mandate'),
+            },
+            {
+              icon: '🌾',
+              label: isFr ? 'Programme agricole / projet' : 'Crop program / project',
+              action: () => openProjectForm(),
+            },
+            {
+              icon: '🗺️',
+              label: isFr ? 'Vue territoire & index cultures' : 'Territory & crop index',
+              action: () => setActiveTab('territory'),
             },
           ];
 
@@ -477,6 +511,14 @@ export default function GovernmentPortal() {
           <div className="space-y-5 mt-2">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {[
+                {
+                  icon: '🌾',
+                  label: isFr ? 'Terres arables déclarées (ha)' : 'Declared arable land (ha)',
+                  value: stats?.totalArableHa ?? '—',
+                  color: 'bg-emerald-50',
+                  textColor: 'text-emerald-800',
+                  action: () => setActiveTab('territory'),
+                },
                 {
                   icon: '👩‍🌾',
                   label: isFr ? 'Agriculteurs enregistrés' : 'Registered Farmers',
@@ -563,6 +605,26 @@ export default function GovernmentPortal() {
               </p>
             </div>
           </div>
+        )}
+
+        {activeTab === 'territory' && (
+          <GovernmentTerritoryTab
+            isFr={isFr}
+            admin={admin}
+            loading={loading}
+            territory={territory}
+            territoryRegion={territoryRegion}
+            setTerritoryRegion={setTerritoryRegion}
+          />
+        )}
+
+        {activeTab === 'directives' && (
+          <GovernmentDirectivesTab
+            isFr={isFr}
+            loading={loading}
+            directives={directives}
+            onNew={(type) => setDirectiveModal(type || 'policy_directive')}
+          />
         )}
 
         {activeTab === 'farmers' && !loading && (
@@ -1037,6 +1099,18 @@ export default function GovernmentPortal() {
           </div>
         </div>
       )}
+
+      <GovernmentDirectiveModal
+        open={Boolean(directiveModal)}
+        initialType={directiveModal || 'policy_directive'}
+        isFr={isFr}
+        admin={admin}
+        cooperatives={cooperatives}
+        headers={headers}
+        apiBase={API}
+        onClose={() => setDirectiveModal(null)}
+        onCreated={(d) => setDirectives((prev) => [d, ...prev])}
+      />
     </div>
   );
 }

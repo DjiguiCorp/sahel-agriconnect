@@ -197,9 +197,11 @@ export default function PlatformLicensing() {
               <p className="text-gray-500 text-sm mb-2">
                 {isFr ? 'Vous avez déjà un accès institutionnel?' : 'Already have institutional access?'}
               </p>
-              <Link to="/government-portal" className="text-[#1a3c2e] font-semibold text-sm hover:underline">
-                {isFr ? 'Accéder au portail →' : 'Access the portal →'}
-              </Link>
+              <p className="text-[#1a3c2e] font-semibold text-sm">
+                {isFr
+                  ? 'Après validation, vos identifiants officiels vous donnent accès au portail pays (connexion sécurisée).'
+                  : 'After approval, your official credentials unlock the country portal (secure sign-in only).'}
+              </p>
             </div>
           </div>
         )}
@@ -468,7 +470,7 @@ export default function PlatformLicensing() {
                 {isFr ? "Retour à l'accueil" : 'Back to home'}
               </Link>
               <Link to="/government-portal" className="px-6 py-2.5 rounded-xl font-bold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e]">
-                {isFr ? 'Accéder au portail' : 'Access portal'}
+                {isFr ? 'Connexion portail (compte existant)' : 'Portal sign-in (existing account)'}
               </Link>
             </div>
           </div>

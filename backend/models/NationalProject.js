@@ -50,6 +50,7 @@ const schema = new mongoose.Schema({
   targetAudience: [{ type: String, enum: ['farmers', 'cooperatives', 'processors', 'diaspora', 'all'] }],
   targetCommodities: [String],
   targetRegions: [String],
+  assignedCooperativeIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CooperativePlatformRegistration' }],
 
   season: { type: String, enum: ['rainy', 'dry', 'both', 'year_round'] },
   startDate: Date,
@@ -73,6 +74,10 @@ const schema = new mongoose.Schema({
   priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
   partnerCountries: [String],
   externalPartner: String,
+
+  delegationNotes: String,
+  delegatedAt: Date,
+  delegatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'GovernmentAdmin' },
 
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
