@@ -7,6 +7,7 @@ import 'auth_state.dart';
 import 'terms_refresh.dart';
 import '../screens/age_gate_screen.dart';
 import '../screens/auth/farmer_auth_screen.dart';
+import '../screens/auth/investor_kyc_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/cooperative/cooperative_dashboard.dart';
 import '../screens/farmer/farmer_dashboard.dart';
@@ -37,6 +38,14 @@ final GlobalKey<NavigatorState> _rootKey =
 GlobalKey<NavigatorState> get rootNavigatorKey => _rootKey;
 
 late GoRouter appRouter;
+
+/// Instant route swap — avoids a blank/grey frame between splash and home.
+Page<void> _instantPage(GoRouterState state, Widget child) {
+  return NoTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+  );
+}
 
 GoRouter buildRouter(
   AuthState authState,
@@ -151,7 +160,11 @@ GoRouter buildRouter(
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
       // Public & dashboards: /home, /guest/*, /farmer, /investor, /cooperative,
       // /government, /ngo, /processor, /notifications, /profile.
-      GoRoute(path: '/platform', builder: (_, __) => const HomeScreen()),
+      GoRoute(
+        path: '/platform',
+        pageBuilder: (context, state) =>
+            _instantPage(state, const HomeScreen()),
+      ),
       GoRoute(path: '/home', builder: (_, __) => const RoleScreen()),
       GoRoute(
         path: '/guest/farmer',
@@ -204,16 +217,34 @@ GoRouter buildRouter(
           );
         },
       ),
-      GoRoute(path: '/farmer', builder: (_, __) => const FarmerDashboard()),
-      GoRoute(path: '/investor', builder: (_, __) => const InvestorDashboard()),
       GoRoute(
-          path: '/cooperative',
-          builder: (_, __) => const CooperativeDashboard()),
+        path: '/farmer',
+        pageBuilder: (c, s) => _instantPage(s, const FarmerDashboard()),
+      ),
       GoRoute(
-          path: '/government', builder: (_, __) => const GovernmentDashboard()),
-      GoRoute(path: '/ngo', builder: (_, __) => const NgoDashboard()),
+        path: '/investor/kyc',
+        builder: (_, __) => const InvestorKycScreen(),
+      ),
       GoRoute(
-          path: '/processor', builder: (_, __) => const ProcessorDashboard()),
+        path: '/investor',
+        pageBuilder: (c, s) => _instantPage(s, const InvestorDashboard()),
+      ),
+      GoRoute(
+        path: '/cooperative',
+        pageBuilder: (c, s) => _instantPage(s, const CooperativeDashboard()),
+      ),
+      GoRoute(
+        path: '/government',
+        pageBuilder: (c, s) => _instantPage(s, const GovernmentDashboard()),
+      ),
+      GoRoute(
+        path: '/ngo',
+        pageBuilder: (c, s) => _instantPage(s, const NgoDashboard()),
+      ),
+      GoRoute(
+        path: '/processor',
+        pageBuilder: (c, s) => _instantPage(s, const ProcessorDashboard()),
+      ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
       GoRoute(
         path: '/profile/edit',

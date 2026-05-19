@@ -676,6 +676,7 @@ class _FarmerProduceTab extends StatefulWidget {
 
 class _FarmerProduceTabState extends State<_FarmerProduceTab> {
   bool _showForm = false;
+  bool _showSyncNote = false;
 
   // Form controllers
   final _cropCtrl = TextEditingController();
@@ -713,7 +714,17 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
         label: 'Declare produce',
         token: auth.token,
       );
-      if (mounted) setState(() { _submitting = false; _showForm = false; });
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _showForm = false;
+          _showSyncNote = true;
+        });
+        _cropCtrl.clear();
+        _qtyCtrl.clear();
+        _priceCtrl.clear();
+        _notesCtrl.clear();
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(widget.isFr
@@ -733,6 +744,37 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
+        if (_showSyncNote) ...[
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1D9E75).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF1D9E75).withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.sync, color: Color(0xFF1D9E75), size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isFr
+                        ? 'Votre déclaration est synchronisée avec la plateforme web Sahel AgriConnect et visible par les acheteurs et investisseurs.'
+                        : 'Your declaration is synced with the Sahel AgriConnect web platform and visible to buyers and investors.',
+                    style: const TextStyle(
+                      color: Color(0xFF1D9E75),
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
 
         // DECLARE BUTTON
         if (!_showForm) ...[

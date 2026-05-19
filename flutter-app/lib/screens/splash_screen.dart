@@ -20,11 +20,12 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _entranceCtrl;
-  late AnimationController _exitCtrl;
   late AnimationController _particleCtrl;
   late AnimationController _glowCtrl;
 
-  bool _exiting = false;
+  bool _navigated = false;
+  bool _termsAccepted = false;
+  bool _langSelected = false;
 
   @override
   void initState() {
@@ -33,11 +34,6 @@ class _SplashScreenState extends State<SplashScreen>
     _entranceCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
-    );
-
-    _exitCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
     );
 
     _particleCtrl = AnimationController(
@@ -50,41 +46,41 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
 
+    _preloadPrefs();
+    _entranceCtrl.addStatusListener(_onEntranceStatus);
     _entranceCtrl.forward();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scheduleExitAndNavigate();
-    });
   }
 
-  Future<void> _scheduleExitAndNavigate() async {
-    await Future<void>.delayed(const Duration(milliseconds: 3400));
+  Future<void> _preloadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    await _playExitAndNavigate();
+    _termsAccepted =
+        prefs.getBool(TermsScreen.termsAcceptedKey) ?? false;
+    _langSelected = prefs.getBool('language_selected') ?? false;
   }
 
-  Future<void> _playExitAndNavigate() async {
-    if (!mounted) return;
-    setState(() => _exiting = true);
-    await _exitCtrl.forward();
-    if (!mounted) return;
+  void _onEntranceStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _navigateWhenReady();
+    }
+  }
+
+  Future<void> _navigateWhenReady() async {
+    if (_navigated || !mounted) return;
+    _navigated = true;
     await _navigate();
   }
 
-  Future<void> _navigate() async {
-    final prefs = await SharedPreferences.getInstance();
-    final termsAccepted =
-        prefs.getBool(TermsScreen.termsAcceptedKey) ?? false;
-    final langSelected = prefs.getBool('language_selected') ?? false;
+  void _navigateFromSplash() {
     if (!mounted) return;
 
     final auth = context.read<AuthState>();
 
-    if (!termsAccepted) {
+    if (!_termsAccepted) {
       context.go('/terms');
       return;
     }
-    if (!langSelected) {
+    if (!_langSelected) {
       context.go('/language');
       return;
     }
@@ -110,10 +106,18 @@ class _SplashScreenState extends State<SplashScreen>
     context.go('/platform');
   }
 
+  Future<void> _navigate() async {
+    if (!_termsAccepted || !_langSelected) {
+      await _preloadPrefs();
+    }
+    if (!mounted) return;
+    _navigateFromSplash();
+  }
+
   @override
   void dispose() {
+    _entranceCtrl.removeStatusListener(_onEntranceStatus);
     _entranceCtrl.dispose();
-    _exitCtrl.dispose();
     _particleCtrl.dispose();
     _glowCtrl.dispose();
     super.dispose();
@@ -128,7 +132,6 @@ class _SplashScreenState extends State<SplashScreen>
       body: AnimatedBuilder(
         animation: Listenable.merge([
           _entranceCtrl,
-          _exitCtrl,
           _particleCtrl,
           _glowCtrl,
         ]),
@@ -170,24 +173,8 @@ class _SplashScreenState extends State<SplashScreen>
 
           final glowIntensity = 0.7 + (_glowCtrl.value * 0.3);
 
-          final exitFade = _exiting
-              ? CurvedAnimation(
-                  parent: _exitCtrl,
-                  curve: const Interval(0.0, 0.7, curve: Curves.easeIn),
-                ).value
-              : 0.0;
-
-          final exitScale = _exiting
-              ? 1.0 +
-                  (CurvedAnimation(
-                    parent: _exitCtrl,
-                    curve: const Interval(0.0, 1.0, curve: Curves.easeInCubic),
-                  ).value *
-                      0.15)
-              : 1.0;
-
-          final contentOpacity = (1.0 - exitFade).clamp(0.0, 1.0);
-          final bgFade = (bgOpacity * (1.0 - exitFade)).clamp(0.0, 1.0);
+          final contentOpacity = 1.0;
+          final bgFade = bgOpacity.clamp(0.0, 1.0);
 
           return Stack(
             children: [
@@ -219,9 +206,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Opacity(
                   opacity: (orbOpacity * glowIntensity * contentOpacity)
                       .clamp(0.0, 1.0),
-                  child: Transform.scale(
-                    scale: exitScale,
-                    child: Container(
+                  child: Container(
                       width: 220,
                       height: 220,
                       decoration: BoxDecoration(
@@ -244,7 +229,6 @@ class _SplashScreenState extends State<SplashScreen>
                         ],
                       ),
                     ),
-                  ),
                 ),
               ),
               SafeArea(
@@ -254,7 +238,7 @@ class _SplashScreenState extends State<SplashScreen>
                     children: [
                       const Spacer(flex: 3),
                       Transform.scale(
-                        scale: (orbScale * exitScale).clamp(0.0, 10.0),
+                        scale: orbScale.clamp(0.0, 10.0),
                         child: Opacity(
                           opacity: orbOpacity.clamp(0.0, 1.0),
                           child: Stack(
@@ -473,15 +457,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
               ),
-              if (_exiting)
-                Opacity(
-                  opacity: CurvedAnimation(
-                    parent: _exitCtrl,
-                    curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
-                  ).value *
-                      0.6,
-                  child: Container(color: Colors.white),
-                ),
             ],
           );
         },

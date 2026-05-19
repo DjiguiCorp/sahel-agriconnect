@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
@@ -62,9 +63,6 @@ String _oppTitle(Map<String, dynamic> opp, bool isFr) =>
 
 String _oppSubtitle(Map<String, dynamic> opp) =>
     opp['commodity']?.toString() ?? opp['description']?.toString() ?? '';
-
-String _oppId(Map<String, dynamic> opp) =>
-    opp['_id']?.toString() ?? opp['id']?.toString() ?? '';
 
 // ══════════════════════════════════════════════════════════════
 // MAIN INVESTOR DASHBOARD
@@ -488,7 +486,6 @@ class _PortfolioTab extends StatelessWidget {
           returnRate: 15.0,
           minInvestment: 500,
           progress: 0.65,
-          opportunityId: 'demo-shea-mali',
           isFr: isFr,
         ),
         const SizedBox(height: 10),
@@ -500,7 +497,6 @@ class _PortfolioTab extends StatelessWidget {
           returnRate: 12.5,
           minInvestment: 1000,
           progress: 0.42,
-          opportunityId: 'demo-sesame',
           isFr: isFr,
         ),
         const SizedBox(height: 10),
@@ -512,7 +508,6 @@ class _PortfolioTab extends StatelessWidget {
           returnRate: 18.0,
           minInvestment: 2500,
           progress: 0.28,
-          opportunityId: 'demo-cashew',
           isFr: isFr,
         ),
       ];
@@ -637,7 +632,6 @@ class _PortfolioTab extends StatelessWidget {
                   returnRate: _oppReturnRate(opp),
                   minInvestment: _oppMinInvestment(opp),
                   progress: _oppProgress(opp),
-                  opportunityId: _oppId(opp),
                   isFr: isFr,
                 ),
               );
@@ -730,14 +724,16 @@ class _AboutAfriYieldCardState extends State<_AboutAfriYieldCard> {
                   Text(
                     isFr
                         ? 'AfriYield Exchange est la plateforme d\'investissement agricole de Sahel AgriConnect. Elle permet aux membres de la diaspora et aux investisseurs du monde entier de financer des coopératives agricoles certifiées en Afrique de l\'Ouest et de recevoir des rendements attractifs.\n\n'
-                            '• Investissez à partir de 500\$\n'
-                            '• Rendements moyens: 12-18% par an\n'
+                            '• Investissez à partir de \$500\n'
+                            '• Rendements projetés: 10-20% par an (historique coopératives)\n'
+                            '• Résultats non garantis. Risque de perte en capital.\n'
                             '• Coopératives certifiées et vérifiées\n'
                             '• Transparence totale sur l\'utilisation des fonds\n'
                             '• Impact direct sur les communautés rurales'
                         : 'AfriYield Exchange is the agricultural investment platform of Sahel AgriConnect. It enables diaspora members and global investors to fund certified West African farming cooperatives and receive attractive returns.\n\n'
                             '• Invest from \$500\n'
-                            '• Average returns: 12-18% per year\n'
+                            '• Projected returns: 10-20% annually (cooperative historical)\n'
+                            '• Results not guaranteed. Capital loss risk exists.\n'
                             '• Certified and vetted cooperatives\n'
                             '• Full transparency on fund use\n'
                             '• Direct impact on rural communities',
@@ -752,7 +748,7 @@ class _AboutAfriYieldCardState extends State<_AboutAfriYieldCard> {
                     children: [
                       _infoPill('🌍', isFr ? 'Pan-africain' : 'Pan-African'),
                       const SizedBox(width: 8),
-                      _infoPill('📈', isFr ? '12-18% retour' : '12-18% return'),
+                      _infoPill('📈', isFr ? '10-20% proj.' : '10-20% proj.'),
                       const SizedBox(width: 8),
                       _infoPill('✅', isFr ? 'Certifié' : 'Certified'),
                     ],
@@ -873,7 +869,6 @@ class _OpportunityCard extends StatefulWidget {
     required this.returnRate,
     required this.minInvestment,
     required this.progress,
-    required this.opportunityId,
     required this.isFr,
   });
 
@@ -882,7 +877,6 @@ class _OpportunityCard extends StatefulWidget {
   final double returnRate;
   final int minInvestment;
   final double progress;
-  final String opportunityId;
   final bool isFr;
 
   @override
@@ -890,69 +884,18 @@ class _OpportunityCard extends StatefulWidget {
 }
 
 class _OpportunityCardState extends State<_OpportunityCard> {
-  bool _showInvestForm = false;
-  final _amountCtrl = TextEditingController();
-  bool _submitting = false;
-
-  @override
-  void dispose() {
-    _amountCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _invest() async {
-    final amount = double.tryParse(_amountCtrl.text);
-    if (amount == null || amount < widget.minInvestment) return;
-    final auth = context.read<AuthState>();
-    setState(() => _submitting = true);
-    try {
-      await ApiService.post('/api/investors/investment-intent', {
-        'name': auth.displayName,
-        'email': auth.displayEmail,
-        'amount': amount,
-        'opportunityId': widget.opportunityId,
-        'message': 'Mobile app investment request for ${widget.title}',
-      });
-      if (!mounted) return;
-      setState(() {
-        _submitting = false;
-        _showInvestForm = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.isFr
-                ? '✅ Demande d\'investissement soumise ! Notre équipe vous contactera.'
-                : '✅ Investment request submitted! Our team will contact you.',
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 4),
-        ),
-      );
-    } catch (_) {
-      if (mounted) {
-        setState(() => _submitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.isFr
-                  ? 'Échec de l\'envoi. Réessayez.'
-                  : 'Submission failed. Please try again.',
-            ),
-            backgroundColor: Colors.red.shade800,
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [_surface, _surface2]),
+        gradient: const LinearGradient(
+          colors: [_surface, _surface2],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _gold.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -965,23 +908,25 @@ class _OpportunityCardState extends State<_OpportunityCard> {
                   child: Text(
                     widget.title,
                     style: const TextStyle(
-                      color: _text,
+                      color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: _gold.withValues(alpha: 0.15),
+                    color: AppColors.gold.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '${widget.returnRate.toStringAsFixed(1)}%',
+                    '~${widget.returnRate.toStringAsFixed(1)}% proj.',
                     style: const TextStyle(
-                      color: _gold,
+                      color: AppColors.gold,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -992,7 +937,10 @@ class _OpportunityCardState extends State<_OpportunityCard> {
             const SizedBox(height: 4),
             Text(
               widget.subtitle,
-              style: const TextStyle(color: _muted, fontSize: 12),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 10),
             ClipRRect(
@@ -1000,7 +948,7 @@ class _OpportunityCardState extends State<_OpportunityCard> {
               child: LinearProgressIndicator(
                 value: widget.progress,
                 backgroundColor: Colors.white.withValues(alpha: 0.1),
-                color: _gold,
+                color: AppColors.gold,
                 minHeight: 6,
               ),
             ),
@@ -1009,116 +957,281 @@ class _OpportunityCardState extends State<_OpportunityCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${(widget.progress * 100).toInt()}% ${widget.isFr ? 'financé' : 'funded'}',
-                  style: const TextStyle(color: _muted, fontSize: 10),
+                  '${(widget.progress * 100).toInt()}% ${isFr ? 'financé' : 'funded'}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 10,
+                  ),
                 ),
                 Text(
                   'Min: \$${widget.minInvestment}',
-                  style: const TextStyle(color: _muted, fontSize: 10),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            if (!_showInvestForm)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _gold,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: () => setState(() => _showInvestForm = true),
-                  child: Text(
-                    widget.isFr ? 'Investir maintenant' : 'Invest Now',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              )
-            else ...[
-              TextField(
-                controller: _amountCtrl,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: _text),
-                decoration: InputDecoration(
-                  hintText: widget.isFr
-                      ? 'Montant en \$ (min \$${widget.minInvestment})'
-                      : 'Amount in \$ (min \$${widget.minInvestment})',
-                  hintStyle: const TextStyle(color: _muted, fontSize: 13),
-                  filled: true,
-                  fillColor: _bg,
-                  prefixIcon: const Icon(Icons.attach_money, color: _gold),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: _gold.withValues(alpha: 0.4)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: _gold.withValues(alpha: 0.4)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: _gold),
-                  ),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: _muted.withValues(alpha: 0.3)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () => setState(() => _showInvestForm = false),
-                      child: Text(
-                        widget.isFr ? 'Annuler' : 'Cancel',
-                        style: const TextStyle(color: _muted),
-                      ),
-                    ),
+              child: Text(
+                isFr
+                    ? '⚠️ Rendement projeté basé sur les performances historiques. Les investissements comportent des risques. Les performances passées ne garantissent pas les résultats futurs.'
+                    : '⚠️ Projected return based on historical cooperative performance. Investments carry risk. Past performance does not guarantee future results.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 10,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(width: 8),
+                ),
+                icon: const Icon(Icons.open_in_new, size: 16),
+                label: Text(
+                  isFr ? 'Investir sur AfriYield.com' : 'Invest on AfriYield.com',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: () => _showInvestmentModal(context),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
                   Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _gold,
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                    child: Text(
+                      isFr
+                          ? 'Paiement exclusivement sur afriyieldexchange.com'
+                          : 'Payment exclusively on afriyieldexchange.com',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 10,
                       ),
-                      onPressed: _submitting ? null : _invest,
-                      child: _submitting
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              widget.isFr ? 'Confirmer' : 'Confirm',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                     ),
                   ),
                 ],
               ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
+
+  void _showInvestmentModal(BuildContext context) {
+    final isFr = widget.isFr;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1a2744),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.24),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isFr ? '💰 Procéder à l\'investissement' : '💰 Proceed to Invest',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.gold.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isFr ? '📋 Résumé de l\'opportunité' : '📋 Opportunity Summary',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _summaryRow(
+                    isFr ? 'Opportunité' : 'Opportunity',
+                    widget.title,
+                  ),
+                  _summaryRow(
+                    isFr ? 'Rendement projeté' : 'Projected Return',
+                    '~${widget.returnRate.toStringAsFixed(1)}%',
+                  ),
+                  _summaryRow(
+                    isFr ? 'Investissement minimum' : 'Minimum investment',
+                    '\$${widget.minInvestment}',
+                  ),
+                  _summaryRow(
+                    isFr ? 'Financement actuel' : 'Current funding',
+                    '${(widget.progress * 100).toInt()}%',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '⚠️ AVIS LÉGAL / LEGAL NOTICE',
+                    style: TextStyle(
+                      color: Color(0xFFF59E0B),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isFr
+                        ? 'AfriYield Exchange est une plateforme de facilitation d\'investissement exploitée par Djigui Corporation. Nous ne sommes pas une institution financière agréée. Les investissements comportent des risques, y compris la perte du capital investi. Les rendements projetés sont basés sur les performances historiques des coopératives et ne constituent pas une garantie. Consultez un conseiller financier avant d\'investir. Le traitement des paiements s\'effectue exclusivement via le portail web sécurisé.'
+                        : 'AfriYield Exchange is an investment facilitation platform operated by Djigui Corporation. We are not a licensed financial institution or broker-dealer. Investments carry risk, including potential loss of invested capital. Projected returns are based on historical cooperative performance and do not constitute a guarantee. Consult a financial advisor before investing. Payment processing occurs exclusively through the secure web portal.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 11,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.open_in_browser, size: 18),
+                label: Text(
+                  isFr
+                      ? 'Continuer sur afriyieldexchange.com'
+                      : 'Continue on afriyieldexchange.com',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  final uri = Uri.parse('https://afriyieldexchange.com/invest');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(
+                      uri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(sheetContext),
+              child: Text(
+                isFr ? 'Annuler' : 'Cancel',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _QA extends StatelessWidget {
@@ -1240,6 +1353,87 @@ class _ExchangeTab extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1a2744), Color(0xFF0f1a33)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Text('💻', style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isFr ? 'Accédez au portail complet' : 'Access Full Portal',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        isFr
+                            ? 'Investissez, gérez et suivez vos retours sur afriyieldexchange.com'
+                            : 'Invest, manage and track your returns on afriyieldexchange.com',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isFr
+                            ? 'Détails complets et paiement sur afriyieldexchange.com'
+                            : 'Full details and payment on afriyieldexchange.com',
+                        style: TextStyle(
+                          color: AppColors.gold.withValues(alpha: 0.85),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () async {
+                    final uri = Uri.parse('https://afriyieldexchange.com');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isFr ? 'Ouvrir' : 'Open',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Text(
             isFr ? 'Mouvements du marché' : 'Market Movement',
             style: const TextStyle(
@@ -1340,7 +1534,6 @@ class _ExchangeTab extends StatelessWidget {
               returnRate: 15.0,
               minInvestment: 500,
               progress: 0.65,
-              opportunityId: 'demo-shea-mali',
               isFr: isFr,
             ),
             const SizedBox(height: 10),
@@ -1352,7 +1545,6 @@ class _ExchangeTab extends StatelessWidget {
               returnRate: 12.5,
               minInvestment: 1000,
               progress: 0.42,
-              opportunityId: 'demo-sesame',
               isFr: isFr,
             ),
             const SizedBox(height: 10),
@@ -1365,7 +1557,6 @@ class _ExchangeTab extends StatelessWidget {
               returnRate: 18.0,
               minInvestment: 2500,
               progress: 0.28,
-              opportunityId: 'demo-cashew',
               isFr: isFr,
             ),
           ] else
@@ -1378,7 +1569,6 @@ class _ExchangeTab extends StatelessWidget {
                   returnRate: _oppReturnRate(opp),
                   minInvestment: _oppMinInvestment(opp),
                   progress: _oppProgress(opp),
-                  opportunityId: _oppId(opp),
                   isFr: isFr,
                 ),
               );

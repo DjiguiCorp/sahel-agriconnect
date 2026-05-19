@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
+import 'investor_kyc_screen.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
@@ -480,7 +482,14 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
         if (!mounted) return;
-        context.go(_dashboardRoute(widget.role));
+        if (widget.role == AuthRole.investor) {
+          final prefs = await SharedPreferences.getInstance();
+          if (!mounted) return;
+          final kycDone = prefs.getBool(investorKycSubmittedKey) ?? false;
+          context.go(kycDone ? '/investor' : '/investor/kyc');
+        } else {
+          context.go(_dashboardRoute(widget.role));
+        }
         return;
       case 'pending_vetting':
         if (!mounted) return;
