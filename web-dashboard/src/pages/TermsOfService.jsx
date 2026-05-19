@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const SECTIONS = [
   {
@@ -50,14 +51,21 @@ Website: https://sahelagriconnect.com`,
 ];
 
 export default function TermsOfService() {
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+
   return (
     <div className="min-h-screen bg-brand-forest text-white">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link to="/" className="text-brand-amber text-sm mb-8 inline-block">
-          ← Back to Home
+          ← {isFr ? "Retour à l'accueil" : 'Back to Home'}
         </Link>
-        <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-        <p className="text-white/50 text-sm mb-10">Last updated: May 2026</p>
+        <h1 className="text-3xl font-bold mb-2">
+          {isFr ? "Conditions d'utilisation" : 'Terms of Service'}
+        </h1>
+        <p className="text-white/50 text-sm mb-10">
+          {isFr ? 'Dernière mise à jour : mai 2026' : 'Last updated: May 2026'}
+        </p>
 
         {SECTIONS.map((section) => (
           <div key={section.title} className="mb-8">
@@ -69,6 +77,82 @@ export default function TermsOfService() {
             </p>
           </div>
         ))}
+
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-brand-amber mb-3">
+            {isFr ? 'Traitement des paiements' : 'Payment Processing'}
+          </h2>
+          <p className="text-white/80 leading-relaxed text-sm mb-3">
+            {isFr
+              ? "Tous les paiements liés aux investissements sur AfriYield Exchange sont traités exclusivement via le portail web sécurisé à l'adresse afriyieldexchange.com. L'application mobile Sahel AgriConnect ne collecte, ne traite ni ne stocke aucune information de paiement. Cette séparation garantit la conformité réglementaire et la sécurité maximale de vos fonds."
+              : 'All investment-related payments on AfriYield Exchange are processed exclusively through the secure web portal at afriyieldexchange.com. The Sahel AgriConnect mobile application does not collect, process, or store any payment information. This separation ensures regulatory compliance and maximum security of your funds.'}
+          </p>
+          <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
+            <p className="text-blue-200 text-sm font-medium">
+              💳{' '}
+              {isFr
+                ? "Méthodes de paiement acceptées: Virement bancaire international, WISE, Zelle (US uniquement), Mobile Money (Afrique de l'Ouest)"
+                : 'Accepted payment methods: International wire transfer, WISE, Zelle (US only), Mobile Money (West Africa)'}
+            </p>
+          </div>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-brand-amber mb-3">
+            {isFr ? 'Avertissements sur les investissements' : 'Investment Disclaimers'}
+          </h2>
+          <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-4 mb-4">
+            <p className="text-amber-200 font-bold text-sm mb-2">⚠️ NOTICE</p>
+            <ul className="text-amber-100/90 text-sm space-y-2 list-none">
+              <li>
+                •{' '}
+                {isFr
+                  ? "AfriYield Exchange n'est pas une institution financière agréée ou un courtier-négociant enregistré."
+                  : 'AfriYield Exchange is not a licensed financial institution or registered broker-dealer.'}
+              </li>
+              <li>
+                •{' '}
+                {isFr
+                  ? 'Les rendements projetés sont basés sur les performances historiques et ne constituent PAS une garantie.'
+                  : 'Projected returns are based on historical performance and do NOT constitute a guarantee.'}
+              </li>
+              <li>
+                •{' '}
+                {isFr
+                  ? 'Les investissements comportent des risques incluant la perte totale ou partielle du capital.'
+                  : 'Investments carry risks including total or partial loss of capital.'}
+              </li>
+              <li>
+                •{' '}
+                {isFr
+                  ? "Nous recommandons de consulter un conseiller financier qualifié avant d'investir."
+                  : 'We recommend consulting a qualified financial advisor before investing.'}
+              </li>
+              <li>
+                •{' '}
+                {isFr
+                  ? 'Les performances passées ne présagent pas des performances futures.'
+                  : 'Past performance does not predict future results.'}
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-brand-amber mb-3">
+            {isFr ? 'Conformité réglementaire' : 'Regulatory Compliance'}
+          </h2>
+          <p className="text-white/80 leading-relaxed text-sm mb-3">
+            {isFr
+              ? "Sahel AgriConnect et AfriYield Exchange opèrent en consultation avec les directives de la BCEAO et poursuivent l'approbation du sandbox CREPMF. Les investisseurs domiciliés aux États-Unis, au Royaume-Uni, en France ou au Canada sont soumis aux réglementations de leurs juridictions respectives et doivent s'assurer de leur conformité avant d'investir."
+              : "Sahel AgriConnect and AfriYield Exchange operate in consultation with BCEAO guidelines and are pursuing CREPMF sandbox approval. Investors domiciled in the United States, United Kingdom, France, or Canada are subject to their respective jurisdiction's regulations and must ensure their compliance before investing."}
+          </p>
+          <p className="text-white/80 leading-relaxed text-sm">
+            {isFr
+              ? 'Pour toute question de conformité: compliance@sahelagriconnect.com'
+              : 'For compliance inquiries: compliance@sahelagriconnect.com'}
+          </p>
+        </section>
       </div>
     </div>
   );

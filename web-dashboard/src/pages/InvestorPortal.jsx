@@ -70,6 +70,21 @@ function formatEUR(n) {
   return `€${Math.round(n * EUR_RATE).toLocaleString('en-US')}`;
 }
 
+function InvestmentPaymentNotice({ t }) {
+  return (
+    <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 mb-4">
+      <p className="text-amber-400 font-semibold text-sm mb-1">
+        💳 {t('investorPortal.paymentProcessingTitle')}
+      </p>
+      <p className="text-white/60 text-xs leading-relaxed">
+        {t('investorPortal.paymentProcessingBody')}
+      </p>
+      <p className="text-white/40 text-xs mt-2">{t('investorPortal.projectedReturnsNote')}</p>
+      <p className="text-white/35 text-xs mt-2">{t('investorPortal.paymentWebOnly')}</p>
+    </div>
+  );
+}
+
 function formatMonthYear(d) {
   try {
     const dt = d instanceof Date ? d : new Date(d);
@@ -411,6 +426,10 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
             </button>
           </div>
 
+          <div className="mx-4 md:mx-6">
+            <InvestmentPaymentNotice t={t} />
+          </div>
+
           {/* Quick actions */}
           <div className="mx-4 md:mx-6 grid grid-cols-2 gap-3">
             <button
@@ -485,6 +504,9 @@ function FarmTab({ investments, investor, t, navigate }) {
         <p className="text-sm mb-6 max-w-xs" style={{ color: 'rgba(245,240,232,0.55)' }}>
           {t('investorPortal.portfolio.emptySub')}
         </p>
+        <div className="max-w-md w-full mb-4">
+          <InvestmentPaymentNotice t={t} />
+        </div>
         <button
           type="button"
           onClick={() => navigate('/afri-yield/opportunities')}
@@ -530,7 +552,10 @@ function FarmTab({ investments, investor, t, navigate }) {
         <div className="grid grid-cols-4 gap-0">
           {[
             ['Total Deployed', formatUSD(totalDeployed)],
-            ['Total Expected Return', `${formatUSD(Math.round(totalExpectedPerYear))}/${t('investorPortal.portfolio.perYear')}`],
+            [
+              i18n.language === 'fr' ? 'Rendement projeté total' : 'Total projected return',
+              `${t('investorPortal.projectedReturnsNote')} · ${formatUSD(Math.round(totalExpectedPerYear))}/${t('investorPortal.portfolio.perYear')}`,
+            ],
             ['Active Investments', String(activeCount)],
             ['Next Payout', nextPayoutDate ? formatMonthYear(nextPayoutDate) : '—'],
           ].map(([label, value], idx) => (
@@ -565,7 +590,10 @@ function FarmTab({ investments, investor, t, navigate }) {
               <div className="grid grid-cols-3 p-4 gap-2" style={{ background: '#0d1f17' }}>
                 {[
                   [t('investorPortal.portfolio.yourContribution'), formatUSD(inv.amountDeployed)],
-                  [t('investorPortal.portfolio.expectedReturn'), `+${inv.expectedROIPercent ?? 8}% ${t('investorPortal.portfolio.perYear')}`],
+                  [
+                    t('investorPortal.portfolio.expectedReturn'),
+                    `~${inv.expectedROIPercent ?? 8}% proj. ${t('investorPortal.portfolio.perYear')}`,
+                  ],
                   [
                     t('investorPortal.portfolio.payoutDate'),
                     inv.payoutSchedule?.[0]?.payoutDate ? formatMonthYear(inv.payoutSchedule[0].payoutDate) : 'Jun 2026',
@@ -635,6 +663,8 @@ function FarmTab({ investments, investor, t, navigate }) {
         </h3>
         <TransactionTracker investorEmail={investor?.email} />
       </div>
+
+      <InvestmentPaymentNotice t={t} />
 
       <button
         type="button"
@@ -953,6 +983,17 @@ function HelpTab({ investor, t }) {
           {t('investorPortal.help.subtitle')}
         </p>
       </div>
+
+      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
+        <p className="text-amber-400 font-semibold text-sm">{t('investorPortal.kycRequired')}</p>
+        {['disclaimer1', 'disclaimer2', 'disclaimer3', 'disclaimer4', 'disclaimer5'].map((key) => (
+          <p key={key} className="text-white/55 text-xs leading-relaxed">
+            • {t(`investorPortal.${key}`)}
+          </p>
+        ))}
+      </div>
+
+      <InvestmentPaymentNotice t={t} />
 
       <div className="md:grid md:grid-cols-12 md:gap-6 space-y-5 md:space-y-0">
         {/* Left column: FAQ */}

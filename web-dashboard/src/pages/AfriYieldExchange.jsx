@@ -15,11 +15,26 @@ export default function AfriYieldExchange() {
   const [email, setEmail] = useState('');
   const [emailDone, setEmailDone] = useState(false);
   const [kycOpen, setKycOpen] = useState(false);
-  const [kycData, setKycData] = useState({ fullName: '', country: '', idNumber: '', notUSPerson: false });
+  const [kycData, setKycData] = useState({
+    fullName: '',
+    country: '',
+    idNumber: '',
+    notUSPerson: false,
+    acceptRisk: false,
+    idType: 'passport',
+  });
   const [kycLoading, setKycLoading] = useState(false);
 
   const handleKycSubmit = async (e) => {
     e.preventDefault();
+    if (!kycData.notUSPerson || !kycData.acceptRisk) {
+      alert(
+        isFr
+          ? 'Vous devez cocher toutes les déclarations pour continuer.'
+          : 'You must check all declarations to continue.',
+      );
+      return;
+    }
     setKycLoading(true);
     try {
       const res = await fetch(`${API}/api/investors/kyc-check`, {
@@ -86,7 +101,7 @@ export default function AfriYieldExchange() {
       tag: isFr ? 'Pour investisseurs' : 'For investors',
       min: '$1,000',
       timeline: isFr ? '90–180 jours' : '90–180 days',
-      roi: '12–30%',
+      roi: '~12–30% proj.',
     },
     {
       id: 'C',
@@ -352,6 +367,27 @@ export default function AfriYieldExchange() {
 
       <section style={{ background: '#0d1f17' }} className="py-16">
         <div className="section-container">
+          <div className="max-w-4xl mx-auto mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-amber-400 text-xl flex-shrink-0">⚠️</span>
+              <div>
+                <p className="text-amber-400 font-bold text-sm mb-1">
+                  {isFr ? 'Avis légal important' : 'Important Legal Notice'}
+                </p>
+                <p className="text-white/70 text-xs leading-relaxed">
+                  {isFr
+                    ? "AfriYield Exchange est une plateforme de facilitation d'investissement exploitée par Djigui Corporation. Nous ne sommes pas une institution financière agréée ou un courtier-négociant. Les investissements comportent des risques incluant la perte totale du capital. Les rendements affichés sont des projections basées sur les performances historiques des coopératives partenaires et ne constituent pas une garantie. Consultez un conseiller financier avant d'investir. Tous les paiements sont traités exclusivement via le portail web sécurisé."
+                    : 'AfriYield Exchange is an investment facilitation platform operated by Djigui Corporation. We are not a licensed financial institution or broker-dealer. Investments carry risk including total loss of capital. Returns shown are projections based on historical partner cooperative performance and do not constitute a guarantee. Consult a financial advisor before investing. All payments are processed exclusively through the secure web portal.'}
+                </p>
+                <p className="text-amber-400/60 text-xs mt-2 font-medium">
+                  {isFr
+                    ? '🌍 Opéré par Djigui Corporation — Pas une institution financière agréée'
+                    : '🌍 Operated by Djigui Corporation — Not a licensed financial institution'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-10">
             <div>
               <h2 className="text-3xl font-bold text-white mb-2">
@@ -597,20 +633,49 @@ export default function AfriYieldExchange() {
                   onChange={(e) => setKycData((d) => ({ ...d, idNumber: e.target.value }))}
                 />
               </div>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  required
-                  checked={kycData.notUSPerson}
-                  onChange={(e) => setKycData((d) => ({ ...d, notUSPerson: e.target.checked }))}
-                  className="mt-0.5"
-                />
-                <span className="text-xs text-gray-600">
-                  {isFr
-                    ? 'Je confirme que je ne suis pas une "US Person" au sens de la réglementation SEC.'
-                    : 'I confirm I am not a "US Person" as defined by SEC regulation.'}
-                </span>
-              </label>
+              <div className="space-y-3 mt-4">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-orange-500/30 bg-orange-500/5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 accent-amber-500"
+                    checked={kycData.notUSPerson}
+                    onChange={(e) =>
+                      setKycData((d) => ({ ...d, notUSPerson: e.target.checked }))
+                    }
+                  />
+                  <span className="text-xs text-gray-700 leading-relaxed">
+                    {isFr
+                      ? 'Je confirme que je ne suis PAS une "US Person" au sens de la réglementation SEC américaine. (Ressortissants/résidents américains: contactez compliance@sahelagriconnect.com)'
+                      : 'I confirm I am NOT a "US Person" under US SEC regulations. (US citizens/residents: contact compliance@sahelagriconnect.com)'}
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 accent-amber-500"
+                    checked={kycData.acceptRisk}
+                    onChange={(e) =>
+                      setKycData((d) => ({ ...d, acceptRisk: e.target.checked }))
+                    }
+                  />
+                  <span className="text-xs text-gray-700 leading-relaxed">
+                    {isFr
+                      ? 'Je reconnais que les investissements agricoles comportent des risques incluant la perte du capital. Les rendements projetés ne sont PAS garantis. Je ne recevrai pas de conseil financier personnalisé de cette plateforme.'
+                      : 'I acknowledge that agricultural investments carry risks including loss of capital. Projected returns are NOT guaranteed. I will not receive personalized financial advice from this platform.'}
+                  </span>
+                </label>
+
+                <div className="p-3 rounded-lg border border-blue-500/20 bg-blue-500/5">
+                  <p className="text-xs text-blue-700">
+                    💳{' '}
+                    {isFr
+                      ? "Tous les paiements d'investissement sont traités exclusivement via ce portail web sécurisé. Aucun paiement via l'application mobile."
+                      : 'All investment payments are processed exclusively through this secure web portal. No payments via the mobile app.'}
+                  </p>
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -621,7 +686,7 @@ export default function AfriYieldExchange() {
                 </button>
                 <button
                   type="submit"
-                  disabled={kycLoading}
+                  disabled={kycLoading || !kycData.notUSPerson || !kycData.acceptRisk}
                   className="flex-1 py-2.5 rounded-xl bg-[#B5850A] text-white text-sm font-semibold disabled:opacity-60"
                 >
                   {kycLoading ? '...' : isFr ? 'Soumettre' : 'Submit'}
@@ -693,10 +758,13 @@ function OpportunityCard({ opp, isFr }) {
           {opp.expectedROIMin > 0 ? (
             <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(181,133,10,0.1)' }}>
               <p className="text-xs" style={{ color: 'rgba(181,133,10,0.5)' }}>
-                {isFr ? 'ROI est.' : 'Est. ROI'}
+                {isFr ? 'Rend. proj.' : 'Proj. ROI'}
               </p>
               <p className="text-sm font-bold" style={{ color: '#B5850A' }}>
-                {opp.expectedROIMin}–{opp.expectedROIMax}%
+                <span>
+                  ~{opp.expectedROIMin}–{opp.expectedROIMax}%
+                </span>
+                <span className="text-xs text-white/40 ml-1">proj.</span>
               </p>
             </div>
           ) : (

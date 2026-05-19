@@ -421,7 +421,7 @@
     "step3Title": "Planifier une réunion",
     "step3Text": "Entretien individuel avec les opérateurs de centres",
     "step4Title": "Investir et gagner",
-    "step4Text": "Déployer du capital, recevoir des rendements semestriels",
+    "step4Text": "Déployer du capital, recevoir des versements semestriels projetés (non garantis)",
     "investmentTracksTitle": "Pistes d'investissement",
     "trackABody": "Financer l'achat d'équipements de transformation, lignes d'emballage, chambres froides et irrigation pour des centres vérifiés",
     "trackBBody": "Financer l'image de marque à l'export, le design, la distribution internationale et l'accès au marché pour des produits agricoles certifiés",
@@ -429,7 +429,7 @@
     "trackAFeature1": "Investissement adossé à des actifs",
     "trackAFeature2": "Lié au matériel physique",
     "trackAFeature3": "Revenus locatifs liés aux agriculteurs",
-    "trackAFeature4": "Rendements semestriels",
+    "trackAFeature4": "Versements semestriels projetés",
     "trackAFeature5": "Décaissements par jalons",
     "idealFor": "Idéal pour",
     "trackAIdeal": "Premiers investisseurs agri en Afrique, diaspora, profils prudents",
@@ -1149,7 +1149,7 @@
         "fund1pct": "40%",
         "fund2pct": "25%",
         "fund3pct": "20%",
-        "fund4pct": "15%",
+        "fund4pct": "~15% proj.",
         "minimum": "Investissement minimum: 5 000$",
         "structure": "Structure: Note SAFE ou Équité — à discuter avec l'équipe",
         "deckNote": "Pour recevoir notre pitch deck et notre modèle financier, veuillez en faire la demande ci-dessous"
@@ -1201,7 +1201,7 @@
     "trust": {
       "secure": "Sécurisé",
       "panAfrican": "Panafricain",
-      "realReturns": "Vrais retours"
+      "realReturns": "Rendements projetés"
     },
     "onboarding": {
       "title": "Votre premier investissement dans l'agriculture africaine",
@@ -1375,7 +1375,18 @@
       "empty": "Aucune notification pour l'instant",
       "markRead": "Tout marquer comme lu"
     },
-    "signOut": "Se déconnecter"
+    "signOut": "Se déconnecter",
+    "paymentWebOnly": "Tous les paiements d'investissement sont traités exclusivement via le portail web sécurisé. Aucun paiement n'est collecté via l'application mobile.",
+    "paymentWebOnlyFr": "Tous les paiements d'investissement sont traités exclusivement via le portail web sécurisé. Aucun paiement n'est collecté via l'application mobile.",
+    "kycRequired": "Vérification d'identité (KYC) requise avant d'investir",
+    "disclaimer1": "AfriYield Exchange est une plateforme de facilitation d'investissement, et non une institution financière agréée.",
+    "disclaimer2": "Les investissements comportent des risques, y compris une perte potentielle du capital.",
+    "disclaimer3": "Les rendements projetés sont basés sur les performances historiques des coopératives et ne constituent pas une garantie.",
+    "disclaimer4": "Consultez un conseiller financier qualifié avant d'investir.",
+    "disclaimer5": "Le traitement des paiements s'effectue exclusivement sur afriyieldexchange.com",
+    "paymentProcessingTitle": "Traitement des paiements",
+    "paymentProcessingBody": "Votre investissement sera traité via le portail sécurisé AfriYield Exchange. Vous recevrez un contrat formel avant tout mouvement de fonds.",
+    "projectedReturnsNote": "~10-20% (projeté, non garanti)"
   }
   ,
   "accountDeletion": {

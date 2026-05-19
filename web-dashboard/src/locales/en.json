@@ -421,7 +421,7 @@
     "step3Title": "Schedule a Meeting",
     "step3Text": "One-on-one with transformation center operators",
     "step4Title": "Invest & Earn",
-    "step4Text": "Deploy capital, receive bi-annual ROI payouts",
+    "step4Text": "Deploy capital, receive projected bi-annual payouts (not guaranteed)",
     "investmentTracksTitle": "Investment Tracks",
     "trackABody": "Fund the purchase of agro-processing equipment, packaging lines, cold storage, and irrigation infrastructure for verified transformation centers",
     "trackBBody": "Fund the export branding, packaging design, international distribution, and market entry for certified African agricultural products",
@@ -429,7 +429,7 @@
     "trackAFeature1": "Asset-backed investment",
     "trackAFeature2": "Tied to physical equipment",
     "trackAFeature3": "Rental income from farmer usage",
-    "trackAFeature4": "Bi-annual ROI payouts",
+    "trackAFeature4": "Projected bi-annual payouts",
     "trackAFeature5": "Milestone-based disbursements",
     "idealFor": "Ideal for",
     "trackAIdeal": "First-time African agri-investors, diaspora members, risk-conscious investors",
@@ -453,7 +453,7 @@
     "whyVerifiedTitle": "Verified Supply Chain",
     "whyVerifiedBody": "Every transformation center and cooperative is registered and verified through Sahel AgriConnect before appearing on AfriYield Exchange",
     "whyReturnsTitle": "Structured Returns",
-    "whyReturnsBody": "Bi-annual ROI payouts with transparent reporting. Track A is asset-backed. Track B is revenue-share.",
+    "whyReturnsBody": "Projected bi-annual payouts with transparent reporting. Track A is asset-backed. Track B is revenue-share. Returns not guaranteed. Capital at risk.",
     "whyReachTitle": "Pan-African Reach",
     "whyReachBody": "Producers from across West Africa and beyond. One platform, one investment process, continental scale.",
     "storiesTitle": "Investor Stories",
@@ -1149,7 +1149,7 @@
         "fund1pct": "40%",
         "fund2pct": "25%",
         "fund3pct": "20%",
-        "fund4pct": "15%",
+        "fund4pct": "~15% proj.",
         "minimum": "Minimum investment: $5,000",
         "structure": "Structure: SAFE note or Equity — discuss with team",
         "deckNote": "To receive our pitch deck and financial model, please request below"
@@ -1201,7 +1201,7 @@
     "trust": {
       "secure": "Secure",
       "panAfrican": "Pan-African",
-      "realReturns": "Real returns"
+      "realReturns": "Projected returns"
     },
     "onboarding": {
       "title": "Your first investment in African agriculture",
@@ -1387,7 +1387,18 @@
       "empty": "No notifications yet",
       "markRead": "Mark all as read"
     },
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "paymentWebOnly": "All investment payments are processed exclusively through the secure web portal. No payments are collected via the mobile app.",
+    "paymentWebOnlyFr": "Tous les paiements d'investissement sont traités exclusivement via le portail web sécurisé. Aucun paiement n'est collecté via l'application mobile.",
+    "kycRequired": "Identity verification (KYC) required before investing",
+    "disclaimer1": "AfriYield Exchange is an investment facilitation platform, not a licensed financial institution.",
+    "disclaimer2": "Investments carry risk including potential loss of capital.",
+    "disclaimer3": "Projected returns are based on historical cooperative performance and do not constitute a guarantee.",
+    "disclaimer4": "Consult a qualified financial advisor before investing.",
+    "disclaimer5": "Payment processing occurs exclusively on afriyieldexchange.com",
+    "paymentProcessingTitle": "Payment Processing",
+    "paymentProcessingBody": "Your investment will be processed through the secure AfriYield Exchange portal. You will receive a formal investment agreement before any funds move.",
+    "projectedReturnsNote": "~10-20% (projected, not guaranteed)"
   }
   ,
   "accountDeletion": {
