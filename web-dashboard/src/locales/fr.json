@@ -41,11 +41,18 @@
   "home": {
     "title": "Sahel AgriConnect",
     "hero": {
+      "badge": "Plateforme agricole panafricaine",
       "tagline": "Produire ensemble. Vendre plus loin. Gagner plus.",
-      "lead": "La plateforme panafricaine qui connecte producteurs, coopératives et investisseurs pour transformer l'agriculture en Afrique de l'Ouest et au-delà.",
+      "lead": "Une plateforme pour agriculteurs, coopératives, transformateurs et investisseurs — en Afrique, dans la diaspora et sur les marchés mondiaux.",
       "joinCooperative": "Rejoindre le projet",
-      "downloadAppSoon": "Télécharger l'app — bientôt",
-      "statsAria": "Indicateurs clés du projet"
+      "appHeading": "Application mobile — Android et iOS",
+      "appLead": "Lancement simultané sur Google Play et l'App Store. Un seul compte pour chaque rôle de la chaîne de valeur.",
+      "downloadAndroid": "Google Play",
+      "downloadIOS": "App Store",
+      "statsAria": "Points forts de la plateforme",
+      "statCountries": "54+ pays UA",
+      "statChain": "Champ à l'export",
+      "statInvest": "AfriYield Exchange"
     },
     "subtitle": "Digitalisation de l'agriculture pour l'Afrique de l'Ouest et au-delà",
     "projectTitle": "Sahel AgriConnect",

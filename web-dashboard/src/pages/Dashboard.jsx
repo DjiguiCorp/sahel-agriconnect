@@ -5,6 +5,7 @@ import FarmerRegistrationForm from '../components/FarmerRegistrationForm';
 import ProcessorRegistration from '../components/ProcessorRegistration';
 import Modal from '../components/Modal';
 import { API_ENDPOINTS } from '../config/api';
+import { ALL_COUNTRIES } from '../data/africanCountries';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -30,7 +31,7 @@ const CROP_EMOJIS = {
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
-  const isFr = i18n.language === 'fr';
+  const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
 
   const [activeTab, setActiveTab] = useState('overview');
   const [farmerStats, setFarmerStats] = useState(null);
@@ -62,14 +63,13 @@ export default function Dashboard() {
     processorStats?.recent?.filter((p) => !countryFilter || p.country === countryFilter) || [];
 
   const allCountries = [
-    ...new Set(
-      [
-        ...(farmerStats?.byCountry || []).map((c) => c._id),
-        ...(coopStats?.byCountry || []).map((c) => c._id),
-        ...(processorStats?.byCountry || []).map((c) => c._id),
-      ].filter(Boolean)
-    ),
-  ].sort();
+    ...new Set([
+      ...ALL_COUNTRIES,
+      ...(farmerStats?.byCountry || []).map((c) => c._id),
+      ...(coopStats?.byCountry || []).map((c) => c._id),
+      ...(processorStats?.byCountry || []).map((c) => c._id),
+    ]),
+  ].filter(Boolean).sort((a, b) => a.localeCompare(b));
 
   const tabs = [
     { key: 'overview', label: isFr ? "🌍 Vue d'ensemble" : '🌍 Overview' },

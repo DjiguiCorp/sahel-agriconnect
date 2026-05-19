@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
+import LanguageSelector from './LanguageSelector';
 
 const TOOLS_ITEMS = [
   { to: '/diagnostic-sol', labelKey: 'nav.soilDiagnostic' },
@@ -22,7 +23,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isRegistered, userName, isCoopPendingPayment, isCoopActive, clearUser } = useRegisteredUser();
-  const isFr = i18n.language === 'fr';
+  const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
   const hasAdminToken = Boolean(localStorage.getItem('adminToken'));
 
   const platformItems = useMemo(
@@ -92,14 +93,14 @@ const Header = () => {
 
   const handleDownloadApp = (e) => {
     e.preventDefault();
-    const el = document.getElementById('waitlist-form');
+    const el = document.getElementById('get-app');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
       return;
     }
     navigate('/');
     window.setTimeout(() => {
-      document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('get-app')?.scrollIntoView({ behavior: 'smooth' });
     }, 150);
   };
 
@@ -227,6 +228,8 @@ const Header = () => {
                 </button>
               </div>
             )}
+
+            <LanguageSelector />
 
             <Link to="/inscription" className="btn-primary text-base whitespace-nowrap">
               {isFr ? 'Rejoindre' : 'Join'}

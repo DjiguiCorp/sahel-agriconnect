@@ -60,6 +60,13 @@ function buildBreadcrumbItems(pathname) {
   ];
 }
 
+function crumbLabel(t, c) {
+  if (c.label) return c.label;
+  if (c.i18n === 'home') return t('nav.home');
+  if (c.i18n) return t(`afriYield.${c.i18n}`);
+  return t(`afriYield.${c.segment}`);
+}
+
 export default function AfriYieldShell() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -83,10 +90,14 @@ export default function AfriYieldShell() {
               aria-label="Breadcrumb"
             >
               {crumbs.map((c, i) => {
-                const full = c.i18n ? `afriYield.${c.i18n}` : `afriYield.${c.segment}`;
-                const shortKey = c.i18nShort ? `afriYield.${c.i18nShort}` : `afriYield.${c.segment}Short`;
-                const fullLabel = c.label ?? t(full);
-                const shortLabel = c.labelShort ?? t(shortKey, { defaultValue: fullLabel });
+                const fullLabel = crumbLabel(t, c);
+                const shortLabel =
+                  c.labelShort ??
+                  (c.i18nShort === 'homeShort'
+                    ? t('nav.home')
+                    : c.i18nShort
+                      ? t(`afriYield.${c.i18nShort}`, { defaultValue: fullLabel })
+                      : t(`afriYield.${c.segment}Short`, { defaultValue: fullLabel }));
                 return (
                 <span key={`${c.segment}-${i}`} className="inline-flex flex-col items-center md:inline-flex md:flex-row md:items-center">
                   {i > 0 ? (

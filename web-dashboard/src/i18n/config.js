@@ -43,10 +43,12 @@ i18n
     supportedLngs: ['fr', 'en'],
     nonExplicitSupportedLngs: true,
     fallbackLng: {
-      'default': ['fr'], // Fallback par défaut sur français
-      'en': ['fr']  // Si clé manquante en anglais, utiliser français
+      default: ['en', 'fr'],
+      fr: ['en'],
+      en: ['en'],
     },
-    lng: 'fr', // Langue initiale (sera mise à jour après détection)
+    load: 'languageOnly',
+    lng: 'fr',
     debug: false,
     
     interpolation: {

@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 export default function Footer() {
-  const { i18n } = useTranslation();
-  const isFr = i18n.language === 'fr';
+  const { t, i18n } = useTranslation();
+  const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
 
   return (
     <footer className="bg-[#1a3c2e] text-white">
@@ -43,7 +43,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               {(isFr
                 ? [
-                    ['Accueil', '/'],
+                    [t('nav.home'), '/'],
                     ['À propos', '/about'],
                     ['Comment ça marche', '/how-it-works'],
                     ['Impact', '/impact'],
@@ -56,7 +56,7 @@ export default function Footer() {
                     ['Tarifs', '/pricing'],
                   ]
                 : [
-                    ['Home', '/'],
+                    [t('nav.home'), '/'],
                     ['About', '/about'],
                     ['How it works', '/how-it-works'],
                     ['Impact', '/impact'],

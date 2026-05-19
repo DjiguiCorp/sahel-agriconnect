@@ -41,11 +41,18 @@
   "home": {
     "title": "Sahel AgriConnect",
     "hero": {
+      "badge": "Pan-African agricultural platform",
       "tagline": "Produce together. Sell further. Earn more.",
-      "lead": "The pan-African platform connecting producers, cooperatives and investors to transform agriculture across West Africa and beyond.",
+      "lead": "One platform for farmers, cooperatives, processors and investors — across Africa, the diaspora, and global markets.",
       "joinCooperative": "Join the project",
-      "downloadAppSoon": "Download the app — coming soon",
-      "statsAria": "Project highlights"
+      "appHeading": "Mobile app — Android & iOS",
+      "appLead": "Launching together on Google Play and the App Store. One account for every role on the value chain.",
+      "downloadAndroid": "Get it on Google Play",
+      "downloadIOS": "Download on the App Store",
+      "statsAria": "Platform highlights",
+      "statCountries": "54+ AU countries",
+      "statChain": "Farm to export",
+      "statInvest": "AfriYield Exchange"
     },
     "subtitle": "Digitalization of agriculture across West Africa and beyond",
     "projectTitle": "Sahel AgriConnect",
