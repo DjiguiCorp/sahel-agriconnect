@@ -82,7 +82,7 @@ class DashboardAccountNavHeader extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => context.go('/platform'),
+          onTap: () => context.go('/home'),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),

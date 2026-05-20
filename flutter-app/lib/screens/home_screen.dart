@@ -286,13 +286,13 @@ class _HomeScreenState extends State<HomeScreen> {
   /// otherwise we fall back to the role selection screen.
   void _goSignIn(String? loginRoute) {
     context.read<AuthState>().exitGuestMode();
-    context.go(loginRoute ?? '/home');
+    context.go(loginRoute ?? '/role');
   }
 
   /// Logged-in users open their role dashboard; guests return to role hub.
   void _goRoleDashboard(AuthState auth) {
     if (!auth.isLoggedIn) {
-      context.go('/home');
+      context.go('/role');
       return;
     }
     context.go(_dashboardRoute(auth.role));
@@ -689,9 +689,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Scaffold(
         resizeToAvoidBottomInset: true,
         extendBody: true,
-        backgroundColor: const Color(0xFF0d1f17),
+        backgroundColor: const Color(0xFF0C0E12),
         bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xFF1a3c2e),
+          backgroundColor: const Color(0xFF161B22),
           selectedItemColor: AppColors.gold,
           unselectedItemColor: Colors.white38,
           type: BottomNavigationBarType.fixed,
@@ -765,7 +765,7 @@ class _HomeScreenState extends State<HomeScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1a3c2e), Color(0xFF0d1f17)],
+          colors: [Color(0xFF141820), Color(0xFF0C0E12)],
         ),
       ),
       child: Stack(
@@ -778,7 +778,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const Positioned(
             bottom: -100,
             left: -80,
-            child: _Glow(color: AppColors.sage, size: 260),
+            child: _Glow(color: Color(0xFF4A8FD4), size: 260),
           ),
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -786,7 +786,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverAppBar(
                 pinned: true,
                 floating: false,
-                backgroundColor: const Color(0xFF1a3c2e),
+                backgroundColor: const Color(0xFF161B22),
                 surfaceTintColor: Colors.transparent,
                 leading: Padding(
                   padding: const EdgeInsets.only(left: 8),
@@ -992,7 +992,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: () => setState(() => _currentIndex = 1),
+                  onPressed: () => context.go('/role?tab=1'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: BorderSide(
@@ -1002,7 +1002,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  icon: const Icon(Icons.search_rounded, size: 18),
+                  icon: const Icon(Icons.explore_outlined, size: 18),
                   label: Text(
                     lp.t('Discover', 'Découvrir'),
                     style: const TextStyle(

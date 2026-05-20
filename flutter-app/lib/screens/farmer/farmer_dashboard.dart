@@ -125,7 +125,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/platform');
+        if (!didPop) context.go('/home');
       },
       child: Center(
         child: ConstrainedBox(
@@ -303,7 +303,7 @@ class _FarmerHeader extends StatelessWidget {
                                 ? 'Retour à l\'accueil principal'
                                 : 'Back to main platform',
                             child: GestureDetector(
-                              onTap: () => context.go('/platform'),
+                              onTap: () => context.go('/home'),
                               child: Container(
                                 width: 40,
                                 height: 40,
@@ -1461,7 +1461,7 @@ class _FarmerAccountTab extends StatelessWidget {
               icon: Icons.exit_to_app_outlined, iconColor: _textMuted,
               title: isFr ? 'Quitter vers l\'accueil' : 'Exit to Main Home',
               subtitle: isFr ? 'Page principale de la plateforme' : 'Main platform home page',
-              onTap: () => context.go('/platform')),
+              onTap: () => context.go('/home')),
           ],
         ),
         const SizedBox(height: 14),
@@ -1581,7 +1581,7 @@ class _FarmerAccountTab extends StatelessWidget {
               );
               if (confirm == true && context.mounted) {
                 await context.read<AuthState>().logout();
-                if (context.mounted) context.go('/platform');
+                if (context.mounted) context.go('/home');
               }
             },
           ),

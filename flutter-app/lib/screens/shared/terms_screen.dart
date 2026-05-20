@@ -62,7 +62,7 @@ class _TermsScreenState extends State<TermsScreen>
       await prefs.setBool(TermsScreen.termsAcceptedKey, true);
       if (!mounted) return;
       context.read<TermsRefresh>().onAccepted();
-      context.go('/platform');
+      context.go('/home');
     } finally {
       if (mounted) setState(() => _saving = false);
     }

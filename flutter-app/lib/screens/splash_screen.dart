@@ -99,11 +99,11 @@ class _SplashScreenState extends State<SplashScreen>
         case AuthRole.processor:
           context.go('/processor');
         case AuthRole.none:
-          context.go('/platform');
+          context.go('/home');
         }
       return;
     }
-    context.go('/platform');
+    context.go('/home');
   }
 
   Future<void> _navigate() async {

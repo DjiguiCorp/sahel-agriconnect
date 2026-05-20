@@ -375,7 +375,7 @@ class _InvestorHeader extends StatelessWidget {
                             ? 'Retour à l\'accueil principal'
                             : 'Back to main platform',
                         child: GestureDetector(
-                          onTap: () => context.go('/platform'),
+                          onTap: () => context.go('/home'),
                           child: Container(
                             width: 40,
                             height: 40,
@@ -2182,7 +2182,7 @@ class _InvestorAccountTab extends StatelessWidget {
             isFr
                 ? 'Page principale de la plateforme'
                 : 'Main platform home page',
-            () => context.go('/platform'),
+            () => context.go('/home'),
           ),
         ]),
         const SizedBox(height: 14),
@@ -2359,7 +2359,7 @@ class _InvestorAccountTab extends StatelessWidget {
               );
               if (confirm == true && context.mounted) {
                 await context.read<AuthState>().logout();
-                if (context.mounted) context.go('/platform');
+                if (context.mounted) context.go('/home');
               }
             },
           ),

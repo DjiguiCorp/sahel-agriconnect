@@ -107,7 +107,7 @@ class FeatureGateButton extends StatelessWidget {
                 ),
                 onPressed: () {
                   Navigator.pop(context);
-                  context.go('/home');
+                  context.go('/role');
                 },
                 child: const Text(
                   'Sign In',

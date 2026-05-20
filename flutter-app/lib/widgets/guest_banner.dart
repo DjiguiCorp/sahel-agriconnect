@@ -56,7 +56,7 @@ class _GuestBannerState extends State<GuestBanner> {
               ),
             ),
             GestureDetector(
-              onTap: widget.onSignIn ?? () => context.go('/home'),
+              onTap: widget.onSignIn ?? () => context.go('/role'),
               child: const Text(
                 'Sign in',
                 style: TextStyle(

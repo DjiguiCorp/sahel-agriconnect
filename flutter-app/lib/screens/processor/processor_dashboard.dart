@@ -145,7 +145,7 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
         ],
       ),
     );
-    if (exit == true && mounted) context.go('/platform');
+    if (exit == true && mounted) context.go('/home');
   }
 
   @override
@@ -295,7 +295,7 @@ class _ProcessorHeader extends StatelessWidget {
                           color: _muted, fontSize: 12)),
                       ]),
                     GestureDetector(
-                      onTap: () => context.go('/platform'),
+                      onTap: () => context.go('/home'),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 7),
@@ -1429,7 +1429,7 @@ class _ProcessorAccountTab extends StatelessWidget {
             isFr ? 'Quitter vers l\'accueil' : 'Exit to Main Home',
             isFr ? 'Page principale de la plateforme'
                  : 'Main platform home page',
-            () => context.go('/platform')),
+            () => context.go('/home')),
         ]),
         const SizedBox(height: 14),
 

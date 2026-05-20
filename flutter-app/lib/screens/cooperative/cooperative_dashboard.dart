@@ -168,7 +168,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
         ],
       ),
     );
-    if (exit == true && mounted) context.go('/platform');
+    if (exit == true && mounted) context.go('/home');
   }
 
   void _addMember(Map<String, dynamic> member) =>
@@ -433,7 +433,7 @@ class _CoopHeader extends StatelessWidget {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => context.go('/platform'),
+                        onTap: () => context.go('/home'),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -2225,7 +2225,7 @@ class _CoopAccountTab extends StatelessWidget {
             _muted,
             isFr ? 'Quitter vers l\'accueil' : 'Exit to Main Home',
             isFr ? 'Page principale de la plateforme' : 'Main platform home page',
-            () => context.go('/platform'),
+            () => context.go('/home'),
           ),
         ]),
         const SizedBox(height: 14),
@@ -2386,7 +2386,7 @@ class _CoopAccountTab extends StatelessWidget {
               );
               if (confirm == true && context.mounted) {
                 await context.read<AuthState>().logout();
-                if (context.mounted) context.go('/platform');
+                if (context.mounted) context.go('/home');
               }
             },
           ),

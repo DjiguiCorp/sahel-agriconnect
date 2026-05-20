@@ -82,7 +82,7 @@ class DashboardSignOutButton extends StatelessWidget {
               );
               if (confirm == true && context.mounted) {
                 await context.read<AuthState>().logout();
-                if (context.mounted) context.go('/platform');
+                if (context.mounted) context.go('/home');
               }
             },
           ),

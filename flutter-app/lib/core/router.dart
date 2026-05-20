@@ -116,7 +116,7 @@ GoRouter buildRouter(
       }
 
       if (loggedIn && loc == '/role') {
-        return '/platform';
+        return _dashboardRoute(authState.role);
       }
 
       if (loggedIn && _routeMismatch(authState.role, loc)) {
@@ -162,10 +162,13 @@ GoRouter buildRouter(
       // /government, /ngo, /processor, /notifications, /profile.
       GoRoute(
         path: '/platform',
+        redirect: (_, __) => '/home',
+      ),
+      GoRoute(
+        path: '/home',
         pageBuilder: (context, state) =>
             _instantPage(state, const HomeScreen()),
       ),
-      GoRoute(path: '/home', builder: (_, __) => const RoleScreen()),
       GoRoute(
         path: '/guest/farmer',
         builder: (_, __) => const HomeScreen(initialGuestCategory: 0),
@@ -182,7 +185,14 @@ GoRouter buildRouter(
         path: '/guest/markets',
         builder: (_, __) => const HomeScreen(initialGuestCategory: 3),
       ),
-      GoRoute(path: '/role', builder: (_, __) => const RoleScreen()),
+      GoRoute(
+        path: '/role',
+        builder: (context, state) {
+          final tab =
+              int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0;
+          return RoleScreen(initialTab: tab.clamp(0, 1));
+        },
+      ),
       GoRoute(
           path: '/login/farmer', builder: (_, __) => const FarmerAuthScreen()),
       GoRoute(
@@ -291,7 +301,7 @@ GoRouter buildRouter(
     ],
   );
   authState.onLogout = () {
-    Future.microtask(() => appRouter.go('/platform'));
+    Future.microtask(() => appRouter.go('/home'));
   };
   return appRouter;
 }
@@ -337,7 +347,7 @@ String _loginPathFor(String loc) {
 }
 
 bool _routeMismatch(AuthRole role, String loc) {
-  if (loc == '/platform') return false;
+  if (loc == '/platform' || loc == '/home' || loc == '/role') return false;
   if (loc == '/webview') return false;
   if (loc == '/privacy' || loc == '/terms') return false;
   if (_isGlobalUtilityPath(loc)) return false;
