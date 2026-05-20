@@ -780,12 +780,12 @@ class _AboutAfriYieldCardState extends State<_AboutAfriYieldCard> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _infoPill('🌍', isFr ? 'Pan-africain' : 'Pan-African'),
-                      const SizedBox(width: 8),
                       _infoPill('📈', isFr ? '10-20% proj.' : '10-20% proj.'),
-                      const SizedBox(width: 8),
                       _infoPill('✅', isFr ? 'Certifié' : 'Certified'),
                     ],
                   ),
