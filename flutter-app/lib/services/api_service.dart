@@ -217,6 +217,42 @@ class ApiService {
         token: token,
       );
 
+  // ── NGO / Partners portal ─────────────────────────────────
+  static Future<Map<String, dynamic>> ngoLogin(
+    String email,
+    String password,
+  ) =>
+      post('/api/ngo/login', {'email': email, 'password': password});
+
+  static Future<Map<String, dynamic>> getNgoPortal(String token) =>
+      get('/api/ngo/portal', token: token);
+
+  static Future<Map<String, dynamic>> createNgoProgram(
+    String token,
+    Map<String, dynamic> body,
+  ) =>
+      post('/api/ngo/programs', body, token: token);
+
+  static Future<Map<String, dynamic>> createNgoBeneficiary(
+    String token,
+    Map<String, dynamic> body,
+  ) =>
+      post('/api/ngo/beneficiaries', body, token: token);
+
+  static Future<Map<String, dynamic>> generateNgoReport(
+    String token,
+    String reportType, {
+    bool isFr = false,
+  }) =>
+      post(
+        '/api/ngo/reports/$reportType/generate?lang=${isFr ? 'fr' : 'en'}',
+        <String, dynamic>{},
+        token: token,
+      );
+
+  static String ngoReportDownloadUrl(String reportId) =>
+      '$baseUrl/api/ngo/reports/$reportId/download';
+
   // ── Processors ────────────────────────────────────────────
   static Future<Map<String, dynamic>> processorSession(String email) =>
       post('/api/processors/session', {'email': email});

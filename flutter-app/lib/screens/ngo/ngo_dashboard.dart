@@ -7,8 +7,10 @@ import 'package:provider/provider.dart';
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
+import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const _bg      = Color(0xFF0a1a0f);
 const _surface = Color(0xFF0d2a18);
@@ -27,8 +29,20 @@ class NgoDashboard extends StatefulWidget {
 
 class _NgoDashboardState extends State<NgoDashboard> {
   int _tab = 0;
-  // Demo data — visible even in demo/mock mode
-  final List<Map<String, dynamic>> _programs = [
+  bool _loading = true;
+  bool _apiConnected = false;
+
+  List<Map<String, dynamic>> _programs = [];
+  List<Map<String, dynamic>> _beneficiaries = [];
+  List<Map<String, dynamic>> _cooperativeContacts = [];
+  List<Map<String, dynamic>> _reports = [];
+  Map<String, dynamic> _stats = {
+    'beneficiaries': 0,
+    'activePrograms': 0,
+    'cooperatives': 0,
+  };
+
+  static final List<Map<String, dynamic>> _demoPrograms = [
     {
       'id': 'p1',
       'name': 'Shea Butter Value Chain',
@@ -70,29 +84,150 @@ class _NgoDashboardState extends State<NgoDashboard> {
     },
   ];
 
-  final List<Map<String, dynamic>> _beneficiaries = [];
-  final List<Map<String, dynamic>> _cooperativeContacts = [
-    {'name': 'Coopérative Karité Ségou', 'members': 145,
-     'region': 'Ségou', 'contact': '+223 76 123 456'},
-    {'name': 'Union Sésame Sikasso', 'members': 87,
-     'region': 'Sikasso', 'contact': '+223 77 234 567'},
-    {'name': 'Alliance Mil Mopti', 'members': 198,
-     'region': 'Mopti', 'contact': '+223 78 345 678'},
+  static final List<Map<String, dynamic>> _demoCoops = [
+    {
+      'name': 'Coopérative Karité Ségou',
+      'members': 145,
+      'region': 'Ségou',
+      'contact': '+223 76 123 456',
+    },
+    {
+      'name': 'Union Sésame Sikasso',
+      'members': 87,
+      'region': 'Sikasso',
+      'contact': '+223 77 234 567',
+    },
+    {
+      'name': 'Alliance Mil Mopti',
+      'members': 198,
+      'region': 'Mopti',
+      'contact': '+223 78 345 678',
+    },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPortal();
+  }
+
+  Future<void> _loadPortal() async {
+    final auth = context.read<AuthState>();
+    final token = auth.token;
+    if (token == null || token.isEmpty) {
+      setState(() {
+        _programs = List.from(_demoPrograms);
+        _cooperativeContacts = List.from(_demoCoops);
+        _loading = false;
+        _apiConnected = false;
+      });
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final res = await ApiService.getNgoPortal(token);
+      if (!mounted) return;
+      if (res['success'] == true) {
+        setState(() {
+          _apiConnected = true;
+          _programs = _parseList(res['programs']);
+          _beneficiaries = _parseList(res['beneficiaries']);
+          _cooperativeContacts = _parseList(res['network']);
+          _reports = _parseList(res['reports']);
+          final stats = res['stats'];
+          if (stats is Map) {
+            _stats = Map<String, dynamic>.from(stats);
+          }
+          _loading = false;
+        });
+        return;
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _programs = List.from(_demoPrograms);
+        _cooperativeContacts = List.from(_demoCoops);
+        _loading = false;
+        _apiConnected = false;
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> _parseList(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  String? get _token => context.read<AuthState>().token;
 
   void _goTab(int i) {
     AuthService.resetActivity();
     setState(() => _tab = i);
   }
 
-  void _addBeneficiary(Map<String, dynamic> b) =>
+  void _addBeneficiary(Map<String, dynamic> b) {
     setState(() => _beneficiaries.add(b));
+    _loadPortal();
+  }
 
-  void _addProgram(Map<String, dynamic> p) =>
+  void _addProgram(Map<String, dynamic> p) {
     setState(() => _programs.add(p));
+    _loadPortal();
+  }
 
-  int get _totalBeneficiaries => _programs.fold(0,
-    (s, p) => s + (p['beneficiaries'] as int));
+  int get _totalBeneficiaries {
+    final fromStats = _stats['beneficiaries'];
+    if (fromStats is num && _apiConnected) return fromStats.toInt();
+    return _programs.fold<int>(
+      0,
+      (s, p) => s + ((p['beneficiaries'] as num?)?.toInt() ?? 0),
+    );
+  }
+
+  Future<void> _generateReport(String type, String title) async {
+    final token = _token;
+    final isFr =
+        context.read<LanguageProvider>().locale.languageCode == 'fr';
+    if (token == null || token.isEmpty || !_apiConnected) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isFr
+              ? 'Connectez-vous avec un compte ONG institutionnel pour générer des rapports PDF.'
+              : 'Sign in with an institutional NGO account to generate PDF reports.'),
+          backgroundColor: _gold,
+        ));
+      }
+      return;
+    }
+    final res = await ApiService.generateNgoReport(token, type, isFr: isFr);
+    if (!mounted) return;
+    if (res['success'] != true) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(res['error']?.toString() ?? 'Report failed'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+    await _loadPortal();
+    final report = res['report'];
+    if (report is Map && report['id'] != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isFr
+            ? '✅ Rapport "$title" généré — ouverture du téléchargement…'
+            : '✅ Report "$title" generated — opening download…'),
+        backgroundColor: _lime,
+      ));
+      // Download requires Authorization header — open web portal hint
+      final webUri = Uri.parse('https://sahelagriconnect.com/ngo-portal');
+      if (await canLaunchUrl(webUri)) {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      }
+    }
+  }
 
   Future<void> _onBackPressed() async {
     if (_tab != 0) {
@@ -151,24 +286,71 @@ class _NgoDashboardState extends State<NgoDashboard> {
           const OfflineBanner(),
           _NgoHeader(
             totalBeneficiaries: _totalBeneficiaries,
-            activePrograms: _programs
-              .where((p) => p['status'] == 'active').length,
-            coopCount: _cooperativeContacts.length,
-            isFr: isFr),
-          Expanded(
-            child: IndexedStack(index: _tab, children: [
-              _OverviewTab(programs: _programs, coops: _cooperativeContacts,
-                totalBeneficiaries: _totalBeneficiaries,
-                isFr: isFr, onTabChange: _goTab),
-              _ProgramsTab(programs: _programs, isFr: isFr,
-                onAdd: _addProgram),
-              _NetworkTab(coops: _cooperativeContacts,
-                beneficiaries: _beneficiaries,
-                isFr: isFr, onAddBeneficiary: _addBeneficiary),
-              _ReportsTab(programs: _programs, isFr: isFr),
-              _NgoAccountTab(isFr: isFr, onTabChange: _goTab),
-            ]),
+            activePrograms: (_stats['activePrograms'] as num?)?.toInt() ??
+                _programs.where((p) => p['status'] == 'active').length,
+            coopCount: (_stats['cooperatives'] as num?)?.toInt() ??
+                _cooperativeContacts.length,
+            isFr: isFr,
           ),
+          if (_loading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(color: _lime),
+              ),
+            )
+          else
+            Expanded(
+              child: RefreshIndicator(
+                color: _lime,
+                onRefresh: _loadPortal,
+                child: IndexedStack(
+                  index: _tab,
+                  children: [
+                    _OverviewTab(
+                      programs: _programs,
+                      coops: _cooperativeContacts,
+                      totalBeneficiaries: _totalBeneficiaries,
+                      activePrograms: (_stats['activePrograms'] as num?)
+                              ?.toInt() ??
+                          _programs
+                              .where((p) => p['status'] == 'active')
+                              .length,
+                      isFr: isFr,
+                      onTabChange: _goTab,
+                      apiConnected: _apiConnected,
+                    ),
+                    _ProgramsTab(
+                      programs: _programs,
+                      isFr: isFr,
+                      onAdd: _addProgram,
+                      token: _token,
+                      apiConnected: _apiConnected,
+                      onRefresh: _loadPortal,
+                    ),
+                    _NetworkTab(
+                      coops: _cooperativeContacts,
+                      beneficiaries: _beneficiaries,
+                      programs: _programs,
+                      isFr: isFr,
+                      onAddBeneficiary: _addBeneficiary,
+                      token: _token,
+                      apiConnected: _apiConnected,
+                    ),
+                    _ReportsTab(
+                      programs: _programs,
+                      reports: _reports,
+                      isFr: isFr,
+                      onGenerate: _generateReport,
+                    ),
+                    _NgoAccountTab(
+                      isFr: isFr,
+                      onTabChange: _goTab,
+                      apiConnected: _apiConnected,
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ]),
         bottomNavigationBar: Container(
           decoration: const BoxDecoration(
@@ -334,11 +516,19 @@ class _NgoHeader extends StatelessWidget {
 class _OverviewTab extends StatelessWidget {
   final List<Map<String, dynamic>> programs, coops;
   final int totalBeneficiaries;
+  final int activePrograms;
   final bool isFr;
+  final bool apiConnected;
   final Function(int) onTabChange;
-  const _OverviewTab({required this.programs, required this.coops,
-    required this.totalBeneficiaries, required this.isFr,
-    required this.onTabChange});
+  const _OverviewTab({
+    required this.programs,
+    required this.coops,
+    required this.totalBeneficiaries,
+    required this.activePrograms,
+    required this.isFr,
+    required this.onTabChange,
+    this.apiConnected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -606,8 +796,17 @@ class _ProgramsTab extends StatefulWidget {
   final List<Map<String, dynamic>> programs;
   final bool isFr;
   final Function(Map<String, dynamic>) onAdd;
-  const _ProgramsTab({required this.programs, required this.isFr,
-    required this.onAdd});
+  final String? token;
+  final bool apiConnected;
+  final Future<void> Function() onRefresh;
+  const _ProgramsTab({
+    required this.programs,
+    required this.isFr,
+    required this.onAdd,
+    this.token,
+    this.apiConnected = false,
+    required this.onRefresh,
+  });
   @override State<_ProgramsTab> createState() => _ProgramsTabState();
 }
 
@@ -642,24 +841,53 @@ class _ProgramsTabState extends State<_ProgramsTab> {
       return;
     }
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    final program = {
-      'id': 'p${DateTime.now().millisecondsSinceEpoch}',
-      'name': _nameCtrl.text.trim(),
-      'status': 'planning',
-      'beneficiaries': 0,
-      'target': int.tryParse(_targetCtrl.text) ?? 100,
-      'region': _regionCtrl.text.trim(),
-      'type': _type,
-      'startDate': _startDate != null
-        ? '${_startDate!.month}/${_startDate!.year}' : 'TBD',
-      'endDate': _endDate != null
-        ? '${_endDate!.month}/${_endDate!.year}' : 'TBD',
-      'budget': double.tryParse(_budgetCtrl.text) ?? 0,
-      'spent': 0,
-      'objectives': _objCtrl.text.trim(),
-    };
-    widget.onAdd(program);
+    final target = int.tryParse(_targetCtrl.text) ?? 100;
+    final budget = double.tryParse(_budgetCtrl.text) ?? 0;
+    if (widget.apiConnected &&
+        widget.token != null &&
+        widget.token!.isNotEmpty) {
+      final res = await ApiService.createNgoProgram(widget.token!, {
+        'name': _nameCtrl.text.trim(),
+        'region': _regionCtrl.text.trim(),
+        'target': target,
+        'budget': budget,
+        'type': _type,
+        'objectives': _objCtrl.text.trim(),
+        'status': 'planning',
+        if (_startDate != null) 'startDate': _startDate!.toIso8601String(),
+        if (_endDate != null) 'endDate': _endDate!.toIso8601String(),
+      });
+      if (!mounted) return;
+      if (res['success'] != true) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(res['error']?.toString() ?? 'Error'),
+          backgroundColor: Colors.red,
+        ));
+        return;
+      }
+      await widget.onRefresh();
+    } else {
+      final program = {
+        'id': 'p${DateTime.now().millisecondsSinceEpoch}',
+        'name': _nameCtrl.text.trim(),
+        'status': 'planning',
+        'beneficiaries': 0,
+        'target': target,
+        'region': _regionCtrl.text.trim(),
+        'type': _type,
+        'startDate': _startDate != null
+            ? '${_startDate!.month}/${_startDate!.year}'
+            : 'TBD',
+        'endDate': _endDate != null
+            ? '${_endDate!.month}/${_endDate!.year}'
+            : 'TBD',
+        'budget': budget,
+        'spent': 0,
+        'objectives': _objCtrl.text.trim(),
+      };
+      widget.onAdd(program);
+    }
     if (mounted) {
       setState(() { _submitting = false; _showBuilder = false;
         _nameCtrl.clear(); _objCtrl.clear(); _regionCtrl.clear();
@@ -919,10 +1147,20 @@ class _ProgramsTabState extends State<_ProgramsTab> {
 // ══════════════════════════════════════════════════════════════
 class _NetworkTab extends StatefulWidget {
   final List<Map<String, dynamic>> coops, beneficiaries;
+  final List<Map<String, dynamic>> programs;
   final bool isFr;
+  final bool apiConnected;
+  final String? token;
   final Function(Map<String, dynamic>) onAddBeneficiary;
-  const _NetworkTab({required this.coops, required this.beneficiaries,
-    required this.isFr, required this.onAddBeneficiary});
+  const _NetworkTab({
+    required this.coops,
+    required this.beneficiaries,
+    required this.programs,
+    required this.isFr,
+    required this.onAddBeneficiary,
+    this.apiConnected = false,
+    this.token,
+  });
   @override State<_NetworkTab> createState() => _NetworkTabState();
 }
 
@@ -957,18 +1195,48 @@ class _NetworkTabState extends State<_NetworkTab> {
       return;
     }
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    widget.onAddBeneficiary({
+    final body = {
       'name': _nameCtrl.text.trim(),
       'phone': _phoneCtrl.text.trim(),
       'region': _regionCtrl.text.trim(),
       'mainCrop': _cropCtrl.text.trim(),
       'program': _programCtrl.text.trim(),
       'gender': _gender,
-      'registeredAt': DateTime.now().toIso8601String(),
-      // Registry sync flag
-      'syncedWithRegistry': true,
-    });
+    };
+    if (widget.apiConnected &&
+        widget.token != null &&
+        widget.token!.isNotEmpty) {
+      Map<String, dynamic>? match;
+      for (final p in widget.programs) {
+        if (p['name']?.toString() == _programCtrl.text.trim()) {
+          match = p;
+          break;
+        }
+      }
+      final res = await ApiService.createNgoBeneficiary(widget.token!, {
+        ...body,
+        if (match != null) 'programId': match['id'],
+      });
+      if (!mounted) return;
+      if (res['success'] != true) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(res['error']?.toString() ?? 'Error'),
+          backgroundColor: Colors.red,
+        ));
+        return;
+      }
+      widget.onAddBeneficiary(Map<String, dynamic>.from(
+        res['beneficiary'] as Map? ?? body,
+      ));
+    } else {
+      await Future.delayed(const Duration(milliseconds: 400));
+      widget.onAddBeneficiary({
+        ...body,
+        'registeredAt': DateTime.now().toIso8601String(),
+        'syncedWithRegistry': true,
+      });
+    }
     if (mounted) {
       setState(() { _submitting = false; _showBenForm = false;
         _nameCtrl.clear(); _phoneCtrl.clear();
@@ -1349,14 +1617,22 @@ class _CoopContactCardState extends State<_CoopContactCard> {
 // ══════════════════════════════════════════════════════════════
 class _ReportsTab extends StatelessWidget {
   final List<Map<String, dynamic>> programs;
+  final List<Map<String, dynamic>> reports;
   final bool isFr;
-  const _ReportsTab({required this.programs, required this.isFr});
+  final Future<void> Function(String type, String title) onGenerate;
+  const _ReportsTab({
+    required this.programs,
+    required this.reports,
+    required this.isFr,
+    required this.onGenerate,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isFr = this.isFr;
-    final reports = [
+    final catalog = [
       {
+        'type': 'beneficiary',
         'icon': Icons.people_outline, 'color': _lime,
         'title': isFr ? 'Rapport bénéficiaires' : 'Beneficiary Report',
         'desc': isFr
@@ -1365,6 +1641,7 @@ class _ReportsTab extends StatelessWidget {
         'ready': true,
       },
       {
+        'type': 'program',
         'icon': Icons.volunteer_activism_outlined, 'color': _gold,
         'title': isFr ? 'Rapport programmes' : 'Program Report',
         'desc': isFr
@@ -1373,6 +1650,7 @@ class _ReportsTab extends StatelessWidget {
         'ready': true,
       },
       {
+        'type': 'cooperative',
         'icon': Icons.groups_outlined, 'color': _blue,
         'title': isFr ? 'Rapport réseau coopératives'
           : 'Cooperative Network Report',
@@ -1382,6 +1660,7 @@ class _ReportsTab extends StatelessWidget {
         'ready': true,
       },
       {
+        'type': 'impact',
         'icon': Icons.trending_up_outlined,
         'color': const Color(0xFF7B61FF),
         'title': isFr ? 'Rapport impact & indicateurs'
@@ -1426,16 +1705,59 @@ class _ReportsTab extends StatelessWidget {
 
         _header(isFr ? 'Rapports disponibles' : 'Available Reports'),
         const SizedBox(height: 12),
-        ...reports.map((r) => _ReportCard(r: r, isFr: isFr,
-          context: context)),
+        ...catalog.map((r) => _ReportCard(
+              r: r,
+              isFr: isFr,
+              onGenerate: onGenerate,
+            )),
         const SizedBox(height: 20),
 
         _header(isFr ? 'Mes rapports générés' : 'My Generated Reports'),
         const SizedBox(height: 12),
-        _empty(Icons.file_present_outlined,
-          isFr ? 'Aucun rapport généré' : 'No reports generated yet',
-          isFr ? 'Générez votre premier rapport ci-dessus'
-               : 'Generate your first report above'),
+        if (reports.isEmpty)
+          _empty(
+            Icons.file_present_outlined,
+            isFr ? 'Aucun rapport généré' : 'No reports generated yet',
+            isFr
+                ? 'Générez votre premier rapport ci-dessus'
+                : 'Generate your first report above',
+          )
+        else
+          ...reports.map(
+            (r) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.picture_as_pdf, color: _lime, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r['title']?.toString() ?? 'Report',
+                          style: const TextStyle(
+                            color: _text,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          r['generatedAt']?.toString() ?? '',
+                          style: const TextStyle(color: _muted, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ]);
   }
 }
@@ -1443,9 +1765,12 @@ class _ReportsTab extends StatelessWidget {
 class _ReportCard extends StatefulWidget {
   final Map<String, dynamic> r;
   final bool isFr;
-  final BuildContext context;
-  const _ReportCard({required this.r, required this.isFr,
-    required this.context});
+  final Future<void> Function(String type, String title) onGenerate;
+  const _ReportCard({
+    required this.r,
+    required this.isFr,
+    required this.onGenerate,
+  });
   @override State<_ReportCard> createState() => _ReportCardState();
 }
 
@@ -1454,7 +1779,7 @@ class _ReportCardState extends State<_ReportCard> {
   bool _generated = false;
 
   @override
-  Widget build(BuildContext ctx) {
+  Widget build(BuildContext context) {
     final isFr = widget.isFr;
     final r = widget.r;
     final col = r['color'] as Color;
@@ -1507,19 +1832,21 @@ class _ReportCardState extends State<_ReportCard> {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10))),
-                onPressed: _generating ? null : () async {
-                  setState(() => _generating = true);
-                  await Future.delayed(const Duration(seconds: 2));
-                  if (mounted) setState(() {
-                    _generating = false; _generated = true; });
-                  if (mounted) ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(
-                      content: Text(isFr
-                        ? '✅ Rapport "${r['title']}" généré et prêt au téléchargement.'
-                        : '✅ Report "${r['title']}" generated and ready for download.'),
-                      backgroundColor: _lime,
-                      duration: const Duration(seconds: 4)));
-                },
+                onPressed: (r['ready'] == false || _generating)
+                    ? null
+                    : () async {
+                        setState(() => _generating = true);
+                        await widget.onGenerate(
+                          r['type'] as String,
+                          r['title'] as String,
+                        );
+                        if (mounted) {
+                          setState(() {
+                            _generating = false;
+                            _generated = true;
+                          });
+                        }
+                      },
                 icon: _generating
                   ? const SizedBox(width: 14, height: 14,
                       child: CircularProgressIndicator(
@@ -1540,8 +1867,13 @@ class _ReportCardState extends State<_ReportCard> {
 // ══════════════════════════════════════════════════════════════
 class _NgoAccountTab extends StatelessWidget {
   final bool isFr;
+  final bool apiConnected;
   final Function(int) onTabChange;
-  const _NgoAccountTab({required this.isFr, required this.onTabChange});
+  const _NgoAccountTab({
+    required this.isFr,
+    required this.onTabChange,
+    this.apiConnected = false,
+  });
 
   @override
   Widget build(BuildContext context) {

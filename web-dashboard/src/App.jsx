@@ -40,6 +40,7 @@ const HowItWorks = lazy(() => import('./pages/HowItWorks'));
 const InvestorRelations = lazy(() => import('./pages/InvestorRelations'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 const GovernmentPortal = lazy(() => import('./pages/GovernmentPortal'));
+const NgoPortal = lazy(() => import('./pages/NgoPortal'));
 const CooperativePortal = lazy(() => import('./pages/CooperativePortal'));
 const JoinCooperative = lazy(() => import('./pages/JoinCooperative'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -176,6 +177,14 @@ function App() {
                     element={
                       <ApiSection>
                         <GovernmentPortal />
+                      </ApiSection>
+                    }
+                  />
+                  <Route
+                    path="ngo-portal"
+                    element={
+                      <ApiSection>
+                        <NgoPortal />
                       </ApiSection>
                     }
                   />

@@ -484,6 +484,33 @@ export default function GovernmentPortal() {
         </div>
       </div>
 
+      {(orgTypeKey === 'ngo' || orgTypeKey === 'international_org') && (
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div
+            className="rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+            style={{ background: '#0d2a18', border: '1px solid rgba(46,204,113,0.35)' }}
+          >
+            <div>
+              <p className="text-[#2ECC71] font-semibold text-sm">
+                {isFr ? 'Portail Impact & Programmes ONG' : 'NGO Impact & Programs Portal'}
+              </p>
+              <p className="text-white/55 text-xs mt-0.5">
+                {isFr
+                  ? 'Programmes, bénéficiaires, réseau coopératif et rapports PDF — synchronisé avec l’application mobile.'
+                  : 'Programs, beneficiaries, cooperative network, and PDF reports — synced with the mobile app.'}
+              </p>
+            </div>
+            <a
+              href="/ngo-portal"
+              className="px-4 py-2 rounded-lg font-bold text-sm text-black"
+              style={{ background: '#2ECC71' }}
+            >
+              {isFr ? 'Ouvrir le portail ONG →' : 'Open NGO Portal →'}
+            </a>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex overflow-x-auto gap-1 py-3">
           {tabs.map((tab) => (
