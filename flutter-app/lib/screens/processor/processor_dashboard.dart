@@ -10,6 +10,7 @@ import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
+import 'processor_certification_flow.dart';
 
 const _bg      = Color(0xFF1a1200);
 const _surface = Color(0xFF2a1a00);
@@ -430,7 +431,10 @@ class _HomeTab extends StatelessWidget {
               subtitle: isFr ? 'Qualité & normes'
                 : 'Quality & standards',
               color: const Color(0xFF7B61FF),
-              onTap: () => _showCertification(context)),
+              onTap: () => ProcessorCertificationFlow.show(
+                context,
+                isFr: isFr,
+              )),
           ]),
         const SizedBox(height: 20),
 
@@ -481,17 +485,6 @@ class _HomeTab extends StatelessWidget {
               '78%', 0.78, _blue),
           ])),
       ]);
-  }
-
-  void _showCertification(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      useSafeArea: true,
-      backgroundColor: _surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _CertificationSheet(isFr: isFr));
   }
 
   Widget _marketRow(String crop, String buyL, String buy,
@@ -1107,12 +1100,11 @@ class _ProcessingTabState extends State<_ProcessingTab> {
                          : 'Request Certification',
                     style: const TextStyle(color: _green,
                       fontSize: 12, fontWeight: FontWeight.w600)),
-                  onPressed: () => ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(
-                      content: Text(isFr
-                        ? '✅ Demande de certification soumise pour ${b['id']}'
-                        : '✅ Certification request submitted for ${b['id']}'),
-                      backgroundColor: _green)))),
+                  onPressed: () => ProcessorCertificationFlow.show(
+                    context,
+                    isFr: isFr,
+                    batch: b,
+                  ))),
             ],
           ])).animate(delay: Duration(milliseconds: 50 * e.key))
             .fadeIn(duration: 300.ms);
@@ -1827,114 +1819,6 @@ class _ProcessorEditProfileScreenState
               _saving, _save, _amber),
           ]),
         ])));
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// CERTIFICATION BOTTOM SHEET
-// ══════════════════════════════════════════════════════════════
-class _CertificationSheet extends StatefulWidget {
-  final bool isFr;
-  const _CertificationSheet({required this.isFr});
-  @override State<_CertificationSheet> createState() =>
-    _CertificationSheetState();
-}
-
-class _CertificationSheetState extends State<_CertificationSheet> {
-  String _certType = 'iso9001';
-  final _batchCtrl = TextEditingController();
-  bool _submitting = false;
-  bool _submitted = false;
-
-  @override
-  void dispose() { _batchCtrl.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    final isFr = widget.isFr;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        24, 24, 24, SafeInsets.bottom(context, extra: 24)),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 40, height: 4,
-          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.24),
-            borderRadius: BorderRadius.circular(2))),
-        const SizedBox(height: 16),
-        Text(isFr ? '✅ Demande de certification'
-          : '✅ Certification Request',
-          style: const TextStyle(color: _text, fontSize: 18,
-            fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-        if (_submitted)
-          Column(children: [
-            const Icon(Icons.check_circle_outline,
-              color: _green, size: 48),
-            const SizedBox(height: 12),
-            Text(isFr ? 'Demande soumise avec succès !'
-              : 'Request submitted successfully!',
-              style: const TextStyle(color: _text, fontSize: 15,
-                fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            Text(isFr
-              ? 'Notre équipe de certification vous contactera sous 48h.'
-              : 'Our certification team will contact you within 48 hours.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: _muted, fontSize: 13)),
-            const SizedBox(height: 16),
-          ])
-        else ...[
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            isDense: true,
-            value: _certType, dropdownColor: _surface,
-            style: const TextStyle(color: _text),
-            decoration: _dec(isFr ? 'Type de certification'
-              : 'Certification type'),
-            items: [
-              DropdownMenuItem(value: 'iso9001',
-                child: Text('ISO 9001 — Quality Management',
-                  style: const TextStyle(color: _text))),
-              DropdownMenuItem(value: 'iso22000',
-                child: Text('ISO 22000 — Food Safety',
-                  style: const TextStyle(color: _text))),
-              DropdownMenuItem(value: 'organic',
-                child: Text('Organic EU — Bio Certification',
-                  style: const TextStyle(color: _text))),
-              DropdownMenuItem(value: 'fairtrade',
-                child: Text('Fair Trade',
-                  style: const TextStyle(color: _text))),
-              DropdownMenuItem(value: 'haccp',
-                child: Text('HACCP — Food Safety Plan',
-                  style: const TextStyle(color: _text))),
-            ],
-            onChanged: (v) =>
-              setState(() => _certType = v ?? 'iso9001')),
-          const SizedBox(height: 12),
-          _tf(_batchCtrl,
-            isFr ? 'ID du lot concerné (ex: BAT-001)'
-                 : 'Batch ID (e.g. BAT-001)'),
-          const SizedBox(height: 16),
-          SizedBox(width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _amber, foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12))),
-              onPressed: _submitting ? null : () async {
-                setState(() => _submitting = true);
-                await Future.delayed(const Duration(seconds: 1));
-                if (mounted) setState(() {
-                  _submitting = false; _submitted = true; });
-              },
-              child: _submitting
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(
-                      color: Colors.black, strokeWidth: 2))
-                : Text(isFr ? 'Soumettre la demande' : 'Submit Request',
-                    style: const TextStyle(fontWeight: FontWeight.bold)))),
-        ],
-      ]));
   }
 }
 
