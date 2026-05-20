@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Home,
-  Sprout,
+  Wallet,
   TrendingUp,
   Newspaper,
   HelpCircle,
@@ -491,8 +491,8 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
   );
 }
 
-/* ─── MY FARM TAB ───────────────────────────────────────────────────── */
-function FarmTab({ investments, investor, t, navigate }) {
+/* ─── MY PORTFOLIO TAB ─────────────────────────────────────────────── */
+function PortfolioTab({ investments, investor, t, navigate }) {
   const { i18n } = useTranslation();
   if (!investments || investments.length === 0) {
     return (
@@ -513,7 +513,7 @@ function FarmTab({ investments, investor, t, navigate }) {
           className="rounded-2xl px-6 py-3 font-bold"
           style={{ background: '#B5850A', color: '#0d1f17' }}
         >
-          {t('investorPortal.portfolio.chooseCta')} 🌾
+          {t('investorPortal.portfolio.chooseCta')}
         </button>
       </div>
     );
@@ -1348,7 +1348,7 @@ export default function InvestorPortal() {
 
   const TABS = [
     { key: 'home', icon: Home, labelKey: 'home' },
-    { key: 'farm', icon: Sprout, labelKey: 'myFarm' },
+    { key: 'portfolio', icon: Wallet, labelKey: 'myPortfolio' },
     { key: 'prices', icon: TrendingUp, labelKey: 'prices' },
     { key: 'news', icon: Newspaper, labelKey: 'news' },
     { key: 'help', icon: HelpCircle, labelKey: 'help' },
@@ -1436,7 +1436,7 @@ export default function InvestorPortal() {
               <span className="text-[#B5850A] font-bold text-sm shrink-0">AfriYield Exchange</span>
               <span style={{ color: 'rgba(245,240,232,0.25)' }}>{'>'}</span>
               <span className="text-sm truncate" style={{ color: 'rgba(245,240,232,0.55)' }}>
-                {t(`investorPortal.tabs.${activeTab === 'farm' ? 'myFarm' : activeTab}`)}
+                {t(`investorPortal.tabs.${activeTab === 'portfolio' ? 'myPortfolio' : activeTab}`)}
               </span>
             </div>
             <div className="flex items-center gap-3 shrink-0">
@@ -1536,8 +1536,8 @@ export default function InvestorPortal() {
                 onOpenNotifications={() => setShowNotifications(true)}
               />
             )}
-            {activeTab === 'farm' && (
-              <FarmTab investments={investments} investor={investor} t={t} navigate={navigate} />
+            {activeTab === 'portfolio' && (
+              <PortfolioTab investments={investments} investor={investor} t={t} navigate={navigate} />
             )}
             {activeTab === 'prices' && <PricesTab onOpenPremium={() => setShowPremiumModal(true)} />}
             {activeTab === 'news' && <NewsTab t={t} onOpenPremium={() => setShowPremiumModal(true)} />}

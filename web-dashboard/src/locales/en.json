@@ -1197,7 +1197,7 @@
   "investorPortal": {
     "tabs": {
       "home": "Home",
-      "myFarm": "My Farm",
+      "myPortfolio": "My Portfolio",
       "prices": "Prices",
       "news": "News",
       "help": "Help"
@@ -1253,10 +1253,10 @@
       "cta": "See opportunities"
     },
     "portfolio": {
-      "title": "Your seeds in the ground",
+      "title": "Your investment portfolio",
       "subtitle": "Every investment you make supports real African farmers and their families",
-      "empty": "You haven't planted anything yet",
-      "emptySub": "Choose a cooperative below and make your first contribution. As little as $1,000 makes a real difference.",
+      "empty": "You have not invested yet",
+      "emptySub": "Choose a cooperative and make your first contribution. As little as $1,000 makes a real difference.",
       "chooseCta": "Choose my first investment",
       "yourContribution": "Your contribution",
       "expectedReturn": "Expected return",
@@ -1354,9 +1354,9 @@
       "answers": {
         "a1": "You get paid twice a year — in June and December. We send you a message on WhatsApp and email 7 days before your money arrives.",
         "a2": "Track A money buys real equipment — like a tractor or drying machine — that belongs to the cooperative. The equipment is always there as security. Track B is a revenue-share deal with a signed agreement.",
-        "a3": "Go to 'My Farm' tab and tap 'Add more to this investment'. Or browse new opportunities and choose a different cooperative.",
+        "a3": "Go to the 'My Portfolio' tab and tap 'Add more to this investment'. Or browse new opportunities and choose a different cooperative.",
         "a4": "Track A means your money buys real equipment for farmers. It is the safer option. Track B means your money goes into growing and selling the brand of a product. It can earn more but takes longer.",
-        "a5": "In 'My Farm', tap 'See the farmers'. You will see the supply chain — from the farmer who grew the crop to the cooperative that processed it."
+        "a5": "In 'My Portfolio', tap 'See the farmers'. You will see the supply chain — from the farmer who grew the crop to the cooperative that processed it."
       },
       "stillNeedHelp": "Still have a question?",
       "questionPlaceholder": "Ask about your portfolio, when you get paid, how to invest more...",

@@ -12,6 +12,7 @@ import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
+import 'investor_portal_content.dart';
 
 const _bg = Color(0xFF0A1628);
 const _surface = Color(0xFF1a2744);
@@ -206,6 +207,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                         opportunities: _opportunities,
                         loading: _loading,
                         isFr: isFr,
+                        displayName: context.watch<AuthState>().displayName,
                         onTabChange: _goTab,
                         onRefresh: _load,
                       ),
@@ -261,7 +263,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                         color: _muted,
                       ),
                       selectedIcon: const Icon(Icons.trending_up, color: _gold),
-                      label: isFr ? 'Échange' : 'Exchange',
+                      label: isFr ? 'Marchés' : 'Markets',
                     ),
                     NavigationDestination(
                       icon: const Icon(
@@ -275,7 +277,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                     NavigationDestination(
                       icon: const Icon(Icons.campaign_outlined, color: _muted),
                       selectedIcon: const Icon(Icons.campaign, color: _gold),
-                      label: isFr ? 'Actualités' : 'Updates',
+                      label: isFr ? 'Actualités' : 'News',
                     ),
                     NavigationDestination(
                       icon: const Icon(
@@ -467,6 +469,7 @@ class _PortfolioTab extends StatelessWidget {
     required this.opportunities,
     required this.loading,
     required this.isFr,
+    required this.displayName,
     required this.onTabChange,
     required this.onRefresh,
   });
@@ -475,6 +478,7 @@ class _PortfolioTab extends StatelessWidget {
   final List<Map<String, dynamic>> opportunities;
   final bool loading;
   final bool isFr;
+  final String displayName;
   final ValueChanged<int> onTabChange;
   final Future<void> Function() onRefresh;
 
@@ -523,6 +527,24 @@ class _PortfolioTab extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: SafeInsets.listBottom(context),
         children: [
+          InvestorGreetingHeader(isFr: isFr, displayName: displayName),
+          const SizedBox(height: 16),
+          if (!loading && investments.isEmpty) ...[
+            InvestorOnboardingCard(
+              isFr: isFr,
+              onCta: () => onTabChange(1),
+            ),
+            const SizedBox(height: 16),
+          ],
+          InvestorActivityFeed(isFr: isFr),
+          const SizedBox(height: 16),
+          InvestorHotOpportunityBanner(
+            isFr: isFr,
+            onCta: () => onTabChange(1),
+          ),
+          const SizedBox(height: 16),
+          InvestorPaymentNoticeCard(isFr: isFr),
+          const SizedBox(height: 16),
           _AboutAfriYieldCard(isFr: isFr),
           const SizedBox(height: 16),
           Text(
@@ -544,7 +566,7 @@ class _PortfolioTab extends StatelessWidget {
             children: [
               _QA(
                 emoji: '💰',
-                title: isFr ? 'Explorer' : 'Browse Deals',
+                title: isFr ? 'Voir les marchés' : 'Browse Markets',
                 color: _gold,
                 onTap: () => onTabChange(1),
               ),
@@ -598,17 +620,30 @@ class _PortfolioTab extends StatelessWidget {
               ),
             )
           else if (investments.isEmpty)
-            _emptyState(
-              Icons.account_balance_wallet_outlined,
-              isFr ? 'Aucun investissement' : 'No investments yet',
-              isFr
-                  ? 'Explorez les opportunités pour commencer'
-                  : 'Browse deals to start investing',
+            InvestorPortfolioEmptyBlock(
+              isFr: isFr,
+              onChoose: () => onTabChange(1),
             )
           else
-            ...investments
-                .take(3)
-                .map((inv) => _InvestmentCard(inv: inv, isFr: isFr)),
+            ...investments.take(3).map((inv) {
+              final status = inv['status']?.toString() ?? 'active';
+              final step = status == 'completed'
+                  ? 3
+                  : status == 'active'
+                      ? 2
+                      : 1;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _InvestmentCard(inv: inv, isFr: isFr),
+                    const SizedBox(height: 8),
+                    InvestorJourneyProgress(isFr: isFr, currentStep: step),
+                  ],
+                ),
+              );
+            }),
           const SizedBox(height: 20),
           Text(
             isFr ? 'Opportunités vedettes' : 'Featured Opportunities',

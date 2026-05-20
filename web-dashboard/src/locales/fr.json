@@ -1197,7 +1197,7 @@
   "investorPortal": {
     "tabs": {
       "home": "Accueil",
-      "myFarm": "Ma Ferme",
+      "myPortfolio": "Mon portefeuille",
       "prices": "Prix",
       "news": "Actualités",
       "help": "Aide"
@@ -1253,9 +1253,9 @@
       "cta": "Voir les opportunités"
     },
     "portfolio": {
-      "title": "Vos graines dans la terre",
+      "title": "Votre portefeuille d'investissement",
       "subtitle": "Chaque investissement que vous faites soutient de vrais agriculteurs africains et leurs familles",
-      "empty": "Vous n'avez pas encore planté",
+      "empty": "Vous n'avez pas encore investi",
       "emptySub": "Choisissez une coopérative et faites votre première contribution. Même 1 000$ fait une vraie différence.",
       "chooseCta": "Choisir mon premier investissement",
       "yourContribution": "Votre contribution",
@@ -1342,9 +1342,9 @@
       "answers": {
         "a1": "Vous êtes payé deux fois par an — en juin et en décembre. Nous vous envoyons un message WhatsApp et un email 7 jours avant que votre argent arrive.",
         "a2": "L'argent Piste A achète de vrais équipements — comme un tracteur ou une machine de séchage — qui appartient à la coopérative. L'équipement est toujours là comme garantie. La Piste B est un accord de partage de revenus avec un contrat signé.",
-        "a3": "Allez dans l'onglet 'Ma Ferme' et appuyez sur 'Ajouter à cet investissement'. Ou parcourez les nouvelles opportunités et choisissez une autre coopérative.",
+        "a3": "Allez dans l'onglet 'Mon portefeuille' et appuyez sur 'Ajouter à cet investissement'. Ou parcourez les nouvelles opportunités et choisissez une autre coopérative.",
         "a4": "La Piste A signifie que votre argent achète de vrais équipements pour les agriculteurs. C'est l'option la plus sûre. La Piste B signifie que votre argent aide à développer et vendre la marque d'un produit. Cela peut rapporter plus mais prend plus de temps.",
-        "a5": "Dans 'Ma Ferme', appuyez sur 'Voir les agriculteurs'. Vous verrez la chaîne d'approvisionnement — du paysan qui a cultivé la récolte à la coopérative qui l'a transformée."
+        "a5": "Dans 'Mon portefeuille', appuyez sur 'Voir les agriculteurs'. Vous verrez la chaîne d'approvisionnement — du paysan qui a cultivé la récolte à la coopérative qui l'a transformée."
       },
       "stillNeedHelp": "Vous avez encore une question?",
       "questionPlaceholder": "Demandez des informations sur votre portefeuille, quand vous êtes payé, comment investir plus...",
