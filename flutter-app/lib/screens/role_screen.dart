@@ -506,152 +506,122 @@ class _RoleScreenState extends State<RoleScreen>
 
   Widget _buildSignInTab(bool isFr, AuthState auth) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      padding: EdgeInsets.fromLTRB(12, 0, 12, SafeInsets.bottom(context)),
+      physics: const BouncingScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 1.15,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        mainAxisExtent: 108,
       ),
       itemCount: roles.length,
       itemBuilder: (context, i) {
         final role = roles[i];
         final isMyRole = auth.isLoggedIn && auth.role == role.role;
-        return GestureDetector(
-          onTap: () => _handleRoleTap(role, auth),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [role.gradStart, role.gradEnd],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border(
-                left: BorderSide(color: role.accent, width: 3),
-                top: BorderSide(
-                  color: isMyRole
-                      ? role.accent.withValues(alpha: 0.4)
-                      : _RolePalette.border,
+        final title = isFr ? role.titleFr : role.titleEn;
+        final desc = isFr ? role.descFr : role.descEn;
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _handleRoleTap(role, auth),
+            borderRadius: BorderRadius.circular(14),
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [role.gradStart, role.gradEnd],
                 ),
-                right: BorderSide(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
                   color: isMyRole
-                      ? role.accent.withValues(alpha: 0.4)
+                      ? role.accent.withValues(alpha: 0.55)
                       : _RolePalette.border,
-                ),
-                bottom: BorderSide(
-                  color: isMyRole
-                      ? role.accent.withValues(alpha: 0.4)
-                      : _RolePalette.border,
+                  width: isMyRole ? 1.5 : 1,
                 ),
               ),
-              boxShadow: isMyRole
-                  ? [
-                      BoxShadow(
-                        color: role.accent.withValues(alpha: 0.2),
-                        blurRadius: 12,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: role.accent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: role.accent.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            role.emoji,
-                            style: const TextStyle(fontSize: 24),
-                          ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: role.accent.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: role.accent.withValues(alpha: 0.3),
                         ),
                       ),
-                      Column(
+                      alignment: Alignment.center,
+                      child: Text(
+                        role.emoji,
+                        style: const TextStyle(fontSize: 20, height: 1),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            isFr ? role.titleFr : role.titleEn,
-                            style: const TextStyle(
+                            title,
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              height: 1.2,
+                              height: 1.15,
+                              letterSpacing: -0.2,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
-                            isFr ? role.descFr : role.descEn,
+                            desc,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 10,
-                              height: 1.25,
+                              color: Colors.white.withValues(alpha: 0.55),
+                              fontSize: 9,
+                              height: 1.2,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          if (isMyRole) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              isFr ? '● Connecté' : '● Signed in',
+                              style: TextStyle(
+                                color: role.accent,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      if (isMyRole) ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: role.accent.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: role.accent.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle_outline,
-                                color: role.accent,
-                                size: 10,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                isFr ? 'Connecté' : 'Signed in',
-                                style: TextStyle(
-                                  color: role.accent,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                    Container(
+                      width: 3,
+                      height: 52,
+                      margin: const EdgeInsets.only(left: 2, top: 2),
+                      decoration: BoxDecoration(
+                        color: role.accent,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         )
-            .animate(delay: Duration(milliseconds: 80 * i))
-            .fadeIn(duration: 300.ms)
-            .scale(begin: const Offset(0.92, 0.92));
+            .animate(delay: Duration(milliseconds: 50 * i))
+            .fadeIn(duration: 250.ms);
       },
     );
   }
