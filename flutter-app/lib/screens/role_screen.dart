@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../core/auth_state.dart';
 import '../core/language_provider.dart';
+import '../core/platform_navigation.dart';
+import '../core/safe_insets.dart';
 import '../core/theme.dart';
 
 class RoleScreen extends StatefulWidget {
@@ -187,7 +189,7 @@ class _RoleScreenState extends State<RoleScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        context.go('/home');
+        goPlatformHome(context);
       },
       child: Scaffold(
       backgroundColor: _RolePalette.bg,
@@ -243,7 +245,7 @@ class _RoleScreenState extends State<RoleScreen>
                           _HeaderIconButton(
                             icon: Icons.home_rounded,
                             label: isFr ? 'Accueil' : 'Home',
-                            onTap: () => context.go('/home'),
+                            onTap: () => goPlatformHome(context),
                           ),
                           const Spacer(),
                           if (auth.isLoggedIn)
@@ -406,6 +408,16 @@ class _RoleScreenState extends State<RoleScreen>
                     ),
                     child: TabBar(
                       controller: _tabCtrl,
+                      tabAlignment: TabAlignment.fill,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicatorPadding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 4,
+                      ),
+                      labelPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       indicator: BoxDecoration(
                         color: _RolePalette.surfaceHi,
                         borderRadius: BorderRadius.circular(10),
@@ -419,6 +431,10 @@ class _RoleScreenState extends State<RoleScreen>
                       labelStyle: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                       tabs: [
                         Tab(text: isFr ? 'Se connecter' : 'Sign In'),
@@ -438,7 +454,9 @@ class _RoleScreenState extends State<RoleScreen>
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: EdgeInsets.only(
+                    bottom: SafeInsets.bottom(context, extra: 8),
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: ['EN', 'FR'].map((l) {
@@ -543,10 +561,11 @@ class _RoleScreenState extends State<RoleScreen>
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           color: role.accent.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
@@ -557,27 +576,36 @@ class _RoleScreenState extends State<RoleScreen>
                         child: Center(
                           child: Text(
                             role.emoji,
-                            style: const TextStyle(fontSize: 22),
+                            style: const TextStyle(fontSize: 24),
                           ),
                         ),
                       ),
-                      const Spacer(),
-                      Text(
-                        isFr ? role.titleFr : role.titleEn,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        isFr ? role.descFr : role.descEn,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
-                          fontSize: 9,
-                        ),
-                        maxLines: 2,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isFr ? role.titleFr : role.titleEn,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isFr ? role.descFr : role.descEn,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 10,
+                              height: 1.25,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                       if (isMyRole) ...[
                         const SizedBox(height: 6),
@@ -630,7 +658,7 @@ class _RoleScreenState extends State<RoleScreen>
 
   Widget _buildDiscoverTab(bool isFr) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, SafeInsets.bottom(context, extra: 32)),
       children: [
         Text(
           isFr ? '📈 Prix du marché en direct' : '📈 Live Market Prices',

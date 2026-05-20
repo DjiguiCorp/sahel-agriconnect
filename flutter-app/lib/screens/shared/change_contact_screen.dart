@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/safe_insets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -126,7 +127,7 @@ class _ChangeContactScreenState extends State<ChangeContactScreen> {
               16,
               16,
               16,
-              MediaQuery.of(context).viewInsets.bottom + 32,
+              SafeInsets.bottom(context, extra: 32),
             ),
             child: Container(
               padding: const EdgeInsets.all(20),

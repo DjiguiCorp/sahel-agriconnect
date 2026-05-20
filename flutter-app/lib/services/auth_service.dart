@@ -1,9 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
-import '../navigation/session_nav.dart';
 import 'api_service.dart';
 
 class AuthService {
@@ -15,22 +12,15 @@ class AuthService {
   );
 
   static final _localAuth = LocalAuthentication();
-  static Timer? _sessionTimer;
-  static const _sessionDuration = Duration(minutes: 30);
-
   static Future<void> saveToken(String role, String token) async {
     await _storage.write(key: 'token_$role', value: token);
-    _resetSessionTimer();
   }
 
   static Future<String?> getToken(String role) =>
       _storage.read(key: 'token_$role');
 
   /// First non-empty JWT among known portal roles (for FCM registration & handoff).
-  static void cancelSessionTimer() {
-    _sessionTimer?.cancel();
-    _sessionTimer = null;
-  }
+  static void cancelSessionTimer() {}
 
   static Future<String?> getAnyStoredJwt() async {
     for (final role in [
@@ -71,27 +61,8 @@ class AuthService {
     }
   }
 
-  static void resetActivity() => _resetSessionTimer();
-
-  static void _resetSessionTimer() {
-    _sessionTimer?.cancel();
-    _sessionTimer = Timer(_sessionDuration, _onSessionExpired);
-  }
-
-  static void _onSessionExpired() {
-    unawaited(_expireSession());
-  }
-
-  static Future<void> _expireSession() async {
-    await Future.wait<void>([
-      _storage.delete(key: 'token_investor'),
-      _storage.delete(key: 'token_cooperative'),
-      _storage.delete(key: 'token_government'),
-      _storage.delete(key: 'token_farmer'),
-      _storage.delete(key: 'token_processor'),
-    ]);
-    onAuthSessionExpired?.call();
-  }
+  /// Sessions persist until explicit sign-out or JWT expiry on restore.
+  static void resetActivity() {}
 
   static Future<String?> getMobileHandoffToken(String action) async {
     try {

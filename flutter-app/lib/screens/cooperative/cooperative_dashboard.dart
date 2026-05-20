@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/safe_insets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -546,7 +547,7 @@ class _HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         Container(
           padding: const EdgeInsets.all(20),
@@ -971,7 +972,7 @@ class _MembersTabState extends State<_MembersTab> {
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         if (!_showForm)
           SizedBox(
@@ -1419,7 +1420,7 @@ class _ProductionTabState extends State<_ProductionTab> {
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         if (!_showForm)
           SizedBox(
@@ -1829,7 +1830,7 @@ class _StatisticsTab extends StatelessWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         Text(
           isFr ? 'Vue d\'ensemble' : 'Overview',
@@ -2560,7 +2561,7 @@ class _CoopEditProfileScreenState extends State<_CoopEditProfileScreen> {
           16,
           16,
           16,
-          MediaQuery.of(context).viewInsets.bottom + 100,
+          SafeInsets.bottom(context, extra: 100),
         ),
         child: _card(
           children: [

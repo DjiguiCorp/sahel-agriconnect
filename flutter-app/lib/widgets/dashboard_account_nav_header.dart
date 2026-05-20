@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/language_provider.dart';
+import '../core/platform_navigation.dart';
 
 /// Top-of-account-tab navigation: return to role dashboard tab 0, or exit to `/platform`.
 class DashboardAccountNavHeader extends StatelessWidget {
@@ -82,7 +82,7 @@ class DashboardAccountNavHeader extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => context.go('/home'),
+          onTap: () => goPlatformHome(context),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),

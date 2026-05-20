@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/safe_insets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -345,7 +346,7 @@ class _OverviewTab extends StatelessWidget {
       (p) => p['status'] == 'active').length;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         // Impact summary
         Container(
@@ -689,7 +690,7 @@ class _ProgramsTabState extends State<_ProgramsTab> {
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         if (!_showBuilder)
           SizedBox(width: double.infinity,
@@ -987,7 +988,7 @@ class _NetworkTabState extends State<_NetworkTab> {
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         // View switcher
         Container(
@@ -1393,7 +1394,7 @@ class _ReportsTab extends StatelessWidget {
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         // Clear explanation — no confusion
         Container(
@@ -1852,7 +1853,7 @@ class _NgoEditProfileScreenState extends State<_NgoEditProfileScreen> {
             fontWeight: FontWeight.w600))),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-          16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 100),
+          16, 16, 16, SafeInsets.bottom(context, extra: 100)),
         child: Column(children: [
           Container(
             padding: const EdgeInsets.all(12),

@@ -69,6 +69,8 @@ class AuthState extends ChangeNotifier {
               _token = token;
               _user = payload;
               _isGuest = false;
+              _accountStatus =
+                  payload['accountStatus'] as String? ?? 'active';
               final prefs = await SharedPreferences.getInstance();
               await prefs.setString('auth_token', token);
               await prefs.setString('auth_role', role.toString());
@@ -84,6 +86,7 @@ class AuthState extends ChangeNotifier {
     } catch (_) {}
 
     if (_token == null) {
+      _isGuest = true;
       try {
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('auth_token');

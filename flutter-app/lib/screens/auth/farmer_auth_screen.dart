@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../core/safe_insets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:provider/provider.dart';
@@ -1054,7 +1055,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
             left: 24,
             right: 24,
             top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            bottom: SafeInsets.bottom(context, extra: 16),
           ),
           child: Container(
             decoration: BoxDecoration(

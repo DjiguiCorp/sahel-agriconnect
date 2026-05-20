@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/safe_insets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -129,7 +130,7 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
                 20,
                 20,
                 20,
-                MediaQuery.of(context).viewInsets.bottom + 100,
+                SafeInsets.bottom(context, extra: 100),
               ),
               child: _step == 0
                   ? _buildStep1(isFr)

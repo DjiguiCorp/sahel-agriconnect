@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/safe_insets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
@@ -520,7 +521,7 @@ class _PortfolioTab extends StatelessWidget {
       onRefresh: onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        padding: SafeInsets.listBottom(context),
         children: [
           _AboutAfriYieldCard(isFr: isFr),
           const SizedBox(height: 16),
@@ -1053,6 +1054,7 @@ class _OpportunityCardState extends State<_OpportunityCard> {
     final isFr = widget.isFr;
     showModalBottomSheet<void>(
       context: context,
+      useSafeArea: true,
       backgroundColor: const Color(0xFF1a2744),
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -1351,7 +1353,7 @@ class _ExchangeTab extends StatelessWidget {
       onRefresh: onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        padding: SafeInsets.listBottom(context),
         children: [
           Container(
             margin: const EdgeInsets.only(bottom: 16),
@@ -1594,7 +1596,7 @@ class _ActivityTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         Text(
           isFr ? 'Mon activité' : 'My Activity',
@@ -1825,7 +1827,7 @@ class _UpdatesTabState extends State<_UpdatesTab> {
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         Text(
           isFr ? 'Alertes de prix' : 'Price Alerts',
@@ -2524,7 +2526,7 @@ class _EditProfileScreenState extends State<_EditProfileScreen> {
           16,
           16,
           16,
-          MediaQuery.of(context).viewInsets.bottom + 100,
+          SafeInsets.bottom(context, extra: 100),
         ),
         child: Container(
           padding: const EdgeInsets.all(20),
@@ -2738,7 +2740,7 @@ class _UpdateCredentialScreenState extends State<_UpdateCredentialScreen> {
           16,
           16,
           16,
-          MediaQuery.of(context).viewInsets.bottom + 100,
+          SafeInsets.bottom(context, extra: 100),
         ),
         child: Container(
           padding: const EdgeInsets.all(20),

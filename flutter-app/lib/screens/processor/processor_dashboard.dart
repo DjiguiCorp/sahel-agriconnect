@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/safe_insets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -366,7 +367,7 @@ class _HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         // Market intelligence — unique to home tab
         _secTitle(isFr ? 'Intelligence marché' : 'Market Intelligence'),
@@ -485,6 +486,7 @@ class _HomeTab extends StatelessWidget {
   void _showCertification(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       backgroundColor: _surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -703,7 +705,7 @@ class _SupplyTabState extends State<_SupplyTab> {
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         if (!_showForm)
           _primaryBtn(
@@ -936,7 +938,7 @@ class _ProcessingTabState extends State<_ProcessingTab> {
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         if (!_showForm)
           _primaryBtn(isFr ? 'Créer un nouveau lot' : 'Log New Batch',
@@ -1202,7 +1204,7 @@ class _ScheduleTabState extends State<_ScheduleTab> {
       .where((s) => s['type'] == 'delivery').toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         if (!_showForm)
           _primaryBtn(isFr ? 'Ajouter une entrée de planning'
@@ -1670,7 +1672,7 @@ class _ProcessorEditProfileScreenState
             fontWeight: FontWeight.w600))),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-          16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 100),
+          16, 16, 16, SafeInsets.bottom(context, extra: 100)),
         child: Column(children: [
           Container(
             padding: const EdgeInsets.all(12),
@@ -1852,7 +1854,7 @@ class _CertificationSheetState extends State<_CertificationSheet> {
     final isFr = widget.isFr;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+        24, 24, 24, SafeInsets.bottom(context, extra: 24)),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 40, height: 4,
           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.24),

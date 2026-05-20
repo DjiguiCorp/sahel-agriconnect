@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/safe_insets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -377,7 +378,7 @@ class _OverviewTab extends StatelessWidget {
       data?['totalHectares']?.toString() ?? '0') ?? 0;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         // National enrollment trend — data-backed
         _sectionTitle(isFr ? 'Tendances nationales' : 'National Trends'),
@@ -587,6 +588,7 @@ class _OverviewTab extends StatelessWidget {
 void _showGovExportModal(BuildContext context, bool isFr) {
   showModalBottomSheet<void>(
       context: context,
+      useSafeArea: true,
       backgroundColor: _surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -775,7 +777,7 @@ class _AgriculturalTabState extends State<_AgriculturalTab> {
       : _sampleCoops.where((c) => c['region'] == _region).toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         // Regional breakdown — navigable, insightful
         _sectionTitle(isFr ? 'Répartition régionale' : 'Regional Breakdown'),
@@ -997,7 +999,7 @@ class _StatisticsTabState extends State<_StatisticsTab> {
     final isFr = widget.isFr;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         _sectionTitle(isFr ? 'Tableau de bord statistique'
           : 'Statistical Dashboard'),
@@ -1354,6 +1356,7 @@ class _PolicyTabState extends State<_PolicyTab> {
       case 'notify_coop':
         showModalBottomSheet(
           context: context,
+      useSafeArea: true,
           backgroundColor: _surface,
           isScrollControlled: true,
           shape: const RoundedRectangleBorder(
@@ -1373,6 +1376,7 @@ class _PolicyTabState extends State<_PolicyTab> {
       case 'registration':
         showModalBottomSheet(
           context: context,
+      useSafeArea: true,
           backgroundColor: _surface,
           isScrollControlled: true,
           shape: const RoundedRectangleBorder(
@@ -1384,6 +1388,7 @@ class _PolicyTabState extends State<_PolicyTab> {
       case 'alert':
         showModalBottomSheet(
           context: context,
+      useSafeArea: true,
           backgroundColor: _surface,
           isScrollControlled: true,
           shape: const RoundedRectangleBorder(
@@ -1401,6 +1406,7 @@ class _PolicyTabState extends State<_PolicyTab> {
       case 'traceability':
         showModalBottomSheet(
           context: context,
+      useSafeArea: true,
           backgroundColor: _surface,
           isScrollControlled: true,
           shape: const RoundedRectangleBorder(
@@ -1441,7 +1447,7 @@ class _PolicyTabState extends State<_PolicyTab> {
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         // Section tabs
         Container(
@@ -2118,7 +2124,7 @@ class _GovEditProfileScreenState extends State<_GovEditProfileScreen> {
             fontWeight: FontWeight.w600))),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-          16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 100),
+          16, 16, 16, SafeInsets.bottom(context, extra: 100)),
         child: Column(children: [
           // Security notice
           Container(
@@ -2271,7 +2277,7 @@ class _NotifyCoopSheetState extends State<_NotifyCoopSheet> {
         24,
         24,
         24,
-        MediaQuery.of(context).viewInsets.bottom + 24,
+        SafeInsets.bottom(context, extra: 24),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -2719,7 +2725,7 @@ class _AlertBroadcastSheetState extends State<_AlertBroadcastSheet> {
         24,
         24,
         24,
-        MediaQuery.of(context).viewInsets.bottom + 24,
+        SafeInsets.bottom(context, extra: 24),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

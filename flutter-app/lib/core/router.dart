@@ -111,14 +111,6 @@ GoRouter buildRouter(
         return _dashboardRoute(authState.role);
       }
 
-      if (loggedIn && loc == '/home') {
-        return _dashboardRoute(authState.role);
-      }
-
-      if (loggedIn && loc == '/role') {
-        return _dashboardRoute(authState.role);
-      }
-
       if (loggedIn && _routeMismatch(authState.role, loc)) {
         return _dashboardRoute(authState.role);
       }

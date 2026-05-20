@@ -56,6 +56,7 @@ class FeatureGateButton extends StatelessWidget {
   void _showAuthModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       backgroundColor: const Color(0xFF1a3c2e),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(

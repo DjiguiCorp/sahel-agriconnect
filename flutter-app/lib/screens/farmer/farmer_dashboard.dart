@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
+import '../../core/platform_navigation.dart';
+import '../../core/safe_insets.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/offline_queue.dart';
@@ -109,8 +111,15 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     _goTab(0);
   }
 
+  void _goPlatformHome() {
+    while (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (mounted) goPlatformHome(context);
+  }
+
   Widget _wrapFarmerTool(Widget child) =>
-      _FarmerToolScope(onHome: _returnToDashboardHome, child: child);
+      _FarmerToolScope(onHome: _goPlatformHome, child: child);
 
   void _pushFarmerTool(Widget child) {
     Navigator.of(context).push(
@@ -303,7 +312,7 @@ class _FarmerHeader extends StatelessWidget {
                                 ? 'Retour à l\'accueil principal'
                                 : 'Back to main platform',
                             child: GestureDetector(
-                              onTap: () => context.go('/home'),
+                              onTap: () => goPlatformHome(context),
                               child: Container(
                                 width: 40,
                                 height: 40,
@@ -742,7 +751,7 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         if (_showSyncNote) ...[
           Container(
@@ -1037,7 +1046,7 @@ class _FarmerAIToolsTab extends StatelessWidget {
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         Text(isFr ? 'Outils agricoles IA' : 'AI Agricultural Tools',
           style: const TextStyle(color: _text, fontSize: 17,
@@ -1178,7 +1187,7 @@ class _FarmerBenefitsTab extends StatelessWidget {
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         Text(isFr ? 'Avantages & programmes' : 'Benefits & Programs',
           style: const TextStyle(color: _text, fontSize: 17, fontWeight: FontWeight.w700)),
@@ -2406,7 +2415,8 @@ class _ThinkTankScreenState extends State<_ThinkTankScreen> {
         // Input
         Container(
           padding: EdgeInsets.fromLTRB(
-            16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+            16, 8, 16, SafeInsets.bottom(context, extra: 8),
+          ),
           color: _bg,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -3594,7 +3604,8 @@ class _ToolScaffold extends StatelessWidget {
     final isFr =
         Localizations.localeOf(context).languageCode == 'fr';
     final onHome = _FarmerToolScope.maybeOf(context)?.onHome;
-    final bottomPad = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    final bottomPad = mq.viewInsets.bottom + mq.padding.bottom;
 
     return Scaffold(
       backgroundColor: _bg,
