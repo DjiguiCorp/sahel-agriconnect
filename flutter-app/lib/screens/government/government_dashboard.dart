@@ -700,36 +700,56 @@ class _AgriculturalTabState extends State<_AgriculturalTab> {
   final _regions = [
     {
       'id': 'northern',
-      'name': {'fr': 'Ceinture Nord', 'en': 'Northern Belt'},
-      'desc': {'fr': 'Gao, Kidal, Tombouctou',
-        'en': 'Gao, Kidal, Timbuktu'},
+      'name': {
+        'fr': 'Zone Agro-Pastorale Sahélienne',
+        'en': 'Sahel Agro-Pastoral Zone',
+      },
+      'desc': {
+        'fr': 'Gao, Kidal, Tombouctou — élevage & cultures sèches',
+        'en': 'Gao, Kidal, Timbuktu — livestock & dryland crops',
+      },
       'farmers': 12450, 'coops': 87, 'area': 245000,
       'topCrop': {'fr': 'Mil & sorgho', 'en': 'Millet & Sorghum'},
-      'challenge': {'fr': 'Aridité, accès à l\'eau',
-        'en': 'Aridity, water access'},
+      'challenge': {
+        'fr': 'Aridité, accès à l\'eau',
+        'en': 'Aridity, water access',
+      },
       'color': const Color(0xFFF59E0B),
     },
     {
       'id': 'central',
-      'name': {'fr': 'Plateau Central', 'en': 'Central Plateau'},
-      'desc': {'fr': 'Mopti, Ségou, San',
-        'en': 'Mopti, Segou, San'},
+      'name': {
+        'fr': 'Bassin Agricole Central',
+        'en': 'Central Agricultural Basin',
+      },
+      'desc': {
+        'fr': 'Mopti, Ségou, San — karité & céréales',
+        'en': 'Mopti, Segou, San — shea & cereals',
+      },
       'farmers': 28700, 'coops': 156, 'area': 420000,
       'topCrop': {'fr': 'Beurre de karité', 'en': 'Shea Butter'},
-      'challenge': {'fr': 'Transformation, commercialisation',
-        'en': 'Processing, marketing'},
+      'challenge': {
+        'fr': 'Transformation, commercialisation',
+        'en': 'Processing, marketing',
+      },
       'color': _blue,
     },
     {
       'id': 'southern',
-      'name': {'fr': 'Corridor Sud', 'en': 'Southern Corridor'},
-      'desc': {'fr': 'Sikasso, Koulikoro, Bamako',
-        'en': 'Sikasso, Koulikoro, Bamako'},
+      'name': {
+        'fr': 'Corridor Agricole du Sud',
+        'en': 'Southern Farming Corridor',
+      },
+      'desc': {
+        'fr': 'Sikasso, Koulikoro, Bamako — coton & cajou',
+        'en': 'Sikasso, Koulikoro, Bamako — cotton & cashew',
+      },
       'farmers': 41200, 'coops': 213, 'area': 610000,
-      'topCrop': {'fr': 'Coton, noix de cajou',
-        'en': 'Cotton, Cashew'},
-      'challenge': {'fr': 'Surexploitation des sols',
-        'en': 'Soil overexploitation'},
+      'topCrop': {'fr': 'Coton, noix de cajou', 'en': 'Cotton, Cashew'},
+      'challenge': {
+        'fr': 'Surexploitation des sols',
+        'en': 'Soil overexploitation',
+      },
       'color': _green,
     },
   ];
@@ -876,12 +896,9 @@ class _AgriculturalTabState extends State<_AgriculturalTab> {
           scrollDirection: Axis.horizontal,
           child: Row(children: [
             _filterChip(isFr ? 'Toutes' : 'All', 'all'),
-            _filterChip(isFr ? 'Ceinture Nord' : 'Northern Belt',
-              'northern'),
-            _filterChip(isFr ? 'Plateau Central' : 'Central Plateau',
-              'central'),
-            _filterChip(isFr ? 'Corridor Sud' : 'Southern Corridor',
-              'southern'),
+            _filterChip(isFr ? 'Zone Sahélienne' : 'Sahel Zone', 'northern'),
+            _filterChip(isFr ? 'Bassin Central' : 'Central Basin', 'central'),
+            _filterChip(isFr ? 'Corridor Sud' : 'Southern Corridor', 'southern'),
           ])),
         const SizedBox(height: 12),
         ...filtered.map((c) => Container(
@@ -1081,7 +1098,9 @@ class _StatisticsTabState extends State<_StatisticsTab> {
   Widget _buildRegional(bool isFr) => Column(children: [
     ...[
       {
-        'region': isFr ? '🏔️ Ceinture Nord' : '🏔️ Northern Belt',
+        'region': isFr
+            ? '🏔️ Zone Agro-Pastorale Sahélienne'
+            : '🏔️ Sahel Agro-Pastoral Zone',
         'farmers': '12,450', 'coops': '87', 'yield': '1.2 t/ha',
         'trend': '+3%', 'insight': isFr
           ? 'Zone aride — irrigations prioritaires pour le mil et sorgho'
@@ -1089,7 +1108,9 @@ class _StatisticsTabState extends State<_StatisticsTab> {
         'color': const Color(0xFFF59E0B),
       },
       {
-        'region': isFr ? '🗻 Plateau Central' : '🗻 Central Plateau',
+        'region': isFr
+            ? '🗻 Bassin Agricole Central'
+            : '🗻 Central Agricultural Basin',
         'farmers': '28,700', 'coops': '156', 'yield': '1.8 t/ha',
         'trend': '+12%', 'insight': isFr
           ? 'Fort potentiel karité — opportunité d\'investissement diaspora'
@@ -1097,7 +1118,9 @@ class _StatisticsTabState extends State<_StatisticsTab> {
         'color': _blue,
       },
       {
-        'region': isFr ? '🌿 Corridor Sud' : '🌿 Southern Corridor',
+        'region': isFr
+            ? '🌿 Corridor Agricole du Sud'
+            : '🌿 Southern Farming Corridor',
         'farmers': '41,200', 'coops': '213', 'yield': '2.4 t/ha',
         'trend': '+8%', 'insight': isFr
           ? 'Zone la plus productive — coton et cajou en expansion'
@@ -1152,55 +1175,116 @@ class _StatisticsTabState extends State<_StatisticsTab> {
       Text(label, style: const TextStyle(color: _muted, fontSize: 9)),
     ]));
 
-  Widget _buildMarkets(bool isFr) => Column(children: [
-    _sectionTitle(isFr ? 'Aperçu des marchés — Références commodités'
-      : 'Market Overview — Commodity Benchmarks'),
-    const SizedBox(height: 12),
-    ...[
-      [isFr ? 'Beurre de karité' : 'Shea Butter',
-       '450 XOF/kg', '490 XOF/kg', '+8.9%', true, _gold],
-      [isFr ? 'Sésame' : 'Sesame',
-       '380 XOF/kg', '410 XOF/kg', '+7.9%', true, _green],
-      [isFr ? 'Noix de cajou' : 'Cashew',
-       '920 XOF/kg', '880 XOF/kg', '-4.3%', false, Colors.red],
-      [isFr ? 'Mil' : 'Millet',
-       '185 XOF/kg', '195 XOF/kg', '+5.4%', true, _blue],
-      [isFr ? 'Coton' : 'Cotton',
-       '265 XOF/kg', '270 XOF/kg', '+1.9%', true,
-       const Color(0xFF7B61FF)],
-    ].map((c) => Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [_surface, _surface2]),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _border)),
-      child: Column(children: [
-        Row(children: [
-          Expanded(child: Text(c[0] as String,
-            style: const TextStyle(color: _text, fontSize: 13,
-              fontWeight: FontWeight.w600))),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: (c[3] as bool ? Colors.green : Colors.red)
-                .withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8)),
-            child: Text(c[4] as String,
-              style: TextStyle(
-                color: c[3] as bool ? Colors.green : Colors.red,
-                fontSize: 11, fontWeight: FontWeight.bold))),
-        ]),
-        const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: _benchItem(
-            isFr ? 'Prix actuel' : 'Current', c[1] as String, _gold)),
-          Expanded(child: _benchItem(
-            isFr ? 'Référence nationale' : 'National benchmark',
-            c[2] as String, _muted)),
-        ]),
-      ])).animate().fadeIn(duration: 300.ms)),
-  ]);
+  Widget _buildMarkets(bool isFr) {
+    final commodities = [
+      {
+        'name': isFr ? 'Beurre de karité' : 'Shea Butter',
+        'current': '450 XOF/kg',
+        'benchmark': '490 XOF/kg',
+        'change': '+8.9%',
+        'up': true,
+        'color': _gold,
+      },
+      {
+        'name': isFr ? 'Sésame' : 'Sesame',
+        'current': '380 XOF/kg',
+        'benchmark': '410 XOF/kg',
+        'change': '+7.9%',
+        'up': true,
+        'color': _green,
+      },
+      {
+        'name': isFr ? 'Noix de cajou' : 'Cashew',
+        'current': '920 XOF/kg',
+        'benchmark': '880 XOF/kg',
+        'change': '-4.3%',
+        'up': false,
+        'color': Colors.red,
+      },
+      {
+        'name': isFr ? 'Mil' : 'Millet',
+        'current': '185 XOF/kg',
+        'benchmark': '195 XOF/kg',
+        'change': '+5.4%',
+        'up': true,
+        'color': _blue,
+      },
+      {
+        'name': isFr ? 'Coton' : 'Cotton',
+        'current': '265 XOF/kg',
+        'benchmark': '270 XOF/kg',
+        'change': '+1.9%',
+        'up': true,
+        'color': const Color(0xFF7B61FF),
+      },
+    ];
+
+    return Column(children: [
+      _sectionTitle(isFr
+          ? 'Aperçu des marchés — Références commodités'
+          : 'Market Overview — Commodity Benchmarks'),
+      const SizedBox(height: 12),
+      ...commodities.map((c) {
+        final up = c['up'] as bool;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [_surface, _surface2]),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _border),
+          ),
+          child: Column(children: [
+            Row(children: [
+              Expanded(
+                child: Text(
+                  c['name'] as String,
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (up ? Colors.green : Colors.red)
+                      .withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  c['change'] as String,
+                  style: TextStyle(
+                    color: up ? Colors.green : Colors.red,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: _benchItem(
+                  isFr ? 'Prix actuel' : 'Current',
+                  c['current'] as String,
+                  _gold,
+                ),
+              ),
+              Expanded(
+                child: _benchItem(
+                  isFr ? 'Référence nationale' : 'National benchmark',
+                  c['benchmark'] as String,
+                  _muted,
+                ),
+              ),
+            ]),
+          ]),
+        ).animate().fadeIn(duration: 300.ms);
+      }),
+    ]);
+  }
 
   Widget _benchItem(String label, String val, Color col) =>
     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1263,6 +1347,94 @@ class _PolicyTabState extends State<_PolicyTab> {
     _nameCtrl.dispose(); _titleCtrl.dispose(); _ministryCtrl.dispose();
     _subjectCtrl.dispose(); _msgCtrl.dispose();
     super.dispose();
+  }
+
+  void _onPolicyAction(BuildContext context, String actionType, bool isFr) {
+    switch (actionType) {
+      case 'notify_coop':
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: _surface,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _NotifyCoopSheet(
+            isFr: isFr,
+            title: isFr
+                ? 'Beurre de karité — Export en hausse'
+                : 'Shea Butter — Rising Export Demand',
+            defaultMsg: isFr
+                ? 'Les prix du beurre de karité ont augmenté de 23%. Préparez votre production pour l\'exportation avant décembre 2026.'
+                : 'Shea butter prices are up 23%. Prepare your production for export before December 2026.',
+          ),
+        );
+        break;
+      case 'registration':
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: _surface,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _RegistrationListSheet(isFr: isFr),
+        );
+        break;
+      case 'alert':
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: _surface,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _AlertBroadcastSheet(
+            isFr: isFr,
+            title: isFr ? 'Avis précoce pluies' : 'Early Rain Advisory',
+            defaultMsg: isFr
+                ? 'Pluies précoces prévues dans le couloir soudano-sahélien. Recommandation: semis anticipé de 2-3 semaines.'
+                : 'Early rains forecast in Sudano-Sahelian corridor. Recommendation: advance sowing by 2-3 weeks.',
+          ),
+        );
+        break;
+      case 'traceability':
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: _surface,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _TraceabilityDetailSheet(isFr: isFr),
+        );
+        break;
+    }
+  }
+
+  String _broadcastSuccessDetail(bool isFr) {
+    final String recipients;
+    final String reach;
+    switch (_audience) {
+      case 'cooperatives':
+        recipients = isFr ? 'Coopératives uniquement' : 'Cooperatives only';
+        reach = isFr ? '456 coopératives' : '456 cooperatives';
+        break;
+      case 'farmers':
+        recipients = isFr ? 'Agriculteurs uniquement' : 'Farmers only';
+        reach = isFr ? '82 350 agriculteurs' : '82,350 farmers';
+        break;
+      case 'investors':
+        recipients = isFr ? 'Investisseurs uniquement' : 'Investors only';
+        reach = isFr ? 'Investisseurs enregistrés' : 'Registered investors';
+        break;
+      default:
+        recipients = isFr ? 'Tous les utilisateurs' : 'All platform users';
+        reach = isFr ? '82 350+ utilisateurs' : '82,350+ users';
+    }
+    return isFr
+        ? 'Directive diffusée avec succès!\n\nDestinataires: $recipients\nMode de livraison: Notification in-app + SMS\nEstimé reçu par: $reach\n\nVotre directive reste visible dans la section « Actualités » de chaque destinataire.'
+        : 'Directive broadcast successfully!\n\nRecipients: $recipients\nDelivery mode: In-app notification + SMS\nEstimated reach: $reach\n\nYour directive remains visible in each recipient\'s "Updates" section.';
   }
 
   @override
@@ -1335,6 +1507,7 @@ class _PolicyTabState extends State<_PolicyTab> {
           : 'European demand for certified organic shea butter increased 23% this quarter. Favorable export window through December 2026.',
         'date': isFr ? 'Mis à jour il y a 2 jours' : 'Updated 2 days ago',
         'action': isFr ? 'Notifier les coopératives' : 'Notify Cooperatives',
+        'actionType': 'notify_coop',
       },
       {
         'emoji': '📝', 'badge': isFr ? 'Enregistrement' : 'Registration',
@@ -1346,6 +1519,7 @@ class _PolicyTabState extends State<_PolicyTab> {
           : 'Goal: 200 new cooperatives registered before June 2026. Registration forms available via Sahel AgriConnect.',
         'date': isFr ? 'En cours' : 'Ongoing',
         'action': isFr ? 'Voir les inscriptions' : 'View Registrations',
+        'actionType': 'registration',
       },
       {
         'emoji': '🌧️', 'badge': isFr ? 'Météo' : 'Advisory',
@@ -1357,6 +1531,7 @@ class _PolicyTabState extends State<_PolicyTab> {
           : 'Weather forecasts indicate early rains in the Sudano-Sahelian corridor. Recommendation: advance sowing by 2-3 weeks.',
         'date': isFr ? 'Valide jusqu\'au 30 mai 2026' : 'Valid until May 30, 2026',
         'action': isFr ? 'Diffuser l\'alerte' : 'Broadcast Alert',
+        'actionType': 'alert',
       },
       {
         'emoji': '🏷️', 'badge': isFr ? 'Réglementation' : 'Regulation',
@@ -1368,6 +1543,7 @@ class _PolicyTabState extends State<_PolicyTab> {
           : 'Agricultural traceability mandate extended to all cooperatives with 50+ members from July 1, 2026.',
         'date': isFr ? 'Effectif le 1er juillet 2026' : 'Effective July 1, 2026',
         'action': isFr ? 'Voir les détails' : 'View Details',
+        'actionType': 'traceability',
       },
     ].map((p) => Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1411,11 +1587,8 @@ class _PolicyTabState extends State<_PolicyTab> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10))),
-              onPressed: () => ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(
-                  content: Text(isFr ? '✅ Action exécutée.'
-                    : '✅ Action executed.'),
-                  backgroundColor: _green)),
+              onPressed: () => _onPolicyAction(
+                context, p['actionType'] as String, isFr),
               child: Text(p['action'] as String,
                 style: TextStyle(color: p['color'] as Color,
                   fontSize: 12, fontWeight: FontWeight.w600)))),
@@ -1474,7 +1647,7 @@ class _PolicyTabState extends State<_PolicyTab> {
               children: [
                 Container(width: 6, height: 6,
                   margin: const EdgeInsets.only(top: 5),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: _green, shape: BoxShape.circle)),
                 const SizedBox(width: 10),
                 Expanded(child: Text(item,
@@ -1517,12 +1690,11 @@ class _PolicyTabState extends State<_PolicyTab> {
             style: const TextStyle(color: _text, fontSize: 16,
               fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text(isFr
-            ? 'Votre directive a été diffusée aux destinataires sélectionnés sur la plateforme. Les utilisateurs seront notifiés immédiatement.'
-            : 'Your directive has been broadcast to selected recipients on the platform. Users will be notified immediately.',
+          Text(
+            _broadcastSuccessDetail(isFr),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _muted, fontSize: 13,
-              height: 1.4)),
+            style: const TextStyle(color: _muted, fontSize: 13, height: 1.5),
+          ),
           const SizedBox(height: 16),
           OutlinedButton(
             style: OutlinedButton.styleFrom(
@@ -1567,9 +1739,10 @@ class _PolicyTabState extends State<_PolicyTab> {
         const SizedBox(height: 12),
         _lbl(isFr ? '🎯 Destinataires' : '🎯 Target Audience'),
         DropdownButtonFormField<String>(
+          key: ValueKey(_audience),
           isExpanded: true,
           isDense: true,
-          value: _audience,
+          initialValue: _audience,
           dropdownColor: _surface,
           style: const TextStyle(color: _text),
           decoration: _dec(isFr ? 'Choisir les destinataires'
@@ -1614,9 +1787,12 @@ class _PolicyTabState extends State<_PolicyTab> {
               }
               setState(() => _submitting = true);
               await Future.delayed(const Duration(seconds: 1));
-              if (mounted) setState(() {
-                _submitting = false; _submitted = true;
-              });
+              if (mounted) {
+                setState(() {
+                  _submitting = false;
+                  _submitted = true;
+                });
+              }
             },
             child: _submitting
               ? const SizedBox(width: 20, height: 20,
@@ -2016,9 +2192,11 @@ class _GovEditProfileScreenState extends State<_GovEditProfileScreen> {
             const SizedBox(height: 12),
             _lbl2(isFr ? 'Niveau d\'accès' : 'Access Level'),
             DropdownButtonFormField<String>(
+              key: ValueKey(_accessLevel),
               isExpanded: true,
               isDense: true,
-              value: _accessLevel, dropdownColor: _surface,
+              initialValue: _accessLevel,
+              dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),
               items: [
@@ -2040,6 +2218,862 @@ class _GovEditProfileScreenState extends State<_GovEditProfileScreen> {
           ]),
         ])));
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// POLICY BOTTOM SHEETS
+// ══════════════════════════════════════════════════════════════
+const _sheetHandle = Color(0x3FFFFFFF);
+
+class _NotifyCoopSheet extends StatefulWidget {
+  final bool isFr;
+  final String title;
+  final String defaultMsg;
+  const _NotifyCoopSheet({
+    required this.isFr,
+    required this.title,
+    required this.defaultMsg,
+  });
+  @override
+  State<_NotifyCoopSheet> createState() => _NotifyCoopSheetState();
+}
+
+class _NotifyCoopSheetState extends State<_NotifyCoopSheet> {
+  final Set<String> _selected = {'all'};
+  late TextEditingController _msgCtrl;
+  bool _sent = false;
+
+  final _coops = [
+    'Coopérative Karité Ségou',
+    'Union Sésame Sikasso',
+    'Alliance Cajou Mopti',
+    'Groupement Mil Gao',
+    'Coop Coton Koulikoro',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _msgCtrl = TextEditingController(text: widget.defaultMsg);
+  }
+
+  @override
+  void dispose() {
+    _msgCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: _sheetHandle,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isFr ? '📢 Notifier les coopératives' : '📢 Notify Cooperatives',
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.title,
+            style: const TextStyle(color: _muted, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          if (_sent) ...[
+            const Icon(Icons.check_circle_outline, color: _green, size: 48),
+            const SizedBox(height: 12),
+            Text(
+              isFr
+                  ? '✅ Notification envoyée à ${_selected.contains('all') ? 'toutes les coopératives' : '${_selected.length} coopératives'}.'
+                  : '✅ Notification sent to ${_selected.contains('all') ? 'all cooperatives' : '${_selected.length} cooperatives'}.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _text, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isFr
+                  ? 'Les coopératives recevront une notification dans l\'application et par SMS.'
+                  : 'Cooperatives will receive an in-app notification and SMS.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _muted, fontSize: 12),
+            ),
+          ] else ...[
+            Text(
+              isFr ? 'Destinataires:' : 'Recipients:',
+              style: const TextStyle(
+                color: _muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => setState(() {
+                if (_selected.contains('all')) {
+                  _selected.remove('all');
+                } else {
+                  _selected
+                    ..clear()
+                    ..add('all');
+                }
+              }),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _selected.contains('all')
+                      ? _blue.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _selected.contains('all') ? _blue : _border,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _selected.contains('all')
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                      color: _selected.contains('all') ? _blue : _muted,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      isFr
+                          ? 'Toutes les coopératives enregistrées'
+                          : 'All registered cooperatives',
+                      style: const TextStyle(
+                        color: _text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (!_selected.contains('all')) ...[
+              const SizedBox(height: 8),
+              ..._coops.map(
+                (c) => GestureDetector(
+                  onTap: () => setState(() {
+                    if (_selected.contains(c)) {
+                      _selected.remove(c);
+                    } else {
+                      _selected.add(c);
+                    }
+                  }),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _selected.contains(c)
+                          ? _green.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _selected.contains(c) ? _green : _border,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _selected.contains(c)
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank,
+                          color: _selected.contains(c) ? _green : _muted,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          c,
+                          style: const TextStyle(color: _text, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Text(
+              isFr ? 'Message:' : 'Message:',
+              style: const TextStyle(
+                color: _muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _msgCtrl,
+              maxLines: 3,
+              style: const TextStyle(color: _text, fontSize: 13),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: _bg,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: _blue),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.send_outlined, size: 16),
+                label: Text(
+                  isFr ? 'Envoyer la notification' : 'Send Notification',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: _selected.isEmpty
+                    ? null
+                    : () => setState(() => _sent = true),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RegistrationListSheet extends StatelessWidget {
+  final bool isFr;
+  const _RegistrationListSheet({required this.isFr});
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = [
+      {
+        'name': 'Union Maraîchers Djenné',
+        'region': 'Mopti',
+        'members': 34,
+        'crop': 'Légumes',
+        'date': 'May 12, 2026',
+        'status': 'pending',
+      },
+      {
+        'name': 'Coop Sésame Ménaka',
+        'region': 'Gao',
+        'members': 28,
+        'crop': 'Sésame',
+        'date': 'May 14, 2026',
+        'status': 'pending',
+      },
+      {
+        'name': 'Groupement Femmes Kita',
+        'region': 'Kayes',
+        'members': 67,
+        'crop': 'Karité',
+        'date': 'May 15, 2026',
+        'status': 'under_review',
+      },
+    ];
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: _sheetHandle,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isFr
+                ? '📝 Inscriptions coopératives — 2026'
+                : '📝 Cooperative Registrations — 2026',
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isFr
+                ? '${pending.length} demandes en attente de validation'
+                : '${pending.length} applications pending validation',
+            style: const TextStyle(color: _muted, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          ...pending.map(
+            (p) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          p['name'] as String,
+                          style: const TextStyle(
+                            color: _text,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (p['status'] == 'pending' ? _gold : _blue)
+                              .withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          p['status'] == 'pending'
+                              ? (isFr ? 'En attente' : 'Pending')
+                              : (isFr ? 'En révision' : 'Under review'),
+                          style: TextStyle(
+                            color: p['status'] == 'pending' ? _gold : _blue,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${p['region']} · ${p['members']} ${isFr ? 'membres' : 'members'} · ${p['crop']}',
+                    style: const TextStyle(color: _muted, fontSize: 11),
+                  ),
+                  Text(
+                    '${isFr ? 'Soumis le' : 'Submitted'}: ${p['date']}',
+                    style: const TextStyle(color: _muted, fontSize: 10),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: _green.withValues(alpha: 0.4),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  isFr
+                                      ? '✅ ${p['name']} approuvée.'
+                                      : '✅ ${p['name']} approved.',
+                                ),
+                                backgroundColor: _green,
+                              ),
+                            );
+                          },
+                          child: Text(
+                            isFr ? 'Approuver' : 'Approve',
+                            style: const TextStyle(
+                              color: _green,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: Colors.red.withValues(alpha: 0.4),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            isFr ? 'Rejeter' : 'Reject',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlertBroadcastSheet extends StatefulWidget {
+  final bool isFr;
+  final String title;
+  final String defaultMsg;
+  const _AlertBroadcastSheet({
+    required this.isFr,
+    required this.title,
+    required this.defaultMsg,
+  });
+  @override
+  State<_AlertBroadcastSheet> createState() => _AlertBroadcastSheetState();
+}
+
+class _AlertBroadcastSheetState extends State<_AlertBroadcastSheet> {
+  late TextEditingController _msgCtrl;
+  String _audience = 'all';
+  bool _sent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _msgCtrl = TextEditingController(text: widget.defaultMsg);
+  }
+
+  @override
+  void dispose() {
+    _msgCtrl.dispose();
+    super.dispose();
+  }
+
+  String _getAudienceName(bool isFr) {
+    switch (_audience) {
+      case 'cooperatives':
+        return isFr ? 'Toutes les coopératives' : 'All cooperatives';
+      case 'farmers':
+        return isFr ? 'Tous les agriculteurs' : 'All farmers';
+      default:
+        return isFr ? 'Tous les utilisateurs' : 'All users';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr = widget.isFr;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: _sheetHandle,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isFr ? '🌧️ Diffuser une alerte' : '🌧️ Broadcast Alert',
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.title,
+            style: const TextStyle(color: _muted, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          if (_sent) ...[
+            const Icon(Icons.campaign_outlined, color: _green, size: 48),
+            const SizedBox(height: 12),
+            Text(
+              isFr
+                  ? '✅ Alerte diffusée à tous les utilisateurs sélectionnés.'
+                  : '✅ Alert broadcast to all selected users.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _text, fontSize: 14),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isFr
+                  ? 'Destinataires: ${_getAudienceName(isFr)}\nMode: Notification in-app + SMS'
+                  : 'Recipients: ${_getAudienceName(isFr)}\nMode: In-app notification + SMS',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _muted, fontSize: 12),
+            ),
+          ] else ...[
+            Text(
+              isFr ? 'Destinataires:' : 'Recipients:',
+              style: const TextStyle(
+                color: _muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              key: ValueKey(_audience),
+              initialValue: _audience,
+              dropdownColor: _surface,
+              style: const TextStyle(color: _text),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: _bg,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: 'all',
+                  child: Text(
+                    isFr
+                        ? 'Tous — agriculteurs, coopératives, ONG'
+                        : 'All — farmers, cooperatives, NGOs',
+                    style: const TextStyle(color: _text),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'cooperatives',
+                  child: Text(
+                    isFr ? 'Coopératives uniquement' : 'Cooperatives only',
+                    style: const TextStyle(color: _text),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'farmers',
+                  child: Text(
+                    isFr ? 'Agriculteurs uniquement' : 'Farmers only',
+                    style: const TextStyle(color: _text),
+                  ),
+                ),
+              ],
+              onChanged: (v) => setState(() => _audience = v ?? 'all'),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              isFr ? 'Contenu de l\'alerte:' : 'Alert content:',
+              style: const TextStyle(
+                color: _muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _msgCtrl,
+              maxLines: 3,
+              style: const TextStyle(color: _text, fontSize: 13),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: _bg,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: _blue),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7B61FF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.campaign_outlined, size: 16),
+                label: Text(
+                  isFr ? 'Diffuser l\'alerte' : 'Broadcast Alert',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: () => setState(() => _sent = true),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TraceabilityDetailSheet extends StatelessWidget {
+  final bool isFr;
+  const _TraceabilityDetailSheet({required this.isFr});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: _sheetHandle,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isFr
+                ? '🏷️ Mandat de traçabilité — Détails'
+                : '🏷️ Traceability Mandate — Details',
+            style: const TextStyle(
+              color: _text,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isFr ? '📋 Résumé du mandat' : '📋 Mandate Summary',
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _mandateRow(
+                  isFr ? 'Date d\'entrée en vigueur' : 'Effective date',
+                  '1 juillet 2026 / July 1, 2026',
+                ),
+                _mandateRow(
+                  isFr ? 'Coopératives concernées' : 'Cooperatives concerned',
+                  isFr
+                      ? '50+ membres (456 coopératives)'
+                      : '50+ members (456 cooperatives)',
+                ),
+                _mandateRow(
+                  isFr ? 'Conformité actuelle' : 'Current compliance',
+                  '72% (330/456)',
+                ),
+                _mandateRow(
+                  isFr ? 'Non-conformes à date' : 'Non-compliant to date',
+                  '126 coopératives',
+                ),
+                _mandateRow(
+                  isFr ? 'Pénalité non-conformité' : 'Non-compliance penalty',
+                  isFr
+                      ? 'Suspension enregistrement plateforme'
+                      : 'Platform registration suspension',
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  isFr ? '🔔 Actions requises:' : '🔔 Required actions:',
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...[
+                  isFr
+                      ? 'Enregistrer tous les lots de production avec QR code'
+                      : 'Register all production batches with QR code',
+                  isFr
+                      ? 'Soumettre rapport de traçabilité avant le 30 juin 2026'
+                      : 'Submit traceability report before June 30, 2026',
+                  isFr
+                      ? 'Former au moins 1 agent par coopérative'
+                      : 'Train at least 1 agent per cooperative',
+                ].map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          margin: const EdgeInsets.only(top: 5),
+                          decoration: const BoxDecoration(
+                            color: _green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: const TextStyle(
+                              color: _muted,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.send_outlined, size: 16),
+              label: Text(
+                isFr
+                    ? 'Notifier les coopératives non-conformes'
+                    : 'Notify Non-Compliant Cooperatives',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isFr
+                          ? '✅ 126 coopératives notifiées du délai de conformité.'
+                          : '✅ 126 cooperatives notified of compliance deadline.',
+                    ),
+                    backgroundColor: _green,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  static Widget _mandateRow(String label, String value) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                color: _text,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 // ══════════════════════════════════════════════════════════════
