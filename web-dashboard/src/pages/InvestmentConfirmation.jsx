@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { Loader2 } from 'lucide-react';
+import StripeInvestmentCheckout from '../components/StripeInvestmentCheckout';
 
 const API = API_BASE_URL.replace(/\/$/, '');
 
@@ -44,6 +45,7 @@ export default function InvestmentConfirmation() {
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('stripe');
 
   const investorName = localStorage.getItem('afriyield_investor_name') || '';
   const investorEmail = localStorage.getItem('afriyield_investor_email') || '';
@@ -239,6 +241,51 @@ export default function InvestmentConfirmation() {
           </div>
         </div>
 
+        <div className="mb-6">
+          <p className="text-sm font-semibold text-white/60 mb-3">
+            {i18n.language === 'fr' ? 'Méthode de paiement:' : 'Payment method:'}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                id: 'stripe',
+                label:
+                  i18n.language === 'fr' ? '💳 Carte bancaire' : '💳 Card payment',
+                sub: 'Visa, MC, Amex, Apple/Google Pay',
+                badge: i18n.language === 'fr' ? 'Recommandé' : 'Recommended',
+              },
+              {
+                id: 'wire',
+                label:
+                  i18n.language === 'fr' ? '🏦 Virement bancaire' : '🏦 Wire transfer',
+                sub: 'WISE, Zelle, SWIFT',
+                badge: null,
+              },
+            ].map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setPaymentMethod(m.id)}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  paymentMethod === m.id
+                    ? 'border-amber-500/60 bg-amber-500/10'
+                    : 'border-white/10 bg-white/5 hover:bg-white/8'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-white font-semibold text-sm">{m.label}</span>
+                  {m.badge && (
+                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
+                      {m.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="text-white/40 text-xs">{m.sub}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Section 2 — How to send your investment */}
         <div className="rounded-2xl p-5" style={{ background: '#132a1e', border: '1px solid rgba(181,133,10,0.15)' }}>
           <h3 className="text-white font-bold text-lg mb-4">
@@ -319,7 +366,7 @@ export default function InvestmentConfirmation() {
               </Link>
             </div>
           ) : (
-            <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-4">
               <h3 className="text-white font-bold text-lg">
                 {i18n.language === 'fr' ? 'Votre engagement' : 'Your commitment'}
               </h3>
@@ -356,7 +403,7 @@ export default function InvestmentConfirmation() {
                 </span>
                 <input
                   type="number"
-                  min="1"
+                  min={paymentMethod === 'stripe' ? '500' : '1'}
                   value={form.amount}
                   onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
                   required
@@ -365,40 +412,57 @@ export default function InvestmentConfirmation() {
                 />
               </label>
 
-              <label className="block">
-                <span className="text-white/60 text-xs font-semibold">
-                  {i18n.language === 'fr' ? 'Message ou questions (optionnel)' : 'Message or questions (optional)'}
-                </span>
-                <textarea
-                  rows={3}
-                  value={form.message}
-                  onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
-                  className="mt-1 w-full rounded-xl px-3 py-3 text-sm bg-white/5 border border-white/10 outline-none focus:border-[#B5850A]"
-                  style={{ color: '#F5F0E8' }}
+              {paymentMethod === 'stripe' ? (
+                <StripeInvestmentCheckout
+                  opportunityId={opportunityId}
+                  opportunityName={oppName}
+                  amountUSD={form.amount}
+                  investorEmail={form.email}
+                  investorName={form.name}
+                  expectedROI={expectedROIPercent}
+                  isFr={i18n.language === 'fr'}
+                  onCancel={() => setPaymentMethod('wire')}
                 />
-              </label>
+              ) : (
+                <form onSubmit={submit} className="space-y-4">
+                  <label className="block">
+                    <span className="text-white/60 text-xs font-semibold">
+                      {i18n.language === 'fr'
+                        ? 'Message ou questions (optionnel)'
+                        : 'Message or questions (optional)'}
+                    </span>
+                    <textarea
+                      rows={3}
+                      value={form.message}
+                      onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
+                      className="mt-1 w-full rounded-xl px-3 py-3 text-sm bg-white/5 border border-white/10 outline-none focus:border-[#B5850A]"
+                      style={{ color: '#F5F0E8' }}
+                    />
+                  </label>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full rounded-xl py-3 font-bold text-[#0d1f17] disabled:opacity-60"
-                style={{ background: '#B5850A' }}
-              >
-                {submitting
-                  ? i18n.language === 'fr'
-                    ? 'Envoi...'
-                    : 'Sending...'
-                  : i18n.language === 'fr'
-                    ? "Confirmer mon engagement"
-                    : 'Confirm my commitment'}
-              </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full rounded-xl py-3 font-bold text-[#0d1f17] disabled:opacity-60"
+                    style={{ background: '#B5850A' }}
+                  >
+                    {submitting
+                      ? i18n.language === 'fr'
+                        ? 'Envoi...'
+                        : 'Sending...'
+                      : i18n.language === 'fr'
+                        ? 'Confirmer mon engagement'
+                        : 'Confirm my commitment'}
+                  </button>
 
-              <p className="text-xs text-center" style={{ color: 'rgba(245,240,232,0.45)' }}>
-                {i18n.language === 'fr'
-                  ? "Aucun paiement n'est envoyé à cette étape. Vous recevrez d'abord les instructions par email."
-                  : 'No payment is sent at this step. You will first receive instructions by email.'}
-              </p>
-            </form>
+                  <p className="text-xs text-center" style={{ color: 'rgba(245,240,232,0.45)' }}>
+                    {i18n.language === 'fr'
+                      ? "Aucun paiement n'est envoyé à cette étape. Vous recevrez d'abord les instructions par email."
+                      : 'No payment is sent at this step. You will first receive instructions by email.'}
+                  </p>
+                </form>
+              )}
+            </div>
           )}
         </div>
       </div>

@@ -5,6 +5,7 @@ import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 const SUB = [
   { id: 'opportunities', label: 'Opportunities' },
   { id: 'investors', label: 'Investors' },
+  { id: 'kyc-reviews', label: 'KYC Reviews' },
   { id: 'meetings', label: 'Meeting Requests' },
   { id: 'investments', label: 'Investissements' },
   { id: 'traceability', label: 'Traçabilité' },
@@ -60,6 +61,32 @@ function investorStatusBadge(status) {
   return map[s] || { cls: 'bg-gray-100 text-gray-700', label: s, emoji: '' };
 }
 
+const PAYMENT_STATUS_LABELS = {
+  PAID_STRIPE: 'Paid via Stripe',
+  WIRE_PENDING: 'Wire Transfer Pending',
+  AWAITING_CONTACT: 'Awaiting Contact',
+};
+
+function paymentStatusBadge(label) {
+  const map = {
+    [PAYMENT_STATUS_LABELS.PAID_STRIPE]: {
+      cls: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    },
+    [PAYMENT_STATUS_LABELS.WIRE_PENDING]: {
+      cls: 'bg-amber-50 text-amber-800 border-amber-200',
+    },
+    [PAYMENT_STATUS_LABELS.AWAITING_CONTACT]: {
+      cls: 'bg-slate-50 text-slate-600 border-slate-200',
+    },
+  };
+  return map[label] || { cls: 'bg-gray-50 text-gray-600 border-gray-200' };
+}
+
+function isNewInvestorStatus(status) {
+  const s = String(status || 'New').trim();
+  return s === 'New' || s === 'new';
+}
+
 const emptyOppForm = () => ({
   centerName: '',
   location: '',
@@ -102,11 +129,300 @@ function csvEscape(v) {
   return s;
 }
 
+function KYCReviewPanel({ isFr }) {
+  const [kycs, setKycs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [reviewing, setReviewing] = useState(null);
+  const [decision, setDecision] = useState('');
+  const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadPending = useCallback(() => {
+    setLoading(true);
+    fetch(`${API_BASE_URL}/api/kyc/admin/pending`, { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setKycs(d.kycs || []);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadPending();
+  }, [loadPending]);
+
+  const filtered = filter === 'all'
+    ? kycs
+    : kycs.filter((k) => k.countryCategory === filter);
+
+  const submitReview = async () => {
+    if (!decision) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/kyc/admin/review`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          investorEmail: reviewing.investorEmail,
+          decision,
+          reviewNotes: note,
+          rejectionReason: decision === 'rejected' ? note : '',
+          additionalDocsRequested: decision === 'additional_docs' ? note : '',
+          reviewedBy: 'admin@sahelagriconnect.com',
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Review failed');
+      }
+      setKycs((prev) => prev.filter((k) => k.investorEmail !== reviewing.investorEmail));
+      setReviewing(null);
+      setDecision('');
+      setNote('');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const categoryColors = {
+    african: 'bg-green-500/15 text-green-400',
+    diaspora: 'bg-blue-500/15 text-blue-400',
+    other: 'bg-amber-500/15 text-amber-400',
+  };
+  const categoryLabels = {
+    african: '🌍 African',
+    diaspora: '✈️ Diaspora',
+    other: '🌐 Other',
+  };
+  const sectionHints = {
+    african: isFr
+      ? 'Investisseurs africains — vérification en arrière-plan'
+      : 'African investors — background review',
+    diaspora: isFr
+      ? 'Diaspora (USA / UK / France / Canada) — 24h'
+      : 'Diaspora (USA / UK / France / Canada) — 24h',
+    other: isFr
+      ? 'Autres pays — 48-72h'
+      : 'Other countries — 48-72h',
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-8 text-white/40">
+        {isFr ? 'Chargement des KYC...' : 'Loading KYC reviews...'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 rounded-xl p-4 md:p-6" style={{ background: '#0d1f17' }}>
+      <p className="text-white/50 text-sm">
+        {isFr
+          ? 'Trois files de revue : Africains (après paiement), Diaspora (24h), Autres (48-72h).'
+          : 'Three review queues: African (post-payment), Diaspora (24h), Other (48-72h).'}
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {['african', 'diaspora', 'other'].map((cat) => (
+          <div
+            key={cat}
+            role="button"
+            tabIndex={0}
+            className="rounded-xl border border-white/10 bg-white/5 p-4 text-center cursor-pointer"
+            onClick={() => setFilter(filter === cat ? 'all' : cat)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setFilter(filter === cat ? 'all' : cat);
+              }
+            }}
+          >
+            <p className="text-2xl font-bold text-white">
+              {kycs.filter((k) => k.countryCategory === cat).length}
+            </p>
+            <p className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-1 ${categoryColors[cat]}`}>
+              {categoryLabels[cat]}
+            </p>
+            <p className="text-white/40 text-xs mt-2">{sectionHints[cat]}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {['all', 'african', 'diaspora', 'other'].map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              filter === f
+                ? 'bg-amber-500 text-black'
+                : 'bg-white/10 text-white/60 hover:text-white'
+            }`}
+          >
+            {f === 'all'
+              ? `All (${kycs.length})`
+              : `${categoryLabels[f]} (${kycs.filter((k) => k.countryCategory === f).length})`}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-8 text-white/40 text-sm">
+          {isFr ? 'Aucun KYC en attente' : 'No pending KYC reviews'}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((kyc) => (
+            <div
+              key={kyc.investorEmail}
+              className="rounded-xl border border-white/10 bg-white/5 p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="text-white font-semibold text-sm">{kyc.investorName}</span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryColors[kyc.countryCategory]}`}
+                    >
+                      {kyc.countryOfResidence}
+                    </span>
+                    {kyc.isPEP ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold">
+                        ⚠️ PEP
+                      </span>
+                    ) : null}
+                    {kyc.paymentVerified ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                        💳 Paid
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-white/40 text-xs">{kyc.investorEmail}</p>
+                  <p className="text-white/30 text-xs mt-0.5">
+                    {isFr ? 'Soumis: ' : 'Submitted: '}
+                    {kyc.submittedAt ? new Date(kyc.submittedAt).toLocaleDateString() : '—'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReviewing(kyc)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-black shrink-0"
+                  style={{ backgroundColor: '#B5850A' }}
+                >
+                  {isFr ? 'Examiner' : 'Review'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {reviewing ? (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 max-w-md w-full space-y-4">
+            <h3 className="text-white font-bold text-lg">
+              KYC Review — {reviewing.investorName}
+            </h3>
+            <div className="text-sm text-white/60 space-y-1">
+              <p>
+                {isFr ? 'Pays: ' : 'Country: '}
+                <strong className="text-white">{reviewing.countryOfResidence}</strong>
+              </p>
+              <p>
+                {isFr ? 'Catégorie: ' : 'Category: '}
+                <strong className={categoryColors[reviewing.countryCategory]}>
+                  {categoryLabels[reviewing.countryCategory]}
+                </strong>
+              </p>
+              <p>
+                {isFr ? 'Paiement: ' : 'Payment: '}
+                <strong className={reviewing.paymentVerified ? 'text-green-400' : 'text-amber-400'}>
+                  {reviewing.paymentVerified
+                    ? isFr ? 'Vérifié' : 'Verified'
+                    : isFr ? 'Pas encore payé' : 'Not yet paid'}
+                </strong>
+              </p>
+            </div>
+            <div className="space-y-2">
+              {['approved', 'additional_docs', 'rejected'].map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDecision(d)}
+                  className={`w-full py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                    decision === d
+                      ? d === 'approved'
+                        ? 'bg-green-500 text-white border-green-500'
+                        : d === 'rejected'
+                          ? 'bg-red-500 text-white border-red-500'
+                          : 'bg-amber-500 text-black border-amber-500'
+                      : 'bg-transparent text-white/60 border-white/20'
+                  }`}
+                >
+                  {d === 'approved'
+                    ? '✅ Approve'
+                    : d === 'additional_docs'
+                      ? '📎 Request More Docs'
+                      : '❌ Reject'}
+                </button>
+              ))}
+            </div>
+            {decision ? (
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={
+                  decision === 'approved'
+                    ? isFr ? 'Notes (optionnel)...' : 'Review notes (optional)...'
+                    : decision === 'rejected'
+                      ? isFr ? 'Motif du rejet (requis)...' : 'Reason for rejection (required)...'
+                      : isFr ? 'Documents requis...' : 'Documents required...'
+                }
+                className="w-full bg-black/30 border border-white/15 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/60 placeholder-white/30 resize-none"
+                rows={3}
+              />
+            ) : null}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setReviewing(null);
+                  setDecision('');
+                  setNote('');
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-white/20 text-white/60 text-sm"
+              >
+                {isFr ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={submitReview}
+                disabled={!decision || submitting}
+                className="flex-1 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50"
+                style={{ backgroundColor: '#B5850A', color: 'black' }}
+              >
+                {submitting
+                  ? isFr ? 'Envoi...' : 'Submitting...'
+                  : isFr ? 'Soumettre' : 'Submit Decision'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AfriYieldManagement() {
   const [sub, setSub] = useState('opportunities');
   const [loading, setLoading] = useState(true);
   const [opportunities, setOpportunities] = useState([]);
   const [investors, setInvestors] = useState([]);
+  const [paymentStatusByInvestorId, setPaymentStatusByInvestorId] = useState({});
+  const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
   const [meetingRequests, setMeetingRequests] = useState([]);
   const [investments, setInvestments] = useState([]);
   const [investmentStats, setInvestmentStats] = useState({ totalDeployed: 0, totalPaidOut: 0, activeCount: 0 });
@@ -163,6 +479,65 @@ export default function AfriYieldManagement() {
     const data = await r.json();
     if (data.success && Array.isArray(data.investors)) setInvestors(data.investors);
     else if (Array.isArray(data)) setInvestors(data);
+  }, []);
+
+  const resolvePaymentStatuses = useCallback(async (invList) => {
+    if (!invList?.length) {
+      setPaymentStatusByInvestorId({});
+      return;
+    }
+    setPaymentStatusLoading(true);
+    const map = {};
+    try {
+      await Promise.all(
+        invList.map(async (inv) => {
+          const email = String(inv.email || '')
+            .trim()
+            .toLowerCase();
+          if (!email) {
+            map[inv._id] = PAYMENT_STATUS_LABELS.AWAITING_CONTACT;
+            return;
+          }
+
+          let stripePaid = false;
+          try {
+            const listRes = await fetch(
+              `${API_BASE_URL}/api/payments/stripe/investment-sessions-by-email/${encodeURIComponent(email)}`,
+              { headers: authHeaders() }
+            );
+            const listData = await listRes.json().catch(() => ({}));
+            const sessionIds = (listData.sessions || [])
+              .map((s) => s.sessionId)
+              .filter(Boolean);
+
+            for (const sessionId of sessionIds) {
+              const sessionRes = await fetch(
+                `${API_BASE_URL}/api/payments/stripe/investment-session/${encodeURIComponent(sessionId)}`,
+                { headers: authHeaders() }
+              );
+              const sessionData = await sessionRes.json().catch(() => ({}));
+              if (sessionData.success && sessionData.status === 'paid') {
+                stripePaid = true;
+                break;
+              }
+            }
+          } catch {
+            /* keep default non-Stripe status */
+          }
+
+          if (stripePaid) {
+            map[inv._id] = PAYMENT_STATUS_LABELS.PAID_STRIPE;
+          } else if (isNewInvestorStatus(inv.status)) {
+            map[inv._id] = PAYMENT_STATUS_LABELS.AWAITING_CONTACT;
+          } else {
+            map[inv._id] = PAYMENT_STATUS_LABELS.WIRE_PENDING;
+          }
+        })
+      );
+      setPaymentStatusByInvestorId(map);
+    } finally {
+      setPaymentStatusLoading(false);
+    }
   }, []);
 
   const loadMeetings = useCallback(async () => {
@@ -238,6 +613,12 @@ export default function AfriYieldManagement() {
       cancelled = true;
     };
   }, [loadOpportunities, loadInvestors, loadMeetings, loadInvestments, loadInvestmentStats, loadBatches, loadBatchStats]);
+
+  useEffect(() => {
+    if (sub === 'investors' && investors.length > 0) {
+      resolvePaymentStatuses(investors);
+    }
+  }, [sub, investors, resolvePaymentStatuses]);
 
   const openAdd = () => {
     setForm(emptyOppForm());
@@ -650,6 +1031,7 @@ export default function AfriYieldManagement() {
                   <th className="px-3 py-2 font-semibold">Commodity</th>
                   <th className="px-3 py-2 font-semibold">Investment Range</th>
                   <th className="px-3 py-2 font-semibold">Date Registered</th>
+                  <th className="px-3 py-2 font-semibold">Payment Status</th>
                   <th className="px-3 py-2 font-semibold">Status</th>
                   <th className="px-3 py-2 font-semibold">Actions</th>
                 </tr>
@@ -665,6 +1047,30 @@ export default function AfriYieldManagement() {
                     <td className="px-3 py-2">{inv.investmentRange}</td>
                     <td className="px-3 py-2 whitespace-nowrap">
                       {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="px-3 py-2">
+                      {paymentStatusLoading && !paymentStatusByInvestorId[inv._id] ? (
+                        <span className="text-xs text-gray-400 inline-flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                          Loading…
+                        </span>
+                      ) : (
+                        (() => {
+                          const label =
+                            paymentStatusByInvestorId[inv._id] ||
+                            (isNewInvestorStatus(inv.status)
+                              ? PAYMENT_STATUS_LABELS.AWAITING_CONTACT
+                              : PAYMENT_STATUS_LABELS.WIRE_PENDING);
+                          const ps = paymentStatusBadge(label);
+                          return (
+                            <span
+                              className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${ps.cls}`}
+                            >
+                              {label}
+                            </span>
+                          );
+                        })()
+                      )}
                     </td>
                     <td className="px-3 py-2">
                       {(() => {
@@ -740,6 +1146,10 @@ export default function AfriYieldManagement() {
             ) : null}
           </div>
         </div>
+      )}
+
+      {sub === 'kyc-reviews' && (
+        <KYCReviewPanel isFr={typeof localStorage !== 'undefined' && localStorage.getItem('i18nextLng') === 'fr'} />
       )}
 
       {sub === 'meetings' && (

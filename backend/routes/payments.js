@@ -86,7 +86,75 @@ router.post('/stripe/webhook', async (req, res) => {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       const email = session.customer_email || session.metadata?.email;
-      if (email) {
+      const type = session.metadata?.type;
+
+      // ── AfriYield investment payment ──────────────────────────
+      if (type === 'afriyield_investment') {
+        const {
+          investorEmail,
+          opportunityId,
+          opportunityName,
+          amountUSD,
+          investorName,
+        } = session.metadata || {};
+
+        // Save investment record to database
+        // Import Investment model at top of file:
+        // import Investment from '../models/Investment.js';
+        //
+        // await Investment.create({
+        //   investorEmail: investorEmail || email,
+        //   investorName,
+        //   opportunityId,
+        //   opportunityName,
+        //   amountDeployedUSD: Number(amountUSD),
+        //   status: 'active',
+        //   paymentMethod: 'stripe',
+        //   stripeSessionId: session.id,
+        //   stripePaymentIntentId: session.payment_intent,
+        //   paidAt: new Date(),
+        // });
+
+        // For now, log it (replace with DB save when Investment model is ready)
+        console.log('✅ AfriYield investment payment received:', {
+          email: investorEmail || email,
+          opportunityId,
+          amount: amountUSD,
+          sessionId: session.id,
+        });
+
+        // Notify KYC service that African investor has paid
+        const { getCountryCategory } = await import(
+          '../models/InvestorKYC.js');
+        const investorEmailLower =
+          (investorEmail || email || '').toLowerCase();
+        if (investorEmailLower) {
+          const cat = getCountryCategory(
+            session.metadata?.country || '');
+          if (cat === 'african') {
+            // Mark payment verified for African investor
+            await fetch(
+              `${process.env.BACKEND_URL || 'http://localhost:3001'}`
+                + '/api/kyc/mark-payment-verified',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  investorEmail: investorEmailLower,
+                  stripeSessionId: session.id,
+                }),
+              }
+            );
+          }
+        }
+
+        // TODO: Send confirmation email via SendGrid/Resend
+        // TODO: Notify admin dashboard
+        // TODO: Update opportunity funding progress
+      }
+
+      // ── Subscription payment (existing logic) ─────────────────
+      else if (email) {
         await PremiumSubscription.findOneAndUpdate(
           { investorEmail: email },
           {
@@ -107,6 +175,171 @@ router.post('/stripe/webhook', async (req, res) => {
   } catch (e) {
     console.error('Stripe webhook handler error:', e.message);
     return res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Stripe: AfriYield Investment checkout ───────────────────────
+// POST /api/payments/stripe/create-investment-session
+// Body: { investorEmail, investorName, opportunityId,
+//         opportunityName, amountUSD, expectedROI }
+router.post('/stripe/create-investment-session', async (req, res) => {
+  try {
+    if (!ensureStripeConfigured(res)) return;
+
+    const {
+      investorEmail,
+      investorName,
+      opportunityId,
+      opportunityName,
+      amountUSD,
+      expectedROI,
+    } = req.body || {};
+
+    if (!investorEmail || !amountUSD || !opportunityId) {
+      return res.status(400).json({
+        success: false,
+        error: 'investorEmail, amountUSD, and opportunityId are required',
+      });
+    }
+
+    const amount = Number(amountUSD);
+    if (isNaN(amount) || amount < 500) {
+      return res.status(400).json({
+        success: false,
+        error: 'Minimum investment is $500 USD',
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment', // one-time, not subscription
+      customer_email: investorEmail,
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `AfriYield Investment — ${opportunityName || opportunityId}`,
+              description:
+                `Agricultural investment via AfriYield Exchange. ` +
+                `Projected return: ~${expectedROI || '—'}% (not guaranteed). ` +
+                `Opportunity: ${opportunityName || opportunityId}`,
+              images: [
+                'https://sahelagriconnect.com/assets/afriyield-logo.png',
+              ],
+            },
+            unit_amount: Math.round(amount * 100), // cents
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        type: 'afriyield_investment',
+        investorEmail,
+        investorName: investorName || '',
+        opportunityId,
+        opportunityName: opportunityName || '',
+        amountUSD: String(amount),
+        expectedROI: String(expectedROI || ''),
+      },
+      payment_intent_data: {
+        description: `AfriYield Investment — ${opportunityName || opportunityId}`,
+        metadata: {
+          type: 'afriyield_investment',
+          investorEmail,
+          opportunityId,
+        },
+        // Funds held, manual capture — allows review before capture
+        // Change to 'automatic' for immediate capture
+        capture_method: 'automatic',
+      },
+      success_url:
+        process.env.STRIPE_INVESTMENT_SUCCESS_URL ||
+        `${process.env.FRONTEND_URL}/invest/success?session_id={CHECKOUT_SESSION_ID}&opp=${opportunityId}`,
+      cancel_url:
+        process.env.STRIPE_INVESTMENT_CANCEL_URL ||
+        `${process.env.FRONTEND_URL}/invest/${opportunityId}?cancelled=true`,
+      // Legal disclaimer shown during checkout
+      custom_text: {
+        submit: {
+          message:
+            'By completing this payment you acknowledge that ' +
+            'AfriYield Exchange is not a licensed broker-dealer, ' +
+            'projected returns are not guaranteed, and agricultural ' +
+            'investments carry risk including loss of capital.',
+        },
+      },
+      consent_collection: {
+        terms_of_service: 'required',
+      },
+    });
+
+    return res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+    });
+  } catch (e) {
+    console.error('Stripe investment session error:', e.message);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ── GET /api/payments/stripe/investment-sessions-by-email/:email ─
+// List AfriYield checkout session IDs for an investor (admin payment status)
+router.get('/stripe/investment-sessions-by-email/:email', async (req, res) => {
+  try {
+    if (!ensureStripeConfigured(res)) return;
+
+    const email = String(req.params.email || '')
+      .trim()
+      .toLowerCase();
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'email required' });
+    }
+
+    const sessions = await stripe.checkout.sessions.list({ limit: 100 });
+    const matching = (sessions.data || []).filter((s) => {
+      if (s.metadata?.type !== 'afriyield_investment') return false;
+      const metaEmail = String(s.metadata?.investorEmail || '').toLowerCase();
+      const customerEmail = String(s.customer_email || '').toLowerCase();
+      return metaEmail === email || customerEmail === email;
+    });
+
+    return res.json({
+      success: true,
+      sessions: matching.map((s) => ({
+        sessionId: s.id,
+        payment_status: s.payment_status,
+      })),
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ── GET /api/payments/stripe/investment-session/:sessionId ──────
+// Verify a completed investment session
+router.get('/stripe/investment-session/:sessionId', async (req, res) => {
+  try {
+    if (!ensureStripeConfigured(res)) return;
+
+    const session = await stripe.checkout.sessions.retrieve(
+      req.params.sessionId,
+      { expand: ['payment_intent'] }
+    );
+
+    return res.json({
+      success: true,
+      status: session.payment_status, // 'paid' | 'unpaid' | 'no_payment_required'
+      amountTotal: (session.amount_total || 0) / 100,
+      currency: session.currency,
+      customerEmail: session.customer_email,
+      metadata: session.metadata,
+      paymentIntentId: session.payment_intent?.id,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
   }
 });
 

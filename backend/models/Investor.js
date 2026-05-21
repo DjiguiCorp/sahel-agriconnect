@@ -51,6 +51,22 @@ const investorSchema = new mongoose.Schema({
   },
   fcmToken: { type: String },
   fcmUpdatedAt: Date,
+  kycStatus: {
+    type: String,
+    enum: [
+      'not_started', 'in_progress',
+      'african_pending_review', 'pending_review',
+      'pending_kyc', 'additional_docs',
+      'approved', 'rejected', 'suspended',
+    ],
+    default: 'not_started',
+  },
+  kycSubmittedAt: { type: Date },
+  kycReviewedAt: { type: Date },
+  countryCategory: {
+    type: String,
+    enum: ['african', 'diaspora', 'other'],
+  },
 });
 
 const Investor = mongoose.model('Investor', investorSchema);

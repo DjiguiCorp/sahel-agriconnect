@@ -45,6 +45,7 @@ import verificationRouter from './routes/verification.js';
 import investorNotificationsRouter from './routes/investorNotifications.js';
 import deletionRequestsRouter from './routes/deletionRequests.js';
 import paymentsRouter from './routes/payments.js';
+import kycRoutes from './routes/kyc.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger.js';
 
@@ -176,6 +177,7 @@ app.use('/api/waitlist', waitlistRouter);
 
 // Stripe (subscriptions) + Orange Money + MTN MoMo
 app.use('/api/payments', paymentsRouter);
+app.use('/api/kyc', kycRoutes);
 
 app.use('/api/investments', investmentsRouter);
 app.use('/api/escrow', escrowRouter);

@@ -15,8 +15,9 @@ const RANGES = ['$1,000–$5,000', '$5,000–$25,000', '$25,000–$100,000', '$1
 const HEARD = ['Diaspora community', 'Social media', 'Friend or family', 'Event or conference', 'Other'];
 
 export default function InvestorRegistration() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const isFr = i18n.language === 'fr';
   const { registerUser } = useRegisteredUser();
   const { country: detectedCountry, detected } = useGeolocation();
   const [form, setForm] = useState({
@@ -34,6 +35,7 @@ export default function InvestorRegistration() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [successChoice, setSuccessChoice] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -121,9 +123,9 @@ export default function InvestorRegistration() {
       }
       localStorage.setItem('afriyield_investor_email', form.email);
       localStorage.setItem('afriyield_investor_name', form.fullName);
+      setSuccessChoice(null);
       setSuccess(true);
       registerUser(form.email, form.fullName);
-      setTimeout(() => navigate('/afri-yield/portal'), 2000);
     } catch (err) {
       setError(err.message || t('afriYield.registration.networkError'));
     } finally {
@@ -159,10 +161,43 @@ export default function InvestorRegistration() {
       <section className="section-container pb-20">
         <div className="max-w-2xl mx-auto rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
           {success ? (
-            <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-green-900 flex gap-3">
-              <CheckCircle2 className="h-8 w-8 shrink-0 text-green-600" aria-hidden />
-              <div>
-                <p className="font-semibold">{t('afriYield.registration.successMessage')}</p>
+            <div className="space-y-5">
+              <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-green-900 flex gap-3">
+                <CheckCircle2 className="h-8 w-8 shrink-0 text-green-600" aria-hidden />
+                <div className="flex-1 space-y-3">
+                  {successChoice === 'contact' ? (
+                    <p className="font-semibold">{t('afriYield.registration.successMessage')}</p>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-brand-forest">
+                        {isFr ? 'Inscription réussie !' : 'Registration successful!'}
+                      </p>
+                      <p className="text-sm text-green-800/90 leading-relaxed">
+                        {isFr
+                          ? 'Vous pouvez maintenant parcourir et investir directement via paiement sécurisé par carte'
+                          : 'You can now browse and invest directly via secure card payment on afriyieldexchange.com'}
+                      </p>
+                      <div className="grid gap-3 pt-1 sm:grid-cols-1">
+                        <button
+                          type="button"
+                          onClick={() => navigate('/afri-yield/opportunities')}
+                          className="w-full rounded-lg bg-[#B5850A] py-3 px-4 font-bold text-white hover:bg-[#9a7109] transition text-left"
+                        >
+                          {isFr ? 'Parcourir les opportunités' : 'Browse Opportunities Now'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSuccessChoice('contact')}
+                          className="w-full rounded-lg border border-green-300 bg-white py-3 px-4 font-semibold text-green-900 hover:bg-green-50 transition text-left"
+                        >
+                          {isFr
+                            ? 'Nous vous contacterons sous 24 heures'
+                            : 'We will contact you within 24 hours'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           ) : (

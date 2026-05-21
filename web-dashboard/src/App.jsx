@@ -44,6 +44,7 @@ const NgoPortal = lazy(() => import('./pages/NgoPortal'));
 const CooperativePortal = lazy(() => import('./pages/CooperativePortal'));
 const JoinCooperative = lazy(() => import('./pages/JoinCooperative'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const InvestmentSuccess = lazy(() => import('./pages/InvestmentSuccess'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -60,6 +61,8 @@ function App() {
           <Router>
             <Suspense fallback={<PageLoader />}>
               <Routes>
+                <Route path="/invest/success" element={<InvestmentSuccess />} />
+                <Route path="/invest/cancel" element={<Navigate to="/afri-yield" replace />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
 
                 <Route
