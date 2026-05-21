@@ -15,6 +15,8 @@ export default function StripeInvestmentCheckout({
   investorName,
   expectedROI,
   isFr,
+  submitting = false,
+  pageLoading = false,
   onCancel,
 }) {
   const [loading, setLoading] = useState(false);
@@ -81,7 +83,7 @@ export default function StripeInvestmentCheckout({
             [isFr ? 'Montant' : 'Amount', `$${Number(amountUSD).toLocaleString()} USD`],
             [
               isFr ? 'Rendement projeté' : 'Projected return',
-              `~${expectedROI || '—'}% ${isFr ? '(non garanti)' : '(not guaranteed)'}`,
+              expectedROI > 0 ? `~${expectedROI}% proj.` : '—',
             ],
             [
               isFr ? 'Mode de paiement' : 'Payment method',
@@ -128,7 +130,13 @@ export default function StripeInvestmentCheckout({
       <button
         type="button"
         onClick={handleStripeCheckout}
-        disabled={loading}
+        disabled={
+          !amountUSD ||
+          Number(amountUSD) < 500 ||
+          submitting ||
+          loading ||
+          pageLoading
+        }
         className="w-full py-4 rounded-xl font-bold text-black text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         style={{ backgroundColor: loading ? '#9ca3af' : '#B5850A' }}
       >
@@ -154,12 +162,24 @@ export default function StripeInvestmentCheckout({
         ) : (
           <>
             🔒{' '}
-            {isFr
-              ? `Payer $${Number(amountUSD).toLocaleString()} via Stripe`
-              : `Pay $${Number(amountUSD).toLocaleString()} via Stripe`}
+            {!amountUSD || Number(amountUSD) === 0
+              ? isFr
+                ? 'Entrez un montant pour continuer'
+                : 'Enter amount to continue'
+              : submitting
+                ? isFr
+                  ? 'Traitement...'
+                  : 'Processing...'
+                : isFr
+                  ? `Payer $${Number(amountUSD).toLocaleString()} via Stripe`
+                  : `Pay $${Number(amountUSD).toLocaleString()} via Stripe`}
           </>
         )}
       </button>
+
+      <p className="text-xs mt-1 text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>
+        {isFr ? 'Montant minimum: $500 USD' : 'Minimum amount: $500 USD'}
+      </p>
 
       {onCancel && (
         <button

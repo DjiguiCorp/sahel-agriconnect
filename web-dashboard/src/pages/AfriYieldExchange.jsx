@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Shield, TrendingUp, Globe, ChevronRight, ArrowRight, Check, Star, Lock } from 'lucide-react';
 import { INVESTOR_RESIDENCE_OPTIONS } from '../data/investorResidenceCountries';
+import { useInvestorKYCStatus } from '../hooks/useInvestorKYCStatus';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -10,6 +11,7 @@ export default function AfriYieldExchange() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
   const navigate = useNavigate();
+  const kycState = useInvestorKYCStatus();
   const [stats, setStats] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
   const [email, setEmail] = useState('');
@@ -266,6 +268,70 @@ export default function AfriYieldExchange() {
           </div>
         </div>
       </section>
+
+      {kycState.isRegistered && !kycState.loading && (
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <div
+            className="rounded-xl border px-4 py-3 flex items-center justify-between gap-4 flex-wrap"
+            style={{
+              background: kycState.canInvest
+                ? 'rgba(29,158,117,0.08)'
+                : kycState.kycUnderReview
+                  ? 'rgba(59,130,246,0.08)'
+                  : 'rgba(245,158,11,0.08)',
+              borderColor: kycState.canInvest
+                ? 'rgba(29,158,117,0.3)'
+                : kycState.kycUnderReview
+                  ? 'rgba(59,130,246,0.3)'
+                  : 'rgba(245,158,11,0.3)',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm">
+                {kycState.canInvest ? '✅' : kycState.kycUnderReview ? '⏳' : '⚠️'}
+              </span>
+              <div>
+                <p
+                  className="text-sm font-semibold"
+                  style={{
+                    color: kycState.canInvest ? '#1D9E75' : kycState.kycUnderReview ? '#60a5fa' : '#B5850A',
+                  }}
+                >
+                  {isFr ? `Bonjour, ${kycState.name}` : `Hello, ${kycState.name}`}
+                  {' · '}
+                  {kycState.canInvest
+                    ? isFr
+                      ? 'KYC approuvé ✓'
+                      : 'KYC approved ✓'
+                    : kycState.kycUnderReview
+                      ? isFr
+                        ? 'KYC en cours de révision'
+                        : 'KYC under review'
+                      : isFr
+                        ? 'KYC requis pour investir'
+                        : 'KYC required to invest'}
+                </p>
+                {kycState.kycUnderReview && (
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    {isFr
+                      ? 'Vous serez notifié par email dès validation.'
+                      : 'You will be notified by email once validated.'}
+                  </p>
+                )}
+              </div>
+            </div>
+            {kycState.needsKYC && (
+              <Link
+                to="/afri-yield/register?step=kyc"
+                className="text-xs font-bold px-3 py-1.5 rounded-lg text-black whitespace-nowrap"
+                style={{ backgroundColor: '#B5850A' }}
+              >
+                {isFr ? 'Compléter KYC →' : 'Complete KYC →'}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       <section style={{ background: '#0d1f17' }} className="py-16">
         <div className="section-container">

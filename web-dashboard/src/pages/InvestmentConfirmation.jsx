@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
+import { useInvestorKYCStatus } from '../hooks/useInvestorKYCStatus';
 import { Loader2 } from 'lucide-react';
 import StripeInvestmentCheckout from '../components/StripeInvestmentCheckout';
 
@@ -38,7 +39,10 @@ function computeBiAnnualPayouts(amount, roiPercent) {
 export default function InvestmentConfirmation() {
   const { opportunityId } = useParams();
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+  const kycState = useInvestorKYCStatus();
 
   const [loading, setLoading] = useState(true);
   const [opportunity, setOpportunity] = useState(null);
@@ -124,7 +128,8 @@ export default function InvestmentConfirmation() {
   const oppName = opportunity?.centerName || opportunity?.name || 'Opportunity';
   const commodity = opportunity?.commodity || '—';
   const track = opportunity?.track || '—';
-  const expectedROIPercent = Number(opportunity?.expectedROIPercent ?? 8) || 8;
+  const expectedROIPercent = Number(opportunity?.expectedROIPercent ?? 0) || 0;
+  const roiDisplay = expectedROIPercent > 0 ? `~${expectedROIPercent}% proj.` : '—';
   const payouts = computeBiAnnualPayouts(form.amount, expectedROIPercent);
 
   const submit = async (e) => {
@@ -180,11 +185,85 @@ export default function InvestmentConfirmation() {
           {i18n.language === 'fr' ? 'Confirmer mon investissement' : 'Confirm my investment'}
         </h1>
         <p className="text-sm md:text-base" style={{ color: 'rgba(245,240,232,0.55)' }}>
-          {i18n.language === 'fr'
+          {isFr
             ? "Tout est expliqué simplement — aucun jargon. Vous confirmez d'abord, puis nous vous envoyons les instructions."
             : 'Everything is explained simply — no jargon. You confirm first, then we send instructions.'}
         </p>
 
+        {!kycState.loading && !kycState.canInvest && (
+          <div className="max-w-2xl mx-auto">
+            <div
+              className="rounded-2xl border p-6 text-center"
+              style={{
+                background: kycState.needsKYC ? 'rgba(245,158,11,0.08)' : 'rgba(59,130,246,0.08)',
+                borderColor: kycState.needsKYC ? 'rgba(245,158,11,0.3)' : 'rgba(59,130,246,0.3)',
+              }}
+            >
+              <div className="text-4xl mb-3">
+                {!kycState.isRegistered ? '💰' : kycState.needsKYC ? '🪪' : '⏳'}
+              </div>
+              <h2 className="text-white font-bold text-xl mb-2">
+                {!kycState.isRegistered
+                  ? isFr
+                    ? 'Inscription requise'
+                    : 'Registration Required'
+                  : kycState.needsKYC
+                    ? isFr
+                      ? 'Vérification KYC requise'
+                      : 'KYC Verification Required'
+                    : isFr
+                      ? 'Vérification en cours'
+                      : 'Verification in Progress'}
+              </h2>
+              <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                {!kycState.isRegistered
+                  ? isFr
+                    ? 'Inscrivez-vous comme investisseur AfriYield pour continuer.'
+                    : 'Register as an AfriYield investor to continue.'
+                  : kycState.needsKYC
+                    ? isFr
+                      ? "Une vérification d'identité (KYC) est requise avant d'investir. Cela protège tous les investisseurs."
+                      : 'Identity verification (KYC) is required before investing. This protects all investors.'
+                    : isFr
+                      ? `Votre KYC est en cours de révision. Délai estimé: ${kycState.category === 'diaspora' ? '24 heures' : '48-72 heures'}. Vous recevrez un email de confirmation.`
+                      : `Your KYC is under review. Estimated time: ${kycState.category === 'diaspora' ? '24 hours' : '48-72 hours'}. You will receive a confirmation email.`}
+              </p>
+              {!kycState.kycUnderReview && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.setItem('afriyield_invest_return', window.location.pathname);
+                    navigate(`/afri-yield/register${kycState.needsKYC ? '?step=kyc' : ''}`);
+                  }}
+                  className="px-6 py-3 rounded-xl font-bold text-black text-sm"
+                  style={{ backgroundColor: '#B5850A' }}
+                >
+                  {!kycState.isRegistered
+                    ? isFr
+                      ? "S'inscrire maintenant →"
+                      : 'Register Now →'
+                    : isFr
+                      ? 'Compléter le KYC →'
+                      : 'Complete KYC →'}
+                </button>
+              )}
+              {kycState.kycUnderReview && (
+                <div className="flex flex-col gap-2 items-center">
+                  <div
+                    className="animate-spin w-8 h-8 rounded-full border-2 border-transparent"
+                    style={{ borderTopColor: '#60a5fa' }}
+                  />
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    {isFr ? 'En attente de validation...' : 'Awaiting validation...'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {(kycState.canInvest || kycState.loading) && (
+          <>
         {error ? (
           <div className="rounded-2xl p-4" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
             <p className="text-sm text-red-200">{error}</p>
@@ -204,7 +283,7 @@ export default function InvestmentConfirmation() {
               [i18n.language === 'fr' ? 'Produit' : 'Commodity', commodity],
               [i18n.language === 'fr' ? 'Piste' : 'Track', track],
               [i18n.language === 'fr' ? 'Montant' : 'Amount', form.amount ? fmtMoney(form.amount) : '—'],
-              [i18n.language === 'fr' ? 'Retour attendu' : 'Expected return', `+${expectedROIPercent}% ${i18n.language === 'fr' ? 'par an' : 'per year'}`],
+              [isFr ? 'Retour attendu' : 'Expected return', roiDisplay],
             ].map(([label, value]) => (
               <div key={label}>
                 <p className="text-xs" style={{ color: 'rgba(245,240,232,0.45)' }}>
@@ -420,7 +499,9 @@ export default function InvestmentConfirmation() {
                   investorEmail={form.email}
                   investorName={form.name}
                   expectedROI={expectedROIPercent}
-                  isFr={i18n.language === 'fr'}
+                  isFr={isFr}
+                  submitting={submitting}
+                  pageLoading={loading}
                   onCancel={() => setPaymentMethod('wire')}
                 />
               ) : (
@@ -465,6 +546,8 @@ export default function InvestmentConfirmation() {
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

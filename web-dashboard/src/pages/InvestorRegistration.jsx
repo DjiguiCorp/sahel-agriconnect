@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { Loader2 } from 'lucide-react';
@@ -46,6 +46,8 @@ const TRACK_CARD_BASE = {
 export default function InvestorRegistration() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const skipToKYC = searchParams.get('step') === 'kyc';
   const isFr = i18n.language === 'fr';
   const { registerUser } = useRegisteredUser();
   const { country: detectedCountry, detected } = useGeolocation();
@@ -72,6 +74,18 @@ export default function InvestorRegistration() {
   const [idType, setIdType] = useState('passport');
   const [kycSubmitted, setKycSubmitted] = useState(false);
   const [kycSubmitting, setKycSubmitting] = useState(false);
+  const [pendingReturnUrl, setPendingReturnUrl] = useState(null);
+
+  useEffect(() => {
+    if (!skipToKYC) return;
+    const email = localStorage.getItem('afriyield_investor_email');
+    const name = localStorage.getItem('afriyield_investor_name');
+    if (email && name) {
+      setForm((p) => ({ ...p, email, fullName: name }));
+      setSuccess(true);
+      setKycPhase(true);
+    }
+  }, [skipToKYC]);
 
   useEffect(() => {
     if (!detected || !detectedCountry) return;
@@ -197,13 +211,27 @@ export default function InvestorRegistration() {
         console.error('KYC submit error:', data.error || res.status);
       }
       setKycSubmitted(true);
+      const returnUrl = localStorage.getItem('afriyield_invest_return');
+      if (returnUrl) {
+        setPendingReturnUrl(returnUrl);
+        localStorage.removeItem('afriyield_invest_return');
+        setTimeout(() => navigate(returnUrl), 2500);
+      }
     } catch (e) {
       console.error('KYC submit error:', e);
       setKycSubmitted(true);
+      const returnUrl = localStorage.getItem('afriyield_invest_return');
+      if (returnUrl) {
+        setPendingReturnUrl(returnUrl);
+        localStorage.removeItem('afriyield_invest_return');
+        setTimeout(() => navigate(returnUrl), 2500);
+      }
     } finally {
       setKycSubmitting(false);
     }
   };
+
+  const returnOpp = pendingReturnUrl || localStorage.getItem('afriyield_invest_return');
 
   const residenceLabel = (c) => {
     const key = INVESTOR_RESIDENCE_I18N_KEYS[c];
@@ -466,13 +494,33 @@ export default function InvestorRegistration() {
                   </div>
                 ))}
               </div>
+              {kycSubmitted && returnOpp && (
+                <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-center">
+                  <p className="text-amber-400 text-xs">
+                    {isFr
+                      ? "↩️ Vous serez redirigé vers l'opportunité dans quelques secondes..."
+                      : '↩️ You will be redirected to the opportunity in a few seconds...'}
+                  </p>
+                </div>
+              )}
               <button
                 type="button"
-                onClick={() => navigate('/afri-yield')}
-                className="px-6 py-3 rounded-xl font-bold text-black text-sm"
+                onClick={() => {
+                  const url = pendingReturnUrl || localStorage.getItem('afriyield_invest_return');
+                  localStorage.removeItem('afriyield_invest_return');
+                  setPendingReturnUrl(null);
+                  navigate(url || '/afri-yield');
+                }}
+                className="px-6 py-3 rounded-xl font-bold text-black text-sm mt-4"
                 style={{ backgroundColor: '#B5850A' }}
               >
-                {isFr ? 'Explorer AfriYield Exchange' : 'Explore AfriYield Exchange'}
+                {returnOpp
+                  ? isFr
+                    ? "→ Continuer vers l'investissement"
+                    : '→ Continue to Investment'
+                  : isFr
+                    ? 'Explorer AfriYield Exchange'
+                    : 'Explore AfriYield Exchange'}
               </button>
             </div>
           )}
