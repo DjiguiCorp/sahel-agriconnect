@@ -193,6 +193,7 @@ router.post('/stripe/create-investment-session', async (req, res) => {
       opportunityName,
       amountUSD,
       expectedROI,
+      country,
     } = req.body || {};
 
     if (!investorEmail || !amountUSD || !opportunityId) {
@@ -241,6 +242,7 @@ router.post('/stripe/create-investment-session', async (req, res) => {
         opportunityName: opportunityName || '',
         amountUSD: String(amount),
         expectedROI: String(expectedROI || ''),
+        country: country || '',
       },
       payment_intent_data: {
         description: `AfriYield Investment — ${opportunityName || opportunityId}`,
