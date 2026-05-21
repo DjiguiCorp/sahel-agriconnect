@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { CheckCircle2, Loader2, Search } from 'lucide-react';
 
@@ -29,13 +30,34 @@ function countryFlagEmoji(country) {
   return '🌍';
 }
 
-function statusStepClass(active) {
-  return active ? 'bg-[#B5850A] text-white border-[#B5850A]' : 'bg-white text-gray-700 border-gray-200';
+const CARD_STYLE = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '1rem',
+};
+
+const PANEL_STYLE = {
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '1rem',
+};
+
+function timelineStepStyle(active) {
+  return active
+    ? { background: '#B5850A', color: 'white', border: '1px solid #B5850A', borderRadius: '50%' }
+    : {
+        background: 'rgba(255,255,255,0.05)',
+        color: 'rgba(255,255,255,0.4)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '50%',
+      };
 }
 
 export default function TraceabilityLookup() {
   const { batchNumber } = useParams();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   const [q, setQ] = useState(batchNumber || '');
   const [state, setState] = useState({ loading: false, err: '', record: null, notFound: false });
 
@@ -62,146 +84,223 @@ export default function TraceabilityLookup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchNumber]);
 
+  const goSearch = () => {
+    const bn = String(q).trim();
+    if (!bn) return;
+    navigate(`/trace/${encodeURIComponent(bn)}`);
+  };
+
   const timeline = useMemo(() => {
     const order = ['harvest', 'processing', 'certified', 'sold', 'exported'];
     const labels = {
-      harvest: 'Harvest',
-      processing: 'Processing',
-      certified: 'Certified',
-      sold: 'Sold',
-      exported: 'Exported',
+      harvest: isFr ? 'Récolte' : 'Harvest',
+      processing: isFr ? 'Transformation' : 'Processing',
+      certified: isFr ? 'Certifié' : 'Certified',
+      sold: isFr ? 'Vendu' : 'Sold',
+      exported: isFr ? 'Exporté' : 'Exported',
     };
     const current = state.record?.status || 'harvest';
     const idx = order.indexOf(current);
     return order.map((s, i) => ({ s, label: labels[s], active: i <= (idx >= 0 ? idx : 0) }));
-  }, [state.record]);
+  }, [state.record, isFr]);
 
   const r = state.record;
 
   return (
-    <div className="bg-brand-cream min-h-[60vh]">
-      <section className="bg-[#1a3c2e] text-white py-16">
-        <div className="section-container text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold">Traçabilité AfriYield — Vérifiez votre produit</h1>
-          <p className="mt-4 text-lg text-white/90 max-w-3xl mx-auto">
-            Entrez un numéro de lot pour voir l&apos;historique complet de production
-          </p>
-
-          <form
-            className="mt-8 max-w-2xl mx-auto flex flex-col sm:flex-row gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const bn = String(q).trim();
-              if (!bn) return;
-              navigate(`/trace/${encodeURIComponent(bn)}`);
+    <div style={{ background: '#060f0a', minHeight: '100vh' }}>
+      <section
+        style={{
+          background: 'linear-gradient(135deg, #0d2a18 0%, #060f0a 100%)',
+          borderBottom: '1px solid rgba(29,158,117,0.2)',
+        }}
+        className="py-14"
+      >
+        <div className="max-w-2xl mx-auto px-4 text-center">
+          <span
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-4 border"
+            style={{
+              background: 'rgba(29,158,117,0.1)',
+              color: '#1D9E75',
+              borderColor: 'rgba(29,158,117,0.3)',
             }}
           >
-            <div className="flex-1 relative">
-              <Search className="w-5 h-5 text-white/60 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Numéro de lot (ex: SAC-2025-123456)"
-                className="w-full rounded-xl bg-white/10 border border-white/20 pl-10 pr-4 py-3 text-white placeholder:text-white/50 outline-none focus:ring-2 focus:ring-[#B5850A]"
-              />
-            </div>
+            🔍 {isFr ? 'Traçabilité des produits' : 'Product Traceability'}
+          </span>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+            {isFr ? "Vérifiez l'origine de votre produit" : 'Verify Your Product Origin'}
+          </h1>
+          <p className="text-white/60 text-base mb-8 max-w-lg mx-auto">
+            {isFr
+              ? "Saisissez le numéro de lot pour tracer l'itinéraire complet de ce produit — de la récolte à l'exportation."
+              : 'Enter the batch number to trace the complete journey of this product — from harvest to export.'}
+          </p>
+          <div className="flex gap-2 max-w-lg mx-auto">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  goSearch();
+                }
+              }}
+              placeholder={
+                isFr ? 'Ex: SAC-2026-001 ou numéro de lot' : 'e.g. SAC-2026-001 or batch number'
+              }
+              className="flex-1 px-5 py-4 rounded-xl text-white text-sm focus:outline-none placeholder:text-white/30"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+              }}
+            />
             <button
-              type="submit"
-              className="rounded-xl bg-[#B5850A] text-white font-extrabold px-6 py-3 hover:bg-[#9a7109]"
+              type="button"
+              onClick={goSearch}
+              className="px-6 py-4 rounded-xl font-bold text-black text-sm flex items-center gap-2 whitespace-nowrap hover:opacity-90 transition-opacity"
+              style={{ background: '#1D9E75' }}
             >
-              Vérifier
+              <Search size={16} aria-hidden />
+              {isFr ? 'Rechercher' : 'Search'}
             </button>
-          </form>
+          </div>
         </div>
       </section>
 
       <section className="section-container py-12">
         {state.loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-[#B5850A]" aria-hidden />
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <Loader2 className="animate-spin text-teal-400 mx-auto mb-3" size={32} aria-hidden />
+              <p className="text-white/50 text-sm">{isFr ? 'Recherche en cours...' : 'Searching...'}</p>
+            </div>
           </div>
         ) : state.notFound ? (
-          <div className="max-w-3xl mx-auto rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-            <p className="text-lg font-extrabold text-[#1a3c2e]">
-              Numéro de lot introuvable. Contactez le producteur pour vérification.
+          <div className="max-w-lg mx-auto px-4 py-16 text-center">
+            <div className="text-5xl mb-4">🔍</div>
+            <h2 className="text-white font-bold text-xl mb-2">{isFr ? 'Lot introuvable' : 'Batch Not Found'}</h2>
+            <p className="text-white/50 text-sm">
+              {isFr
+                ? `Aucun lot trouvé pour "${q}". Vérifiez le numéro et réessayez.`
+                : `No batch found for "${q}". Check the number and try again.`}
             </p>
           </div>
         ) : state.err ? (
-          <div className="max-w-3xl mx-auto rounded-2xl border border-red-200 bg-red-50 p-6 text-red-800">
+          <div
+            className="max-w-3xl mx-auto rounded-2xl p-6 text-red-400"
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}
+          >
             {state.err}
           </div>
         ) : r ? (
-          <div className="max-w-4xl mx-auto rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+          <div className="max-w-4xl mx-auto p-8" style={CARD_STYLE}>
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
               <div>
-                <p className="text-xs font-extrabold text-gray-500 tracking-widest">BATCH</p>
+                <p className="text-xs font-extrabold text-white/50 tracking-widest uppercase">Batch</p>
                 <p className="mt-1 text-3xl font-extrabold text-[#B5850A]">{r.batchNumber}</p>
-                <p className="mt-2 text-lg font-extrabold text-[#1a3c2e]">
+                <p className="mt-2 text-lg font-extrabold text-white">
                   {countryFlagEmoji(r.farmerCountry)} {r.commodity}
                 </p>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
-                <CheckCircle2 className="w-5 h-5" aria-hidden />
-                <span className="text-sm font-bold">Ce produit a été vérifié par Sahel AgriConnect ✓</span>
+              <div
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-3"
+                style={{ background: 'rgba(29,158,117,0.12)', border: '1px solid rgba(29,158,117,0.3)' }}
+              >
+                <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0" aria-hidden />
+                <span className="text-sm font-bold text-teal-400">
+                  {isFr
+                    ? 'Ce produit a été vérifié par Sahel AgriConnect ✓'
+                    : 'This product was verified by Sahel AgriConnect ✓'}
+                </span>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 sm:grid-cols-5 gap-2">
-              {timeline.map((t) => (
-                <div key={t.s} className={`rounded-xl border px-3 py-2 text-center text-xs font-extrabold ${statusStepClass(t.active)}`}>
-                  {t.label}
-                </div>
-              ))}
+            <div className="mt-8 relative">
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/10 -translate-y-1/2 hidden sm:block" aria-hidden />
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 relative">
+                {timeline.map((t) => (
+                  <div key={t.s} className="flex flex-col items-center gap-2">
+                    <div
+                      className="w-10 h-10 flex items-center justify-center text-[10px] font-extrabold shrink-0"
+                      style={timelineStepStyle(t.active)}
+                    >
+                      {t.label.charAt(0)}
+                    </div>
+                    <span
+                      className={`text-xs font-bold text-center ${t.active ? 'text-[#B5850A]' : 'text-white/40'}`}
+                    >
+                      {t.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="mt-8 grid md:grid-cols-2 gap-6">
-              <div className="rounded-2xl border border-gray-200 p-5">
-                <p className="text-sm font-extrabold text-[#1a3c2e] mb-3">Farmer</p>
-                <p className="text-gray-800 font-semibold">{r.farmerName || '—'}</p>
-                <p className="text-sm text-gray-600">{r.farmerRegion || '—'}, {r.farmerCountry || '—'}</p>
-                <p className="text-sm text-gray-600 mt-2">Coopérative: {r.cooperativeName || '—'}</p>
+              <div className="p-5" style={PANEL_STYLE}>
+                <p className="text-sm font-semibold uppercase text-teal-400 mb-3">
+                  {isFr ? 'Agriculteur' : 'Farmer'}
+                </p>
+                <p className="text-white font-semibold">{r.farmerName || '—'}</p>
+                <p className="text-sm text-white/50">
+                  {r.farmerRegion || '—'}, {r.farmerCountry || '—'}
+                </p>
+                <p className="text-sm text-white/50 mt-2">
+                  {isFr ? 'Coopérative:' : 'Cooperative:'} {r.cooperativeName || '—'}
+                </p>
               </div>
-              <div className="rounded-2xl border border-gray-200 p-5">
-                <p className="text-sm font-extrabold text-[#1a3c2e] mb-3">Transformation / Processor</p>
-                <p className="text-gray-800 font-semibold">{r.processorName || '—'}</p>
-                <p className="text-sm text-gray-600">{r.buyerCountry ? `Buyer country: ${r.buyerCountry}` : 'Buyer country: —'}</p>
+              <div className="p-5" style={PANEL_STYLE}>
+                <p className="text-sm font-semibold uppercase text-teal-400 mb-3">
+                  {isFr ? 'Transformation / Processeur' : 'Transformation / Processor'}
+                </p>
+                <p className="text-white font-semibold">{r.processorName || '—'}</p>
+                <p className="text-sm text-white/50">
+                  {r.buyerCountry
+                    ? `${isFr ? "Pays acheteur:" : 'Buyer country:'} ${r.buyerCountry}`
+                    : `${isFr ? 'Pays acheteur:' : 'Buyer country:'} —`}
+                </p>
               </div>
             </div>
 
             <div className="mt-6 grid md:grid-cols-3 gap-4">
-              <div className="rounded-2xl border border-gray-200 p-5">
-                <p className="text-xs font-extrabold text-gray-500 uppercase">Harvest date</p>
-                <p className="mt-1 font-extrabold text-[#1a3c2e]">{fmtDate(r.harvestDate)}</p>
-              </div>
-              <div className="rounded-2xl border border-gray-200 p-5">
-                <p className="text-xs font-extrabold text-gray-500 uppercase">Processing date</p>
-                <p className="mt-1 font-extrabold text-[#1a3c2e]">{fmtDate(r.processingDate)}</p>
-              </div>
-              <div className="rounded-2xl border border-gray-200 p-5">
-                <p className="text-xs font-extrabold text-gray-500 uppercase">Export date</p>
-                <p className="mt-1 font-extrabold text-[#1a3c2e]">{fmtDate(r.exportDate)}</p>
-              </div>
+              {[
+                [isFr ? 'Date de récolte' : 'Harvest date', fmtDate(r.harvestDate)],
+                [isFr ? 'Date de transformation' : 'Processing date', fmtDate(r.processingDate)],
+                [isFr ? "Date d'export" : 'Export date', fmtDate(r.exportDate)],
+              ].map(([label, value]) => (
+                <div key={label} className="p-5" style={PANEL_STYLE}>
+                  <p className="text-xs font-extrabold text-white/50 uppercase">{label}</p>
+                  <p className="mt-1 font-extrabold text-white">{value}</p>
+                </div>
+              ))}
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2">
-              <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-800">
-                Quality: {r.qualityGrade || '—'}
+              <span
+                className="inline-flex rounded-full px-3 py-1 text-xs font-bold"
+                style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}
+              >
+                {isFr ? 'Qualité:' : 'Quality:'} {r.qualityGrade || '—'}
               </span>
-              <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-800">
-                Certification: {r.certificationStatus || '—'}
+              <span
+                className="inline-flex rounded-full px-3 py-1 text-xs font-bold"
+                style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}
+              >
+                {isFr ? 'Certification:' : 'Certification:'} {r.certificationStatus || '—'}
               </span>
-              <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-800">
-                Buyer: {countryFlagEmoji(r.buyerCountry)} {r.buyerName || '—'}
+              <span
+                className="inline-flex rounded-full px-3 py-1 text-xs font-bold"
+                style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}
+              >
+                {isFr ? 'Acheteur:' : 'Buyer:'} {countryFlagEmoji(r.buyerCountry)} {r.buyerName || '—'}
               </span>
             </div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700">
-            Entrez un numéro de lot pour commencer.
+          <div className="max-w-3xl mx-auto p-8 text-center text-white/60" style={CARD_STYLE}>
+            {isFr ? 'Entrez un numéro de lot pour commencer.' : 'Enter a batch number to get started.'}
           </div>
         )}
       </section>
     </div>
   );
 }
-

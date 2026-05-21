@@ -28,6 +28,11 @@ const INTEREST_VALUES = ['Equipment Fund', 'Certification', 'Diaspora Investment
 
 const TOTAL_STEPS = 4;
 
+const INPUT_CLS =
+  'w-full bg-black/30 border border-white/15 text-white placeholder-white/30 focus:border-teal-500/60 focus:outline-none rounded-xl px-4 py-3 text-sm';
+const LABEL_CLS = 'text-sm font-medium text-white/70';
+const ERR_CLS = 'text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-3';
+
 export default function CooperativeRegistration() {
   const { t, i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
@@ -92,9 +97,14 @@ export default function CooperativeRegistration() {
   };
 
   return (
-    <div>
-      {/* Hero — keep exactly as is */}
-      <section className="bg-gradient-to-br from-[#1a3c2e] via-[#1a3c2e] to-[#143326] text-white">
+    <div style={{ background: '#060f0a' }}>
+      <section
+        className="text-white"
+        style={{
+          background: 'linear-gradient(135deg, #0a2a25 0%, #061815 100%)',
+          borderBottom: '1px solid rgba(29,158,117,0.2)',
+        }}
+      >
         <div className="section-container py-16 md:py-20">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
             {t('cooperativeReg.hero.title')}
@@ -112,14 +122,16 @@ export default function CooperativeRegistration() {
             {BENEFIT_KEYS.map((key, i) => {
               const Icon = BENEFIT_ICONS[i];
               return (
-                <div key={key} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md">
+                <div
+                  key={key}
+                  className="rounded-2xl p-6 border"
+                  style={{ background: 'rgba(29,158,117,0.06)', borderColor: 'rgba(29,158,117,0.2)' }}
+                >
                   <div className="w-12 h-12 rounded-xl bg-[#B5850A]/15 flex items-center justify-center mb-4">
-                    <Icon className="w-6 h-6 text-[#1a3c2e]" aria-hidden />
+                    <Icon className="w-6 h-6 text-teal-400" aria-hidden />
                   </div>
-                  <h3 className="text-xl font-bold text-[#1a3c2e]">
-                    {t(`cooperativeReg.benefits.${key}.title`)}
-                  </h3>
-                  <p className="mt-2 text-gray-600 text-sm">{t(`cooperativeReg.benefits.${key}.text`)}</p>
+                  <h3 className="text-xl font-bold text-white">{t(`cooperativeReg.benefits.${key}.title`)}</h3>
+                  <p className="mt-2 text-white/60 text-sm">{t(`cooperativeReg.benefits.${key}.text`)}</p>
                 </div>
               );
             })}
@@ -134,12 +146,12 @@ export default function CooperativeRegistration() {
           {!state.ok && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-[#1a3c2e]">
+                <span className="text-sm font-semibold text-teal-400">
                   {i18n.language === 'fr'
                     ? `Étape ${step} sur ${TOTAL_STEPS}`
                     : `Step ${step} of ${TOTAL_STEPS}`}
                 </span>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-white/40">
                   {step === 1
                     ? i18n.language === 'fr'
                       ? 'Informations de base'
@@ -157,12 +169,12 @@ export default function CooperativeRegistration() {
                           : 'Transformation Center'}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-white/10 rounded-full h-2">
                 <div
                   className="h-2 rounded-full transition-all duration-500"
                   style={{
                     width: `${(step / TOTAL_STEPS) * 100}%`,
-                    background: 'linear-gradient(90deg, #1a3c2e, #B5850A)',
+                    background: 'linear-gradient(90deg, #1D9E75, #B5850A)',
                   }}
                 />
               </div>
@@ -173,10 +185,10 @@ export default function CooperativeRegistration() {
                     key={s}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${
                       s < step
-                        ? 'bg-[#1a3c2e] text-white'
+                        ? 'bg-[#1D9E75] text-white'
                         : s === step
                           ? 'bg-[#B5850A] text-white'
-                          : 'bg-gray-200 text-gray-400'
+                          : 'bg-white/10 text-white/40'
                     }`}
                   >
                     {s < step ? '✓' : s}
@@ -188,23 +200,32 @@ export default function CooperativeRegistration() {
 
           {/* SUCCESS STATE */}
           {state.ok ? (
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-8 md:p-12 text-center">
-              <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6">
+            <div
+              className="rounded-3xl p-8 md:p-12 text-center"
+              style={{
+                background: 'rgba(29,158,117,0.1)',
+                border: '1px solid rgba(29,158,117,0.3)',
+              }}
+            >
+              <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-6">
                 <span className="text-4xl">⏳</span>
               </div>
-              <h2 className="text-2xl font-extrabold text-[#1a3c2e] mb-3">
+              <h2 className="text-2xl font-extrabold text-white mb-3">
                 {i18n.language === 'fr'
                   ? 'Demande reçue — En attente de paiement'
                   : 'Application received — Awaiting payment'}
               </h2>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto text-sm leading-relaxed">
+              <p className="text-white/70 mb-6 max-w-md mx-auto text-sm leading-relaxed">
                 {i18n.language === 'fr'
                   ? 'Votre coopérative est enregistrée. Notre équipe vous contactera dans les 48 heures avec les instructions de paiement. Votre portail sera activé après confirmation du paiement de 199$/an.'
                   : 'Your cooperative is registered. Our team will contact you within 48 hours with payment instructions. Your portal will be activated after payment confirmation of $199/year.'}
               </p>
 
-              <div className="text-left bg-[#F5F0E8] rounded-2xl p-5 mb-6 border border-[#B5850A]/20">
-                <p className="font-bold text-[#1a3c2e] mb-4 text-sm">
+              <div
+                className="text-left rounded-2xl p-5 mb-6 border"
+                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+              >
+                <p className="font-bold text-white mb-4 text-sm">
                   {i18n.language === 'fr' ? '📋 Prochaines étapes :' : '📋 Next steps:'}
                 </p>
                 <div className="space-y-3">
@@ -245,30 +266,37 @@ export default function CooperativeRegistration() {
                     <div key={title} className="flex items-start gap-3">
                       <span className="text-lg flex-shrink-0">{icon}</span>
                       <div>
-                        <p className="font-semibold text-[#1a3c2e] text-sm">{title}</p>
-                        <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
+                        <p className="font-semibold text-white text-sm">{title}</p>
+                        <p className="text-white/50 text-xs mt-0.5">{desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 text-left">
-                <p className="font-semibold text-[#1a3c2e] text-sm mb-2">
+              <div
+                className="rounded-xl p-4 mb-6 text-left border"
+                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+              >
+                <p className="font-semibold text-white text-sm mb-2">
                   💳 {i18n.language === 'fr' ? 'Méthodes de paiement acceptées :' : 'Accepted payment methods:'}
                 </p>
-                <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                <div className="flex flex-wrap gap-2 text-xs text-white/60">
                   {['Mobile Money (Orange, Wave, MTN)', 'Virement bancaire', 'Western Union', 'MoneyGram'].map(
                     (m) => (
-                      <span key={m} className="px-2 py-1 bg-gray-50 rounded-lg border border-gray-100">
+                      <span
+                        key={m}
+                        className="px-2 py-1 rounded-lg border"
+                        style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
+                      >
                         {m}
                       </span>
                     )
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-white/40 mt-2">
                   {i18n.language === 'fr' ? 'Contactez-nous pour les détails de paiement : ' : 'Contact us for payment details: '}
-                  <a href="mailto:info@djiguicorporation.org" className="text-[#1a3c2e] font-semibold hover:underline">
+                  <a href="mailto:info@djiguicorporation.org" className="text-teal-400 font-semibold hover:underline">
                     info@djiguicorporation.org
                   </a>
                 </p>
@@ -282,22 +310,25 @@ export default function CooperativeRegistration() {
                 📧 {i18n.language === 'fr' ? 'Contacter pour payer' : 'Contact to pay'}
               </a>
 
-              <p className="text-xs text-gray-400 mt-4">
+              <p className="text-xs text-white/40 mt-4">
                 {i18n.language === 'fr'
                   ? "Votre portail reste inactif jusqu'à réception du paiement. Aucune donnée n'est perdue."
                   : 'Your portal remains inactive until payment is received. No data is lost.'}
               </p>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8">
+            <div
+              className="rounded-2xl border p-6 md:p-8"
+              style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+            >
               {/* STEP 1 — Basic Information */}
               {step === 1 && (
                 <div className="space-y-5">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-[#1a3c2e]">
+                    <h2 className="text-2xl font-extrabold text-white">
                       {i18n.language === 'fr' ? 'Informations de base' : 'Basic Information'}
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-white/50 text-sm mt-1">
                       {i18n.language === 'fr'
                         ? 'Commençons par vous identifier.'
                         : "Let's start by identifying you."}
@@ -305,7 +336,7 @@ export default function CooperativeRegistration() {
                   </div>
 
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className={LABEL_CLS}>
                       {t('cooperativeReg.form.cooperativeName')} *
                     </span>
                     <input
@@ -318,12 +349,12 @@ export default function CooperativeRegistration() {
                           ? 'Ex: Coopérative Karité du Sahel'
                           : 'Ex: Sahel Shea Cooperative'
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none text-sm"
+                      className={INPUT_CLS}
                     />
                   </label>
 
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className={LABEL_CLS}>
                       {t('cooperativeReg.form.leaderName')} *
                     </span>
                     <input
@@ -332,13 +363,13 @@ export default function CooperativeRegistration() {
                       onChange={onChange}
                       required
                       placeholder={i18n.language === 'fr' ? 'Votre nom complet' : 'Your full name'}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none text-sm"
+                      className={INPUT_CLS}
                     />
                   </label>
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label className="block space-y-1">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className={LABEL_CLS}>
                         {t('cooperativeReg.form.email')} *
                       </span>
                       <input
@@ -348,20 +379,20 @@ export default function CooperativeRegistration() {
                         onChange={onChange}
                         required
                         placeholder="votre@email.com"
-                        className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none text-sm"
+                        className={INPUT_CLS}
                       />
                     </label>
                     <label className="block space-y-1">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className={LABEL_CLS}>
                         {t('cooperativeReg.form.phone')}
-                        <span className="text-gray-400 font-normal ml-1">(WhatsApp)</span>
+                        <span className="text-white/40 font-normal ml-1">(WhatsApp)</span>
                       </span>
                       <input
                         name="phone"
                         value={form.phone}
                         onChange={onChange}
                         placeholder="+223 76 12 34 56"
-                        className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none text-sm"
+                        className={INPUT_CLS}
                       />
                     </label>
                   </div>
@@ -382,13 +413,14 @@ export default function CooperativeRegistration() {
                       setState((s) => ({ ...s, err: '' }));
                       setStep(2);
                     }}
-                    className="w-full rounded-xl bg-[#1a3c2e] text-white font-bold py-3.5 hover:bg-[#143326] transition text-sm"
+                    className="w-full rounded-xl text-white font-bold py-3.5 hover:opacity-90 transition text-sm"
+                    style={{ background: '#1D9E75' }}
                   >
                     {i18n.language === 'fr' ? 'Continuer →' : 'Continue →'}
                   </button>
 
                   {state.err && (
-                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+                    <p className={ERR_CLS}>
                       {state.err}
                     </p>
                   )}
@@ -399,10 +431,10 @@ export default function CooperativeRegistration() {
               {step === 2 && (
                 <div className="space-y-5">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-[#1a3c2e]">
+                    <h2 className="text-2xl font-extrabold text-white">
                       {i18n.language === 'fr' ? 'Votre coopérative' : 'Your Cooperative'}
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-white/50 text-sm mt-1">
                       {i18n.language === 'fr'
                         ? 'Parlez-nous de votre structure et de vos productions.'
                         : 'Tell us about your structure and productions.'}
@@ -420,7 +452,7 @@ export default function CooperativeRegistration() {
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label className="block space-y-1">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className={LABEL_CLS}>
                         {t('cooperativeReg.form.memberCount')} *
                       </span>
                       <input
@@ -431,18 +463,19 @@ export default function CooperativeRegistration() {
                         onChange={onChange}
                         required
                         placeholder="Ex: 45"
-                        className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none text-sm"
+                        className={INPUT_CLS}
                       />
                     </label>
                     <label className="block space-y-1">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className={LABEL_CLS}>
                         {t('cooperativeReg.form.certificationStatus')}
                       </span>
                       <select
                         name="certificationStatus"
                         value={form.certificationStatus}
                         onChange={onChange}
-                        className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none bg-white text-sm"
+                        className={INPUT_CLS}
+                        style={{ color: 'white' }}
                       >
                         {CERT_KEYS.map((k, i) => (
                           <option key={k} value={CERT_VALUES[i]}>
@@ -454,7 +487,7 @@ export default function CooperativeRegistration() {
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-3">
+                    <p className={`${LABEL_CLS} mb-3`}>
                       {t('cooperativeReg.form.primaryCrops')}
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -465,11 +498,16 @@ export default function CooperativeRegistration() {
                             key={k}
                             type="button"
                             onClick={() => toggleArrayItem('primaryCrops', CROP_VALUES[i])}
-                            className={`text-sm rounded-xl border px-3 py-2.5 text-center font-medium transition ${
+                            className="text-sm rounded-xl px-3 py-2.5 text-center font-medium transition"
+                            style={
                               on
-                                ? 'bg-[#1a3c2e] border-[#1a3c2e] text-white'
-                                : 'bg-white border-gray-200 text-gray-600 hover:border-[#B5850A]/50'
-                            }`}
+                                ? { background: '#1D9E75', color: 'white', border: '1px solid #1D9E75' }
+                                : {
+                                    background: 'transparent',
+                                    color: 'rgba(255,255,255,0.6)',
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                  }
+                            }
                           >
                             {t(`cooperativeReg.form.crops.${k}`)}
                           </button>
@@ -485,6 +523,7 @@ export default function CooperativeRegistration() {
                             ? 'Ex: Fonio, Niébé, Moringa...'
                             : 'Ex: Fonio, Cowpea, Moringa...'
                         }
+                        className="[&_input]:bg-black/30 [&_input]:border-white/15 [&_input]:text-white [&_input]:placeholder-white/30 [&_input]:focus:border-teal-500/60 [&_p]:text-white/40"
                       />
                     )}
                   </div>
@@ -493,7 +532,7 @@ export default function CooperativeRegistration() {
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="px-5 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold py-3 hover:bg-gray-50 transition text-sm"
+                      className="px-5 rounded-xl border border-white/20 text-white/60 font-semibold py-3 hover:bg-white/5 transition text-sm"
                     >
                       ← {i18n.language === 'fr' ? 'Retour' : 'Back'}
                     </button>
@@ -513,14 +552,15 @@ export default function CooperativeRegistration() {
                         setState((s) => ({ ...s, err: '' }));
                         setStep(3);
                       }}
-                      className="flex-1 rounded-xl bg-[#1a3c2e] text-white font-bold py-3 hover:bg-[#143326] transition text-sm"
+                      className="flex-1 rounded-xl text-white font-bold py-3 hover:opacity-90 transition text-sm"
+                      style={{ background: '#1D9E75' }}
                     >
                       {i18n.language === 'fr' ? 'Continuer →' : 'Continue →'}
                     </button>
                   </div>
 
                   {state.err && (
-                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+                    <p className={ERR_CLS}>
                       {state.err}
                     </p>
                   )}
@@ -531,10 +571,10 @@ export default function CooperativeRegistration() {
               {step === 3 && (
                 <div className="space-y-5">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-[#1a3c2e]">
+                    <h2 className="text-2xl font-extrabold text-white">
                       {i18n.language === 'fr' ? "Programmes d'intérêt" : 'Programs of Interest'}
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-white/50 text-sm mt-1">
                       {i18n.language === 'fr'
                         ? 'Quels programmes souhaitez-vous activer pour votre coopérative ?'
                         : 'Which programs would you like to activate for your cooperative?'}
@@ -550,21 +590,23 @@ export default function CooperativeRegistration() {
                           key={k}
                           type="button"
                           onClick={() => toggleArrayItem('interests', INTEREST_VALUES[i])}
-                          className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition ${
+                          className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-left transition"
+                          style={
                             active
-                              ? 'border-[#1a3c2e] bg-[#1a3c2e]/5'
-                              : 'border-gray-200 bg-white hover:border-gray-300'
-                          }`}
+                              ? { background: 'rgba(29,158,117,0.15)', border: '1px solid #1D9E75' }
+                              : {
+                                  background: 'transparent',
+                                  border: '1px solid rgba(255,255,255,0.15)',
+                                }
+                          }
                         >
                           <span className="text-2xl flex-shrink-0">{icons[i]}</span>
                           <div>
-                            <p
-                              className={`font-semibold text-sm ${active ? 'text-[#1a3c2e]' : 'text-gray-700'}`}
-                            >
+                            <p className={`font-semibold text-sm ${active ? 'text-teal-400' : 'text-white/70'}`}>
                               {t(`cooperativeReg.form.interestOptions.${k}`)}
                             </p>
                             {active && (
-                              <p className="text-xs text-green-600 mt-0.5">
+                              <p className="text-xs text-teal-400 mt-0.5">
                                 ✓ {i18n.language === 'fr' ? 'Sélectionné' : 'Selected'}
                               </p>
                             )}
@@ -575,41 +617,44 @@ export default function CooperativeRegistration() {
                   </div>
 
                   {/* Summary card */}
-                  <div className="bg-[#F5F0E8] rounded-2xl p-5 border border-[#B5850A]/20">
-                    <p className="font-bold text-[#1a3c2e] mb-3 text-sm">
+                  <div
+                    className="rounded-2xl p-5 border"
+                    style={{ background: 'rgba(29,158,117,0.06)', borderColor: 'rgba(29,158,117,0.2)' }}
+                  >
+                    <p className="font-bold text-white mb-3 text-sm">
                       {i18n.language === 'fr'
                         ? '📋 Résumé de votre inscription :'
                         : '📋 Your registration summary:'}
                     </p>
-                    <div className="grid sm:grid-cols-2 gap-2 text-sm text-gray-700">
+                    <div className="grid sm:grid-cols-2 gap-2 text-sm text-white/80">
                       <p>
-                        <span className="text-gray-400">Coopérative:</span>{' '}
-                        <strong>{form.cooperativeName}</strong>
+                        <span className="text-white/40">Coopérative:</span>{' '}
+                        <strong className="text-white">{form.cooperativeName}</strong>
                       </p>
                       <p>
-                        <span className="text-gray-400">
+                        <span className="text-white/40">
                           {i18n.language === 'fr' ? 'Responsable:' : 'Leader:'}
                         </span>{' '}
-                        <strong>{form.leaderName}</strong>
+                        <strong className="text-white">{form.leaderName}</strong>
                       </p>
                       <p>
-                        <span className="text-gray-400">
+                        <span className="text-white/40">
                           {i18n.language === 'fr' ? 'Pays:' : 'Country:'}
                         </span>{' '}
-                        <strong>{form.country}</strong>
+                        <strong className="text-white">{form.country}</strong>
                       </p>
                       <p>
-                        <span className="text-gray-400">
+                        <span className="text-white/40">
                           {i18n.language === 'fr' ? 'Membres:' : 'Members:'}
                         </span>{' '}
-                        <strong>{form.memberCount}</strong>
+                        <strong className="text-white">{form.memberCount}</strong>
                       </p>
                       {form.primaryCrops.length > 0 && (
                         <p className="sm:col-span-2">
-                          <span className="text-gray-400">
+                          <span className="text-white/40">
                             {i18n.language === 'fr' ? 'Cultures:' : 'Crops:'}
                           </span>{' '}
-                          <strong>{form.primaryCrops.join(', ')}</strong>
+                          <strong className="text-white">{form.primaryCrops.join(', ')}</strong>
                           {form.primaryCrops.includes('Other') && form.autresCrops && (
                             <span className="text-[#B5850A] italic">
                               {' '}
@@ -620,13 +665,16 @@ export default function CooperativeRegistration() {
                       )}
                     </div>
                     {/* Pricing reminder */}
-                    <div className="mt-3 pt-3 border-t border-[#B5850A]/20 flex items-center justify-between">
-                      <span className="text-sm text-gray-600">
+                    <div
+                      className="mt-3 pt-3 flex items-center justify-between border-t"
+                      style={{ borderColor: 'rgba(29,158,117,0.2)' }}
+                    >
+                      <span className="text-sm text-white/60">
                         {i18n.language === 'fr' ? 'Adhésion coopérative:' : 'Cooperative membership:'}
                       </span>
-                      <span className="font-bold text-[#1a3c2e]">{t('cooperativeReg.plan.price')}</span>
+                      <span className="font-bold text-teal-400">{t('cooperativeReg.plan.price')}</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-white/40 mt-1">
                       {i18n.language === 'fr'
                         ? 'Aucun paiement requis maintenant — notre équipe vous contactera pour finaliser.'
                         : 'No payment required now — our team will contact you to finalize.'}
@@ -634,7 +682,7 @@ export default function CooperativeRegistration() {
                   </div>
 
                   {state.err && (
-                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+                    <p className={ERR_CLS}>
                       {state.err}
                     </p>
                   )}
@@ -643,14 +691,15 @@ export default function CooperativeRegistration() {
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="px-5 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold py-3 hover:bg-gray-50 transition text-sm"
+                      className="px-5 rounded-xl border border-white/20 text-white/60 font-semibold py-3 hover:bg-white/5 transition text-sm"
                     >
                       ← {isFr ? 'Retour' : 'Back'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setStep(4)}
-                      className="flex-1 rounded-xl bg-[#1a3c2e] text-white font-bold py-3 hover:bg-[#143326] transition text-sm"
+                      className="flex-1 rounded-xl text-white font-bold py-3 hover:opacity-90 transition text-sm"
+                      style={{ background: '#1D9E75' }}
                     >
                       {isFr ? 'Continuer →' : 'Continue →'}
                     </button>
@@ -765,7 +814,7 @@ export default function CooperativeRegistration() {
                   </div>
 
                   {state.err && (
-                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+                    <p className={ERR_CLS}>
                       {state.err}
                     </p>
                   )}
@@ -774,14 +823,14 @@ export default function CooperativeRegistration() {
                     <button
                       type="button"
                       onClick={() => setStep(3)}
-                      className="px-5 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold py-3 hover:bg-gray-50 transition text-sm"
+                      className="px-5 rounded-xl border border-white/20 text-white/60 font-semibold py-3 hover:bg-white/5 transition text-sm"
                     >
                       ← {isFr ? 'Retour' : 'Back'}
                     </button>
                     <button
                       type="submit"
                       disabled={state.loading}
-                      className="flex-1 rounded-xl bg-[#B5850A] text-[#1a3c2e] font-bold py-3.5 hover:bg-[#9a7109] transition disabled:opacity-60 inline-flex items-center justify-center gap-2 text-sm"
+                      className="flex-1 rounded-xl bg-[#B5850A] text-black font-bold py-3.5 hover:bg-[#9a7109] transition disabled:opacity-60 inline-flex items-center justify-center gap-2 text-sm"
                     >
                       {state.loading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden /> : null}
                       {state.loading

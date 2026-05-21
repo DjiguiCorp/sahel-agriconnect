@@ -29,6 +29,19 @@ const defaults = {
   consent: false,
 };
 
+const LABEL_CLS = 'block text-sm font-medium text-white/70 mb-1';
+const LEGEND_CLS = 'text-sm font-medium text-white/70 mb-2';
+const INPUT_CLS =
+  'w-full rounded-xl bg-black/30 border border-white/15 text-white placeholder-white/30 px-4 py-3 text-sm focus:outline-none focus:border-green-500/60';
+const RADIO_LABEL_CLS = 'inline-flex items-center gap-2 text-white/80';
+const ERR_CLS = 'text-red-400 text-sm mt-1';
+const ERR_BOX = 'p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm';
+const BTN_NEXT_CLS =
+  'rounded-xl font-semibold py-3 flex items-center justify-center gap-2 hover:opacity-90 transition-opacity';
+const BTN_NEXT_STYLE = { background: '#4CAF50', color: 'black' };
+const BTN_BACK_CLS =
+  'flex-1 border border-white/20 text-white/60 rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-white/5 transition';
+
 export default function FarmerRegistrationPage() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
@@ -199,15 +212,31 @@ export default function FarmerRegistrationPage() {
 
   if (successId) {
     return (
-      <div className="section-container py-16 max-w-lg mx-auto text-center">
-        <div className="card border-2 border-brand-sage">
-          <CheckCircle className="w-16 h-16 text-brand-sage mx-auto mb-4" aria-hidden />
-          <h1 className="text-2xl font-bold text-brand-forest mb-2">Profil enregistré</h1>
-          <p className="text-gray-600 mb-4">
+      <div className="min-h-screen" style={{ background: '#060f0a' }}>
+        <div className="section-container py-16 max-w-lg mx-auto text-center">
+          <div
+            className="rounded-2xl p-8"
+            style={{
+              background: 'rgba(76,175,80,0.08)',
+              border: '1px solid rgba(76,175,80,0.3)',
+            }}
+          >
+          <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" aria-hidden />
+          <h1 className="text-2xl font-bold text-white mb-2">Profil enregistré</h1>
+          <p className="text-white/70 mb-4">
             Merci ! Votre identifiant agriculteur (conservez-le pour vos démarches) :
           </p>
-          <p className="font-mono text-lg font-semibold bg-brand-cream/80 rounded-lg py-3 px-4 mb-6 break-all">{successId}</p>
-          <Link to="/" className="btn-primary inline-block">
+          <p
+            className="font-mono text-lg font-semibold rounded-xl py-3 px-4 mb-6 break-all text-green-400"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            {successId}
+          </p>
+          <Link
+            to="/"
+            className={`inline-block px-6 ${BTN_NEXT_CLS}`}
+            style={BTN_NEXT_STYLE}
+          >
             Retour à l’accueil
           </Link>
 
@@ -249,7 +278,11 @@ export default function FarmerRegistrationPage() {
                   {nearbyCoops.map((coop) => (
                     <div
                       key={coop._id}
-                      className="rounded-xl border border-white/10 bg-white/5 p-4"
+                      className="rounded-xl p-4"
+                      style={{
+                        background: 'rgba(29,158,117,0.08)',
+                        border: '1px solid rgba(29,158,117,0.2)',
+                      }}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div>
@@ -333,7 +366,13 @@ export default function FarmerRegistrationPage() {
                     </div>
                   ))}
 
-                  <div className="rounded-xl border border-teal-500/20 bg-teal-500/5 p-4">
+                  <div
+                    className="rounded-xl p-4"
+                    style={{
+                      background: 'rgba(29,158,117,0.06)',
+                      border: '1px solid rgba(29,158,117,0.2)',
+                    }}
+                  >
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -384,14 +423,21 @@ export default function FarmerRegistrationPage() {
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-brand-cream/40 min-h-[60vh]">
-      <div className="bg-gradient-to-br from-brand-forest to-brand-sage text-white py-12">
+    <div className="min-h-screen" style={{ background: '#060f0a' }}>
+      <div
+        className="text-white py-12"
+        style={{
+          background: 'linear-gradient(135deg, #1a3c1a 0%, #0f2010 100%)',
+          borderBottom: '1px solid rgba(76,175,80,0.2)',
+        }}
+      >
         <div className="section-container text-center max-w-3xl">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Enregistrement agriculteur</h1>
           <p className="text-white/90">Rejoignez le réseau Sahel AgriConnect — étape {step} sur 3</p>
@@ -403,7 +449,7 @@ export default function FarmerRegistrationPage() {
           {[1, 2, 3].map((s) => (
             <div
               key={s}
-              className={`h-2 flex-1 max-w-[100px] rounded-full ${step >= s ? 'bg-brand-sage' : 'bg-gray-200'}`}
+              className={`h-2 flex-1 max-w-[100px] rounded-full ${step >= s ? 'bg-[#4CAF50]' : 'bg-white/10'}`}
               aria-hidden
             />
           ))}
@@ -411,51 +457,53 @@ export default function FarmerRegistrationPage() {
 
         <form
           onSubmit={handleSubmit(onFinalSubmit)}
-          className="card space-y-6"
+          className="rounded-2xl border p-6 space-y-6"
+          style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
           noValidate
         >
           {submitError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm" role="alert">
+            <div className={ERR_BOX} role="alert">
               {submitError}
             </div>
           )}
 
           {step === 1 && (
             <>
-              <h2 className="text-xl font-semibold text-brand-forest">1. Informations personnelles</h2>
+              <h2 className="text-xl font-semibold text-white">1. Informations personnelles</h2>
               <div>
-                <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="full_name" className={LABEL_CLS}>
                   Nom complet *
                 </label>
                 <input
                   id="full_name"
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-sage"
+                  className={INPUT_CLS}
                   {...register('full_name')}
                   autoComplete="name"
                 />
-                {errors.full_name && <p className="text-red-600 text-sm mt-1">{errors.full_name.message}</p>}
+                {errors.full_name && <p className={ERR_CLS}>{errors.full_name.message}</p>}
               </div>
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="phone" className={LABEL_CLS}>
                   Numéro de téléphone * (format international)
                 </label>
                 <input
                   id="phone"
                   type="tel"
                   placeholder="+223 76 12 34 56"
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-sage"
+                  className={INPUT_CLS}
                   {...register('phone')}
                   autoComplete="tel"
                 />
-                {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone.message}</p>}
+                {errors.phone && <p className={ERR_CLS}>{errors.phone.message}</p>}
               </div>
               <div>
-                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="country" className={LABEL_CLS}>
                   Pays *
                 </label>
                 <select
                   id="country"
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-sage"
+                  className={INPUT_CLS}
+                  style={{ color: 'white' }}
                   {...register('country', {
                     onChange: () => setValue('region', ''),
                   })}
@@ -468,10 +516,10 @@ export default function FarmerRegistrationPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="region" className={LABEL_CLS}>
                   Région / commune *
                 </label>
-                <select id="region" className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-sage" {...register('region')}>
+                <select id="region" className={INPUT_CLS} style={{ color: 'white' }} {...register('region')}>
                   <option value="">— Choisir —</option>
                   {regionList.map((r) => (
                     <option key={r} value={r}>
@@ -479,9 +527,14 @@ export default function FarmerRegistrationPage() {
                     </option>
                   ))}
                 </select>
-                {errors.region && <p className="text-red-600 text-sm mt-1">{errors.region.message}</p>}
+                {errors.region && <p className={ERR_CLS}>{errors.region.message}</p>}
               </div>
-              <button type="button" onClick={nextFromStep1} className="btn-primary w-full flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={nextFromStep1}
+                className={`w-full ${BTN_NEXT_CLS}`}
+                style={BTN_NEXT_STYLE}
+              >
                 Suivant
                 <ChevronRight className="w-5 h-5" aria-hidden />
               </button>
@@ -490,35 +543,42 @@ export default function FarmerRegistrationPage() {
 
           {step === 2 && (
             <>
-              <h2 className="text-xl font-semibold text-brand-forest">2. Informations agricoles</h2>
+              <h2 className="text-xl font-semibold text-white">2. Informations agricoles</h2>
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Type de culture principale * (plusieurs choix)</p>
+                <p className={LEGEND_CLS}>Type de culture principale * (plusieurs choix)</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {cropOptions.map((crop) => {
                     const selected = (watch('crops') || []).includes(crop);
                     return (
                       <label
                         key={crop}
-                        className={`flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer text-sm ${
-                          selected ? 'border-brand-sage bg-brand-iconBg' : 'border-gray-200'
-                        }`}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 cursor-pointer text-sm transition"
+                        style={
+                          selected
+                            ? { background: '#4CAF50', color: 'white', border: '1px solid #4CAF50' }
+                            : {
+                                background: 'transparent',
+                                color: 'rgba(255,255,255,0.6)',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                              }
+                        }
                       >
                         <input
                           type="checkbox"
                           checked={selected}
                           onChange={() => toggleCrop(crop)}
-                          className="rounded border-gray-300 text-brand-sage focus:ring-brand-sage"
+                          className="rounded accent-[#4CAF50]"
                         />
                         {crop}
                       </label>
                     );
                   })}
                 </div>
-                {errors.crops && <p className="text-red-600 text-sm mt-1">{errors.crops.message}</p>}
+                {errors.crops && <p className={ERR_CLS}>{errors.crops.message}</p>}
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="area_hectares" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="area_hectares" className={LABEL_CLS}>
                     Superficie exploitée *
                   </label>
                   <input
@@ -526,45 +586,45 @@ export default function FarmerRegistrationPage() {
                     type="number"
                     step="0.01"
                     min="0"
-                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-sage"
+                    className={INPUT_CLS}
                     {...register('area_hectares')}
                   />
-                  {errors.area_hectares && <p className="text-red-600 text-sm mt-1">{errors.area_hectares.message}</p>}
+                  {errors.area_hectares && <p className={ERR_CLS}>{errors.area_hectares.message}</p>}
                 </div>
                 <div>
-                  <label htmlFor="area_unit" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="area_unit" className={LABEL_CLS}>
                     Unité *
                   </label>
-                  <select id="area_unit" className="w-full border rounded-lg px-3 py-2" {...register('area_unit')}>
+                  <select id="area_unit" className={INPUT_CLS} style={{ color: 'white' }} {...register('area_unit')}>
                     <option value="hectares">Hectares</option>
                     <option value="acres">Acres</option>
                   </select>
                 </div>
               </div>
               <fieldset>
-                <legend className="text-sm font-medium text-gray-700 mb-2">Accès à l’irrigation *</legend>
+                <legend className={LEGEND_CLS}>Accès à l’irrigation *</legend>
                 <div className="flex flex-wrap gap-4">
                   {[
                     ['oui', 'Oui'],
                     ['non', 'Non'],
                     ['partiel', 'Partiel'],
                   ].map(([val, label]) => (
-                    <label key={val} className="inline-flex items-center gap-2">
-                      <input type="radio" value={val} {...register('has_irrigation')} className="text-brand-sage" />
+                    <label key={val} className={RADIO_LABEL_CLS}>
+                      <input type="radio" value={val} {...register('has_irrigation')} className="accent-[#4CAF50]" />
                       {label}
                     </label>
                   ))}
                 </div>
-                {errors.has_irrigation && <p className="text-red-600 text-sm mt-1">{errors.has_irrigation.message}</p>}
+                {errors.has_irrigation && <p className={ERR_CLS}>{errors.has_irrigation.message}</p>}
               </fieldset>
               <fieldset>
-                <legend className="text-sm font-medium text-gray-700 mb-2">Appartenance à une coopérative *</legend>
+                <legend className={LEGEND_CLS}>Appartenance à une coopérative *</legend>
                 <Controller
                   name="cooperative_member"
                   control={control}
                   render={({ field }) => (
                     <div className="flex gap-4">
-                      <label className="inline-flex items-center gap-2">
+                      <label className={RADIO_LABEL_CLS}>
                         <input
                           type="radio"
                           checked={field.value === true}
@@ -574,7 +634,7 @@ export default function FarmerRegistrationPage() {
                         />
                         Oui
                       </label>
-                      <label className="inline-flex items-center gap-2">
+                      <label className={RADIO_LABEL_CLS}>
                         <input
                           type="radio"
                           checked={field.value === false}
@@ -591,29 +651,24 @@ export default function FarmerRegistrationPage() {
               </fieldset>
               {cooperativeMember && (
                 <div>
-                  <label htmlFor="cooperative_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="cooperative_name" className={LABEL_CLS}>
                     Nom de la coopérative *
                   </label>
-                  <input
-                    id="cooperative_name"
-                    className="w-full border rounded-lg px-3 py-2"
-                    {...register('cooperative_name')}
-                  />
-                  {errors.cooperative_name && (
-                    <p className="text-red-600 text-sm mt-1">{errors.cooperative_name.message}</p>
-                  )}
+                  <input id="cooperative_name" className={INPUT_CLS} {...register('cooperative_name')} />
+                  {errors.cooperative_name && <p className={ERR_CLS}>{errors.cooperative_name.message}</p>}
                 </div>
               )}
               <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex-1 border border-gray-300 rounded-lg py-3 flex items-center justify-center gap-2"
-                >
+                <button type="button" onClick={() => setStep(1)} className={BTN_BACK_CLS}>
                   <ChevronLeft className="w-5 h-5" aria-hidden />
                   Retour
                 </button>
-                <button type="button" onClick={nextFromStep2} className="flex-1 btn-primary flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={nextFromStep2}
+                  className={`flex-1 ${BTN_NEXT_CLS}`}
+                  style={BTN_NEXT_STYLE}
+                >
                   Suivant
                   <ChevronRight className="w-5 h-5" aria-hidden />
                 </button>
@@ -623,28 +678,34 @@ export default function FarmerRegistrationPage() {
 
           {step === 3 && (
             <>
-              <h2 className="text-xl font-semibold text-brand-forest">3. Confirmation</h2>
-              <div className="bg-brand-cream/60 rounded-lg p-4 text-sm space-y-2 text-left">
+              <h2 className="text-xl font-semibold text-white">3. Confirmation</h2>
+              <div
+                className="rounded-xl p-4 text-sm space-y-2 text-left text-white/80"
+                style={{
+                  background: 'rgba(76,175,80,0.08)',
+                  border: '1px solid rgba(76,175,80,0.2)',
+                }}
+              >
                 <p>
-                  <strong>Nom :</strong> {watch('full_name')}
+                  <strong className="text-white">Nom :</strong> {watch('full_name')}
                 </p>
                 <p>
-                  <strong>Téléphone :</strong> {watch('phone')}
+                  <strong className="text-white">Téléphone :</strong> {watch('phone')}
                 </p>
                 <p>
-                  <strong>Localisation :</strong> {watch('region')}, {watch('country')}
+                  <strong className="text-white">Localisation :</strong> {watch('region')}, {watch('country')}
                 </p>
                 <p>
-                  <strong>Cultures :</strong> {(watch('crops') || []).join(', ')}
+                  <strong className="text-white">Cultures :</strong> {(watch('crops') || []).join(', ')}
                 </p>
                 <p>
-                  <strong>Superficie :</strong> {watch('area_hectares')} {watch('area_unit')}
+                  <strong className="text-white">Superficie :</strong> {watch('area_hectares')} {watch('area_unit')}
                 </p>
                 <p>
-                  <strong>Irrigation :</strong> {watch('has_irrigation')}
+                  <strong className="text-white">Irrigation :</strong> {watch('has_irrigation')}
                 </p>
                 <p>
-                  <strong>Coopérative :</strong>{' '}
+                  <strong className="text-white">Coopérative :</strong>{' '}
                   {watch('cooperative_member') ? watch('cooperative_name') || '—' : 'Non'}
                 </p>
               </div>
@@ -657,26 +718,27 @@ export default function FarmerRegistrationPage() {
                       type="checkbox"
                       checked={field.value}
                       onChange={(e) => field.onChange(e.target.checked)}
-                      className="mt-1 rounded border-gray-300 text-brand-sage focus:ring-brand-sage"
+                      className="mt-1 rounded accent-[#4CAF50]"
                     />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-white/80">
                       J’accepte que mes données soient utilisées dans le cadre du projet Sahel AgriConnect (suivi, contact,
                       statistiques agrégées). *
                     </span>
                   </label>
                 )}
               />
-              {errors.consent && <p className="text-red-600 text-sm">{errors.consent.message}</p>}
+              {errors.consent && <p className={ERR_CLS}>{errors.consent.message}</p>}
               <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="flex-1 border border-gray-300 rounded-lg py-3 flex items-center justify-center gap-2"
-                >
+                <button type="button" onClick={() => setStep(2)} className={BTN_BACK_CLS}>
                   <ChevronLeft className="w-5 h-5" aria-hidden />
                   Retour
                 </button>
-                <button type="submit" disabled={submitting} className="flex-1 btn-primary flex items-center justify-center gap-2">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`flex-1 ${BTN_NEXT_CLS} disabled:opacity-60`}
+                  style={BTN_NEXT_STYLE}
+                >
                   {submitting ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" aria-hidden />
