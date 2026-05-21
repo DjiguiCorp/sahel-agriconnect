@@ -59,7 +59,7 @@ export default function TransactionTracker({ investorEmail }) {
     return (
       <div
         className="text-center py-10 rounded-2xl"
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}
       >
         <p className="text-3xl mb-3">🔒</p>
         <p className="text-white/40 text-sm">
@@ -77,7 +77,7 @@ export default function TransactionTracker({ investorEmail }) {
           <div
             key={tx._id}
             className="rounded-2xl overflow-hidden cursor-pointer"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}
             onClick={() => setExpanded(isExpanded ? null : tx._id)}
           >
             <div className="p-5">
@@ -116,7 +116,7 @@ export default function TransactionTracker({ investorEmail }) {
                     <div
                       key={i}
                       className="flex items-start gap-3 p-3 rounded-xl"
-                      style={{ background: 'rgba(255,255,255,0.04)' }}
+                      style={{ background: 'rgba(255,255,255,0.08)' }}
                     >
                       {statusIcon(m.status)}
                       <div className="flex-1">
@@ -145,11 +145,11 @@ export default function TransactionTracker({ investorEmail }) {
                   ))}
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                  <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.08)' }}>
                     <p className="text-white/30 mb-1">{isFr ? 'Frais AfriYield (7.5%)' : 'AfriYield fee (7.5%)'}</p>
                     <p className="font-bold text-white">${tx.afriyieldFeeUSD?.toLocaleString()}</p>
                   </div>
-                  <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.08)' }}>
                     <p className="text-white/30 mb-1">{isFr ? 'Agent escrow' : 'Escrow agent'}</p>
                     <p className="font-bold text-white">{tx.escrowAgent}</p>
                   </div>

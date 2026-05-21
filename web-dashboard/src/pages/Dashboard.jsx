@@ -132,7 +132,7 @@ export default function Dashboard() {
       label: isFr ? 'Agriculteurs' : 'Farmers',
       sub: `${farmerStats?.active || 0} ${isFr ? 'actifs' : 'active'}`,
       color: '#4CAF50',
-      bg: 'from-green-900/40 to-green-950/60',
+      bg: 'from-green-800/35 to-green-900/50',
       border: 'border-green-500/20',
     },
     {
@@ -141,7 +141,7 @@ export default function Dashboard() {
       label: isFr ? 'Coopératives' : 'Cooperatives',
       sub: `${coopStats?.active || 0} ${isFr ? 'actives' : 'active'}`,
       color: '#B5850A',
-      bg: 'from-amber-900/40 to-amber-950/60',
+      bg: 'from-amber-800/35 to-amber-900/50',
       border: 'border-amber-500/20',
     },
     {
@@ -150,7 +150,7 @@ export default function Dashboard() {
       label: isFr ? 'Transformateurs' : 'Processors',
       sub: `${processorStats?.certified || 0} ${isFr ? 'certifiés' : 'certified'}`,
       color: '#3b82f6',
-      bg: 'from-blue-900/40 to-blue-950/60',
+      bg: 'from-blue-800/35 to-blue-900/50',
       border: 'border-blue-500/20',
     },
     {
@@ -159,7 +159,7 @@ export default function Dashboard() {
       label: isFr ? 'Superficie totale' : 'Total Area',
       sub: isFr ? 'terres agricoles' : 'farmland',
       color: '#1D9E75',
-      bg: 'from-teal-900/40 to-teal-950/60',
+      bg: 'from-teal-800/35 to-teal-900/50',
       border: 'border-teal-500/20',
     },
     {
@@ -168,16 +168,21 @@ export default function Dashboard() {
       label: isFr ? 'Pays représentés' : 'Countries',
       sub: isFr ? 'sur la plateforme' : 'on platform',
       color: '#9C27B0',
-      bg: 'from-purple-900/40 to-purple-950/60',
+      bg: 'from-purple-800/35 to-purple-900/50',
       border: 'border-purple-500/20',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#060f0a]">
+    <div className="min-h-screen" style={{ background: 'transparent' }}>
       <section
         style={{
-          background: 'linear-gradient(135deg, #060f0a 0%, #0a1f10 50%, #060f0a 100%)',
+          background: `
+            radial-gradient(ellipse 120% 60% at 50% 0%,
+              rgba(40,100,60,0.55) 0%,
+              rgba(20,50,35,0.3) 45%,
+              transparent 70%)
+          `,
         }}
         className="text-white border-b border-white/10"
       >
@@ -832,7 +837,7 @@ export default function Dashboard() {
           role="presentation"
         >
           <div
-            className="bg-[#0a1f10] rounded-2xl border border-white/15 p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            className="bg-brand-midGreen rounded-2xl border border-white/15 p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

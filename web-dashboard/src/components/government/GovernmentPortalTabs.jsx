@@ -108,7 +108,7 @@ export function GovernmentDirectivesTab({ isFr, loading, directives, onNew }) {
             onClick={() => onNew(t.key)}
             className="text-left p-4 rounded-xl border border-white/10 hover:bg-white/5 transition"
             style={{
-              background: 'linear-gradient(135deg, #0e1d3a 0%, #080d1a 100%)',
+              background: 'linear-gradient(135deg, #142e60 0%, rgba(14,22,45,0.95) 100%)',
             }}
           >
             <span className="text-2xl">{t.emoji}</span>
@@ -131,7 +131,7 @@ export function GovernmentDirectivesTab({ isFr, loading, directives, onNew }) {
             return (
               <div
                 key={dir._id}
-                className="rounded-xl border border-white/10 p-4 bg-gradient-to-br from-[#0e1d3a] to-[#080d1a]"
+                className="rounded-xl border border-white/10 p-4 bg-gradient-to-br from-[#142e60] to-brand-navy"
               >
                 <div className="flex justify-between gap-2">
                   <p className="font-bold text-white">

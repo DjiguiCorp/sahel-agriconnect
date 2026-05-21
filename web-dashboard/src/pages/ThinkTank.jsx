@@ -134,7 +134,7 @@ export default function ThinkTank() {
   const urgencyStyle = URGENCY[urgencyKey];
 
   return (
-    <div className="min-h-screen" style={{ background: '#060f0a' }}>
+    <div className="min-h-screen" style={{ background: 'transparent' }}>
       <section
         style={{
           background: 'linear-gradient(135deg, #1a3c1a 0%, #0f2010 100%)',
@@ -195,7 +195,7 @@ export default function ThinkTank() {
                         borderRadius: '1rem',
                       }
                     : {
-                        background: 'rgba(255,255,255,0.04)',
+                        background: 'rgba(255,255,255,0.08)',
                         border: '1px solid rgba(255,255,255,0.1)',
                         borderRadius: '1rem',
                       }
@@ -247,7 +247,7 @@ export default function ThinkTank() {
                   style={inputStyle}
                 >
                   {CROP_OPTIONS.map((c) => (
-                    <option key={c} value={c} className="bg-[#0a1f10] text-white">
+                    <option key={c} value={c} className="bg-brand-midGreen text-white">
                       {c}
                     </option>
                   ))}
@@ -271,7 +271,7 @@ export default function ThinkTank() {
 
             <label
               className="flex cursor-pointer items-start gap-3 rounded-xl border p-4"
-              style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)' }}
+              style={{ borderColor: 'rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)' }}
             >
               <input
                 type="checkbox"
@@ -356,7 +356,7 @@ export default function ThinkTank() {
               <section
                 className="rounded-2xl p-6"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'rgba(255,255,255,0.08)',
                   border: '1px solid rgba(255,255,255,0.1)',
                 }}
               >
@@ -369,7 +369,7 @@ export default function ThinkTank() {
               <section
                 className="rounded-2xl p-6"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'rgba(255,255,255,0.08)',
                   border: '1px solid rgba(255,255,255,0.1)',
                 }}
               >
@@ -388,7 +388,7 @@ export default function ThinkTank() {
               <section
                 className="rounded-2xl p-6"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'rgba(255,255,255,0.08)',
                   border: '1px solid rgba(255,255,255,0.1)',
                 }}
               >
@@ -451,7 +451,7 @@ export default function ThinkTank() {
 
             <section
               className="rounded-2xl border p-5"
-              style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+              style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
             >
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg">👩‍🌾</span>

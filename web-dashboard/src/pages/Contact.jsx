@@ -64,10 +64,15 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#060f0a' }}>
+    <div className="min-h-screen" style={{ background: 'transparent' }}>
       <section
         style={{
-          background: 'linear-gradient(135deg, #0a1f10 0%, #060f0a 100%)',
+          background: `
+            radial-gradient(ellipse 120% 60% at 50% 0%,
+              rgba(40,100,60,0.55) 0%,
+              rgba(20,50,35,0.3) 45%,
+              transparent 70%)
+          `,
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
         className="py-16"
@@ -135,8 +140,8 @@ export default function Contact() {
                   key={label}
                   className="flex items-start gap-3 p-4 rounded-xl border mb-3"
                   style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    borderColor: 'rgba(255,255,255,0.08)',
+                    background: 'rgba(255,255,255,0.08)',
+                    borderColor: 'rgba(255,255,255,0.14)',
                   }}
                 >
                   <div
@@ -202,8 +207,8 @@ export default function Contact() {
             <div
               className="rounded-2xl border p-6 md:p-8"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                borderColor: 'rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.08)',
+                borderColor: 'rgba(255,255,255,0.14)',
               }}
             >
               {sent ? (
@@ -274,7 +279,7 @@ export default function Contact() {
                       style={inputStyle}
                     >
                       {subjects.map((s) => (
-                        <option key={s.value} value={s.value} className="bg-[#0a1f10]">
+                        <option key={s.value} value={s.value} className="bg-brand-midGreen">
                           {isFr ? s.fr : s.en}
                         </option>
                       ))}

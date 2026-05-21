@@ -464,7 +464,7 @@ export default function CommodityMarketplace() {
                     key={commodity.key}
                     className="rounded-2xl p-4 text-center transition cursor-pointer hover:scale-[1.02]"
                     style={{
-                      background: 'rgba(255,255,255,0.05)',
+                      background: 'rgba(255,255,255,0.08)',
                       border: `1px solid ${hasListings ? 'rgba(181,133,10,0.4)' : 'rgba(255,255,255,0.08)'}`,
                     }}
                   >
@@ -593,7 +593,7 @@ export default function CommodityMarketplace() {
                       <div
                         key={o._id}
                         className="rounded-2xl overflow-hidden"
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}
                       >
                         <div className="p-5">
                           <div className="flex items-start justify-between mb-3">
@@ -619,11 +619,11 @@ export default function CommodityMarketplace() {
                           </p>
 
                           <div className="grid grid-cols-3 gap-2 mb-4">
-                            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
                               <p className="text-xs text-white/30 mb-1">{isFr ? 'Recherché' : 'Seeking'}</p>
                               <p className="text-sm font-bold text-white">${(o.amountSought || 0).toLocaleString()}</p>
                             </div>
-                            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
                               <p className="text-xs text-white/30 mb-1">Min.</p>
                               <p className="text-sm font-bold text-white">${(o.minInvestment || 1000).toLocaleString()}</p>
                             </div>
@@ -675,7 +675,7 @@ export default function CommodityMarketplace() {
                             {o.insuranceCoverage && (
                               <span
                                 className="text-xs px-2 py-0.5 rounded-full text-white/40"
-                                style={{ background: 'rgba(255,255,255,0.05)' }}
+                                style={{ background: 'rgba(255,255,255,0.08)' }}
                               >
                                 🛡 {isFr ? 'Assuré' : 'Insured'}
                               </span>
@@ -683,7 +683,7 @@ export default function CommodityMarketplace() {
                             {o.memberFarmers > 0 && (
                               <span
                                 className="text-xs px-2 py-0.5 rounded-full text-white/40"
-                                style={{ background: 'rgba(255,255,255,0.05)' }}
+                                style={{ background: 'rgba(255,255,255,0.08)' }}
                               >
                                 👩‍🌾 {o.memberFarmers}
                               </span>

@@ -129,7 +129,7 @@ function LoginScreen({ onLogin, isFr }) {
               )}
             </button>
           </form>
-          <div className="mt-6 rounded-xl p-4 border border-white/10" style={{ background: 'rgba(255,255,255,0.03)' }}>
+          <div className="mt-6 rounded-xl p-4 border border-white/10" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <p className="text-white/50 text-xs text-center mb-3">
               {isFr
                 ? 'Première connexion? Votre mot de passe vous a été envoyé par notre équipe.'
@@ -445,7 +445,7 @@ export default function GovernmentPortal() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: '#080d1a' }}>
+    <div className="min-h-screen" style={{ background: 'transparent' }}>
       <div style={{ background: '#0a1535' }} className="px-6 py-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-3">
           <img src="/sahel-logo.png" alt="SA" className="w-9 h-9 rounded-lg object-cover" />
@@ -565,7 +565,7 @@ export default function GovernmentPortal() {
                   type="button"
                   onClick={card.action}
                   className="rounded-xl p-4 border border-white/10 text-left hover:bg-white/5 transition"
-                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                  style={{ background: 'rgba(255,255,255,0.08)' }}
                 >
                   <span className="text-2xl">{card.icon}</span>
                   <p className="text-2xl font-bold mt-2" style={{ color: '#185FA5' }}>
@@ -654,7 +654,7 @@ export default function GovernmentPortal() {
                 </div>
               ) : (
                 <table className="w-full text-sm">
-                  <thead style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <thead style={{ background: 'rgba(255,255,255,0.08)' }}>
                     <tr>
                       {[
                         isFr ? 'Nom' : 'Name',
@@ -677,7 +677,7 @@ export default function GovernmentPortal() {
                         <tr
                           key={f._id}
                           className="border-t border-white/10"
-                          style={{ background: i % 2 === 0 ? 'rgba(14,29,58,0.5)' : 'rgba(255,255,255,0.03)' }}
+                          style={{ background: i % 2 === 0 ? 'rgba(14,29,58,0.5)' : 'rgba(255,255,255,0.08)' }}
                         >
                           <td className="px-4 py-3 font-medium text-white">{f.nom || '—'}</td>
                           <td className="px-4 py-3 text-white/70 text-xs">

@@ -396,7 +396,7 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
             </p>
             <div className="space-y-3">
               {activity.map((a, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                <div key={i} className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.08)' }}>
                   <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${a.dot}`} />
                   <p className="text-sm flex-1" style={{ color: 'rgba(245,240,232,0.85)' }}>
                     {a.text}
@@ -473,7 +473,7 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
                 </p>
               ) : (
                 previewList.map((n, i) => (
-                  <div key={n._id || i} className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  <div key={n._id || i} className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.08)' }}>
                     <p className="text-sm font-medium" style={{ color: '#F5F0E8' }}>
                       {n.title}
                     </p>
@@ -1142,7 +1142,7 @@ function HelpTab({ investor, t }) {
               <a
                 href={`mailto:info@djiguicorporation.org?subject=Follow-up Advisory Call - $99 - AfriYield Exchange&body=I would like to book a follow-up advisory call ($99).%0A%0AName: %0AEmail: %0APreferred time: `}
                 className="flex-1 rounded-xl py-3 font-medium text-center text-white/60 text-sm hover:text-white transition"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
               >
                 {t('investorPortal.advisory.ctaFollowUp')}
               </a>
@@ -1507,7 +1507,7 @@ export default function InvestorPortal() {
                   <div
                     key={n._id || i}
                     className={`rounded-2xl p-3 ${!n.read ? 'border-l-2 border-[#B5850A]' : ''}`}
-                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                    style={{ background: 'rgba(255,255,255,0.08)' }}
                   >
                     <p className="text-sm font-medium" style={{ color: '#F5F0E8' }}>
                       {n.title}

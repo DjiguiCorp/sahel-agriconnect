@@ -34,8 +34,8 @@ const LABEL_CLS = 'text-sm font-medium text-white/70';
 const ERR_BOX = 'rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400';
 
 const CARD_STYLE = {
-  background: 'rgba(255,255,255,0.04)',
-  borderColor: 'rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.08)',
+  borderColor: 'rgba(255,255,255,0.14)',
 };
 
 const TRACK_CARD_BASE = {
@@ -260,7 +260,7 @@ export default function InvestorRegistration() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#080d1a' }}>
+    <div className="min-h-screen" style={{ background: 'transparent' }}>
       <section
         style={{
           background: 'linear-gradient(135deg, #0d2040 0%, #061228 100%)',
@@ -357,7 +357,7 @@ export default function InvestorRegistration() {
                       onClick={() => setIdType(val)}
                       className="py-3 px-3 rounded-xl text-xs font-medium border text-left transition-all"
                       style={{
-                        background: idType === val ? 'rgba(181,133,10,0.15)' : 'rgba(255,255,255,0.03)',
+                        background: idType === val ? 'rgba(181,133,10,0.15)' : 'rgba(255,255,255,0.08)',
                         borderColor: idType === val ? 'rgba(181,133,10,0.5)' : 'rgba(255,255,255,0.1)',
                         color: idType === val ? '#B5850A' : 'rgba(255,255,255,0.6)',
                       }}
@@ -380,7 +380,7 @@ export default function InvestorRegistration() {
                   className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all"
                   style={{
                     borderColor: idFile ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)',
-                    background: idFile ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.03)',
+                    background: idFile ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.08)',
                   }}
                   onClick={() => document.getElementById('id-upload')?.click()}
                   onKeyDown={(e) => {
@@ -426,7 +426,7 @@ export default function InvestorRegistration() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-white/10 p-4" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="rounded-xl border border-white/10 p-4" style={{ background: 'rgba(255,255,255,0.08)' }}>
                 <p className="text-white/60 text-xs font-semibold mb-2">
                   {isFr ? '📋 Exigences pour la photo:' : '📋 Photo requirements:'}
                 </p>

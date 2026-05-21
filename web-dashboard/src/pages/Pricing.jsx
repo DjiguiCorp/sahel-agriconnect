@@ -319,9 +319,20 @@ export default function Pricing() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060f0a] text-white">
+    <div className="min-h-screen text-white" style={{ background: 'transparent' }}>
       {/* Hero */}
-      <section className="pt-20 pb-10 px-4 text-center">
+      <section
+        className="pt-20 pb-10 px-4 text-center"
+        style={{
+          background: `
+            radial-gradient(ellipse 120% 60% at 50% 0%,
+              rgba(40,100,60,0.55) 0%,
+              rgba(20,50,35,0.3) 45%,
+              transparent 70%)
+          `,
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
         <span className="inline-block px-4 py-1.5 rounded-full
           text-xs font-semibold bg-amber-500/15 text-amber-400
           border border-amber-500/30 mb-4">
@@ -465,9 +476,7 @@ export default function Pricing() {
         </h2>
         <div className="space-y-3">
           {faqs.map((faq, i) => (
-            <div key={i}
-              className="rounded-xl border border-white/10
-                bg-white/5 overflow-hidden">
+            <div key={i} className="glass-card overflow-hidden">
               <button
                 type="button"
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}

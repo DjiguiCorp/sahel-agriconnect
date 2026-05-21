@@ -8,7 +8,7 @@ import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { Loader2, AlertTriangle, ImageIcon } from 'lucide-react';
 
 const CARD_STYLE = {
-  background: 'rgba(255,255,255,0.04)',
+  background: 'rgba(255,255,255,0.08)',
   border: '1px solid rgba(255,255,255,0.1)',
   borderRadius: '1.5rem',
 };
@@ -163,7 +163,7 @@ export default function PlantDiseaseDetection() {
   };
 
   return (
-    <div style={{ background: '#060f0a', minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh' }}>
       <section
         style={{
           background: 'linear-gradient(135deg, #0d2040 0%, #060c1f 100%)',
@@ -193,8 +193,8 @@ export default function PlantDiseaseDetection() {
           <div
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs border"
             style={{
-              background: 'rgba(255,255,255,0.05)',
-              borderColor: 'rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.08)',
+              borderColor: 'rgba(255,255,255,0.14)',
               color: 'rgba(255,255,255,0.5)',
             }}
           >
@@ -298,7 +298,7 @@ export default function PlantDiseaseDetection() {
             <div className="space-y-4">
               <div
                 className="rounded-xl border p-2 overflow-hidden"
-                style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
               >
                 <img
                   src={preview}
@@ -613,7 +613,7 @@ export default function PlantDiseaseDetection() {
               </Link>
             </section>
 
-            <p className="text-xs text-white/40 border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+            <p className="text-xs text-white/40 border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.14)' }}>
               {isFr
                 ? 'Cette analyse est fournie à titre indicatif. Consultez un expert pour confirmation sur le terrain.'
                 : 'This analysis is indicative only. Consult an expert for field confirmation.'}

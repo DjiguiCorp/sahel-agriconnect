@@ -49,7 +49,7 @@ const seasons = [
 const lastCrops = ['Mil', 'Sorgho', 'Maïs', 'Arachide', 'Coton', 'Jachère', 'Autre'];
 
 const CARD_STYLE = {
-  background: 'rgba(255,255,255,0.04)',
+  background: 'rgba(255,255,255,0.08)',
   border: '1px solid rgba(255,255,255,0.1)',
   borderRadius: '1rem',
 };
@@ -62,7 +62,7 @@ const CHIP_ACTIVE = {
 };
 
 const CHIP_INACTIVE = {
-  background: 'rgba(255,255,255,0.04)',
+  background: 'rgba(255,255,255,0.08)',
   border: '1px solid rgba(255,255,255,0.12)',
   color: 'rgba(255,255,255,0.7)',
   borderRadius: '0.75rem',
@@ -190,10 +190,15 @@ export default function SoilDiagnostic() {
   );
 
   return (
-    <div style={{ background: '#060f0a', minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh' }}>
       <section
         style={{
-          background: 'linear-gradient(135deg, #1a3c1a 0%, #0a1f10 100%)',
+          background: `
+            radial-gradient(ellipse 120% 60% at 50% 0%,
+              rgba(40,100,60,0.5) 0%,
+              rgba(20,50,35,0.28) 45%,
+              transparent 70%)
+          `,
           borderBottom: '1px solid rgba(76,175,80,0.2)',
         }}
         className="py-14"
@@ -331,7 +336,7 @@ export default function SoilDiagnostic() {
                   className={SELECT_CLS}
                 >
                   {ALL_COUNTRIES.map((c) => (
-                    <option key={c} value={c} className="bg-[#0a1f10]">
+                    <option key={c} value={c} className="bg-brand-midGreen">
                       {c}
                     </option>
                   ))}
@@ -347,11 +352,11 @@ export default function SoilDiagnostic() {
                   onChange={(e) => setRegion(e.target.value)}
                   className={SELECT_CLS}
                 >
-                  <option value="" className="bg-[#0a1f10]">
+                  <option value="" className="bg-brand-midGreen">
                     — {isFr ? 'Choisir' : 'Choose'} —
                   </option>
                   {regionOptions.map((r) => (
-                    <option key={r} value={r} className="bg-[#0a1f10]">
+                    <option key={r} value={r} className="bg-brand-midGreen">
                       {r}
                     </option>
                   ))}
@@ -377,7 +382,7 @@ export default function SoilDiagnostic() {
                 className={SELECT_CLS}
               >
                 {lastCrops.map((c) => (
-                  <option key={c} value={c} className="bg-[#0a1f10]">
+                  <option key={c} value={c} className="bg-brand-midGreen">
                     {c}
                   </option>
                 ))}

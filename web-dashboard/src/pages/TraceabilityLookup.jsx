@@ -31,13 +31,13 @@ function countryFlagEmoji(country) {
 }
 
 const CARD_STYLE = {
-  background: 'rgba(255,255,255,0.04)',
+  background: 'rgba(255,255,255,0.08)',
   border: '1px solid rgba(255,255,255,0.1)',
   borderRadius: '1rem',
 };
 
 const PANEL_STYLE = {
-  background: 'rgba(255,255,255,0.05)',
+  background: 'rgba(255,255,255,0.08)',
   border: '1px solid rgba(255,255,255,0.1)',
   borderRadius: '1rem',
 };
@@ -46,7 +46,7 @@ function timelineStepStyle(active) {
   return active
     ? { background: '#B5850A', color: 'white', border: '1px solid #B5850A', borderRadius: '50%' }
     : {
-        background: 'rgba(255,255,255,0.05)',
+        background: 'rgba(255,255,255,0.08)',
         color: 'rgba(255,255,255,0.4)',
         border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: '50%',
@@ -107,10 +107,15 @@ export default function TraceabilityLookup() {
   const r = state.record;
 
   return (
-    <div style={{ background: '#060f0a', minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh' }}>
       <section
         style={{
-          background: 'linear-gradient(135deg, #0d2a18 0%, #060f0a 100%)',
+          background: `
+            radial-gradient(ellipse 120% 60% at 50% 0%,
+              rgba(40,100,60,0.5) 0%,
+              rgba(20,50,35,0.28) 45%,
+              transparent 70%)
+          `,
           borderBottom: '1px solid rgba(29,158,117,0.2)',
         }}
         className="py-14"

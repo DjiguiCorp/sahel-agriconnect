@@ -7,15 +7,15 @@ export function GradientSection({
   const backgrounds = {
     primary: `
       radial-gradient(ellipse 100% 60% at 50% 0%,
-        rgba(26,92,53,0.5) 0%, transparent 70%)`,
+        rgba(40,120,70,0.5) 0%, transparent 70%)`,
     features: `
       radial-gradient(ellipse 80% 50% at 0% 50%,
-        rgba(26,60,30,0.4) 0%, transparent 60%),
+        rgba(40,80,50,0.4) 0%, transparent 60%),
       radial-gradient(ellipse 60% 40% at 100% 50%,
         rgba(181,133,10,0.08) 0%, transparent 50%)`,
     investment: `
       radial-gradient(ellipse 100% 70% at 50% 0%,
-        rgba(13,32,64,0.8) 0%, rgba(8,13,26,0.95) 60%),
+        rgba(20,48,96,0.75) 0%, rgba(14,22,45,0.9) 60%),
       radial-gradient(ellipse 60% 40% at 80% 30%,
         rgba(181,133,10,0.1) 0%, transparent 50%)`,
     tools: `
@@ -25,10 +25,10 @@ export function GradientSection({
         rgba(59,130,246,0.06) 0%, transparent 50%)`,
     government: `
       radial-gradient(ellipse 100% 60% at 50% 0%,
-        rgba(10,21,53,0.8) 0%, rgba(6,10,20,0.95) 60%)`,
+        rgba(20,42,80,0.75) 0%, rgba(14,22,45,0.92) 60%)`,
     cta: `
       radial-gradient(ellipse 100% 80% at 50% 100%,
-        rgba(26,92,53,0.5) 0%, transparent 60%),
+        rgba(40,120,70,0.45) 0%, transparent 60%),
       radial-gradient(ellipse 60% 40% at 80% 50%,
         rgba(181,133,10,0.1) 0%, transparent 50%)`,
   };

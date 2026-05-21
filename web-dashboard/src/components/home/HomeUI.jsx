@@ -2,16 +2,16 @@ import { Link } from 'react-router-dom';
 
 const SECTION_BACKGROUNDS = {
   roles:
-    'relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_100%_60%_at_50%_100%,rgba(26,92,53,0.2)_0%,transparent_60%)]',
+    'relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_100%_60%_at_50%_100%,rgba(40,120,70,0.2)_0%,transparent_60%)]',
   features: 'py-16 section-gradient-features relative overflow-hidden',
   platform:
-    'py-16 relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_80%_60%_at_0%_50%,rgba(26,60,30,0.4)_0%,transparent_55%),radial-gradient(ellipse_60%_40%_at_100%_30%,rgba(181,133,10,0.06)_0%,transparent_50%)]',
+    'py-16 relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_80%_60%_at_0%_50%,rgba(40,80,50,0.4)_0%,transparent_55%),radial-gradient(ellipse_60%_40%_at_100%_30%,rgba(181,133,10,0.06)_0%,transparent_50%)]',
   meshWarm:
     'relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_75%_50%_at_20%_0%,rgba(181,133,10,0.08)_0%,transparent_50%),radial-gradient(ellipse_60%_40%_at_90%_80%,rgba(27,67,50,0.15)_0%,transparent_50%)]',
   forest:
-    'relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_100%_70%_at_50%_0%,rgba(13,32,64,0.9)_0%,rgba(8,13,26,0.98)_50%),radial-gradient(ellipse_60%_40%_at_80%_50%,rgba(181,133,10,0.08)_0%,transparent_50%)]',
+    'relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_100%_70%_at_50%_0%,rgba(20,48,96,0.75)_0%,rgba(14,22,45,0.85)_50%),radial-gradient(ellipse_60%_40%_at_80%_50%,rgba(181,133,10,0.08)_0%,transparent_50%)]',
   cta:
-    'relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_100%_80%_at_50%_100%,rgba(26,92,53,0.5)_0%,transparent_60%),radial-gradient(ellipse_60%_40%_at_80%_50%,rgba(181,133,10,0.1)_0%,transparent_50%)]',
+    'relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_100%_80%_at_50%_100%,rgba(40,120,70,0.45)_0%,transparent_60%),radial-gradient(ellipse_60%_40%_at_80%_50%,rgba(181,133,10,0.1)_0%,transparent_50%)]',
 };
 
 const DARK_VARIANTS = new Set(['roles', 'features', 'platform', 'meshWarm', 'forest', 'cta']);
@@ -153,7 +153,7 @@ export function GlassRoleCard({ emoji, title, description, to }) {
       <p className="mt-2 text-xs leading-relaxed text-white/60">{description}</p>
       <span
         className="mt-3 inline-block rounded-lg px-3 py-1.5 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ background: '#4CAF50', color: '#060f0a' }}
+        style={{ background: '#4CAF50', color: '#0f2218' }}
       >
         →
       </span>
@@ -193,7 +193,7 @@ export function GlassCtaPanel({ variant, eyebrow, title, description, children }
         isForest
           ? {
               background:
-                'radial-gradient(ellipse 100% 70% at 50% 0%, rgba(13,32,64,0.6) 0%, rgba(8,13,26,0.4) 100%)',
+                'radial-gradient(ellipse 100% 70% at 50% 0%, rgba(20,48,96,0.6) 0%, rgba(14,22,45,0.4) 100%)',
               borderColor: 'rgba(59,130,246,0.2)',
             }
           : {

@@ -97,7 +97,7 @@ export default function CooperativeRegistration() {
   };
 
   return (
-    <div style={{ background: '#060f0a' }}>
+    <div style={{ background: 'transparent' }}>
       <section
         className="text-white"
         style={{
@@ -223,7 +223,7 @@ export default function CooperativeRegistration() {
 
               <div
                 className="text-left rounded-2xl p-5 mb-6 border"
-                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
               >
                 <p className="font-bold text-white mb-4 text-sm">
                   {i18n.language === 'fr' ? '📋 Prochaines étapes :' : '📋 Next steps:'}
@@ -276,7 +276,7 @@ export default function CooperativeRegistration() {
 
               <div
                 className="rounded-xl p-4 mb-6 text-left border"
-                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
               >
                 <p className="font-semibold text-white text-sm mb-2">
                   💳 {i18n.language === 'fr' ? 'Méthodes de paiement acceptées :' : 'Accepted payment methods:'}
@@ -287,7 +287,7 @@ export default function CooperativeRegistration() {
                       <span
                         key={m}
                         className="px-2 py-1 rounded-lg border"
-                        style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
+                        style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
                       >
                         {m}
                       </span>
@@ -319,7 +319,7 @@ export default function CooperativeRegistration() {
           ) : (
             <div
               className="rounded-2xl border p-6 md:p-8"
-              style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+              style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
             >
               {/* STEP 1 — Basic Information */}
               {step === 1 && (
@@ -710,7 +710,7 @@ export default function CooperativeRegistration() {
               {/* STEP 4 — Transformation center affiliation + Submit */}
               {step === 4 && (
                 <form onSubmit={submit} className="space-y-5">
-                  <div className="rounded-2xl bg-[#060f0a] p-5 space-y-5">
+                  <div className="rounded-2xl bg-brand-midGreen p-5 space-y-5">
                     <div>
                       <h3 className="text-white font-bold text-base mb-1">
                         🏭{' '}

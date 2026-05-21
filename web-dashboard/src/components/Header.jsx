@@ -109,7 +109,14 @@ const Header = () => {
   );
 
   const navLinkClass =
-    'text-base text-gray-700 hover:text-brand-forest transition-colors font-medium px-2 py-2 lg:px-3 whitespace-nowrap';
+    'text-base text-white/80 hover:text-white transition-colors font-medium px-2 py-2 lg:px-3 whitespace-nowrap';
+
+  const dropdownPanelStyle = {
+    background: 'rgba(15,34,24,0.95)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255,255,255,0.14)',
+  };
 
   const closeMenu = () => {
     setIsMenuOpen(false);
@@ -195,7 +202,7 @@ const Header = () => {
       {showJoinMenu && (
         <div
           className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-white/15 shadow-2xl z-50 overflow-hidden"
-          style={{ background: '#0a1f10' }}
+          style={dropdownPanelStyle}
           role="menu"
         >
           {joinMenuItems.map((item) => (
@@ -216,7 +223,15 @@ const Header = () => {
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-md">
+    <header
+      className="sticky top-0 z-50"
+      style={{
+        background: 'rgba(15,34,24,0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+      }}
+    >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-50">
         <div className="flex items-center justify-between min-h-[4rem] gap-4 lg:gap-6">
           <Link to="/" className="flex items-center gap-3 shrink-0 min-w-0 max-w-[42%] sm:max-w-none" onClick={closeMenu}>
@@ -225,7 +240,7 @@ const Header = () => {
               alt="Sahel AgriConnect"
               className="h-12 w-12 rounded-xl object-cover"
             />
-            <span className="text-xl sm:text-2xl font-bold text-brand-forest truncate">
+            <span className="text-xl sm:text-2xl font-bold text-white truncate">
               Sahel AgriConnect
             </span>
           </Link>
@@ -261,13 +276,13 @@ const Header = () => {
                   role="menu"
                   aria-label={platformLabel}
                 >
-                  <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
+                  <div className="rounded-lg py-2 shadow-lg" style={dropdownPanelStyle}>
                     {platformItems.map(({ to, label }) => (
                       <Link
                         key={to + label}
                         to={to}
                         role="menuitem"
-                        className="block px-4 py-2.5 text-lg text-gray-700 hover:bg-brand-iconBg hover:text-brand-forest"
+                        className="block px-4 py-2.5 text-lg text-white/80 hover:bg-white/10 hover:text-white"
                         onClick={() => setDesktopPlatformOpen(false)}
                       >
                         {label}
@@ -309,12 +324,11 @@ const Header = () => {
                   <div
                     className="rounded-2xl py-2 shadow-2xl overflow-hidden"
                     style={{
-                      background: '#0a1f10',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      ...dropdownPanelStyle,
                       minWidth: '320px',
                     }}
                   >
-                    <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.14)' }}>
                       <p
                         className="text-xs font-semibold uppercase tracking-wider"
                         style={{ color: 'rgba(255,255,255,0.4)' }}
@@ -373,7 +387,7 @@ const Header = () => {
                       </Link>
                     ))}
 
-                    <div className="px-4 py-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <div className="px-4 py-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.14)' }}>
                       <Link
                         to="/producer-pro-registration"
                         onClick={() => setDesktopToolsOpen(false)}
@@ -399,16 +413,16 @@ const Header = () => {
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center gap-4 lg:gap-5 shrink-0 pl-4 lg:pl-6 border-l border-gray-200">
+          <div className="hidden md:flex items-center gap-4 lg:gap-5 shrink-0 pl-4 lg:pl-6 border-l border-white/10">
             {isRegistered && (
               <div className="hidden xl:flex items-center gap-2 max-w-[9rem]">
-                <span className="text-sm text-gray-500 truncate" title={userName || ''}>
+                <span className="text-sm text-white/60 truncate" title={userName || ''}>
                   {isFr ? 'Bonjour' : 'Hi'} {userName?.split(' ')[0] || ''}
                 </span>
                 <button
                   type="button"
                   onClick={clearUser}
-                  className="text-xs text-gray-400 hover:text-gray-600 transition shrink-0"
+                  className="text-xs text-white/40 hover:text-white/70 transition shrink-0"
                   title={isFr ? 'Se déconnecter' : 'Sign out'}
                 >
                   ×
@@ -420,7 +434,7 @@ const Header = () => {
 
             <button
               type="button"
-              className="hidden lg:inline text-sm font-medium text-gray-600 hover:text-brand-forest whitespace-nowrap border-l border-gray-200 pl-5"
+              className="hidden lg:inline text-sm font-medium text-white/70 hover:text-white whitespace-nowrap border-l border-white/10 pl-5"
               onClick={handleDownloadApp}
             >
               {t('nav.downloadApp')}
@@ -431,7 +445,7 @@ const Header = () => {
             {joinMenuDropdown}
             <button
               type="button"
-              className="md:hidden p-2.5 rounded-lg text-brand-forest hover:bg-brand-iconBg border border-transparent hover:border-brand-sage/30"
+              className="md:hidden p-2.5 rounded-lg text-white hover:bg-white/10 border border-transparent hover:border-white/20"
               onClick={() => setIsMenuOpen((o) => !o)}
               aria-expanded={isMenuOpen}
               aria-controls="mobile-navigation"
@@ -445,7 +459,12 @@ const Header = () => {
         {isMenuOpen && (
           <div
             id="mobile-navigation"
-            className="md:hidden border-t border-gray-100 py-4 pb-6 animate-fade-up bg-white"
+            className="md:hidden border-t border-white/10 py-4 pb-6 animate-fade-up"
+            style={{
+              background: 'rgba(15,34,24,0.95)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+            }}
             role="navigation"
             aria-label="Navigation principale"
           >
@@ -468,12 +487,12 @@ const Header = () => {
                   />
                 </button>
                 {mobilePlatformOpen && (
-                  <div className="mt-2 flex flex-col space-y-1 border-l border-gray-200 pl-3 ml-1">
+                  <div className="mt-2 flex flex-col space-y-1 border-l border-white/15 pl-3 ml-1">
                     {platformItems.map(({ to, label }) => (
                       <Link
                         key={to + label}
                         to={to}
-                        className="py-2 text-lg text-gray-700 hover:text-brand-forest"
+                        className="py-2 text-lg text-white/80 hover:text-white"
                         onClick={closeMenu}
                       >
                         {label}
@@ -505,7 +524,7 @@ const Header = () => {
                 {mobileToolsOpen && (
                   <div
                     className="mt-2 flex flex-col gap-2 rounded-xl p-2"
-                    style={{ background: '#0a1f10', border: '1px solid rgba(255,255,255,0.1)' }}
+                    style={dropdownPanelStyle}
                   >
                     {TOOLS_ITEMS.map(({ to, icon, label, desc, color }) => (
                       <Link
@@ -516,7 +535,7 @@ const Header = () => {
                           setIsMenuOpen(false);
                         }}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
-                        style={{ background: 'rgba(255,255,255,0.03)' }}
+                        style={{ background: 'rgba(255,255,255,0.08)' }}
                       >
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
@@ -559,7 +578,7 @@ const Header = () => {
                     clearUser();
                     closeMenu();
                   }}
-                  className="text-left text-sm text-gray-500 hover:text-gray-700 transition pt-3"
+                  className="text-left text-sm text-white/50 hover:text-white/80 transition pt-3"
                 >
                   {isFr ? 'Se déconnecter' : 'Sign out'}
                 </button>

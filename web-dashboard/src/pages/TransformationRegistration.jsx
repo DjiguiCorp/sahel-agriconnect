@@ -10,7 +10,7 @@ export default function TransformationRegistration() {
   const [success, setSuccess] = useState(false);
 
   return (
-    <div className="min-h-screen" style={{ background: '#060f0a' }}>
+    <div className="min-h-screen" style={{ background: 'transparent' }}>
       <section
         style={{
           background: 'linear-gradient(135deg, #2d1a00 0%, #1a0f00 100%)',
@@ -62,11 +62,11 @@ export default function TransformationRegistration() {
 
         <div
           className="rounded-2xl border overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+          style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
         >
           <div
             className="px-6 py-4 border-b"
-            style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(245,158,11,0.06)' }}
+            style={{ borderColor: 'rgba(255,255,255,0.14)', background: 'rgba(245,158,11,0.06)' }}
           >
             <h2 className="text-white font-bold text-lg">
               {isFr ? "📋 Formulaire d'enregistrement" : '📋 Registration Form'}

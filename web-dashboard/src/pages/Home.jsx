@@ -336,7 +336,7 @@ const Home = () => {
             <Link
               to="/dashboard"
               className="w-full rounded-xl py-3.5 text-center text-sm font-bold transition hover:opacity-90"
-              style={{ background: '#B5850A', color: '#060f0a' }}
+              style={{ background: '#B5850A', color: '#0f2218' }}
             >
               {isFr ? "S'inscrire comme agriculteur" : 'Register as a Farmer'}
             </Link>
@@ -365,7 +365,7 @@ const Home = () => {
             <Link
               to="/afri-yield"
               className="w-full rounded-xl py-3.5 text-center text-sm font-bold text-white transition hover:opacity-90"
-              style={{ background: '#4CAF50', color: '#060f0a' }}
+              style={{ background: '#4CAF50', color: '#0f2218' }}
             >
               {isFr ? 'Découvrir AfriYield Exchange' : 'Explore AfriYield Exchange'}
             </Link>

@@ -165,7 +165,7 @@ export default function InvestmentOpportunities() {
                     to={`/afri-yield/opportunities/${opp._id}`}
                     className="block rounded-2xl overflow-hidden transition hover:scale-[1.01]"
                     style={{
-                      background: 'rgba(255,255,255,0.05)',
+                      background: 'rgba(255,255,255,0.08)',
                       border: opp.featured ? `1px solid ${trackColor}60` : '1px solid rgba(255,255,255,0.08)',
                     }}
                   >
@@ -214,18 +214,18 @@ export default function InvestmentOpportunities() {
                       <p className="text-sm text-white/50 line-clamp-2 mb-4">{opp.description}</p>
 
                       <div className="grid grid-cols-3 gap-2 mb-4">
-                        <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
                           <p className="text-xs text-white/30 mb-1">{isFr ? 'Recherché' : 'Seeking'}</p>
                           <p className="text-sm font-bold text-white">${(opp.amountSought || 0).toLocaleString()}</p>
                         </div>
-                        <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
                           <p className="text-xs text-white/30 mb-1">Min.</p>
                           <p className="text-sm font-bold text-white">${(opp.minInvestment || 1000).toLocaleString()}</p>
                         </div>
                         <div
                           className="rounded-lg p-2.5 text-center"
                           style={{
-                            background: opp.expectedROIMin > 0 ? 'rgba(181,133,10,0.1)' : 'rgba(255,255,255,0.05)',
+                            background: opp.expectedROIMin > 0 ? 'rgba(181,133,10,0.1)' : 'rgba(255,255,255,0.08)',
                           }}
                         >
                           <p className="text-xs text-white/30 mb-1">{isFr ? 'ROI est.' : 'Est. ROI'}</p>
@@ -258,7 +258,7 @@ export default function InvestmentOpportunities() {
                     </div>
                     <div
                       className="px-5 py-3 flex justify-between items-center"
-                      style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+                      style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
                     >
                       <div className="flex items-center gap-1.5">
                         {opp.insuranceCoverage && (

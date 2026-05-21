@@ -294,7 +294,7 @@ export default function InvestmentConfirmation() {
             ))}
           </div>
 
-          <div className="mt-4 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
+          <div className="mt-4 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <p className="text-xs font-bold mb-2" style={{ color: 'rgba(245,240,232,0.65)' }}>
               {i18n.language === 'fr' ? 'Calendrier de versement (exemple)' : 'Payout schedule (example)'}
             </p>
@@ -372,7 +372,7 @@ export default function InvestmentConfirmation() {
           </h3>
           <div className="space-y-3">
             {steps.map((s) => (
-              <div key={s.number} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <div key={s.number} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.08)' }}>
                 <div className="flex items-start gap-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center font-bold tabular-nums"

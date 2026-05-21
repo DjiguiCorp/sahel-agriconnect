@@ -238,7 +238,7 @@ export default function AfriYieldExchange() {
                 <div
                   key={label}
                   className="text-center rounded-2xl p-4"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
                   <p className="text-2xl font-bold" style={{ color: '#B5850A' }}>
                     {val}
@@ -366,7 +366,7 @@ export default function AfriYieldExchange() {
               <div
                 key={track.id}
                 className="rounded-2xl overflow-hidden border transition hover:border-white/20"
-                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}
+                style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
               >
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center justify-between mb-4">
@@ -514,7 +514,7 @@ export default function AfriYieldExchange() {
               <div
                 key={title}
                 className="rounded-2xl p-5"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.06)' }}
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
@@ -813,11 +813,11 @@ function OpportunityCard({ opp, isFr }) {
         <p className="text-sm text-white/50 leading-relaxed line-clamp-2 mb-4">{opp.description}</p>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <p className="text-xs text-white/30">{isFr ? 'Recherché' : 'Seeking'}</p>
             <p className="text-sm font-bold text-white">${(opp.amountSought || 0).toLocaleString()}</p>
           </div>
-          <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <p className="text-xs text-white/30">{isFr ? 'Min.' : 'Min.'}</p>
             <p className="text-sm font-bold text-white">${(opp.minInvestment || 1000).toLocaleString()}</p>
           </div>
@@ -834,7 +834,7 @@ function OpportunityCard({ opp, isFr }) {
               </p>
             </div>
           ) : (
-            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
               <p className="text-xs text-white/30">{isFr ? 'Jours' : 'Days'}</p>
               <p className="text-sm font-bold text-white">{opp.cycledays}</p>
             </div>

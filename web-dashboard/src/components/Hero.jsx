@@ -37,14 +37,13 @@ export default function Hero() {
       style={{
         background: `
           radial-gradient(ellipse 140% 80% at 50% -20%,
-            rgba(26,92,53,0.7) 0%,
-            rgba(10,42,25,0.5) 35%,
+            rgba(40,120,70,0.55) 0%,
+            rgba(20,50,35,0.35) 35%,
             transparent 65%),
           radial-gradient(ellipse 60% 50% at 85% 30%,
-            rgba(181,133,10,0.12) 0%, transparent 55%),
+            rgba(181,133,10,0.15) 0%, transparent 55%),
           radial-gradient(ellipse 50% 40% at 15% 60%,
-            rgba(29,158,117,0.1) 0%, transparent 50%),
-          linear-gradient(180deg, #0a1f10 0%, #060f0a 100%)
+            rgba(29,158,117,0.12) 0%, transparent 50%)
         `,
         minHeight: '85vh',
       }}
@@ -70,8 +69,8 @@ export default function Hero() {
         className="absolute inset-0 opacity-5"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
+            linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px',
         }}
@@ -112,7 +111,7 @@ export default function Hero() {
             className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all duration-200 hover:scale-105"
             style={{
               background: '#4CAF50',
-              color: '#060f0a',
+              color: '#0f2218',
               boxShadow: '0 0 30px rgba(76,175,80,0.25)',
             }}
           >

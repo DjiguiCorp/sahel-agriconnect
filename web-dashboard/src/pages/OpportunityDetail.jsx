@@ -6,8 +6,8 @@ import { useInvestorKYCStatus } from '../hooks/useInvestorKYCStatus';
 import { Loader2, X } from 'lucide-react';
 
 const CARD_STYLE = {
-  background: 'rgba(255,255,255,0.04)',
-  borderColor: 'rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.08)',
+  borderColor: 'rgba(255,255,255,0.14)',
 };
 
 const INPUT_CLS =
@@ -187,7 +187,7 @@ export default function OpportunityDetail() {
     return (
       <div
         className="flex min-h-[40vh] flex-col items-center justify-center gap-3 px-4 py-20"
-        style={{ background: '#080d1a', minHeight: '100vh' }}
+        style={{ minHeight: '100vh' }}
       >
         <Loader2 className="h-10 w-10 animate-spin text-teal-400" aria-hidden />
         <p className="text-sm font-medium text-white/50">{t('common.loading')}</p>
@@ -199,7 +199,7 @@ export default function OpportunityDetail() {
     return (
       <div
         className="section-container py-16 text-center min-h-[40vh]"
-        style={{ background: '#080d1a', minHeight: '100vh' }}
+        style={{ minHeight: '100vh' }}
       >
         <p className="text-white/70">{error || t('opportunityDetail.notFound')}</p>
         <Link to="/afri-yield/opportunities" className="mt-4 inline-block text-[#B5850A] font-semibold underline">
@@ -222,7 +222,7 @@ export default function OpportunityDetail() {
       : 0;
 
   return (
-    <div style={{ background: '#080d1a', minHeight: '100vh' }} className="pb-20">
+    <div style={{ minHeight: '100vh' }} className="pb-20">
       <section
         style={{
           background: 'linear-gradient(135deg, #0d2040 0%, #0a1628 100%)',
@@ -342,7 +342,7 @@ export default function OpportunityDetail() {
                 color: '#a78bfa',
               },
             ].map(({ label, value, color }) => (
-              <div key={label} className="rounded-xl border p-4" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
+              <div key={label} className="rounded-xl border p-4" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}>
                 <p className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
                   {label}
                 </p>
@@ -354,7 +354,7 @@ export default function OpportunityDetail() {
           </div>
 
           {fundingTarget > 0 && (
-            <div className="rounded-xl border p-4" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
+            <div className="rounded-xl border p-4" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}>
               <div className="flex justify-between text-xs mb-2">
                 <span style={{ color: 'rgba(255,255,255,0.5)' }}>
                   {isFr ? 'Progression du financement' : 'Funding Progress'}

@@ -212,7 +212,7 @@ export default function FarmerRegistrationPage() {
 
   if (successId) {
     return (
-      <div className="min-h-screen" style={{ background: '#060f0a' }}>
+      <div className="min-h-screen" style={{ background: 'transparent' }}>
         <div className="section-container py-16 max-w-lg mx-auto text-center">
           <div
             className="rounded-2xl p-8"
@@ -228,7 +228,7 @@ export default function FarmerRegistrationPage() {
           </p>
           <p
             className="font-mono text-lg font-semibold rounded-xl py-3 px-4 mb-6 break-all text-green-400"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
             {successId}
           </p>
@@ -241,7 +241,7 @@ export default function FarmerRegistrationPage() {
           </Link>
 
           {successId && (
-            <div className="mt-8 space-y-4 text-left rounded-2xl bg-[#060f0a] p-5">
+            <div className="mt-8 space-y-4 text-left rounded-2xl bg-brand-midGreen p-5">
               {nearbyCoops.length === 0 && !loadingCoops && (
                 <button
                   type="button"
@@ -430,7 +430,7 @@ export default function FarmerRegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#060f0a' }}>
+    <div className="min-h-screen" style={{ background: 'transparent' }}>
       <div
         className="text-white py-12"
         style={{
@@ -458,7 +458,7 @@ export default function FarmerRegistrationPage() {
         <form
           onSubmit={handleSubmit(onFinalSubmit)}
           className="rounded-2xl border p-6 space-y-6"
-          style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+          style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
           noValidate
         >
           {submitError && (

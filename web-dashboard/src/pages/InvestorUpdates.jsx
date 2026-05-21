@@ -43,7 +43,7 @@ export default function InvestorUpdates() {
 
         <div
           className="rounded-2xl p-6 mb-10 text-left"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <h3 className="font-bold text-white mb-4">{isFr ? 'Ce que contiendront les rapports :' : 'What reports will include:'}</h3>
           <div className="space-y-3">
