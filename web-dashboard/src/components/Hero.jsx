@@ -1,171 +1,203 @@
 ﻿import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sprout, Smartphone } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
-const PLAY_URL = import.meta.env.VITE_PLAY_STORE_URL || '';
-const IOS_URL = import.meta.env.VITE_APP_STORE_URL || '';
+const API = API_BASE_URL?.replace(/\/$/, '') || '';
 
-function StoreButton({ href, label, variant }) {
-  const base =
-    'inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition hover:-translate-y-0.5 hover:shadow-lg sm:max-w-[220px]';
-  const styles =
-    variant === 'dark'
-      ? 'bg-[#1a1a1a] text-white border border-white/10 hover:bg-black'
-      : 'bg-white text-brand-forest hover:bg-brand-cream';
+export default function Hero() {
+  const { i18n } = useTranslation();
+  const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  if (href) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={`${base} ${styles}`}>
-        {label}
-      </a>
-    );
-  }
+  const submitWaitlist = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+    setLoading(true);
+    try {
+      await fetch(`${API}/api/waitlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      /* silent */
+    } finally {
+      setDone(true);
+      setLoading(false);
+    }
+  };
 
-  return <span className={`${base} ${styles}`}>{label}</span>;
-}
-
-function HeroBackdrop() {
   return (
-    <>
-      <MotionBackdropGradient />
-      <HeroBackdropOrbs />
-      <HeroBackdropGrid />
-    </>
-  );
-}
-
-function MotionBackdropGradient() {
-  return (
-    <div
-      className="absolute inset-0 bg-gradient-to-br from-brand-forest via-[#1d4f3c] to-brand-sage"
-      aria-hidden
-    />
-  );
-}
-
-function HeroBackdropOrbs() {
-  return (
-    <>
-      <div
-        className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-brand-amber/20 blur-3xl animate-hero-float"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-white/10 blur-3xl animate-hero-float-delayed"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/3 h-56 w-56 -translate-x-1/2 rounded-full bg-brand-sage/25 blur-2xl animate-hero-pulse"
-        aria-hidden
-      />
-    </>
-  );
-}
-
-function HeroBackdropGrid() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 opacity-[0.07]"
+    <section
+      className="relative overflow-hidden"
       style={{
-        backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-        backgroundSize: '28px 28px',
+        background: `
+          radial-gradient(ellipse 140% 80% at 50% -20%,
+            rgba(26,92,53,0.7) 0%,
+            rgba(10,42,25,0.5) 35%,
+            transparent 65%),
+          radial-gradient(ellipse 60% 50% at 85% 30%,
+            rgba(181,133,10,0.12) 0%, transparent 55%),
+          radial-gradient(ellipse 50% 40% at 15% 60%,
+            rgba(29,158,117,0.1) 0%, transparent 50%),
+          linear-gradient(180deg, #0a1f10 0%, #060f0a 100%)
+        `,
+        minHeight: '85vh',
       }}
-      aria-hidden
-    />
-  );
-}
+    >
+      <div
+        className="glow-orb-green"
+        style={{
+          width: 600,
+          height: 600,
+          top: -200,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          opacity: 0.6,
+        }}
+      />
+      <div className="glow-orb-gold" style={{ width: 400, height: 400, top: 100, right: -100 }} />
+      <div
+        className="glow-orb-green"
+        style={{ width: 300, height: 300, bottom: 0, left: -50, opacity: 0.4 }}
+      />
 
-const Hero = () => {
-  const { t } = useTranslation();
+      <div
+        className="absolute inset-0 opacity-5"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }}
+      />
 
-  const stats = [
-    { value: '54+', label: t('home.hero.statCountries') },
-    { value: '→', label: t('home.hero.statChain') },
-    { value: 'AY', label: t('home.hero.statInvest') },
-  ];
+      <div className="relative z-10 max-w-6xl mx-auto px-4 pt-24 pb-20 text-center">
+        <div
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-xs font-semibold"
+          style={{
+            background: 'rgba(76,175,80,0.12)',
+            border: '1px solid rgba(76,175,80,0.25)',
+            color: '#4ade80',
+          }}
+        >
+          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse-soft" />
+          {isFr ? "Plateforme en direct · Afrique de l'Ouest" : 'Live Platform · West Africa'}
+        </div>
 
-  return (
-    <section className="relative overflow-hidden text-white" aria-labelledby="hero-heading">
-      <HeroBackdrop />
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
+          <span className="text-white">{isFr ? "L'agriculture africaine," : 'African agriculture,'}</span>
+          <br />
+          <span className="text-gradient">{isFr ? 'réinventée.' : 'reinvented.'}</span>
+        </h1>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
-        <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
-          <HeroIcon />
+        <p className="text-xl md:text-2xl text-white/60 max-w-3xl mx-auto mb-4 font-light leading-relaxed">
+          {isFr
+            ? 'Sahel AgriConnect connecte agriculteurs, coopératives, investisseurs et gouvernements sur une plateforme unifiée.'
+            : 'Sahel AgriConnect connects farmers, cooperatives, investors and governments on one unified platform.'}
+        </p>
 
-          <p className="mt-4 flex max-w-md items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-[11px] font-semibold uppercase leading-snug tracking-wider text-white/90 backdrop-blur-sm sm:text-xs animate-fade-up [animation-delay:100ms]">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-amber animate-hero-pulse" aria-hidden />
-            {t('home.hero.badge')}
-          </p>
+        <p className="text-base md:text-lg font-semibold mb-12" style={{ color: '#B5850A' }}>
+          {isFr ? 'Produire ensemble. Vendre plus loin. Gagner plus.' : 'Produce together. Sell further. Earn more.'}
+        </p>
 
-          <h1
-            id="hero-heading"
-            className="mt-8 mb-6 text-4xl font-bold italic leading-tight tracking-wide text-brand-amber md:text-5xl lg:text-6xl animate-fade-up [animation-delay:160ms]"
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 flex-wrap">
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all duration-200 hover:scale-105"
+            style={{
+              background: '#4CAF50',
+              color: '#060f0a',
+              boxShadow: '0 0 30px rgba(76,175,80,0.25)',
+            }}
           >
-            {t('home.hero.tagline')}
-          </h1>
-
-          <p className="mx-auto mb-6 max-w-2xl text-lg font-light leading-relaxed text-white/90 md:text-xl animate-fade-up [animation-delay:180ms]">
-            {t('home.hero.lead')}
-          </p>
-
-          <HeroCta joinLabel={t('home.hero.joinCooperative')} />
-
-          <div
-            id="get-app"
-            className="mx-auto mb-8 max-w-lg rounded-2xl border border-white/15 bg-black/15 p-5 backdrop-blur-md animate-fade-up [animation-delay:300ms]"
+            {isFr ? 'Explorer la plateforme' : 'Explore Platform'}
+            <ArrowRight size={18} />
+          </Link>
+          <Link
+            to="/afri-yield"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all duration-200 hover:scale-105"
+            style={{
+              background: 'rgba(181,133,10,0.12)',
+              border: '1px solid rgba(181,133,10,0.35)',
+              color: '#B5850A',
+            }}
           >
-            <div className="mb-4 flex items-center justify-center gap-2 text-brand-amber">
-              <Smartphone className="h-5 w-5" aria-hidden />
-              <h2 className="text-sm font-bold uppercase tracking-wide">{t('home.hero.appHeading')}</h2>
+            💰 {isFr ? 'AfriYield Exchange' : 'AfriYield Exchange'}
+          </Link>
+          <Link
+            to="/inscription"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-semibold text-base transition-all duration-200 hover:scale-105"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.8)',
+            }}
+          >
+            🌾 {isFr ? "S'inscrire gratuitement" : 'Join Free'}
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-16">
+          {[
+            { icon: '🌾', value: isFr ? 'Gratuit' : 'Free', label: isFr ? 'pour les agriculteurs' : 'for farmers' },
+            { icon: '🤝', value: '6', label: isFr ? "types d'acteurs" : 'actor types' },
+            { icon: '🌍', value: isFr ? 'Sahel' : 'Sahel', label: isFr ? "Afrique de l'Ouest" : 'West Africa' },
+            { icon: '💰', value: 'AfriYield', label: isFr ? 'pour investisseurs' : 'for investors' },
+          ].map(({ icon, value, label }) => (
+            <div key={label} className="glass-card p-4 text-center">
+              <div className="text-2xl mb-1">{icon}</div>
+              <p className="text-white font-bold text-base">{value}</p>
+              <p className="text-white/40 text-xs mt-0.5">{label}</p>
             </div>
-            <p className="mb-5 text-sm text-white/75">{t('home.hero.appLead')}</p>
-            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
-              <StoreButton href={PLAY_URL} label={t('home.hero.downloadAndroid')} variant="dark" />
-              <StoreButton href={IOS_URL} label={t('home.hero.downloadIOS')} variant="light" />
-            </div>
-          </div>
+          ))}
+        </div>
 
-          <ul
-            className="flex flex-wrap items-center justify-center gap-3 md:gap-4 animate-fade-up [animation-delay:380ms]"
-            aria-label={t('home.hero.statsAria')}
-          >
-            {stats.map(({ value, label }) => (
-              <li
-                key={label}
-                className="min-w-[7.5rem] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-center backdrop-blur-sm"
-              >
-                <span className="block text-lg font-bold text-brand-amber">{value}</span>
-                <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-wide text-white/70">
-                  {label}
-                </span>
-              </li>
-            ))}
-          </ul>
+        <div id="waitlist-form" className="max-w-md mx-auto">
+          {done ? (
+            <div className="glass-card p-4 text-center">
+              <p className="text-green-400 text-sm font-semibold">
+                ✅ {isFr ? 'Vous serez notifié au lancement !' : "You'll be notified at launch!"}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-white/50 text-sm text-center mb-3">
+                📱{' '}
+                {isFr
+                  ? "Soyez notifié au lancement de l'application mobile"
+                  : 'Get notified when the mobile app launches'}
+              </p>
+              <form onSubmit={submitWaitlist} className="flex gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={isFr ? 'votre@email.com' : 'your@email.com'}
+                  className="flex-1 px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-white/30"
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-5 py-3 rounded-xl font-semibold text-sm text-black whitespace-nowrap disabled:opacity-60"
+                  style={{ background: '#4CAF50' }}
+                >
+                  {loading ? '...' : isFr ? 'Rejoindre' : 'Notify me'}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </section>
   );
-};
-
-function HeroIcon() {
-  return (
-    <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-lg backdrop-blur-md animate-fade-up">
-      <Sprout className="h-10 w-10 text-brand-cream" aria-hidden />
-    </div>
-  );
 }
-
-function HeroCta({ joinLabel }) {
-  return (
-    <div className="mb-8 flex justify-center animate-fade-up [animation-delay:240ms]">
-      <Link
-        to="/cooperative-registration"
-        className="inline-flex items-center justify-center rounded-xl bg-brand-cream px-10 py-4 text-base font-semibold text-brand-forest shadow-lg transition hover:-translate-y-0.5 hover:bg-white hover:shadow-xl"
-      >
-        {joinLabel}
-      </Link>
-    </div>
-  );
-}
-
-export default Hero;

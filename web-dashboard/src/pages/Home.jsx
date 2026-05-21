@@ -165,19 +165,10 @@ const Home = () => {
   ];
 
   return (
-    <div className="bg-brand-cream">
+    <div>
       <Hero />
 
-      <HomeSection
-        variant="meshLight"
-        eyebrow={isFr ? 'Écosystème' : 'Ecosystem'}
-        title={isFr ? 'Qui êtes-vous ?' : 'Who are you?'}
-        subtitle={
-          isFr
-            ? 'Choisissez votre profil pour commencer sur la plateforme panafricaine'
-            : 'Choose your profile to get started on the pan-African platform'
-        }
-      >
+      <HomeSection variant="roles" eyebrow={isFr ? 'Écosystème' : 'Ecosystem'} title={isFr ? 'Qui êtes-vous ?' : 'Who are you?'} subtitle={isFr ? 'Choisissez votre profil pour commencer sur la plateforme panafricaine' : 'Choose your profile to get started on the pan-African platform'}>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 md:gap-4">
           {roleCards.map((card) => (
             <GlassRoleCard key={card.title} {...card} />
@@ -186,7 +177,7 @@ const Home = () => {
       </HomeSection>
 
       <HomeSection
-        variant="meshWhite"
+        variant="features"
         eyebrow={isFr ? 'Impact' : 'Impact'}
         title={isFr ? 'Problèmes résolus' : 'Problems we solve'}
         subtitle={
@@ -196,20 +187,14 @@ const Home = () => {
         }
       >
         <div className="grid gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
-          {problemCards.map((card, index) => (
-            <GlassFeatureCard
-              key={card.title}
-              icon={card.Icon}
-              title={card.title}
-              description={card.text}
-              index={index}
-            />
+          {problemCards.map((card) => (
+            <GlassFeatureCard key={card.title} icon={card.Icon} title={card.title} description={card.text} />
           ))}
         </div>
       </HomeSection>
 
       <HomeSection
-        variant="meshLight"
+        variant="platform"
         eyebrow={isFr ? 'Plateforme' : 'Platform'}
         title={isFr ? 'Ce qui rend la plateforme unique' : 'What makes the platform unique'}
         subtitle={
@@ -274,24 +259,23 @@ const Home = () => {
         variant="forest"
         eyebrow={isFr ? 'Notre Mission' : 'Our Mission'}
         title={
-          isFr
-            ? "Construire la souveraineté alimentaire de l'Afrique"
-            : "Building Africa's food sovereignty"
+          isFr ? (
+            <>
+              Construire la <span className="text-gradient-gold">souveraineté alimentaire</span> de l&apos;Afrique
+            </>
+          ) : (
+            <>
+              Building Africa&apos;s <span className="text-gradient-gold">food sovereignty</span>
+            </>
+          )
         }
         subtitle={
           isFr
             ? "Sahel AgriConnect connecte agriculteurs, coopératives et investisseurs dans un écosystème numérique souverain — conçu en Afrique, pour l'Afrique."
             : 'Sahel AgriConnect connects farmers, cooperatives, and investors in a sovereign digital ecosystem — designed in Africa, for Africa.'
         }
-        titleClassName="text-white"
-        subtitleClassName="text-gray-300"
       >
-        <MissionStats
-          farmerStats={farmerStats}
-          coopStats={coopStats}
-          processorStats={processorStats}
-          isFr={isFr}
-        />
+        <MissionStats farmerStats={farmerStats} coopStats={coopStats} processorStats={processorStats} isFr={isFr} />
         <div className="mt-6 grid gap-4 md:grid-cols-3 lg:gap-5">
           {[
             {
@@ -321,71 +305,84 @@ const Home = () => {
         </div>
       </HomeSection>
 
-      <section id="rejoindre" className="relative overflow-hidden py-10 md:py-14">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(82,183,136,0.12),transparent),radial-gradient(ellipse_60%_50%_at_0%_100%,rgba(233,196,106,0.1),transparent)]"
-          aria-hidden
-        />
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="mb-6 text-center">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-forest/70">
-              {isFr ? 'Rejoindre' : 'Join us'}
-            </p>
-            <h2 className="text-3xl font-bold text-brand-forest md:text-4xl">
-              {isFr ? 'Prêt à transformer l\'agriculture ?' : 'Ready to transform agriculture?'}
-            </h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:gap-6">
-            <GlassCtaPanel
-              variant="forest"
-              eyebrow={isFr ? 'Agriculteurs & Coopératives' : 'Farmers & Cooperatives'}
-              title={isFr ? 'Rejoignez la plateforme' : 'Join the platform'}
-              description={
-                isFr
-                  ? 'Enregistrez votre exploitation, accédez aux financements, aux outils IA et aux marchés.'
-                  : 'Register your farm, access financing, AI tools, and markets.'
-              }
-            >
-              <Link
-                to="/dashboard"
-                className="w-full rounded-xl bg-brand-amber py-3.5 text-center text-sm font-bold text-brand-forest transition hover:bg-brand-amberDeep"
-              >
-                {isFr ? "S'inscrire comme agriculteur" : 'Register as a Farmer'}
-              </Link>
-              <Link
-                to="/cooperative-registration"
-                className="w-full rounded-xl border border-white/30 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                {isFr ? 'Inscrire ma coopérative' : 'Register my Cooperative'}
-              </Link>
-            </GlassCtaPanel>
-
-            <GlassCtaPanel
-              variant="amber"
-              eyebrow={isFr ? 'Investisseurs Diaspora' : 'Diaspora Investors'}
-              title={isFr ? "Investissez dans l'agriculture africaine" : 'Invest in African agriculture'}
-              description={
-                isFr
-                  ? 'Transformez vos transferts en capital agricole productif. Escrow sécurisé. Conformité OHADA.'
-                  : 'Turn remittances into productive agricultural capital. Secured escrow. OHADA compliance.'
-              }
-            >
-              <Link
-                to="/afri-yield"
-                className="w-full rounded-xl bg-brand-forest py-3.5 text-center text-sm font-bold text-white transition hover:bg-[#143326]"
-              >
-                {isFr ? 'Découvrir AfriYield Exchange' : 'Explore AfriYield Exchange'}
-              </Link>
-              <Link
-                to="/afri-yield/register"
-                className="w-full rounded-xl border border-brand-forest/30 py-3.5 text-center text-sm font-semibold text-brand-forest transition hover:bg-brand-forest/10"
-              >
-                {isFr ? "S'inscrire comme investisseur" : 'Register as an Investor'}
-              </Link>
-            </GlassCtaPanel>
-          </div>
+      <HomeSection id="rejoindre" variant="cta" className="!py-10 md:!py-14">
+        <div className="mb-6 text-center max-w-3xl mx-auto">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: '#4ade80' }}>
+            {isFr ? 'Rejoindre' : 'Join us'}
+          </p>
+          <h2 className="text-3xl font-bold text-white md:text-4xl">
+            {isFr ? (
+              <>
+                Prêt à <span className="text-gradient">transformer</span> l&apos;agriculture ?
+              </>
+            ) : (
+              <>
+                Ready to <span className="text-gradient">transform</span> agriculture?
+              </>
+            )}
+          </h2>
         </div>
-      </section>
+        <div className="grid gap-4 md:grid-cols-2 lg:gap-6">
+          <GlassCtaPanel
+            variant="forest"
+            eyebrow={isFr ? 'Agriculteurs & Coopératives' : 'Farmers & Cooperatives'}
+            title={isFr ? 'Rejoignez la plateforme' : 'Join the platform'}
+            description={
+              isFr
+                ? 'Enregistrez votre exploitation, accédez aux financements, aux outils IA et aux marchés.'
+                : 'Register your farm, access financing, AI tools, and markets.'
+            }
+          >
+            <Link
+              to="/dashboard"
+              className="w-full rounded-xl py-3.5 text-center text-sm font-bold transition hover:opacity-90"
+              style={{ background: '#B5850A', color: '#060f0a' }}
+            >
+              {isFr ? "S'inscrire comme agriculteur" : 'Register as a Farmer'}
+            </Link>
+            <Link
+              to="/cooperative-registration"
+              className="w-full rounded-xl py-3.5 text-center text-sm font-semibold text-white/90 transition hover:bg-white/10"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+              }}
+            >
+              {isFr ? 'Inscrire ma coopérative' : 'Register my Cooperative'}
+            </Link>
+          </GlassCtaPanel>
+
+          <GlassCtaPanel
+            variant="amber"
+            eyebrow={isFr ? 'Investisseurs Diaspora' : 'Diaspora Investors'}
+            title={isFr ? "Investissez dans l'agriculture africaine" : 'Invest in African agriculture'}
+            description={
+              isFr
+                ? 'Transformez vos transferts en capital agricole productif. Escrow sécurisé. Conformité OHADA.'
+                : 'Turn remittances into productive agricultural capital. Secured escrow. OHADA compliance.'
+            }
+          >
+            <Link
+              to="/afri-yield"
+              className="w-full rounded-xl py-3.5 text-center text-sm font-bold text-white transition hover:opacity-90"
+              style={{ background: '#4CAF50', color: '#060f0a' }}
+            >
+              {isFr ? 'Découvrir AfriYield Exchange' : 'Explore AfriYield Exchange'}
+            </Link>
+            <Link
+              to="/afri-yield/register"
+              className="w-full rounded-xl py-3.5 text-center text-sm font-semibold transition hover:bg-white/10"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.85)',
+              }}
+            >
+              {isFr ? "S'inscrire comme investisseur" : 'Register as an Investor'}
+            </Link>
+          </GlassCtaPanel>
+        </div>
+      </HomeSection>
     </div>
   );
 };

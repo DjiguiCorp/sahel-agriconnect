@@ -9,11 +9,18 @@ export default {
       colors: {
         brand: {
           forest: '#1B4332',
+          forestLight: '#1a5c35',
           sage: '#52B788',
-          amber: '#E9C46A',
-          amberDeep: '#F4A261',
+          amber: '#B5850A',
+          amberDeep: '#9a7109',
           cream: '#F8F4E3',
           iconBg: '#EAF3DE',
+          gold: '#B5850A',
+          goldLight: '#f59e0b',
+          teal: '#1D9E75',
+          navy: '#0d2040',
+          darkGreen: '#060f0a',
+          midGreen: '#0a1f10',
         },
         primary: {
           green: '#1B4332',
@@ -37,9 +44,24 @@ export default {
           '0%, 100%': { opacity: '0.35' },
           '50%': { opacity: '0.65' },
         },
+        'gradient-shift': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'glow-pulse': {
+          '0%, 100%': { opacity: '0.5' },
+          '50%': { opacity: '1' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-8px)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.6s ease-out forwards',
+        'gradient-shift': 'gradient-shift 8s ease infinite',
+        'glow-pulse': 'glow-pulse 3s ease-in-out infinite',
+        float: 'float 6s ease-in-out infinite',
         'hero-float': 'hero-float 7s ease-in-out infinite',
         'hero-float-delayed': 'hero-float 9s ease-in-out 1.2s infinite',
         'hero-pulse': 'hero-pulse 4s ease-in-out infinite',
