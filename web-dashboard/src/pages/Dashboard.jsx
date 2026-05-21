@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -55,22 +56,20 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const platformCountries = useMemo(
-    () =>
-      [
-        ...new Set([
-          ...(farmerStats?.byCountry || []).map((c) => c._id),
-          ...(coopStats?.byCountry || []).map((c) => c._id),
-          ...(processorStats?.byCountry || []).map((c) => c._id),
-          ...(farmerStats?.recent || []).map((f) => f.country),
-          ...(coopStats?.recent || []).map((c) => c.country),
-          ...(processorStats?.recent || []).map((p) => p.country),
-        ]),
-      ]
-        .filter(Boolean)
-        .sort((a, b) => String(a).localeCompare(String(b))),
-    [farmerStats, coopStats, processorStats]
-  );
+  const allCountries = useMemo(() => {
+    const DIASPORA = ['France', 'United Kingdom', 'United States', 'Canada'];
+    const ALL_PLATFORM_COUNTRIES = [...AFRICAN_COUNTRIES, ...DIASPORA];
+    const registeredCountries = [
+      ...new Set([
+        ...(farmerStats?.byCountry || []).map((c) => c._id),
+        ...(coopStats?.byCountry || []).map((c) => c._id),
+        ...(processorStats?.byCountry || []).map((c) => c._id),
+      ].filter(Boolean)),
+    ];
+    return [...new Set([...ALL_PLATFORM_COUNTRIES, ...registeredCountries])].sort((a, b) =>
+      String(a).localeCompare(String(b))
+    );
+  }, [farmerStats, coopStats, processorStats]);
 
   const filteredFarmers =
     farmerStats?.recent?.filter((f) => !countryFilter || f.country === countryFilter) || [];
@@ -164,7 +163,7 @@ export default function Dashboard() {
     },
     {
       icon: '🌍',
-      value: platformCountries.length,
+      value: allCountries.length,
       label: isFr ? 'Pays représentés' : 'Countries',
       sub: isFr ? 'sur la plateforme' : 'on platform',
       color: '#9C27B0',
@@ -268,7 +267,7 @@ export default function Dashboard() {
             <option value="" className="text-black">
               {isFr ? '🌍 Tous les pays' : '🌍 All countries'}
             </option>
-            {platformCountries.map((c) => (
+            {allCountries.map((c) => (
               <option key={c} value={c} className="text-black">
                 {c}
               </option>

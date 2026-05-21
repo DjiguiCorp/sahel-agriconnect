@@ -10,17 +10,8 @@
   body {
     min-height: 100vh;
     color: white;
-    background-color: #0f2218;
-    background-image:
-      radial-gradient(ellipse 140% 60% at 50% -5%,
-        rgba(30,100,60,0.65) 0%,
-        rgba(15,50,30,0.4) 40%,
-        transparent 65%),
-      radial-gradient(ellipse 70% 50% at 90% 20%,
-        rgba(181,133,10,0.15) 0%, transparent 55%),
-      radial-gradient(ellipse 50% 40% at 10% 70%,
-        rgba(29,158,117,0.12) 0%, transparent 50%);
-    background-attachment: fixed;
+    background-color: #0b1f12;
+    /* No background-image on body — sections define their own */
   }
 
   .text-gradient {
