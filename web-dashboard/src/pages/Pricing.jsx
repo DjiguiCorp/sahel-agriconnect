@@ -1,448 +1,496 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Sprout, Factory, Building2, Landmark, Check, ChevronDown, ChevronUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import {
+  Sprout, Star, Users, Factory, Globe,
+  Landmark, Heart, Check, ArrowRight
+} from 'lucide-react';
 
-const TIER_KEYS = ['farmerBasic', 'producerPro', 'transformationCenter', 'enterprise'];
-const TIER_PRICES = ['', '$32', '$109', '$999'];
-const TIER_AMOUNTS_USD = [0, 32, 109, 999];
-const TIER_ICONS = [Sprout, Factory, Building2, Landmark];
-const TIER_LINKS = ['/dashboard', '/contact', '/contact', '/platform-licensing'];
-const TIER_VARIANTS = ['outline', 'gold', 'gold', 'gold'];
-const TIER_POPULAR = [false, true, false, false];
-
-// USD → XOF (rough; real conversion happens at the gateway)
-const USD_TO_XOF = 620;
-
-const isAfricanLocale = () => {
-  if (typeof navigator === 'undefined') return false;
-  const lang = navigator.language || '';
-  return lang.startsWith('fr') || lang.includes('ML') || lang.includes('BF') || lang.includes('NE');
-};
-
-const getPaymentMethod = (tierIndex) => {
-  if (tierIndex === 0) return 'free';
-  if (tierIndex === 3) return 'stripe'; // enterprise always Stripe
-  return isAfricanLocale() ? 'mobile_money' : 'stripe';
-};
+// ── PRICING DATA ─────────────────────────────────────────────
+const TIERS = [
+  {
+    id: 'farmer',
+    icon: Sprout,
+    color: '#4CAF50',
+    bg: 'from-green-900/30 to-green-950/50',
+    border: 'border-green-500/20',
+    name: { en: 'Farmer Basic', fr: 'Agriculteur de base' },
+    price: { monthly: 0, annual: 0 },
+    badge: null,
+    audience: { en: 'For smallholder farmers', fr: 'Pour les petits agriculteurs' },
+    features: {
+      en: [
+        'Free registration — always',
+        'Soil diagnostic & disease detection (AI)',
+        'Connect with local cooperatives',
+        'Geolocation-based cooperative discovery',
+        'Request to join cooperatives near you',
+        'Browse training programs',
+        'Community support resources',
+      ],
+      fr: [
+        'Inscription gratuite — toujours',
+        'Diagnostic sol & détection maladies (IA)',
+        'Connexion avec coopératives locales',
+        'Découverte de coopératives par géolocalisation',
+        'Demande d\'adhésion aux coopératives proches',
+        'Accès aux formations',
+        'Ressources communautaires',
+      ],
+    },
+    cta: { en: 'Register Free', fr: 'S\'inscrire gratuitement' },
+    ctaRoute: '/inscription',
+    popular: false,
+  },
+  {
+    id: 'producer_pro',
+    icon: Star,
+    color: '#B5850A',
+    bg: 'from-amber-900/30 to-amber-950/50',
+    border: 'border-amber-500/30',
+    name: { en: 'Producer Pro', fr: 'Producteur Pro' },
+    price: { monthly: 29.99, annual: 299 },
+    badge: { en: 'Most Popular', fr: 'Plus populaire' },
+    audience: { en: 'For serious farmers & exporters', fr: 'Pour agriculteurs & exportateurs' },
+    features: {
+      en: [
+        'Everything in Farmer Basic',
+        'Priority irrigation assessments',
+        'Production optimization insights',
+        'Export readiness checklist',
+        'Direct market access & listings',
+        'Yield tracking & forecasting',
+        'Premium support',
+      ],
+      fr: [
+        'Tout inclus dans Agriculteur de base',
+        'Évaluations d\'irrigation prioritaires',
+        'Optimisation de la production',
+        'Liste de contrôle export',
+        'Accès direct aux marchés',
+        'Suivi et prévision des rendements',
+        'Support premium',
+      ],
+    },
+    cta: { en: 'Start Producer Pro', fr: 'Démarrer Producteur Pro' },
+    ctaRoute: '/producer-pro-registration',
+    popular: true,
+  },
+  {
+    id: 'cooperative',
+    icon: Users,
+    color: '#1D9E75',
+    bg: 'from-teal-900/30 to-teal-950/50',
+    border: 'border-teal-500/20',
+    name: { en: 'Cooperative', fr: 'Coopérative' },
+    price: { monthly: null, annual: 199 },
+    annualOnly: true,
+    badge: null,
+    audience: { en: 'For registered cooperatives', fr: 'Pour coopératives enregistrées' },
+    features: {
+      en: [
+        'Member farmer management',
+        'Receive & send farmer join requests',
+        'Equipment fund eligibility',
+        'Certified transformation center matching',
+        'AfriYield Exchange listing visibility',
+        'Cooperative dashboard & analytics',
+        'NGO & investor partnership access',
+      ],
+      fr: [
+        'Gestion des membres agriculteurs',
+        'Recevoir et envoyer des demandes d\'adhésion',
+        'Éligibilité au fonds d\'équipement',
+        'Matching avec centres de transformation certifiés',
+        'Visibilité sur AfriYield Exchange',
+        'Tableau de bord coopérative',
+        'Accès partenariats ONG & investisseurs',
+      ],
+    },
+    cta: { en: 'Register Cooperative', fr: 'Inscrire la coopérative' },
+    ctaRoute: '/cooperative-registration',
+    popular: false,
+  },
+  {
+    id: 'transformation',
+    icon: Factory,
+    color: '#F59E0B',
+    bg: 'from-yellow-900/30 to-yellow-950/50',
+    border: 'border-yellow-500/20',
+    name: { en: 'Transformation Center', fr: 'Centre de transformation' },
+    price: { monthly: 109, annual: 1090 },
+    badge: null,
+    audience: { en: 'For processors & agro-industries', fr: 'Pour transformateurs & agro-industries' },
+    features: {
+      en: [
+        'Center dashboard & inventory tools',
+        'Certified cooperative affiliation',
+        'Member farmer onboarding',
+        'Certification workflow integration',
+        'AfriYield Exchange listing support',
+        'Finished product marketplace access',
+        'Cooperative partner matching',
+      ],
+      fr: [
+        'Tableau de bord & inventaire',
+        'Affiliation coopératives certifiées',
+        'Intégration des agriculteurs membres',
+        'Workflow de certification',
+        'Visibilité sur AfriYield Exchange',
+        'Accès marché produits finis',
+        'Matching partenaires coopératives',
+      ],
+    },
+    cta: { en: 'Register Center', fr: 'Inscrire le centre' },
+    ctaRoute: '/transformation-registration',
+    popular: false,
+  },
+  {
+    id: 'ngo_industry',
+    icon: Heart,
+    color: '#2ECC71',
+    bg: 'from-emerald-900/30 to-emerald-950/50',
+    border: 'border-emerald-500/20',
+    name: { en: 'NGO / Industries', fr: 'ONG / Industries' },
+    price: { monthly: 499, annual: 4990 },
+    badge: null,
+    audience: {
+      en: 'For NGOs, development orgs & industries',
+      fr: 'Pour ONG, organisations de développement & industries'
+    },
+    features: {
+      en: [
+        'Program & beneficiary management',
+        'Impact tracking & reporting',
+        'Cooperative & farmer network access',
+        'PDF report generation',
+        'Multi-region operations',
+        'Data export & analytics',
+        'Dedicated account manager',
+      ],
+      fr: [
+        'Gestion programmes & bénéficiaires',
+        'Suivi et rapports d\'impact',
+        'Accès réseau coopératives & agriculteurs',
+        'Génération rapports PDF',
+        'Opérations multi-régions',
+        'Export données & analytique',
+        'Gestionnaire de compte dédié',
+      ],
+    },
+    cta: { en: 'Get Started', fr: 'Commencer' },
+    ctaRoute: '/ngo-registration',
+    popular: false,
+  },
+  {
+    id: 'government',
+    icon: Landmark,
+    color: '#185FA5',
+    bg: 'from-blue-900/30 to-blue-950/50',
+    border: 'border-blue-500/30',
+    name: { en: 'Government', fr: 'Gouvernement' },
+    price: { monthly: 999, annual: 9990 },
+    badge: { en: 'Sovereign', fr: 'Souverain' },
+    audience: {
+      en: 'For ministries & government agencies',
+      fr: 'Pour ministères & agences gouvernementales'
+    },
+    features: {
+      en: [
+        'Country-isolated admin environment',
+        'Unlimited farmer & cooperative seats',
+        'National agricultural dashboard',
+        'Custom governance & policy modules',
+        'Global commodity visibility on AfriYield',
+        'Sovereign data control',
+        'SLA-backed dedicated support',
+        'Onboarding & training for your team',
+      ],
+      fr: [
+        'Environnement admin isolé par pays',
+        'Sièges agriculteurs & coopératives illimités',
+        'Tableau de bord agricole national',
+        'Modules de gouvernance & politique personnalisés',
+        'Visibilité mondiale sur AfriYield',
+        'Contrôle souverain des données',
+        'Support dédié avec SLA',
+        'Intégration & formation de l\'équipe',
+      ],
+    },
+    cta: { en: 'Contact for Licensing', fr: 'Contacter pour licence' },
+    ctaRoute: '/platform-licensing',
+    popular: false,
+  },
+  {
+    id: 'investor',
+    icon: Globe,
+    color: '#B5850A',
+    bg: 'from-amber-900/20 to-amber-950/40',
+    border: 'border-amber-500/20',
+    name: { en: 'AfriYield Investor', fr: 'Investisseur AfriYield' },
+    price: { monthly: 29.99, annual: 299 },
+    badge: null,
+    audience: {
+      en: 'For diaspora & international investors',
+      fr: 'Pour investisseurs diaspora & internationaux'
+    },
+    features: {
+      en: [
+        'Browse all investment opportunities',
+        'Track A & Track B investment access',
+        'Projected bi-annual returns (not guaranteed)',
+        'Portfolio dashboard & analytics',
+        'KYC verification included',
+        '5% facilitation fee on capital deployed',
+        'Investor reports & updates',
+      ],
+      fr: [
+        'Parcourir toutes les opportunités',
+        'Accès Track A & Track B',
+        'Rendements semestriels projetés (non garantis)',
+        'Tableau de bord portefeuille',
+        'Vérification KYC incluse',
+        '5% frais de facilitation sur le capital déployé',
+        'Rapports & mises à jour investisseur',
+      ],
+    },
+    cta: { en: 'Register as Investor', fr: 'S\'inscrire comme investisseur' },
+    ctaRoute: '/afri-yield/register',
+    popular: false,
+  },
+];
 
 export default function Pricing() {
-  const { t } = useTranslation();
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
+  const [billing, setBilling] = useState('monthly');
   const [openFaq, setOpenFaq] = useState(null);
-  const [subscribeModalOpen, setSubscribeModalOpen] = useState(false);
-  const [pendingTierIndex, setPendingTierIndex] = useState(null);
-  const [pendingTierName, setPendingTierName] = useState('');
-  const [paymentEmail, setPaymentEmail] = useState('');
-  const [paymentPhone, setPaymentPhone] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState('orange');
-  const [loading, setLoading] = useState(false);
-  const [paymentError, setPaymentError] = useState('');
 
-  const detectedMethod = useMemo(
-    () => (pendingTierIndex == null ? null : getPaymentMethod(pendingTierIndex)),
-    [pendingTierIndex]
-  );
+  const faqs = [
+    {
+      q: isFr ? 'Puis-je changer de plan?' : 'Can I switch plans?',
+      a: isFr
+        ? 'Oui — mettez à niveau ou réduisez à tout moment. Contactez notre équipe.'
+        : 'Yes — upgrade or downgrade at any time. Contact our team.',
+    },
+    {
+      q: isFr ? 'Y a-t-il un essai gratuit?' : 'Is there a free trial?',
+      a: isFr
+        ? 'Producer Pro et Centre de transformation incluent un essai de 30 jours. Aucune carte de crédit requise.'
+        : 'Producer Pro and Transformation Center include a 30-day trial. No credit card required.',
+    },
+    {
+      q: isFr ? 'Comment fonctionne l\'adhésion coopérative?'
+        : 'How does cooperative membership work?',
+      a: isFr
+        ? 'Les coopératives paient 199$/an. Cela débloque la gestion des membres, l\'éligibilité au fonds d\'équipement et la visibilité AfriYield Exchange.'
+        : 'Cooperatives pay $199/year. This unlocks member management, equipment fund eligibility, and AfriYield Exchange visibility.',
+    },
+    {
+      q: isFr ? 'Quels modes de paiement sont acceptés?'
+        : 'What payment methods are accepted?',
+      a: isFr
+        ? 'Carte bancaire (Visa, Mastercard, Amex), virement WISE, Mobile Money (Orange Money, Wave) et Zelle (USA).'
+        : 'Card (Visa, Mastercard, Amex), WISE transfer, Mobile Money (Orange Money, Wave) and Zelle (USA).',
+    },
+    {
+      q: isFr ? 'Le gouvernement a-t-il son propre portail?'
+        : 'Does government have its own portal?',
+      a: isFr
+        ? 'Oui. L\'abonnement gouvernemental déploie un environnement entièrement isolé avec contrôle souverain des données nationales.'
+        : 'Yes. The government subscription deploys a fully isolated environment with sovereign control of national data.',
+    },
+  ];
 
-  const openSubscribeModal = (tierIndex, tierName) => {
-    const amount = TIER_AMOUNTS_USD[tierIndex];
-    if (!amount) return;
-    setPendingTierIndex(tierIndex);
-    setPendingTierName(tierName);
-    setPaymentEmail('');
-    setPaymentPhone('');
-    setSelectedMethod('orange');
-    setPaymentError('');
-    setSubscribeModalOpen(true);
+  const getPrice = (tier) => {
+    if (tier.price.monthly === 0) return isFr ? 'Gratuit' : 'Free';
+    if (tier.annualOnly) return `$${tier.price.annual}${isFr ? '/an' : '/year'}`;
+    if (billing === 'annual' && tier.price.annual) {
+      return `$${tier.price.annual}${isFr ? '/an' : '/year'}`;
+    }
+    return `$${tier.price.monthly}${isFr ? '/mois' : '/mo'}`;
   };
 
-  const closeSubscribeModal = () => {
-    setSubscribeModalOpen(false);
-    setPendingTierIndex(null);
-    setPendingTierName('');
-    setPaymentEmail('');
-    setPaymentPhone('');
-    setPaymentError('');
-    setLoading(false);
+  const getSavings = (tier) => {
+    if (!tier.price.monthly || !tier.price.annual || tier.annualOnly) return null;
+    const yearlyCost = tier.price.monthly * 12;
+    const saved = yearlyCost - tier.price.annual;
+    return saved > 0 ? Math.round(saved) : null;
   };
-
-  const handlePayment = async () => {
-    if (pendingTierIndex == null) return;
-    const method = getPaymentMethod(pendingTierIndex);
-    const amount = TIER_AMOUNTS_USD[pendingTierIndex];
-    const tierName = pendingTierName;
-    const email = paymentEmail.trim();
-    const phone = paymentPhone.trim();
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-
-    if (method === 'free') {
-      closeSubscribeModal();
-      return;
-    }
-    if (!email) {
-      setPaymentError('Please enter your email.');
-      return;
-    }
-    if (method === 'mobile_money' && selectedMethod !== 'stripe' && !phone) {
-      setPaymentError('Please enter your mobile money phone number.');
-      return;
-    }
-
-    setLoading(true);
-    setPaymentError('');
-
-    try {
-      // Stripe — enterprise OR diaspora / non-African user
-      if (method === 'stripe' || selectedMethod === 'stripe') {
-        const res = await fetch(`${apiBase}/api/payments/stripe/create-session`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            tierKey: TIER_KEYS[pendingTierIndex],
-            tierName,
-            amountUsd: amount,
-          }),
-        });
-        const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          setPaymentError(data.error || 'Stripe checkout failed');
-        }
-        return;
-      }
-
-      // Orange Money Web Pay
-      if (selectedMethod === 'orange') {
-        const amountXof = Math.round(amount * USD_TO_XOF);
-        const res = await fetch(`${apiBase}/api/payments/orange/initiate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            phone,
-            amount: amountXof,
-            currency: 'XOF',
-            tierName,
-            orderId: `SAC-${TIER_KEYS[pendingTierIndex]}-${Date.now()}`,
-          }),
-        });
-        const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          setPaymentError(data.error || 'Orange Money initiation failed');
-        }
-        return;
-      }
-
-      // MTN MoMo Collections — request to pay
-      if (selectedMethod === 'mtn') {
-        const amountXof = Math.round(amount * USD_TO_XOF);
-        const res = await fetch(`${apiBase}/api/payments/mtn/request-to-pay`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            phone,
-            amount: amountXof,
-            currency: 'XOF',
-            tierName,
-          }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          closeSubscribeModal();
-          // eslint-disable-next-line no-alert
-          alert(
-            data.message ||
-              'Payment request sent to your phone. Approve it in the MTN MoMo app.'
-          );
-        } else {
-          setPaymentError(data.error || 'MTN MoMo request failed');
-        }
-        return;
-      }
-    } catch (e) {
-      setPaymentError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const showPhoneField =
-    detectedMethod === 'mobile_money' && selectedMethod !== 'stripe';
-  const showMethodPicker = detectedMethod === 'mobile_money';
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
-      {subscribeModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="subscribe-modal-title"
-        >
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-200">
-            <h2 id="subscribe-modal-title" className="text-lg font-bold text-[#1a3c2e] mb-1">
-              {t('pricing.subscribeTitle', 'Subscribe')}
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              {pendingTierName} — {t('pricing.subscribeEmailHint', 'Enter your email to continue to secure checkout.')}
-            </p>
-
-            <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="payment-email">
-              Email
-            </label>
-            <input
-              id="payment-email"
-              type="email"
-              autoComplete="email"
-              value={paymentEmail}
-              onChange={(e) => setPaymentEmail(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm mb-3 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
-              placeholder="you@example.com"
-            />
-
-            {showMethodPicker && (
-              <>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  {t('pricing.payMethod', 'Payment method')}
-                </label>
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMethod('orange')}
-                    className={`py-2 rounded-xl text-sm font-semibold border ${
-                      selectedMethod === 'orange'
-                        ? 'border-[#FF7900] bg-[#FFF4EB] text-[#7A3A00]'
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    🟠 Orange Money
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMethod('mtn')}
-                    className={`py-2 rounded-xl text-sm font-semibold border ${
-                      selectedMethod === 'mtn'
-                        ? 'border-[#FFCC00] bg-[#FFF8DB] text-[#665100]'
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    🟡 MTN MoMo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMethod('stripe')}
-                    className={`py-2 rounded-xl text-sm font-semibold border ${
-                      selectedMethod === 'stripe'
-                        ? 'border-[#1a3c2e] bg-[#EAF1ED] text-[#1a3c2e]'
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    💳 Card
-                  </button>
-                </div>
-              </>
-            )}
-
-            {showPhoneField && (
-              <>
-                <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="payment-phone">
-                  Mobile money number
-                </label>
-                <input
-                  id="payment-phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={paymentPhone}
-                  onChange={(e) => setPaymentPhone(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm mb-3 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
-                  placeholder="+223 XX XX XX XX"
-                />
-              </>
-            )}
-
-            {detectedMethod === 'stripe' && (
-              <p className="text-xs text-gray-500 mb-3">
-                {t(
-                  'pricing.stripeHint',
-                  'You will be redirected to Stripe to complete payment securely.'
-                )}
-              </p>
-            )}
-
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={closeSubscribeModal}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50"
-                >
-                  {t('common.cancel', 'Cancel')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePayment}
-                  disabled={loading || !paymentEmail.trim() || (showPhoneField && !paymentPhone.trim())}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1a3c2e] text-white hover:bg-[#143326] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading
-                    ? t('pricing.processing', 'Processing…')
-                    : t('pricing.payNow', 'Pay now')}
-                </button>
-              </div>
-              {paymentError && (
-                <p className="text-sm text-red-600 mt-2 text-center">{paymentError}</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
+    <div className="min-h-screen bg-[#060f0a] text-white">
       {/* Hero */}
-      <div className="text-center mb-14">
-        <h1 className="text-4xl md:text-5xl font-bold text-[#1a3c2e] mb-4">
-          {t('pricing.title')}
+      <section className="pt-20 pb-10 px-4 text-center">
+        <span className="inline-block px-4 py-1.5 rounded-full
+          text-xs font-semibold bg-amber-500/15 text-amber-400
+          border border-amber-500/30 mb-4">
+          {isFr ? 'Tarification transparente' : 'Transparent Pricing'}
+        </span>
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+          {isFr
+            ? 'Choisissez votre rôle dans la chaîne agricole'
+            : 'Choose Your Role in the Agricultural Chain'}
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          {t('pricing.subtitle')}
+        <p className="text-white/60 text-base max-w-2xl mx-auto mb-8">
+          {isFr
+            ? 'Des plans conçus pour chaque acteur — des agriculteurs aux gouvernements. Commencez gratuitement, évoluez avec vos besoins.'
+            : 'Plans designed for every stakeholder — from farmers to governments. Start free, scale with your needs.'}
         </p>
-      </div>
 
-      {/* Main pricing tiers */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-        {TIER_KEYS.map((key, i) => {
-          const Icon = TIER_ICONS[i];
-          const isEnterprise = key === 'enterprise';
-          const isPopular = TIER_POPULAR[i];
-          return (
-            <div
-              key={key}
-              className={`relative rounded-2xl border p-7 flex flex-col h-full ${
-                isEnterprise
-                  ? 'border-[#B5850A] bg-gradient-to-b from-[#1a3c2e] to-[#143326] text-white shadow-xl'
-                  : 'border-gray-200 bg-white shadow-md'
-              }`}
-            >
-              {isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#B5850A] text-white text-xs font-bold px-3 py-1 rounded-full">
-                  {t('pricing.popular')}
-                </div>
-              )}
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${
-                isEnterprise ? 'bg-[#B5850A]/20' : 'bg-green-50'
-              }`}>
-                <Icon className={`w-5 h-5 ${isEnterprise ? 'text-[#B5850A]' : 'text-[#1a3c2e]'}`} />
-              </div>
-              <h3 className={`text-lg font-bold mb-1 ${isEnterprise ? 'text-white' : 'text-[#1a3c2e]'}`}>
-                {t(`pricing.tiers.${key}.name`)}
-              </h3>
-              <div className="mb-5">
-                <span className={`text-3xl font-bold ${isEnterprise ? 'text-[#B5850A]' : 'text-[#1a3c2e]'}`}>
-                  {TIER_PRICES[i] || t('pricing.free')}
-                </span>
-                {TIER_PRICES[i] && (
-                  <span className={`text-sm ${isEnterprise ? 'text-gray-300' : 'text-gray-500'}`}>
-                    {t('pricing.perMonth')}
-                  </span>
+        {/* Billing toggle */}
+        <div className="inline-flex items-center gap-1 bg-white/5
+          border border-white/10 rounded-xl p-1 mb-8">
+          {['monthly', 'annual'].map(b => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setBilling(b)}
+              className={`px-5 py-2 rounded-lg text-sm font-medium
+                transition-all ${billing === b
+                  ? 'bg-amber-500 text-black'
+                  : 'text-white/60 hover:text-white'}`}>
+              {b === 'monthly'
+                ? (isFr ? 'Mensuel' : 'Monthly')
+                : (isFr ? 'Annuel (économisez ~15%)' : 'Annual (save ~15%)')}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Tiers grid */}
+      <section className="px-4 pb-16 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+          xl:grid-cols-4 gap-6">
+          {TIERS.map((tier) => {
+            const savings = getSavings(tier);
+            const TierIcon = tier.icon;
+            return (
+              <div
+                key={tier.id}
+                className={`relative rounded-2xl border bg-gradient-to-b
+                  ${tier.bg} ${tier.border} p-6 flex flex-col
+                  ${tier.popular
+                    ? 'ring-2 ring-amber-500/50 scale-105' : ''}`}>
+                {/* Popular badge */}
+                {tier.badge && (
+                  <div className="absolute -top-3 left-1/2
+                    -translate-x-1/2">
+                    <span className="px-3 py-1 rounded-full text-xs
+                      font-bold bg-amber-500 text-black whitespace-nowrap">
+                      {tier.badge[isFr ? 'fr' : 'en']}
+                    </span>
+                  </div>
                 )}
-              </div>
-              <ul className="space-y-2 mb-8 flex-1">
-                {t(`pricing.tiers.${key}.features`, { returnObjects: true }).map((feat, fi) => (
-                  <li key={fi} className="flex items-start gap-2 text-sm">
-                    <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isEnterprise ? 'text-[#B5850A]' : 'text-[#1a3c2e]'}`} />
-                    <span className={isEnterprise ? 'text-gray-200' : 'text-gray-600'}>{feat}</span>
-                  </li>
-                ))}
-              </ul>
-              {TIER_PRICES[i] ? (
-                <button
-                  type="button"
-                  onClick={() => openSubscribeModal(i, t(`pricing.tiers.${key}.name`))}
-                  className={`w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm transition cursor-pointer ${
-                    isEnterprise
-                      ? 'bg-[#B5850A] text-white hover:bg-[#9a7009]'
-                      : 'bg-[#1a3c2e] text-white hover:bg-[#143326]'
-                  }`}
-                >
-                  {t(`pricing.tiers.${key}.cta`)}
-                </button>
-              ) : (
-                <Link
-                  to={TIER_LINKS[i]}
-                  className="w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e] hover:text-white transition"
-                >
-                  {t(`pricing.tiers.${key}.cta`)}
+
+                {/* Icon & name */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl flex
+                    items-center justify-center"
+                    style={{ backgroundColor: `${tier.color}20` }}>
+                    <TierIcon size={20}
+                      style={{ color: tier.color }} />
+                  </div>
+                  <div>
+                    <p className="text-white font-bold text-sm">
+                      {tier.name[isFr ? 'fr' : 'en']}
+                    </p>
+                    <p className="text-white/40 text-xs">
+                      {tier.audience[isFr ? 'fr' : 'en']}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold"
+                      style={{ color: tier.color }}>
+                      {getPrice(tier)}
+                    </span>
+                  </div>
+                  {billing === 'annual' && savings && (
+                    <p className="text-green-400 text-xs mt-0.5">
+                      {isFr ? `Économisez $${savings}/an` : `Save $${savings}/year`}
+                    </p>
+                  )}
+                  {tier.annualOnly && (
+                    <p className="text-white/40 text-xs mt-0.5">
+                      {isFr ? 'Facturation annuelle uniquement' : 'Annual billing only'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Features */}
+                <ul className="space-y-2 mb-6 flex-1">
+                  {tier.features[isFr ? 'fr' : 'en'].map((f, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Check size={14} className="mt-0.5 flex-shrink-0"
+                        style={{ color: tier.color }} />
+                      <span className="text-white/70 text-xs
+                        leading-relaxed">
+                        {f}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                <Link to={tier.ctaRoute}>
+                  <button
+                    type="button"
+                    className="w-full py-3 rounded-xl font-semibold
+                      text-sm transition-all flex items-center
+                      justify-center gap-2"
+                    style={{
+                      backgroundColor: tier.popular
+                        ? tier.color : `${tier.color}20`,
+                      color: tier.popular ? 'black' : tier.color,
+                      border: `1px solid ${tier.color}40`,
+                    }}>
+                    {tier.cta[isFr ? 'fr' : 'en']}
+                    <ArrowRight size={14} />
+                  </button>
                 </Link>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Bottom three sections */}
-      <div className="grid md:grid-cols-3 gap-6 mb-16">
-        {/* Cooperative */}
-        <div className="rounded-2xl border-2 border-[#1a3c2e] bg-white p-7 flex flex-col">
-          <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{t('pricing.cooperative.title')}</h3>
-          <p className="text-gray-600 text-sm mb-4 flex-1">{t('pricing.cooperative.description')}</p>
-          <p className="text-2xl font-bold text-[#B5850A] mb-5">{t('pricing.cooperative.price')}</p>
-          <Link to="/cooperative-registration" className="w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm bg-[#1a3c2e] text-white hover:bg-[#143326] transition">
-            {t('pricing.cooperative.cta')}
-          </Link>
+              </div>
+            );
+          })}
         </div>
-
-        {/* Government */}
-        <div className="rounded-2xl border-2 border-[#B5850A] bg-white p-7 flex flex-col">
-          <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{t('pricing.government.title')}</h3>
-          <p className="text-gray-600 text-sm mb-4 flex-1">{t('pricing.government.description')}</p>
-          <p className="text-2xl font-bold text-[#B5850A] mb-5">{t('pricing.government.price')}</p>
-          <Link to="/platform-licensing" className="w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm bg-[#B5850A] text-white hover:bg-[#9a7009] transition">
-            {t('pricing.government.cta')}
-          </Link>
-        </div>
-
-        {/* Diaspora Investor */}
-        <div className="rounded-2xl border-2 border-gray-200 bg-white p-7 flex flex-col">
-          <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{t('pricing.diaspora.title')}</h3>
-          <p className="text-gray-600 text-sm mb-2 flex-1">{t('pricing.diaspora.description')}</p>
-          <p className="text-sm text-[#1a3c2e] font-medium mb-5">✓ {t('pricing.diaspora.track')}</p>
-          <Link to="/afri-yield/register" className="w-full text-center py-2.5 px-4 rounded-xl font-semibold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e] hover:text-white transition">
-            {t('pricing.diaspora.cta')}
-          </Link>
-        </div>
-      </div>
+      </section>
 
       {/* FAQ */}
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold text-[#1a3c2e] text-center mb-8">{t('pricing.faq.title')}</h2>
+      <section className="px-4 pb-20 max-w-3xl mx-auto">
+        <h2 className="text-2xl font-bold text-white text-center mb-8">
+          {isFr ? 'Questions fréquentes' : 'Frequently Asked Questions'}
+        </h2>
         <div className="space-y-3">
-          {[1,2,3,4].map(n => (
-            <div key={n} className="border border-gray-200 rounded-xl overflow-hidden">
+          {faqs.map((faq, i) => (
+            <div key={i}
+              className="rounded-xl border border-white/10
+                bg-white/5 overflow-hidden">
               <button
                 type="button"
-                onClick={() => setOpenFaq(openFaq === n ? null : n)}
-                className="w-full flex items-center justify-between px-6 py-4 text-left font-medium text-[#1a3c2e] hover:bg-gray-50 transition"
-              >
-                <span>{t(`pricing.faq.q${n}`)}</span>
-                {openFaq === n
-                  ? <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  : <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                }
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                className="w-full px-5 py-4 text-left flex
+                  items-center justify-between">
+                <span className="text-white font-medium text-sm">
+                  {faq.q}
+                </span>
+                <span className="text-white/40 text-lg ml-4">
+                  {openFaq === i ? '−' : '+'}
+                </span>
               </button>
-              {openFaq === n && (
-                <div className="px-6 pb-4 text-gray-600 text-sm leading-relaxed">
-                  {t(`pricing.faq.a${n}`)}
+              {openFaq === i && (
+                <div className="px-5 pb-4">
+                  <p className="text-white/60 text-sm leading-relaxed">
+                    {faq.a}
+                  </p>
                 </div>
               )}
             </div>
           ))}
         </div>
-      </div>
-
+      </section>
     </div>
   );
 }

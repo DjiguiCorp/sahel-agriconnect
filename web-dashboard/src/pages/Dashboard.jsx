@@ -94,6 +94,30 @@ export default function Dashboard() {
       </section>
 
       <section className="section-container py-8 space-y-6">
+        <div className="rounded-xl border border-amber-500/20
+          bg-amber-500/5 p-4 flex items-center justify-between mb-6">
+          <div>
+            <p className="text-amber-400 font-semibold text-sm">
+              {isFr ? '💰 Voir tous nos plans tarifaires'
+                     : '💰 View all pricing plans'}
+            </p>
+            <p className="text-gray-600 text-xs mt-0.5">
+              {isFr
+                ? 'Agriculteur gratuit · Producer Pro $29.99/mois · Coopérative $199/an'
+                : 'Farmer free · Producer Pro $29.99/mo · Cooperative $199/year'}
+            </p>
+          </div>
+          <Link to="/pricing">
+            <button
+              type="button"
+              className="px-4 py-2 rounded-lg bg-amber-500
+              text-black text-xs font-bold whitespace-nowrap"
+            >
+              {isFr ? 'Voir les tarifs' : 'View Pricing'}
+            </button>
+          </Link>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
           <div className="flex flex-wrap gap-2">
             <button

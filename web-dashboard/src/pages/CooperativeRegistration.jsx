@@ -26,10 +26,11 @@ const CROP_VALUES = [
 const INTEREST_KEYS = ['equipment', 'certification', 'diaspora', 'export'];
 const INTEREST_VALUES = ['Equipment Fund', 'Certification', 'Diaspora Investment', 'Export Program'];
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 export default function CooperativeRegistration() {
   const { t, i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   const { registerCooperative } = useRegisteredUser();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -44,6 +45,9 @@ export default function CooperativeRegistration() {
     email: '',
     phone: '',
     interests: [],
+    wantTransformationPartner: false,
+    certifiedTransformationCenter: '',
+    openToProcessorAffiliation: false,
   });
   const [state, setState] = useState({ loading: false, ok: false, err: '' });
 
@@ -141,12 +145,16 @@ export default function CooperativeRegistration() {
                       ? 'Informations de base'
                       : 'Basic Information'
                     : step === 2
-                      ? i18n.language === 'fr'
+                      ? isFr
                         ? 'Votre coopérative'
                         : 'Your Cooperative'
-                      : i18n.language === 'fr'
-                        ? 'Programmes & Envoi'
-                        : 'Programs & Submit'}
+                      : step === 3
+                        ? isFr
+                          ? 'Programmes'
+                          : 'Programs'
+                        : isFr
+                          ? 'Centre de transformation'
+                          : 'Transformation Center'}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -160,7 +168,7 @@ export default function CooperativeRegistration() {
               </div>
               {/* Step dots */}
               <div className="flex justify-between mt-2">
-                {[1, 2, 3].map((s) => (
+                {[1, 2, 3, 4].map((s) => (
                   <div
                     key={s}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${
@@ -519,9 +527,9 @@ export default function CooperativeRegistration() {
                 </div>
               )}
 
-              {/* STEP 3 — Programs + Summary + Submit */}
+              {/* STEP 3 — Programs + Summary */}
               {step === 3 && (
-                <form onSubmit={submit} className="space-y-5">
+                <div className="space-y-5">
                   <div>
                     <h2 className="text-2xl font-extrabold text-[#1a3c2e]">
                       {i18n.language === 'fr' ? "Programmes d'intérêt" : 'Programs of Interest'}
@@ -637,7 +645,138 @@ export default function CooperativeRegistration() {
                       onClick={() => setStep(2)}
                       className="px-5 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold py-3 hover:bg-gray-50 transition text-sm"
                     >
-                      ← {i18n.language === 'fr' ? 'Retour' : 'Back'}
+                      ← {isFr ? 'Retour' : 'Back'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(4)}
+                      className="flex-1 rounded-xl bg-[#1a3c2e] text-white font-bold py-3 hover:bg-[#143326] transition text-sm"
+                    >
+                      {isFr ? 'Continuer →' : 'Continue →'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4 — Transformation center affiliation + Submit */}
+              {step === 4 && (
+                <form onSubmit={submit} className="space-y-5">
+                  <div className="rounded-2xl bg-[#060f0a] p-5 space-y-5">
+                    <div>
+                      <h3 className="text-white font-bold text-base mb-1">
+                        🏭{' '}
+                        {isFr
+                          ? 'Affiliation centre de transformation'
+                          : 'Transformation Center Affiliation'}
+                      </h3>
+                      <p className="text-white/50 text-sm">
+                        {isFr
+                          ? 'Connectez votre coopérative à des centres de transformation certifiés pour valoriser vos produits.'
+                          : 'Connect your cooperative to certified transformation centers to add value to your products.'}
+                      </p>
+                    </div>
+
+                    <label className="flex items-start gap-3 p-4 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/8 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={form.wantTransformationPartner}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            wantTransformationPartner: e.target.checked,
+                          }))
+                        }
+                        className="mt-0.5 accent-teal-400 w-4 h-4"
+                      />
+                      <div>
+                        <p className="text-white font-semibold text-sm">
+                          {isFr
+                            ? 'Je cherche un centre de transformation partenaire'
+                            : 'I am looking for a partner transformation center'}
+                        </p>
+                        <p className="text-white/50 text-xs mt-0.5">
+                          {isFr
+                            ? 'Nous vous mettrons en relation avec des centres certifiés dans votre région.'
+                            : 'We will match you with certified centers in your region.'}
+                        </p>
+                      </div>
+                    </label>
+
+                    {form.wantTransformationPartner && (
+                      <div>
+                        <label className="block text-white/60 text-xs font-medium mb-1.5">
+                          {isFr
+                            ? 'Centre de transformation préféré (optionnel)'
+                            : 'Preferred transformation center (optional)'}
+                        </label>
+                        <input
+                          type="text"
+                          value={form.certifiedTransformationCenter}
+                          placeholder={
+                            isFr
+                              ? 'Nom du centre si vous en connaissez un'
+                              : 'Center name if you know one'
+                          }
+                          onChange={(e) =>
+                            setForm((p) => ({
+                              ...p,
+                              certifiedTransformationCenter: e.target.value,
+                            }))
+                          }
+                          className="w-full bg-black/30 border border-white/15 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-teal-500/60 placeholder-white/30"
+                        />
+                      </div>
+                    )}
+
+                    <label className="flex items-start gap-3 p-4 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/8 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={form.openToProcessorAffiliation}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            openToProcessorAffiliation: e.target.checked,
+                          }))
+                        }
+                        className="mt-0.5 accent-amber-500 w-4 h-4"
+                      />
+                      <div>
+                        <p className="text-white font-semibold text-sm">
+                          {isFr
+                            ? "Notre coopérative est ouverte aux demandes d'affiliation de processeurs"
+                            : 'Our cooperative is open to affiliation requests from processors'}
+                        </p>
+                        <p className="text-white/50 text-xs mt-0.5">
+                          {isFr
+                            ? 'Les centres de transformation certifiés pourront vous contacter pour un partenariat.'
+                            : 'Certified transformation centers can contact you for a partnership.'}
+                        </p>
+                      </div>
+                    </label>
+
+                    <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                      <p className="text-amber-400 text-xs leading-relaxed">
+                        💡{' '}
+                        {isFr
+                          ? "Les coopératives affiliées à des centres certifiés ont accès à des opportunités d'investissement supplémentaires sur AfriYield Exchange."
+                          : 'Cooperatives affiliated with certified centers gain access to additional investment opportunities on AfriYield Exchange.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {state.err && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+                      {state.err}
+                    </p>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setStep(3)}
+                      className="px-5 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold py-3 hover:bg-gray-50 transition text-sm"
+                    >
+                      ← {isFr ? 'Retour' : 'Back'}
                     </button>
                     <button
                       type="submit"
@@ -646,7 +785,7 @@ export default function CooperativeRegistration() {
                     >
                       {state.loading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden /> : null}
                       {state.loading
-                        ? i18n.language === 'fr'
+                        ? isFr
                           ? 'Envoi...'
                           : 'Sending...'
                         : t('cooperativeReg.form.submit')}

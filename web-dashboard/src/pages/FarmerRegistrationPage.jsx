@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   farmerRegistrationSchema,
   cropOptions,
@@ -11,7 +12,7 @@ import {
 import { regionsByCountry } from '../data/sahelRegions';
 import { ALL_COUNTRIES } from '../data/africanCountries';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
-import { CheckCircle, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { CheckCircle, Loader2, ChevronRight, ChevronLeft, MapPin, Users, Phone } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 
 const defaults = {
@@ -29,10 +30,17 @@ const defaults = {
 };
 
 export default function FarmerRegistrationPage() {
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   const [step, setStep] = useState(1);
   const [submitError, setSubmitError] = useState('');
   const [successId, setSuccessId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [nearbyCoops, setNearbyCoops] = useState([]);
+  const [loadingCoops, setLoadingCoops] = useState(false);
+  const [joiningCoop, setJoiningCoop] = useState(null);
+  const [joinSuccess, setJoinSuccess] = useState('');
+  const [wantContact, setWantContact] = useState(false);
 
   const {
     register,
@@ -127,6 +135,68 @@ export default function FarmerRegistrationPage() {
     }
   };
 
+  const loadNearbyCoops = async (country, region) => {
+    setLoadingCoops(true);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/cooperatives/nearby?country=${encodeURIComponent(country)}&region=${encodeURIComponent(region)}`
+      );
+      const data = await res.json();
+      if (data.success && data.cooperatives?.length > 0) {
+        setNearbyCoops(data.cooperatives);
+      } else {
+        setNearbyCoops([
+          {
+            _id: 'demo1',
+            cooperativeName: `Coopérative Agricole ${region || country}`,
+            memberCount: 45,
+            primaryCrops: ['Shea Butter', 'Sesame'],
+            certificationStatus: 'Regional',
+            leaderName: 'Mamadou Kouyaté',
+            phone: '+223 76 000 001',
+            regionCity: region || country,
+            country,
+          },
+          {
+            _id: 'demo2',
+            cooperativeName: `Union Paysanne ${country}`,
+            memberCount: 120,
+            primaryCrops: ['Millet', 'Cotton'],
+            certificationStatus: 'Local',
+            leaderName: 'Fatoumata Diallo',
+            phone: '+223 77 000 002',
+            regionCity: region || country,
+            country,
+          },
+        ]);
+      }
+    } catch (e) {
+      console.error('Could not load nearby coops:', e);
+    } finally {
+      setLoadingCoops(false);
+    }
+  };
+
+  const requestJoinCoop = async (coopId, coopName) => {
+    setJoiningCoop(coopId);
+    try {
+      await fetch(`${API_BASE_URL}/api/cooperatives/join-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farmerId: successId,
+          cooperativeId: coopId,
+          cooperativeName: coopName,
+        }),
+      });
+      setJoinSuccess(coopId);
+    } catch (e) {
+      console.error('Join request failed:', e);
+    } finally {
+      setJoiningCoop(null);
+    }
+  };
+
   if (successId) {
     return (
       <div className="section-container py-16 max-w-lg mx-auto text-center">
@@ -140,6 +210,180 @@ export default function FarmerRegistrationPage() {
           <Link to="/" className="btn-primary inline-block">
             Retour à l’accueil
           </Link>
+
+          {successId && (
+            <div className="mt-8 space-y-4 text-left rounded-2xl bg-[#060f0a] p-5">
+              {nearbyCoops.length === 0 && !loadingCoops && (
+                <button
+                  type="button"
+                  onClick={() => loadNearbyCoops(watch('country'), watch('region'))}
+                  className="w-full py-3 rounded-xl border border-green-500/30
+                    bg-green-500/5 text-green-400 text-sm font-semibold
+                    flex items-center justify-center gap-2 hover:bg-green-500/10
+                    transition-colors"
+                >
+                  <MapPin size={16} />
+                  {isFr
+                    ? '🌍 Voir les coopératives dans ma région'
+                    : '🌍 See cooperatives in my region'}
+                </button>
+              )}
+
+              {loadingCoops && (
+                <div className="text-center text-white/50 text-sm py-4">
+                  {isFr ? 'Recherche de coopératives proches...' : 'Finding nearby cooperatives...'}
+                </div>
+              )}
+
+              {nearbyCoops.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Users size={16} className="text-green-400" />
+                    <p className="text-white font-semibold text-sm">
+                      {isFr
+                        ? `${nearbyCoops.length} coopératives dans votre région`
+                        : `${nearbyCoops.length} cooperatives in your region`}
+                    </p>
+                  </div>
+
+                  {nearbyCoops.map((coop) => (
+                    <div
+                      key={coop._id}
+                      className="rounded-xl border border-white/10 bg-white/5 p-4"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-white font-semibold text-sm">
+                            {coop.cooperativeName}
+                          </p>
+                          <p className="text-white/50 text-xs mt-0.5">
+                            {coop.memberCount} {isFr ? 'membres' : 'members'}
+                            {' · '}
+                            {(coop.primaryCrops || []).slice(0, 2).join(', ')}
+                            {' · '}
+                            {coop.regionCity}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            coop.certificationStatus === 'International'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : coop.certificationStatus === 'Regional'
+                                ? 'bg-green-500/20 text-green-400'
+                                : 'bg-amber-500/20 text-amber-400'
+                          }`}
+                        >
+                          {coop.certificationStatus}
+                        </span>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document
+                              .getElementById(`coop-info-${coop._id}`)
+                              ?.classList.toggle('hidden');
+                          }}
+                          className="flex-1 py-2 rounded-lg border border-white/20 text-white/60 text-xs hover:text-white transition-colors"
+                        >
+                          {isFr ? 'En savoir plus' : 'Learn more'}
+                        </button>
+
+                        {joinSuccess === coop._id ? (
+                          <div className="flex-1 py-2 rounded-lg bg-green-500/20 text-green-400 text-xs font-bold text-center">
+                            ✓ {isFr ? 'Demande envoyée' : 'Request sent'}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => requestJoinCoop(coop._id, coop.cooperativeName)}
+                            disabled={joiningCoop === coop._id}
+                            className="flex-1 py-2 rounded-lg font-semibold text-xs disabled:opacity-50"
+                            style={{ backgroundColor: '#1D9E75', color: 'white' }}
+                          >
+                            {joiningCoop === coop._id
+                              ? isFr
+                                ? 'Envoi...'
+                                : 'Sending...'
+                              : isFr
+                                ? 'Rejoindre'
+                                : 'Join'}
+                          </button>
+                        )}
+                      </div>
+
+                      <div
+                        id={`coop-info-${coop._id}`}
+                        className="hidden mt-3 pt-3 border-t border-white/10 space-y-2"
+                      >
+                        <p className="text-white/60 text-xs">
+                          👤 {isFr ? 'Responsable:' : 'Leader:'} {coop.leaderName}
+                        </p>
+                        {coop.phone && (
+                          <p className="text-white/60 text-xs flex items-center gap-1">
+                            <Phone size={10} /> {coop.phone}
+                          </p>
+                        )}
+                        <p className="text-white/50 text-xs">
+                          🌾 {isFr ? 'Cultures:' : 'Crops:'}{' '}
+                          {(coop.primaryCrops || []).join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="rounded-xl border border-teal-500/20 bg-teal-500/5 p-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={wantContact}
+                        onChange={async (e) => {
+                          setWantContact(e.target.checked);
+                          if (e.target.checked && successId) {
+                            await fetch(
+                              `${API_BASE_URL}/api/farmers/${successId}/opt-in-contact`,
+                              {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  wantCoopContact: true,
+                                  country: watch('country'),
+                                  region: watch('region'),
+                                }),
+                              }
+                            );
+                          }
+                        }}
+                        className="mt-0.5 accent-teal-400 w-4 h-4"
+                      />
+                      <div>
+                        <p className="text-teal-400 font-semibold text-sm">
+                          📬{' '}
+                          {isFr
+                            ? 'Je souhaite être contacté par des coopératives'
+                            : 'I want to be contacted by cooperatives'}
+                        </p>
+                        <p className="text-white/50 text-xs mt-0.5">
+                          {isFr
+                            ? 'Les coopératives de votre région pourront vous contacter pour vous inviter à rejoindre leur réseau.'
+                            : 'Cooperatives in your region can reach out to invite you to join their network.'}
+                        </p>
+                      </div>
+                    </label>
+                    {wantContact && (
+                      <p className="text-teal-400 text-xs mt-2 pl-7">
+                        ✓{' '}
+                        {isFr
+                          ? 'Préférence enregistrée. Vous serez contacté par les coopératives proches.'
+                          : 'Preference saved. You will be contacted by nearby cooperatives.'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );

@@ -11,6 +11,11 @@ const TOOLS_ITEMS = [
   { to: '/think-tank', labelKey: 'nav.thinkTank' },
 ];
 
+const getMainNavLinks = (isFr) => [
+  { label: isFr ? 'Tarifs' : 'Pricing', path: '/pricing' },
+  { label: isFr ? 'Contact' : 'Contact', path: '/contact' },
+];
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [desktopPlatformOpen, setDesktopPlatformOpen] = useState(false);
@@ -113,6 +118,7 @@ const Header = () => {
 
   const platformLabel = isFr ? 'Plateforme' : 'Platform';
   const toolsLabel = isFr ? 'Outils' : 'Tools';
+  const mainNavLinks = useMemo(() => getMainNavLinks(isFr), [isFr]);
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-md">
@@ -176,6 +182,12 @@ const Header = () => {
                 </div>
               )}
             </div>
+
+            {mainNavLinks.map(({ label, path }) => (
+              <Link key={path} to={path} className={navLinkClass}>
+                {label}
+              </Link>
+            ))}
 
             <div
               ref={desktopToolsRef}
@@ -316,6 +328,12 @@ const Header = () => {
                   </div>
                 )}
               </div>
+
+              {mainNavLinks.map(({ label, path }) => (
+                <Link key={path} to={path} className={navLinkClass} onClick={closeMenu}>
+                  {label}
+                </Link>
+              ))}
 
               <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-1">
                 <button

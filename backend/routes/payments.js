@@ -43,14 +43,19 @@ router.post('/stripe/create-session', async (req, res) => {
             currency: 'usd',
             recurring: { interval: 'month' },
             product_data: {
-              name: `Sahel AgriConnect — ${tierName || tierKey || 'Subscription'}`,
-              description: `Monthly subscription to ${tierName || tierKey || 'plan'}`,
+              name: tierName || tierKey || 'Sahel AgriConnect Subscription',
+              description: `Sahel AgriConnect Platform — ${tierName || tierKey || 'Subscription Plan'}`,
+              images: ['https://sahelagriconnect.com/assets/logo-stripe.png'],
             },
             unit_amount: Math.round(Number(amountUsd) * 100),
           },
           quantity: 1,
         },
       ],
+      payment_intent_data: {
+        statement_descriptor_suffix: 'SAHELAGRICONN',
+        description: `Sahel AgriConnect — ${tierName || tierKey}`,
+      },
       metadata: { tierKey: tierKey || '', email },
       success_url:
         successUrl || `${process.env.FRONTEND_URL || ''}/pricing?success=true`,
@@ -220,14 +225,9 @@ router.post('/stripe/create-investment-session', async (req, res) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `AfriYield Investment — ${opportunityName || opportunityId}`,
-              description:
-                `Agricultural investment via AfriYield Exchange. ` +
-                `Projected return: ~${expectedROI || '—'}% (not guaranteed). ` +
-                `Opportunity: ${opportunityName || opportunityId}`,
-              images: [
-                'https://sahelagriconnect.com/assets/afriyield-logo.png',
-              ],
+              name: `AfriYield Exchange — ${opportunityName || opportunityId}`,
+              description: `Agricultural investment · AfriYield Exchange · ${opportunityName || opportunityId} · Projected return ~${expectedROI || '—'}% (not guaranteed)`,
+              images: ['https://afriyieldexchange.com/assets/logo-stripe.png'],
             },
             unit_amount: Math.round(amount * 100), // cents
           },
@@ -245,14 +245,13 @@ router.post('/stripe/create-investment-session', async (req, res) => {
         country: country || '',
       },
       payment_intent_data: {
+        statement_descriptor_suffix: 'AFRIYIELD',
         description: `AfriYield Investment — ${opportunityName || opportunityId}`,
         metadata: {
           type: 'afriyield_investment',
           investorEmail,
           opportunityId,
         },
-        // Funds held, manual capture — allows review before capture
-        // Change to 'automatic' for immediate capture
         capture_method: 'automatic',
       },
       success_url:
