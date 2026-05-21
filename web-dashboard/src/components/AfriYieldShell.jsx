@@ -74,9 +74,17 @@ export default function AfriYieldShell() {
   const crumbs = useMemo(() => buildBreadcrumbItems(location.pathname), [location.pathname]);
 
   return (
-    <div className="min-h-[60vh] flex flex-col bg-brand-cream">
-      <header className="sticky top-0 z-30 border-b border-black/10 shadow-sm">
-        <div className="bg-[#1a3c2e]">
+    <div className="min-h-screen flex flex-col" style={{ background: '#0b1f12' }}>
+      <header className="sticky top-0 z-30 border-b border-white/10 shadow-lg">
+        <div
+          style={{
+            background: `
+              radial-gradient(ellipse 100% 80% at 50% 0%,
+                rgba(30,80,50,0.5) 0%, transparent 60%),
+              linear-gradient(135deg, #1a4028 0%, #0f2218 100%)
+            `,
+          }}
+        >
           <div className="section-container relative flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between md:gap-4 md:py-3">
             <Link
               to="/afri-yield"

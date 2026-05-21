@@ -73,7 +73,17 @@ function LoginScreen({ onLogin, isFr }) {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'linear-gradient(135deg, #0a1535 0%, #060c1f 100%)' }}
+      style={{
+        background: `
+          radial-gradient(ellipse 120% 80% at 50% -10%,
+            rgba(40,90,180,0.55) 0%,
+            rgba(15,35,80,0.45) 40%,
+            transparent 70%),
+          radial-gradient(ellipse 70% 50% at 90% 60%,
+            rgba(29,158,117,0.12) 0%, transparent 50%),
+          linear-gradient(180deg, #0a1535 0%, #0b1f12 100%)
+        `,
+      }}
     >
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
@@ -85,7 +95,13 @@ function LoginScreen({ onLogin, isFr }) {
             {label.emoji} {isFr ? label.fr : label.en}
           </p>
         </div>
-        <div className="bg-[#0e1d3a] rounded-2xl p-6 shadow-2xl border border-white/10">
+        <div
+          className="rounded-2xl p-6 shadow-2xl border border-white/15 glass-card-strong"
+          style={{
+            background: 'rgba(14,32,64,0.85)',
+            backdropFilter: 'blur(24px)',
+          }}
+        >
           <h2 className="font-bold text-white text-lg mb-5 text-center">
             {isFr ? 'Connexion sécurisée' : 'Secure Login'}
           </h2>
@@ -445,8 +461,14 @@ export default function GovernmentPortal() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: 'transparent' }}>
-      <div style={{ background: '#0a1535' }} className="px-6 py-4 flex items-center justify-between border-b border-white/10">
+    <div className="min-h-screen" style={{ background: '#0b1f12' }}>
+      <div
+        className="px-6 py-4 flex items-center justify-between border-b border-white/10"
+        style={{
+          background: 'rgba(10,21,53,0.92)',
+          backdropFilter: 'blur(16px)',
+        }}
+      >
         <div className="flex items-center gap-3">
           <img src="/sahel-logo.png" alt="SA" className="w-9 h-9 rounded-lg object-cover" />
           <div>
@@ -473,8 +495,14 @@ export default function GovernmentPortal() {
 
       <div
         style={{
-          background: 'linear-gradient(135deg, #0e1d3a 0%, #1a2f52 100%)',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: `
+            radial-gradient(ellipse 100% 80% at 50% 0%,
+              rgba(24,72,140,0.65) 0%,
+              rgba(14,35,75,0.5) 45%,
+              transparent 75%),
+            linear-gradient(135deg, #0e1d3a 0%, #142e60 100%)
+          `,
+          borderBottom: '1px solid rgba(96,165,250,0.2)',
         }}
         className="px-6 py-4"
       >
@@ -533,7 +561,13 @@ export default function GovernmentPortal() {
 
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex overflow-x-auto gap-1 py-3">
-          <div className="flex overflow-x-auto gap-1 bg-[#0a0f1e] border border-white/10 rounded-2xl p-1 w-full">
+          <div
+            className="flex overflow-x-auto gap-1 border border-white/12 rounded-2xl p-1 w-full"
+            style={{
+              background: 'rgba(8,18,45,0.75)',
+              backdropFilter: 'blur(12px)',
+            }}
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -549,7 +583,17 @@ export default function GovernmentPortal() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 pb-16">
+      <div
+        className="max-w-7xl mx-auto px-4 pb-16"
+        style={{
+          background: `
+            radial-gradient(ellipse 90% 55% at 50% 100%,
+              rgba(20,48,96,0.25) 0%, transparent 55%),
+            radial-gradient(ellipse 70% 40% at 0% 0%,
+              rgba(29,158,117,0.08) 0%, transparent 50%)
+          `,
+        }}
+      >
         {loading && activeTab !== 'overview' && (
           <div className="text-center py-10">
             <Loader2 className="w-8 h-8 animate-spin text-[#185FA5] mx-auto" />

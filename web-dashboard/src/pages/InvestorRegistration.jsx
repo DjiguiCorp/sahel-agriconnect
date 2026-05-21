@@ -30,7 +30,7 @@ const HEARD = ['Diaspora community', 'Social media', 'Friend or family', 'Event 
 
 const INPUT_CLS =
   'w-full rounded-xl bg-black/30 border border-white/15 text-white placeholder-white/30 px-4 py-3 text-sm focus:outline-none focus:border-amber-500/60';
-const LABEL_CLS = 'text-sm font-medium text-white/70';
+const LABEL_CLS = 'text-sm font-medium text-white/90';
 const ERR_BOX = 'rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400';
 
 const CARD_STYLE = {
@@ -260,11 +260,21 @@ export default function InvestorRegistration() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'transparent' }}>
+    <div className="min-h-screen" style={{ background: '#0b1f12' }}>
       <section
         style={{
-          background: 'linear-gradient(135deg, #0d2040 0%, #061228 100%)',
-          borderBottom: '1px solid rgba(181,133,10,0.2)',
+          background: `
+            radial-gradient(ellipse 140% 90% at 50% -20%,
+              rgba(30,80,140,0.75) 0%,
+              rgba(20,50,90,0.5) 35%,
+              transparent 65%),
+            radial-gradient(ellipse 70% 55% at 95% 30%,
+              rgba(181,133,10,0.22) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 50% at 5% 70%,
+              rgba(29,158,117,0.15) 0%, transparent 50%),
+            linear-gradient(180deg, #0a1838 0%, #0b1f12 100%)
+          `,
+          borderBottom: '1px solid rgba(181,133,10,0.25)',
         }}
         className="py-14"
       >
@@ -274,8 +284,21 @@ export default function InvestorRegistration() {
         </div>
       </section>
 
-      <section className="section-container pb-20">
-        <div className="max-w-2xl mx-auto rounded-2xl border p-8" style={CARD_STYLE}>
+      <section
+        className="section-container pb-20"
+        style={{
+          background: `
+            radial-gradient(ellipse 100% 70% at 50% 100%,
+              rgba(20,55,40,0.5) 0%, transparent 55%),
+            radial-gradient(ellipse 80% 50% at 0% 50%,
+              rgba(20,48,96,0.35) 0%, transparent 50%)
+          `,
+        }}
+      >
+        <div
+          className="max-w-2xl mx-auto rounded-2xl border p-8 glass-card-strong"
+          style={CARD_STYLE}
+        >
           {success && !kycPhase && (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">✅</div>

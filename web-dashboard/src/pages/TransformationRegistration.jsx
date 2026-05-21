@@ -10,11 +10,19 @@ export default function TransformationRegistration() {
   const [success, setSuccess] = useState(false);
 
   return (
-    <div className="min-h-screen" style={{ background: 'transparent' }}>
+    <div className="min-h-screen" style={{ background: '#0b1f12' }}>
       <section
         style={{
-          background: 'linear-gradient(135deg, #2d1a00 0%, #1a0f00 100%)',
-          borderBottom: '1px solid rgba(245,158,11,0.2)',
+          background: `
+            radial-gradient(ellipse 120% 70% at 50% -10%,
+              rgba(80,52,0,0.55) 0%,
+              rgba(40,28,0,0.35) 40%,
+              transparent 65%),
+            radial-gradient(ellipse 70% 50% at 100% 30%,
+              rgba(29,158,117,0.12) 0%, transparent 50%),
+            linear-gradient(180deg, #1a1208 0%, #0b1f12 100%)
+          `,
+          borderBottom: '1px solid rgba(181,133,10,0.25)',
         }}
         className="py-14"
       >
@@ -40,7 +48,15 @@ export default function TransformationRegistration() {
         </div>
       </section>
 
-      <section className="max-w-4xl mx-auto px-4 py-8">
+      <section
+        className="max-w-4xl mx-auto px-4 py-8"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 50% at 0% 80%,
+              rgba(20,55,40,0.35) 0%, transparent 50%)
+          `,
+        }}
+      >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           {[
             ['🤝', isFr ? 'Coopératives certifiées' : 'Certified coops', isFr ? 'Accès direct' : 'Direct access'],
@@ -78,7 +94,7 @@ export default function TransformationRegistration() {
             </p>
           </div>
 
-          <div className="p-6">
+          <div className="p-6 registration-dark-zone">
             {success ? (
               <div className="text-center py-8">
                 <div className="text-5xl mb-4">🏭</div>

@@ -1,34 +1,9 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL } from '../config/api';
-
-const API = API_BASE_URL?.replace(/\/$/, '') || '';
 
 export default function Footer() {
   const { t, i18n } = useTranslation();
   const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
-  const [email, setEmail] = useState('');
-  const [done, setDone] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const submitWaitlist = async (e) => {
-    e.preventDefault();
-    if (!email) return;
-    setLoading(true);
-    try {
-      await fetch(`${API}/api/waitlist`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-    } catch {
-      /* silent */
-    } finally {
-      setDone(true);
-      setLoading(false);
-    }
-  };
 
   return (
     <footer className="bg-[#1a3c2e] text-white">
@@ -151,50 +126,6 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-        </div>
-
-        {/* Mobile app waitlist */}
-        <div
-          id="get-app"
-          className="border-t border-white/10 py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6"
-        >
-          <div className="max-w-md">
-            <h4 className="text-lg font-bold text-white mb-1">
-              {isFr ? 'Application mobile bientôt disponible' : 'Mobile app coming soon'}
-            </h4>
-            <p className="text-sm text-gray-300">
-              {isFr
-                ? 'Inscrivez-vous pour être notifié au lancement.'
-                : 'Sign up to get notified at launch.'}
-            </p>
-          </div>
-          {done ? (
-            <p className="text-green-400 text-sm font-semibold">
-              {isFr ? 'Merci — vous serez notifié au lancement !' : "Thanks — you'll be notified at launch!"}
-            </p>
-          ) : (
-            <form onSubmit={submitWaitlist} className="flex gap-2 w-full max-w-md">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={isFr ? 'votre@email.com' : 'your@email.com'}
-                className="flex-1 px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-white/30"
-                style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.14)',
-                }}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-5 py-3 rounded-xl font-semibold text-sm text-black whitespace-nowrap disabled:opacity-60"
-                style={{ background: '#4CAF50' }}
-              >
-                {loading ? '...' : isFr ? 'Notifier' : 'Notify me'}
-              </button>
-            </form>
-          )}
         </div>
 
         {/* Bottom bar */}

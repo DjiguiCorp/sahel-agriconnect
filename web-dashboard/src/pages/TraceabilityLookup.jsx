@@ -107,16 +107,19 @@ export default function TraceabilityLookup() {
   const r = state.record;
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', background: '#0b1f12' }}>
       <section
         style={{
           background: `
-            radial-gradient(ellipse 120% 60% at 50% 0%,
-              rgba(40,100,60,0.5) 0%,
-              rgba(20,50,35,0.28) 45%,
-              transparent 70%)
+            radial-gradient(ellipse 130% 75% at 50% -15%,
+              rgba(34,110,65,0.7) 0%,
+              rgba(20,55,90,0.35) 40%,
+              transparent 68%),
+            radial-gradient(ellipse 70% 50% at 100% 20%,
+              rgba(29,158,117,0.18) 0%, transparent 55%),
+            linear-gradient(180deg, #0a1f28 0%, #0b1f12 100%)
           `,
-          borderBottom: '1px solid rgba(29,158,117,0.2)',
+          borderBottom: '1px solid rgba(29,158,117,0.25)',
         }}
         className="py-14"
       >
@@ -171,7 +174,17 @@ export default function TraceabilityLookup() {
         </div>
       </section>
 
-      <section className="section-container py-12">
+      <section
+        className="section-container py-12"
+        style={{
+          background: `
+            radial-gradient(ellipse 90% 60% at 0% 50%,
+              rgba(12,35,70,0.5) 0%, transparent 55%),
+            radial-gradient(ellipse 70% 50% at 100% 80%,
+              rgba(29,158,117,0.1) 0%, transparent 50%)
+          `,
+        }}
+      >
         {state.loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">

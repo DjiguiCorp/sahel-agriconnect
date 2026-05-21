@@ -166,19 +166,6 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [desktopToolsOpen]);
 
-  const handleDownloadApp = (e) => {
-    e.preventDefault();
-    const el = document.getElementById('get-app');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
-    navigate('/');
-    window.setTimeout(() => {
-      document.getElementById('get-app')?.scrollIntoView({ behavior: 'smooth' });
-    }, 150);
-  };
-
   const platformLabel = isFr ? 'Plateforme' : 'Platform';
   const toolsLabel = isFr ? 'Outils' : 'Tools';
   const mainNavLinks = useMemo(() => getMainNavLinks(isFr), [isFr]);
@@ -431,14 +418,6 @@ const Header = () => {
             )}
 
             <LanguageSelector />
-
-            <button
-              type="button"
-              className="hidden lg:inline text-sm font-medium text-white/70 hover:text-white whitespace-nowrap border-l border-white/10 pl-5"
-              onClick={handleDownloadApp}
-            >
-              {t('nav.downloadApp')}
-            </button>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -562,10 +541,6 @@ const Header = () => {
               >
                 {isFr ? 'Investir' : 'Invest'}
               </Link>
-
-              <button type="button" className={`${navLinkClass} text-left`} onClick={handleDownloadApp}>
-                {t('nav.downloadApp')}
-              </button>
 
               <div className="pt-4">
                 <LanguageSelector />
