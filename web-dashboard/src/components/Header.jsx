@@ -6,9 +6,39 @@ import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LanguageSelector from './LanguageSelector';
 
 const TOOLS_ITEMS = [
-  { to: '/diagnostic-sol', labelKey: 'nav.soilDiagnostic' },
-  { to: '/detection-maladies', labelKey: 'nav.diseaseDetection' },
-  { to: '/think-tank', labelKey: 'nav.thinkTank' },
+  {
+    to: '/think-tank',
+    icon: '🧠',
+    label: { fr: 'Think Tank IA', en: 'AI Think Tank' },
+    desc: {
+      fr: 'Solutions instantanées pour vos défis agricoles',
+      en: 'Instant solutions for your farming challenges',
+    },
+    badge: { fr: 'IA', en: 'AI' },
+    color: '#B5850A',
+  },
+  {
+    to: '/diagnostic-sol',
+    icon: '🌱',
+    label: { fr: 'Diagnostic sol', en: 'Soil Diagnostic' },
+    desc: {
+      fr: 'Analysez votre sol et obtenez des recommandations',
+      en: 'Analyze your soil and get fertilizer recommendations',
+    },
+    badge: { fr: 'IA', en: 'AI' },
+    color: '#4CAF50',
+  },
+  {
+    to: '/detection-maladies',
+    icon: '🔬',
+    label: { fr: 'Détection maladies', en: 'Disease Detection' },
+    desc: {
+      fr: 'Photographiez votre culture — diagnostiquée en secondes',
+      en: 'Photo your crop — diagnosed in seconds',
+    },
+    badge: { fr: 'Vision IA', en: 'AI Vision' },
+    color: '#3b82f6',
+  },
 ];
 
 const getMainNavLinks = (isFr) => [
@@ -272,22 +302,90 @@ const Header = () => {
               </button>
               {desktopToolsOpen && (
                 <div
-                  className="absolute left-0 top-full z-[100] min-w-[14rem] pt-1"
+                  className="absolute left-0 top-full z-[100] pt-1"
                   role="menu"
                   aria-label={toolsLabel}
                 >
-                  <div className="rounded-lg border border-gray-100 bg-white py-2 shadow-lg">
-                    {TOOLS_ITEMS.map(({ to, labelKey }) => (
+                  <div
+                    className="rounded-2xl py-2 shadow-2xl overflow-hidden"
+                    style={{
+                      background: '#0a1f10',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      minWidth: '320px',
+                    }}
+                  >
+                    <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                      <p
+                        className="text-xs font-semibold uppercase tracking-wider"
+                        style={{ color: 'rgba(255,255,255,0.4)' }}
+                      >
+                        {isFr ? '🛠️ Outils agricoles IA' : '🛠️ AI Agricultural Tools'}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        {isFr
+                          ? 'Alimentés par Gemini Vision & PlantVillage'
+                          : 'Powered by Gemini Vision & PlantVillage'}
+                      </p>
+                    </div>
+
+                    {TOOLS_ITEMS.map(({ to, icon, label, desc, badge, color }) => (
                       <Link
                         key={to}
                         to={to}
                         role="menuitem"
-                        className="block px-4 py-2.5 text-lg text-gray-700 hover:bg-brand-iconBg hover:text-brand-forest"
                         onClick={() => setDesktopToolsOpen(false)}
+                        className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/5 group"
                       >
-                        {t(labelKey)}
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg mt-0.5"
+                          style={{ background: `${color}18` }}
+                        >
+                          {icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-white group-hover:text-white transition-colors">
+                              {isFr ? label.fr : label.en}
+                            </span>
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded-md font-bold"
+                              style={{
+                                background: `${color}25`,
+                                color: color,
+                              }}
+                            >
+                              {isFr ? badge.fr : badge.en}
+                            </span>
+                          </div>
+                          <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                            {isFr ? desc.fr : desc.en}
+                          </p>
+                        </div>
+                        <svg
+                          className="w-4 h-4 flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ color: color }}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </Link>
                     ))}
+
+                    <div className="px-4 py-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                      <Link
+                        to="/producer-pro-registration"
+                        onClick={() => setDesktopToolsOpen(false)}
+                        className="flex items-center gap-2 text-xs font-semibold transition-colors"
+                        style={{ color: '#B5850A' }}
+                      >
+                        ⭐{' '}
+                        {isFr
+                          ? 'Producer Pro — Accès expert illimité →'
+                          : 'Producer Pro — Unlimited expert access →'}
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
@@ -405,15 +503,33 @@ const Header = () => {
                   />
                 </button>
                 {mobileToolsOpen && (
-                  <div className="mt-2 flex flex-col space-y-1 border-l border-gray-200 pl-3 ml-1">
-                    {TOOLS_ITEMS.map(({ to, labelKey }) => (
+                  <div
+                    className="mt-2 flex flex-col gap-2 rounded-xl p-2"
+                    style={{ background: '#0a1f10', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    {TOOLS_ITEMS.map(({ to, icon, label, desc, color }) => (
                       <Link
                         key={to}
                         to={to}
-                        className="py-2 text-lg text-gray-700 hover:text-brand-forest"
-                        onClick={closeMenu}
+                        onClick={() => {
+                          setMobileToolsOpen(false);
+                          setIsMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
+                        style={{ background: 'rgba(255,255,255,0.03)' }}
                       >
-                        {t(labelKey)}
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
+                          style={{ background: `${color}18` }}
+                        >
+                          {icon}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{isFr ? label.fr : label.en}</p>
+                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                            {isFr ? desc.fr : desc.en}
+                          </p>
+                        </div>
                       </Link>
                     ))}
                   </div>

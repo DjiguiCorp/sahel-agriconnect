@@ -1,180 +1,336 @@
 import { useState } from 'react';
-import { Mail, Smartphone, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../config/api';
+import { Mail, MapPin, Clock, Send, CheckCircle } from 'lucide-react';
 
-const Contact = () => {
-  const [formData, setFormData] = useState({
-    nom: '',
+const API = API_BASE_URL.replace(/\/$/, '');
+
+export default function Contact() {
+  const { i18n } = useTranslation();
+  const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
+  const [form, setForm] = useState({
+    name: '',
     email: '',
-    role: 'agriculteur',
+    subject: 'general',
     message: '',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
-  const [submitted, setSubmitted] = useState(false);
+  const subjects = [
+    { value: 'general', fr: 'Question générale', en: 'General inquiry' },
+    { value: 'partnership', fr: 'Partenariat & coopération', en: 'Partnership & cooperation' },
+    { value: 'investment', fr: 'Investissement AfriYield', en: 'AfriYield investment' },
+    { value: 'technical', fr: 'Support technique', en: 'Technical support' },
+    { value: 'press', fr: 'Presse & médias', en: 'Press & media' },
+    { value: 'government', fr: 'Portail gouvernemental', en: 'Government portal' },
+    { value: 'compliance', fr: 'Conformité & KYC', en: 'Compliance & KYC' },
+  ];
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    console.log('Données soumises:', formData);
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({
-        nom: '',
-        email: '',
-        role: 'agriculteur',
-        message: '',
+    if (!form.name || !form.email || !form.message) {
+      setError(
+        isFr ? 'Nom, email et message sont requis' : 'Name, email and message are required'
+      );
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(`${API}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
       });
-    }, 3000);
+      if (!res.ok) throw new Error('Request failed');
+      setSent(true);
+    } catch {
+      setError(
+        isFr
+          ? "Erreur lors de l'envoi. Réessayez ou envoyez un email directement."
+          : 'Error sending. Please retry or email us directly.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const inputFocus = 'focus:ring-2 focus:ring-brand-sage focus:border-transparent';
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.12)',
+  };
 
   return (
-    <div>
-      <section className="bg-gradient-to-br from-brand-forest to-brand-sage text-white py-12">
-        <div className="section-container text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Contact / Inscription</h1>
-          <p className="text-lg text-white/90 max-w-2xl mx-auto">
-            Rejoignez Sahel AgriConnect et participez à la transformation de l&apos;agriculture en Afrique de l&apos;Ouest
-            et au-delà
+    <div className="min-h-screen" style={{ background: '#060f0a' }}>
+      <section
+        style={{
+          background: 'linear-gradient(135deg, #0a1f10 0%, #060f0a 100%)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+        }}
+        className="py-16"
+      >
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <span
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-4 border"
+            style={{
+              background: 'rgba(29,158,117,0.1)',
+              color: '#1D9E75',
+              borderColor: 'rgba(29,158,117,0.3)',
+            }}
+          >
+            ✉️ Contact
+          </span>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+            {isFr ? "Contactez l'équipe Sahel AgriConnect" : 'Contact the Sahel AgriConnect Team'}
+          </h1>
+          <p className="text-white/60 text-lg max-w-2xl mx-auto">
+            {isFr
+              ? 'Nous sommes là pour répondre à toutes vos questions — partenariats, investissements, support technique ou tout autre sujet.'
+              : "We're here to answer all your questions — partnerships, investments, technical support or anything else."}
           </p>
         </div>
       </section>
 
-      <section className="section-container py-16">
-        <div className="max-w-2xl mx-auto">
-          <div className="card">
-            <h2 className="text-2xl font-bold text-brand-forest mb-6">Formulaire d&apos;inscription</h2>
-
-            {submitted && (
-              <div className="mb-6 p-4 bg-green-50 border-l-4 border-brand-sage rounded text-brand-forest">
-                <p className="font-semibold flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 shrink-0 text-brand-sage" aria-hidden />
-                  Inscription réussie !
-                </p>
-                <p className="text-sm mt-1">Merci pour votre intérêt. Nous vous contacterons sous peu.</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom complet *
-                </label>
-                <input
-                  type="text"
-                  id="nom"
-                  name="nom"
-                  required
-                  value={formData.nom}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${inputFocus}`}
-                  placeholder="Votre nom complet"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${inputFocus}`}
-                  placeholder="votre.email@example.com"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                  Rôle *
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  required
-                  value={formData.role}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${inputFocus}`}
+      <div className="max-w-5xl mx-auto px-4 py-12">
+        <div className="grid md:grid-cols-5 gap-8">
+          <div className="md:col-span-2 space-y-6">
+            <div>
+              <h2 className="text-white font-bold text-lg mb-4">
+                {isFr ? 'Nos coordonnées' : 'Our Contact Info'}
+              </h2>
+              {[
+                {
+                  icon: Mail,
+                  label: 'Email',
+                  value: 'info@djiguicorporation.org',
+                  href: 'mailto:info@djiguicorporation.org',
+                  color: '#B5850A',
+                },
+                {
+                  icon: Mail,
+                  label: isFr ? 'Conformité / KYC' : 'Compliance / KYC',
+                  value: 'compliance@sahelagriconnect.com',
+                  href: 'mailto:compliance@sahelagriconnect.com',
+                  color: '#3b82f6',
+                },
+                {
+                  icon: MapPin,
+                  label: isFr ? 'Siège social' : 'Headquarters',
+                  value: 'Djigui Corporation',
+                  href: null,
+                  color: '#1D9E75',
+                },
+                {
+                  icon: Clock,
+                  label: isFr ? 'Temps de réponse' : 'Response time',
+                  value: isFr ? '24-48 heures ouvrables' : '24-48 business hours',
+                  href: null,
+                  color: '#a78bfa',
+                },
+              ].map(({ icon: Icon, label, value, href, color }) => (
+                <div
+                  key={label}
+                  className="flex items-start gap-3 p-4 rounded-xl border mb-3"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    borderColor: 'rgba(255,255,255,0.08)',
+                  }}
                 >
-                  <option value="agriculteur">Agriculteur</option>
-                  <option value="cooperative">Coopérative</option>
-                  <option value="investisseur">Investisseur</option>
-                  <option value="partenaire">Partenaire technique</option>
-                  <option value="autre">Autre</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                  Message (optionnel)
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows="4"
-                  value={formData.message}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${inputFocus}`}
-                  placeholder="Dites-nous en plus sur votre projet ou vos besoins..."
-                />
-              </div>
-
-              <button type="submit" className="w-full btn-primary">
-                Envoyer l&apos;inscription
-              </button>
-            </form>
-          </div>
-
-          <div className="mt-12 grid md:grid-cols-2 gap-6">
-            <div className="card">
-              <h3 className="text-xl font-semibold text-brand-forest mb-4 flex items-center gap-2">
-                <Mail className="w-6 h-6 text-brand-sage shrink-0" aria-hidden />
-                Contact email
-              </h3>
-              <p className="text-gray-600">Pour toute question, contactez-nous à :</p>
-              <a
-                href="mailto:contact@sahelagriconnect.org"
-                className="text-brand-sage hover:text-brand-forest font-medium mt-2 inline-block"
-              >
-                contact@sahelagriconnect.org
-              </a>
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: `${color}15` }}
+                  >
+                    <Icon size={16} style={{ color }} />
+                  </div>
+                  <div>
+                    <p
+                      className="text-xs font-semibold uppercase tracking-wider mb-0.5"
+                      style={{ color: 'rgba(255,255,255,0.4)' }}
+                    >
+                      {label}
+                    </p>
+                    {href ? (
+                      <a href={href} className="text-sm font-medium hover:underline" style={{ color }}>
+                        {value}
+                      </a>
+                    ) : (
+                      <p className="text-sm text-white/70">{value}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <div className="card">
-              <h3 className="text-xl font-semibold text-brand-forest mb-4 flex items-center gap-2">
-                <Smartphone className="w-6 h-6 text-brand-sage shrink-0" aria-hidden />
-                Application mobile
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Téléchargez notre application pour accéder à toutes les fonctionnalités :
-              </p>
-              <a
-                href="#"
-                className="btn-secondary inline-block"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('Application mobile bientôt disponible !');
-                }}
+            <div>
+              <h3
+                className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3"
               >
-                Télécharger l&apos;app
-              </a>
+                {isFr ? 'Liens rapides' : 'Quick Links'}
+              </h3>
+              {[
+                {
+                  label: isFr ? "S'inscrire comme agriculteur" : 'Register as farmer',
+                  to: '/inscription',
+                },
+                {
+                  label: isFr ? 'Inscrire une coopérative' : 'Register cooperative',
+                  to: '/cooperative-registration',
+                },
+                { label: 'AfriYield Exchange', to: '/afri-yield' },
+                {
+                  label: isFr ? 'Portail gouvernemental' : 'Government portal',
+                  to: '/government-portal',
+                },
+              ].map(({ label, to }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className="flex items-center gap-2 text-sm py-2 transition-colors hover:text-white"
+                  style={{ color: 'rgba(255,255,255,0.5)' }}
+                >
+                  <span style={{ color: '#1D9E75' }}>→</span>
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="md:col-span-3">
+            <div
+              className="rounded-2xl border p-6 md:p-8"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                borderColor: 'rgba(255,255,255,0.1)',
+              }}
+            >
+              {sent ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="mx-auto mb-4 text-green-400" size={48} />
+                  <h3 className="text-white font-bold text-xl mb-2">
+                    {isFr ? 'Message envoyé !' : 'Message Sent!'}
+                  </h3>
+                  <p className="text-white/60 text-sm">
+                    {isFr
+                      ? 'Nous avons bien reçu votre message. Vous recevrez une réponse dans les 24-48 heures ouvrables.'
+                      : 'We received your message. You will receive a reply within 24-48 business hours.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSent(false);
+                      setForm({ name: '', email: '', subject: 'general', message: '' });
+                    }}
+                    className="mt-6 px-6 py-3 rounded-xl text-sm font-semibold border transition-colors hover:bg-white/5"
+                    style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}
+                  >
+                    {isFr ? 'Nouveau message' : 'New message'}
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={submit} className="space-y-5">
+                  <h2 className="text-white font-bold text-xl mb-6">
+                    {isFr ? '✉️ Envoyer un message' : '✉️ Send a Message'}
+                  </h2>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {[
+                      ['name', isFr ? 'Nom complet *' : 'Full Name *', isFr ? 'Votre nom' : 'Your name', 'text'],
+                      ['email', 'Email *', 'votre@email.com', 'email'],
+                    ].map(([field, label, placeholder, type]) => (
+                      <div key={field}>
+                        <label
+                          className="block text-xs font-medium mb-1.5"
+                          style={{ color: 'rgba(255,255,255,0.6)' }}
+                        >
+                          {label}
+                        </label>
+                        <input
+                          type={type}
+                          required={field === 'name' || field === 'email'}
+                          value={form[field]}
+                          onChange={(e) => setForm((p) => ({ ...p, [field]: e.target.value }))}
+                          placeholder={placeholder}
+                          className="w-full rounded-xl text-white text-sm px-4 py-3 focus:outline-none focus:border-green-500/50 placeholder:text-white/30"
+                          style={inputStyle}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label
+                      className="block text-xs font-medium mb-1.5"
+                      style={{ color: 'rgba(255,255,255,0.6)' }}
+                    >
+                      {isFr ? 'Sujet' : 'Subject'}
+                    </label>
+                    <select
+                      value={form.subject}
+                      onChange={(e) => setForm((p) => ({ ...p, subject: e.target.value }))}
+                      className="w-full rounded-xl text-white text-sm px-4 py-3 focus:outline-none focus:border-green-500/50"
+                      style={inputStyle}
+                    >
+                      {subjects.map((s) => (
+                        <option key={s.value} value={s.value} className="bg-[#0a1f10]">
+                          {isFr ? s.fr : s.en}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      className="block text-xs font-medium mb-1.5"
+                      style={{ color: 'rgba(255,255,255,0.6)' }}
+                    >
+                      {isFr ? 'Message *' : 'Message *'}
+                    </label>
+                    <textarea
+                      rows={5}
+                      required
+                      value={form.message}
+                      onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
+                      placeholder={
+                        isFr ? 'Décrivez votre demande en détail...' : 'Describe your request in detail...'
+                      }
+                      className="w-full rounded-xl text-white text-sm px-4 py-3 focus:outline-none resize-none focus:border-green-500/50 placeholder:text-white/30"
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  {error && <p className="text-red-400 text-sm">{error}</p>}
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition hover:opacity-90"
+                    style={{ background: '#1D9E75', color: 'black' }}
+                  >
+                    {submitting ? (
+                      <>
+                        <span className="animate-spin">⟳</span>
+                        {isFr ? 'Envoi...' : 'Sending...'}
+                      </>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        {isFr ? 'Envoyer le message' : 'Send Message'}
+                      </>
+                    )}
+                  </button>
+
+                  <p className="text-center text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    🔒 {isFr ? 'Vos informations sont protégées.' : 'Your information is protected.'}
+                  </p>
+                </form>
+              )}
             </div>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
-};
-
-export default Contact;
+}
