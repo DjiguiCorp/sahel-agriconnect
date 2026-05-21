@@ -20,11 +20,17 @@ const PROJECT_TYPES = [
 ];
 
 const PRIORITY_COLORS = {
-  urgent: 'bg-red-100 text-red-700',
-  high: 'bg-orange-100 text-orange-700',
-  medium: 'bg-yellow-100 text-yellow-700',
-  low: 'bg-gray-100 text-gray-600',
+  urgent: 'bg-red-500/20 text-red-400',
+  high: 'bg-orange-500/20 text-orange-400',
+  medium: 'bg-yellow-500/20 text-yellow-400',
+  low: 'bg-white/10 text-white/50',
 };
+
+const GOV_INPUT =
+  'w-full border border-white/15 rounded-xl px-4 py-3 text-sm bg-black/30 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60';
+const GOV_INPUT_SM =
+  'w-full border border-white/15 rounded-xl px-3 py-2.5 text-sm bg-black/30 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/60';
+const GOV_LABEL = 'block text-sm font-medium text-white/70 mb-1';
 
 function LoginScreen({ onLogin, isFr }) {
   const [email, setEmail] = useState('');
@@ -67,7 +73,7 @@ function LoginScreen({ onLogin, isFr }) {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'linear-gradient(135deg, #1a3c2e 0%, #143326 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #0a1535 0%, #060c1f 100%)' }}
     >
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
@@ -79,39 +85,37 @@ function LoginScreen({ onLogin, isFr }) {
             {label.emoji} {isFr ? label.fr : label.en}
           </p>
         </div>
-        <div className="bg-white rounded-2xl p-6 shadow-2xl">
-          <h2 className="font-bold text-[#1a3c2e] text-lg mb-5 text-center">
-            {isFr ? 'Connexion admin pays' : 'Country admin login'}
+        <div className="bg-[#0e1d3a] rounded-2xl p-6 shadow-2xl border border-white/10">
+          <h2 className="font-bold text-white text-lg mb-5 text-center">
+            {isFr ? 'Connexion sécurisée' : 'Secure Login'}
           </h2>
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {isFr ? 'Email officiel' : 'Official email'}
-              </label>
+              <label className={GOV_LABEL}>{isFr ? 'Email officiel' : 'Official email'}</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                className={GOV_INPUT}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Mot de passe' : 'Password'}</label>
+              <label className={GOV_LABEL}>{isFr ? 'Mot de passe' : 'Password'}</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                className={GOV_INPUT}
               />
             </div>
-            {error && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{error}</p>}
+            {error && <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 p-2 rounded-lg">{error}</p>}
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl py-3.5 font-bold text-white text-sm disabled:opacity-50"
-              style={{ background: '#1a3c2e' }}
+              className="w-full py-3 rounded-xl font-bold text-white text-sm mt-4 hover:opacity-90 transition-opacity disabled:opacity-50"
+              style={{ background: '#185FA5' }}
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -125,8 +129,8 @@ function LoginScreen({ onLogin, isFr }) {
               )}
             </button>
           </form>
-          <div className="mt-6 bg-[#1a3c2e]/5 rounded-xl p-4 border border-gray-100">
-            <p className="text-gray-500 text-xs text-center mb-3">
+          <div className="mt-6 rounded-xl p-4 border border-white/10" style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <p className="text-white/50 text-xs text-center mb-3">
               {isFr
                 ? 'Première connexion? Votre mot de passe vous a été envoyé par notre équipe.'
                 : 'First time? Your password was sent by our team.'}
@@ -134,13 +138,13 @@ function LoginScreen({ onLogin, isFr }) {
             <div className="flex gap-2">
               <Link
                 to="/platform-licensing?type=government"
-                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-[#1a3c2e]/70 hover:text-[#1a3c2e] border border-gray-200 hover:border-[#1a3c2e]/30 transition"
+                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-white/60 hover:text-white border border-white/15 hover:border-white/30 transition"
               >
                 🏛️ {isFr ? 'Demander accès gouvernemental' : 'Request gov access'}
               </Link>
               <Link
                 to="/platform-licensing?type=ngo"
-                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-[#1a3c2e]/70 hover:text-[#1a3c2e] border border-gray-200 hover:border-[#1a3c2e]/30 transition"
+                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-white/60 hover:text-white border border-white/15 hover:border-white/30 transition"
               >
                 🤝 {isFr ? 'Demander accès ONG' : 'Request NGO access'}
               </Link>
@@ -430,9 +434,19 @@ export default function GovernmentPortal() {
             },
           ];
 
+  const statCards = [
+    { icon: '🌾', label: isFr ? 'Terres arables déclarées (ha)' : 'Declared arable land (ha)', value: stats?.totalArableHa ?? '—', action: () => setActiveTab('territory') },
+    { icon: '👩‍🌾', label: isFr ? 'Agriculteurs enregistrés' : 'Registered Farmers', value: stats?.farmers ?? '—', action: () => setActiveTab('farmers') },
+    { icon: '🤝', label: isFr ? 'Coopératives actives' : 'Active Cooperatives', value: stats?.cooperatives ?? '—', action: () => setActiveTab('cooperatives') },
+    { icon: '⚙️', label: isFr ? 'Centres de transformation' : 'Transformation Centers', value: stats?.processors ?? '—', action: () => setActiveTab('processors') },
+    { icon: '📋', label: isFr ? 'Projets nationaux' : 'National Projects', value: stats?.projects ?? '—', action: () => setActiveTab('projects') },
+    { icon: '🚀', label: isFr ? 'Projets actifs' : 'Active Projects', value: stats?.activeProjects ?? '—', action: () => setActiveTab('projects') },
+    { icon: '📬', label: isFr ? 'Réponses reçues' : 'Responses Received', value: stats?.totalResponses ?? '—', action: () => setActiveTab('projects') },
+  ];
+
   return (
-    <div style={{ background: '#f8f4e3', minHeight: '100vh' }}>
-      <div style={{ background: '#1a3c2e' }} className="px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen" style={{ background: '#080d1a' }}>
+      <div style={{ background: '#0a1535' }} className="px-6 py-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-3">
           <img src="/sahel-logo.png" alt="SA" className="w-9 h-9 rounded-lg object-cover" />
           <div>
@@ -457,7 +471,13 @@ export default function GovernmentPortal() {
         </div>
       </div>
 
-      <div style={{ background: 'linear-gradient(135deg, #B5850A, #9a7109)' }} className="px-6 py-4">
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #0e1d3a 0%, #1a2f52 100%)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+        }}
+        className="px-6 py-4"
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-white">
@@ -513,119 +533,73 @@ export default function GovernmentPortal() {
 
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex overflow-x-auto gap-1 py-3">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition ${
-                activeTab === tab.key ? 'bg-[#1a3c2e] text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <div className="flex overflow-x-auto gap-1 bg-[#0a0f1e] border border-white/10 rounded-2xl p-1 w-full">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition ${
+                  activeTab === tab.key ? 'bg-[#185FA5] text-white' : 'bg-transparent text-white/50 hover:text-white/70'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-16">
         {loading && activeTab !== 'overview' && (
           <div className="text-center py-10">
-            <Loader2 className="w-8 h-8 animate-spin text-[#1a3c2e] mx-auto" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#185FA5] mx-auto" />
           </div>
         )}
 
         {activeTab === 'overview' && (
           <div className="space-y-5 mt-2">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {[
-                {
-                  icon: '🌾',
-                  label: isFr ? 'Terres arables déclarées (ha)' : 'Declared arable land (ha)',
-                  value: stats?.totalArableHa ?? '—',
-                  color: 'bg-emerald-50',
-                  textColor: 'text-emerald-800',
-                  action: () => setActiveTab('territory'),
-                },
-                {
-                  icon: '👩‍🌾',
-                  label: isFr ? 'Agriculteurs enregistrés' : 'Registered Farmers',
-                  value: stats?.farmers ?? '—',
-                  color: 'bg-green-50',
-                  textColor: 'text-green-700',
-                  action: () => setActiveTab('farmers'),
-                },
-                {
-                  icon: '🤝',
-                  label: isFr ? 'Coopératives actives' : 'Active Cooperatives',
-                  value: stats?.cooperatives ?? '—',
-                  color: 'bg-[#B5850A]/10',
-                  textColor: 'text-[#B5850A]',
-                  action: () => setActiveTab('cooperatives'),
-                },
-                {
-                  icon: '⚙️',
-                  label: isFr ? 'Centres de transformation' : 'Transformation Centers',
-                  value: stats?.processors ?? '—',
-                  color: 'bg-blue-50',
-                  textColor: 'text-blue-700',
-                  action: () => setActiveTab('processors'),
-                },
-                {
-                  icon: '📋',
-                  label: isFr ? 'Projets nationaux' : 'National Projects',
-                  value: stats?.projects ?? '—',
-                  color: 'bg-purple-50',
-                  textColor: 'text-purple-700',
-                  action: () => setActiveTab('projects'),
-                },
-                {
-                  icon: '🚀',
-                  label: isFr ? 'Projets actifs' : 'Active Projects',
-                  value: stats?.activeProjects ?? '—',
-                  color: 'bg-[#1a3c2e]/8',
-                  textColor: 'text-[#1a3c2e]',
-                  action: () => setActiveTab('projects'),
-                },
-                {
-                  icon: '📬',
-                  label: isFr ? 'Réponses reçues' : 'Responses Received',
-                  value: stats?.totalResponses ?? '—',
-                  color: 'bg-orange-50',
-                  textColor: 'text-orange-700',
-                  action: () => setActiveTab('projects'),
-                },
-              ].map(({ icon, label, value, color, textColor, action }) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 p-4">
+              {statCards.map((card) => (
                 <button
-                  key={label}
-                  onClick={action}
-                  className={`rounded-2xl p-5 text-left border border-transparent hover:border-[#1a3c2e]/20 transition ${color}`}
+                  key={card.label}
+                  type="button"
+                  onClick={card.action}
+                  className="rounded-xl p-4 border border-white/10 text-left hover:bg-white/5 transition"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
                 >
-                  <span className="text-2xl">{icon}</span>
-                  <p className={`text-3xl font-bold font-mono mt-2 ${textColor}`}>{value}</p>
-                  <p className="text-sm text-gray-500 mt-1">{label}</p>
+                  <span className="text-2xl">{card.icon}</span>
+                  <p className="text-2xl font-bold mt-2" style={{ color: '#185FA5' }}>
+                    {card.value}
+                  </p>
+                  <p className="text-white/60 text-xs mt-0.5">{card.label}</p>
                 </button>
               ))}
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <h3 className="font-bold text-[#1a3c2e] text-lg mb-4">⚡ {isFr ? 'Actions rapides' : 'Quick Actions'}</h3>
+            <div className="rounded-2xl border border-white/10 p-5" style={{ background: 'rgba(14,29,58,0.5)' }}>
+              <h3 className="font-bold text-white text-lg mb-4">⚡ {isFr ? 'Actions rapides' : 'Quick Actions'}</h3>
               <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {quickActions.map(({ icon, label, action }) => (
                   <button
                     key={label}
+                    type="button"
                     onClick={action}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-[#1a3c2e]/20 hover:border-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition text-center"
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl transition text-center border hover:bg-white/5"
+                    style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(14,29,58,0.8)' }}
                   >
-                    <span className="text-2xl">{icon}</span>
-                    <span className="text-xs font-semibold text-[#1a3c2e]">{label}</span>
+                    <span className="text-2xl p-2 rounded-xl bg-[#185FA5]/15">{icon}</span>
+                    <span className="text-xs font-semibold text-white">{label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-2xl p-5" style={{ background: '#1a3c2e', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <p className="text-[#B5850A] font-bold text-sm mb-2">🔒 {isFr ? 'Souveraineté des données' : 'Data Sovereignty'}</p>
-              <p className="text-white/70 text-sm leading-relaxed">
+            <div
+              className="rounded-2xl border border-blue-500/20 p-5 mx-4 mb-4"
+              style={{ background: 'rgba(24,95,165,0.08)' }}
+            >
+              <p className="text-blue-400 font-bold text-sm mb-1">🔒 {isFr ? 'Souveraineté des données' : 'Data Sovereignty'}</p>
+              <p className="text-white/60 text-xs leading-relaxed">
                 {isFr
                   ? `En tant qu'administrateur de ${admin.country}, vous n'avez accès qu'aux données de votre territoire. Aucune donnée d'autres pays n'est accessible. Toutes vos actions (projets, notifications, exports) sont limitées à ${admin.country}. Pour héberger les données dans votre propre centre de données national, contactez info@djiguicorporation.org.`
                   : `As ${admin.country} administrator, you only have access to data from your territory. No data from other countries is accessible. All your actions (projects, notifications, exports) are scoped to ${admin.country}. To host data in your own national data center, contact info@djiguicorporation.org.`}
@@ -657,30 +631,30 @@ export default function GovernmentPortal() {
         {activeTab === 'farmers' && !loading && (
           <div className="mt-2 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#1a3c2e]">
+              <h2 className="text-xl font-bold text-white">
                 {isFr ? `Agriculteurs — ${admin.country}` : `Farmers — ${admin.country}`}
               </h2>
-              <div className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 bg-white">
-                <Search className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center gap-2 rounded-xl border border-white/10 px-3" style={{ background: 'rgba(14,29,58,0.5)' }}>
+                <Search className="w-4 h-4 text-white/40" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={isFr ? 'Rechercher...' : 'Search...'}
-                  className="py-2 text-sm outline-none bg-transparent"
+                  className="py-2 text-sm outline-none bg-transparent text-white placeholder-white/30"
                 />
               </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="bg-[#0e1d3a] rounded-2xl border border-white/10 overflow-hidden">
               {farmers.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-4xl mb-3">👩‍🌾</p>
-                  <p className="text-gray-500">
+                  <p className="text-white/50">
                     {isFr ? 'Aucun agriculteur enregistré dans votre pays.' : 'No farmers registered in your country.'}
                   </p>
                 </div>
               ) : (
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+                  <thead style={{ background: 'rgba(255,255,255,0.03)' }}>
                     <tr>
                       {[
                         isFr ? 'Nom' : 'Name',
@@ -690,7 +664,7 @@ export default function GovernmentPortal() {
                         isFr ? 'Coopérative' : 'Cooperative',
                         isFr ? 'Statut' : 'Status',
                       ].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-white/40 uppercase">
                           {h}
                         </th>
                       ))}
@@ -700,26 +674,30 @@ export default function GovernmentPortal() {
                     {farmers
                       .filter((f) => !searchQuery || f.nom?.toLowerCase().includes(searchQuery.toLowerCase()))
                       .map((f, i) => (
-                        <tr key={f._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                          <td className="px-4 py-3 font-medium text-[#1a3c2e]">{f.nom || '—'}</td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">
+                        <tr
+                          key={f._id}
+                          className="border-t border-white/10"
+                          style={{ background: i % 2 === 0 ? 'rgba(14,29,58,0.5)' : 'rgba(255,255,255,0.03)' }}
+                        >
+                          <td className="px-4 py-3 font-medium text-white">{f.nom || '—'}</td>
+                          <td className="px-4 py-3 text-white/70 text-xs">
                             {Array.isArray(f.cultures) ? f.cultures.join(', ') : f.cultures || '—'}
                           </td>
-                          <td className="px-4 py-3 font-mono text-gray-600">{f.superficie ? `${f.superficie} ha` : '—'}</td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">{f.region || f.zone || '—'}</td>
+                          <td className="px-4 py-3 font-mono text-white/70">{f.superficie ? `${f.superficie} ha` : '—'}</td>
+                          <td className="px-4 py-3 text-white/70 text-xs">{f.region || f.zone || '—'}</td>
                           <td className="px-4 py-3 text-xs">
                             {f.nomCooperative ? (
-                              <span className="px-2 py-0.5 rounded-full bg-[#B5850A]/10 text-[#B5850A] font-medium">
+                              <span className="px-2 py-0.5 rounded-full bg-[#B5850A]/20 text-[#B5850A] font-medium">
                                 🤝 {f.nomCooperative}
                               </span>
                             ) : (
-                              <span className="text-gray-300">{isFr ? 'Indépendant' : 'Independent'}</span>
+                              <span className="text-white/30">{isFr ? 'Indépendant' : 'Independent'}</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
                             <span
                               className={`text-xs px-2 py-0.5 rounded-full ${
-                                f.statut === 'Actif' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                f.statut === 'Actif' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
                               }`}
                             >
                               {f.statut || 'Pending'}
@@ -736,30 +714,37 @@ export default function GovernmentPortal() {
 
         {activeTab === 'cooperatives' && !loading && (
           <div className="mt-2 space-y-4">
-            <h2 className="text-xl font-bold text-[#1a3c2e]">
+            <h2 className="text-xl font-bold text-white">
               {isFr ? `Coopératives — ${admin.country}` : `Cooperatives — ${admin.country}`}
             </h2>
             <div className="grid md:grid-cols-2 gap-4">
               {cooperatives.length === 0 ? (
-                <div className="col-span-2 text-center py-12 bg-white rounded-2xl border border-gray-200">
+                <div
+                  className="col-span-2 text-center py-12 rounded-2xl border border-white/10"
+                  style={{ background: 'rgba(14,29,58,0.5)' }}
+                >
                   <p className="text-4xl mb-3">🤝</p>
-                  <p className="text-gray-500">
+                  <p className="text-white/50">
                     {isFr ? 'Aucune coopérative enregistrée dans votre pays.' : 'No cooperatives registered in your country.'}
                   </p>
                 </div>
               ) : (
                 cooperatives.map((coop) => (
-                  <div key={coop._id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                  <div
+                    key={coop._id}
+                    className="rounded-2xl border border-white/10 p-5"
+                    style={{ background: 'rgba(14,29,58,0.5)' }}
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <p className="font-bold text-[#1a3c2e]">{coop.cooperativeName || coop.nomCooperative}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="font-bold text-white">{coop.cooperativeName || coop.nomCooperative}</p>
+                        <p className="text-xs text-white/40">
                           🌍 {coop.regionCity || coop.region} · {coop.memberCount || 0} {isFr ? 'membres' : 'members'}
                         </p>
                       </div>
                       <span
                         className={`text-xs px-2 py-1 rounded-full ${
-                          coop.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                          coop.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
                         }`}
                       >
                         {coop.status || 'pending'}
@@ -767,7 +752,7 @@ export default function GovernmentPortal() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {(coop.primaryCrops || []).map((c) => (
-                        <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-[#1a3c2e]/8 text-[#1a3c2e]">
+                        <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-[#185FA5]/15 text-blue-400">
                           🌾 {c}
                         </span>
                       ))}
@@ -778,16 +763,17 @@ export default function GovernmentPortal() {
                           coop.leaderName || coop.nomResponsable
                         },%0A%0A`}
                         className="flex-1 text-center py-2 rounded-xl text-xs font-semibold text-white transition hover:opacity-90"
-                        style={{ background: '#1a3c2e' }}
+                        style={{ background: '#185FA5' }}
                       >
                         📧 {isFr ? 'Contacter' : 'Contact'}
                       </a>
                       <button
+                        type="button"
                         onClick={() => {
                           setActiveTab('projects');
                           setTimeout(() => setShowProjectForm(true), 100);
                         }}
-                        className="flex-1 py-2 rounded-xl text-xs font-semibold border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition"
+                        className="flex-1 py-2 rounded-xl text-xs font-semibold border border-white/20 text-white/80 hover:bg-white/5 transition"
                       >
                         📋 {isFr ? 'Projet' : 'Project'}
                       </button>
@@ -801,29 +787,36 @@ export default function GovernmentPortal() {
 
         {activeTab === 'processors' && !loading && (
           <div className="mt-2 space-y-4">
-            <h2 className="text-xl font-bold text-[#1a3c2e]">
+            <h2 className="text-xl font-bold text-white">
               {isFr ? `Centres de transformation — ${admin.country}` : `Transformation Centers — ${admin.country}`}
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {processors.length === 0 ? (
-                <div className="col-span-3 text-center py-12 bg-white rounded-2xl border border-gray-200">
+                <div
+                  className="col-span-3 text-center py-12 rounded-2xl border border-white/10"
+                  style={{ background: 'rgba(14,29,58,0.5)' }}
+                >
                   <p className="text-4xl mb-3">⚙️</p>
-                  <p className="text-gray-500">
+                  <p className="text-white/50">
                     {isFr ? 'Aucun processeur enregistré dans votre pays.' : 'No processors registered in your country.'}
                   </p>
                 </div>
               ) : (
                 processors.map((p) => (
-                  <div key={p._id} className="bg-white rounded-2xl border border-gray-200 p-5">
-                    <p className="font-bold text-[#1a3c2e]">{p.nom}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                  <div
+                    key={p._id}
+                    className="rounded-2xl border border-white/10 p-5"
+                    style={{ background: 'rgba(14,29,58,0.5)' }}
+                  >
+                    <p className="font-bold text-white">{p.nom}</p>
+                    <p className="text-xs text-white/40 mt-0.5">
                       🌍 {p.region} · {p.certifie ? (isFr ? 'Certifié' : 'Certified') : ''}
                     </p>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {(Array.isArray(p.typesProduits) ? p.typesProduits : [p.typesProduits])
                         .filter(Boolean)
                         .map((t) => (
-                          <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                          <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-[#185FA5]/15 text-blue-400">
                             ⚙️ {t}
                           </span>
                         ))}
@@ -838,11 +831,12 @@ export default function GovernmentPortal() {
         {activeTab === 'projects' && (
           <div className="mt-2 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#1a3c2e]">{isFr ? 'Projets nationaux' : 'National Projects'}</h2>
+              <h2 className="text-xl font-bold text-white">{isFr ? 'Projets nationaux' : 'National Projects'}</h2>
               <button
+                type="button"
                 onClick={() => setShowProjectForm(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold"
-                style={{ background: '#1a3c2e' }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold hover:opacity-90 transition-opacity"
+                style={{ background: '#185FA5' }}
               >
                 <Plus className="w-4 h-4" />
                 {isFr ? 'Nouveau projet' : 'New Project'}
@@ -851,8 +845,10 @@ export default function GovernmentPortal() {
 
             {broadcastResult && (
               <div
-                className={`rounded-xl p-3 text-sm font-semibold ${
-                  broadcastResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                className={`rounded-xl p-3 text-sm font-semibold border ${
+                  broadcastResult.success
+                    ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                    : 'bg-red-500/10 text-red-400 border-red-500/20'
                 }`}
               >
                 {broadcastResult.success
@@ -867,21 +863,25 @@ export default function GovernmentPortal() {
 
             {loading ? (
               <div className="text-center py-10">
-                <Loader2 className="w-8 h-8 animate-spin text-[#1a3c2e] mx-auto" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#185FA5] mx-auto" />
               </div>
             ) : projects.length === 0 ? (
-              <div className="text-center py-14 bg-white rounded-2xl border border-gray-200">
+              <div
+                className="text-center py-14 rounded-2xl border border-white/10"
+                style={{ background: 'rgba(14,29,58,0.5)' }}
+              >
                 <p className="text-5xl mb-3">📋</p>
-                <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{isFr ? 'Aucun projet national' : 'No national projects yet'}</h3>
-                <p className="text-gray-500 text-sm mb-4">
+                <h3 className="text-lg font-bold text-white mb-2">{isFr ? 'Aucun projet national' : 'No national projects yet'}</h3>
+                <p className="text-white/50 text-sm mb-4">
                   {isFr
                     ? 'Créez votre premier projet pour engager les acteurs agricoles de votre pays.'
                     : 'Create your first project to engage agricultural actors in your country.'}
                 </p>
                 <button
+                  type="button"
                   onClick={() => setShowProjectForm(true)}
-                  className="px-6 py-2.5 rounded-xl font-bold text-white text-sm"
-                  style={{ background: '#1a3c2e' }}
+                  className="px-6 py-2.5 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity"
+                  style={{ background: '#185FA5' }}
                 >
                   + {isFr ? 'Créer le premier projet' : 'Create first project'}
                 </button>
@@ -891,42 +891,48 @@ export default function GovernmentPortal() {
                 {projects.map((proj) => {
                   const pt = PROJECT_TYPES.find((t) => t.key === proj.projectType);
                   return (
-                    <div key={proj._id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                    <div
+                      key={proj._id}
+                      className="rounded-2xl border border-white/10 p-5"
+                      style={{ background: 'rgba(14,29,58,0.5)' }}
+                    >
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-start gap-3">
                           <span className="text-2xl mt-0.5">{pt?.emoji || '📋'}</span>
                           <div>
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <p className="font-bold text-[#1a3c2e]">{isFr && proj.titleFr ? proj.titleFr : proj.title}</p>
+                              <p className="font-bold text-white">{isFr && proj.titleFr ? proj.titleFr : proj.title}</p>
                               <span className={`text-xs px-2 py-0.5 rounded-full ${PRIORITY_COLORS[proj.priority]}`}>{proj.priority}</span>
                               <span
                                 className={`text-xs px-2 py-0.5 rounded-full ${
                                   proj.status === 'active'
-                                    ? 'bg-green-100 text-green-700'
+                                    ? 'bg-green-500/20 text-green-400'
                                     : proj.status === 'draft'
-                                      ? 'bg-gray-100 text-gray-600'
-                                      : 'bg-blue-100 text-blue-700'
+                                      ? 'bg-white/10 text-white/50'
+                                      : 'bg-blue-500/20 text-blue-400'
                                 }`}
                               >
                                 {proj.status}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600">{isFr && proj.descriptionFr ? proj.descriptionFr : proj.description}</p>
+                            <p className="text-sm text-white/70">{isFr && proj.descriptionFr ? proj.descriptionFr : proj.description}</p>
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-lg font-bold text-[#1a3c2e] font-mono">{proj.responses?.length || 0}</p>
-                          <p className="text-xs text-gray-400">{isFr ? 'réponses' : 'responses'}</p>
+                          <p className="text-lg font-bold font-mono" style={{ color: '#185FA5' }}>
+                            {proj.responses?.length || 0}
+                          </p>
+                          <p className="text-xs text-white/40">{isFr ? 'réponses' : 'responses'}</p>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2 mb-4">
                         {(proj.targetAudience || []).map((a) => (
-                          <span key={a} className="text-xs px-2 py-0.5 rounded-full bg-[#1a3c2e]/8 text-[#1a3c2e]">
+                          <span key={a} className="text-xs px-2 py-0.5 rounded-full bg-[#185FA5]/15 text-blue-400">
                             {{ farmers: '👩‍🌾', cooperatives: '🤝', processors: '⚙️', diaspora: '💰', all: '🌍' }[a] || '📋'} {a}
                           </span>
                         ))}
                         {proj.broadcastCount > 0 && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
                             ✓ {isFr ? `Diffusé à ${proj.broadcastCount}` : `Sent to ${proj.broadcastCount}`}
                           </span>
                         )}
@@ -934,9 +940,10 @@ export default function GovernmentPortal() {
                       <div className="flex gap-2 flex-wrap">
                         {proj.status === 'draft' && (
                           <button
+                            type="button"
                             onClick={() => broadcastProject(proj._id)}
                             disabled={broadcasting === proj._id}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
                             style={{ background: '#B5850A' }}
                           >
                             {broadcasting === proj._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -945,15 +952,17 @@ export default function GovernmentPortal() {
                         )}
                         {proj.status === 'active' && (
                           <button
+                            type="button"
                             onClick={() => broadcastProject(proj._id)}
                             disabled={broadcasting === proj._id}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition disabled:opacity-50"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-white/20 text-white/80 hover:bg-white/5 transition disabled:opacity-50"
                           >
                             {broadcasting === proj._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                             {isFr ? 'Re-diffuser' : 'Re-broadcast'}
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={async () => {
                             const newStatus = proj.status === 'active' ? 'paused' : proj.status === 'paused' ? 'active' : proj.status;
                             await fetch(`${API}/api/government/projects/${proj._id}`, {
@@ -963,7 +972,7 @@ export default function GovernmentPortal() {
                             });
                             setProjects((prev) => prev.map((p) => (p._id === proj._id ? { ...p, status: newStatus } : p)));
                           }}
-                          className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
+                          className="px-4 py-2 rounded-xl text-sm font-semibold border border-white/15 text-white/50 hover:bg-white/5 transition"
                         >
                           {proj.status === 'active' ? (isFr ? 'Mettre en pause' : 'Pause') : proj.status === 'paused' ? (isFr ? 'Reprendre' : 'Resume') : ''}
                         </button>
@@ -978,38 +987,38 @@ export default function GovernmentPortal() {
       </div>
 
       {showProjectForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <div className="bg-[#0e1d3a] rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/10">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-[#1a3c2e] text-xl">{isFr ? 'Nouveau projet national' : 'New National Project'}</h3>
-              <button onClick={() => setShowProjectForm(false)}>
-                <X className="w-5 h-5 text-gray-400" />
+              <h3 className="font-bold text-white text-xl">{isFr ? 'Nouveau projet national' : 'New National Project'}</h3>
+              <button type="button" onClick={() => setShowProjectForm(false)} className="text-white/50 hover:text-white">
+                <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Titre (EN)' : 'Title (EN)'} *</label>
+                  <label className={GOV_LABEL}>{isFr ? 'Titre (EN)' : 'Title (EN)'} *</label>
                   <input
                     value={projectForm.title}
                     onChange={(e) => setProjectForm((f) => ({ ...f, title: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    className={GOV_INPUT_SM}
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Titre (FR)</label>
+                  <label className={GOV_LABEL}>Titre (FR)</label>
                   <input
                     value={projectForm.titleFr}
                     onChange={(e) => setProjectForm((f) => ({ ...f, titleFr: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    className={GOV_INPUT_SM}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Type de projet' : 'Project Type'}</label>
+                  <label className={GOV_LABEL}>{isFr ? 'Type de projet' : 'Project Type'}</label>
                   <select
                     value={projectForm.projectType}
                     onChange={(e) => setProjectForm((f) => ({ ...f, projectType: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    className={GOV_INPUT_SM}
                   >
                     {PROJECT_TYPES.map((t) => (
                       <option key={t.key} value={t.key}>
@@ -1019,11 +1028,11 @@ export default function GovernmentPortal() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Priorité' : 'Priority'}</label>
+                  <label className={GOV_LABEL}>{isFr ? 'Priorité' : 'Priority'}</label>
                   <select
                     value={projectForm.priority}
                     onChange={(e) => setProjectForm((f) => ({ ...f, priority: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    className={GOV_INPUT_SM}
                   >
                     <option value="low">{isFr ? 'Faible' : 'Low'}</option>
                     <option value="medium">{isFr ? 'Moyen' : 'Medium'}</option>
@@ -1032,7 +1041,7 @@ export default function GovernmentPortal() {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{isFr ? 'Cible' : 'Target audience'}</label>
+                  <label className={GOV_LABEL}>{isFr ? 'Cible' : 'Target audience'}</label>
                   <div className="flex flex-wrap gap-2">
                     {['farmers', 'cooperatives', 'processors', 'diaspora', 'all'].map((a) => (
                       <button
@@ -1048,8 +1057,8 @@ export default function GovernmentPortal() {
                         }
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
                           projectForm.targetAudience.includes(a)
-                            ? 'bg-[#1a3c2e] text-white border-[#1a3c2e]'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-[#1a3c2e]/40'
+                            ? 'bg-[#185FA5] text-white border-[#185FA5]'
+                            : 'bg-transparent text-white/50 border-white/15 hover:border-white/30'
                         }`}
                       >
                         {{ farmers: '👩‍🌾 Farmers', cooperatives: '🤝 Coops', processors: '⚙️ Processors', diaspora: '💰 Diaspora', all: '🌍 All' }[a]}
@@ -1058,29 +1067,29 @@ export default function GovernmentPortal() {
                   </div>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Description (EN)' : 'Description (EN)'} *</label>
+                  <label className={GOV_LABEL}>{isFr ? 'Description (EN)' : 'Description (EN)'} *</label>
                   <textarea
                     value={projectForm.description}
                     onChange={(e) => setProjectForm((f) => ({ ...f, description: e.target.value }))}
                     rows={3}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] resize-none"
+                    className={`${GOV_INPUT_SM} resize-none`}
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description (FR)</label>
+                  <label className={GOV_LABEL}>Description (FR)</label>
                   <textarea
                     value={projectForm.descriptionFr}
                     onChange={(e) => setProjectForm((f) => ({ ...f, descriptionFr: e.target.value }))}
                     rows={3}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] resize-none"
+                    className={`${GOV_INPUT_SM} resize-none`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Saison' : 'Season'}</label>
+                  <label className={GOV_LABEL}>{isFr ? 'Saison' : 'Season'}</label>
                   <select
                     value={projectForm.season}
                     onChange={(e) => setProjectForm((f) => ({ ...f, season: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    className={GOV_INPUT_SM}
                   >
                     <option value="rainy">{isFr ? '🌧️ Saison des pluies' : '🌧️ Rainy Season'}</option>
                     <option value="dry">{isFr ? '☀️ Saison sèche' : '☀️ Dry Season'}</option>
@@ -1089,18 +1098,18 @@ export default function GovernmentPortal() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={GOV_LABEL}>
                     {isFr ? 'Partenaire externe (optionnel)' : 'External partner (optional)'}
                   </label>
                   <input
                     value={projectForm.externalPartner}
                     onChange={(e) => setProjectForm((f) => ({ ...f, externalPartner: e.target.value }))}
                     placeholder="FAO, WFP, ECOWAS..."
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    className={GOV_INPUT_SM}
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Incitatifs pour les participants' : 'Incentives for participants'}</label>
+                  <label className={GOV_LABEL}>{isFr ? 'Incitatifs pour les participants' : 'Incentives for participants'}</label>
                   <textarea
                     value={projectForm.incentives}
                     onChange={(e) => setProjectForm((f) => ({ ...f, incentives: e.target.value }))}
@@ -1110,15 +1119,24 @@ export default function GovernmentPortal() {
                         ? 'Ex: Accès aux semences subventionnées, formation gratuite, connexion exportateur...'
                         : 'Ex: Access to subsidized seeds, free training, exporter connection...'
                     }
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] resize-none"
+                    className={`${GOV_INPUT_SM} resize-none`}
                   />
                 </div>
               </div>
               <div className="flex gap-3">
-                <button onClick={createProject} className="flex-1 py-3 rounded-xl font-bold text-white text-sm" style={{ background: '#1a3c2e' }}>
+                <button
+                  type="button"
+                  onClick={createProject}
+                  className="flex-1 py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity"
+                  style={{ background: '#185FA5' }}
+                >
                   {isFr ? '💾 Créer le projet' : '💾 Create Project'}
                 </button>
-                <button onClick={() => setShowProjectForm(false)} className="px-5 rounded-xl border border-gray-200 text-gray-500 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setShowProjectForm(false)}
+                  className="px-5 rounded-xl border border-white/15 text-white/50 text-sm hover:bg-white/5 transition"
+                >
                   {isFr ? 'Annuler' : 'Cancel'}
                 </button>
               </div>

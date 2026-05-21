@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
+import LocationSelector from '../components/LocationSelector';
 
 const API = API_BASE_URL.replace(/\/$/, '');
 const TOTAL_STEPS = 4;
@@ -40,13 +41,12 @@ export default function ProducerProRegistration() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [location, setLocation] = useState({ country: '', region: '' });
 
   const [form, setForm] = useState({
     fullName: '',
     email: '',
     phone: '',
-    country: 'Mali',
-    region: '',
     farmSizeHectares: '',
     primaryCrops: [],
     yearsExperience: '',
@@ -80,11 +80,11 @@ export default function ProducerProRegistration() {
   };
 
   const validate = () => {
-    if (step === 1 && (!form.fullName || !form.email || !form.phone)) {
+    if (step === 1 && (!form.fullName || !form.email || !form.phone || !location.country)) {
       setError(
         isFr
-          ? 'Nom, email et téléphone sont requis'
-          : 'Name, email and phone are required'
+          ? 'Nom, email, téléphone et pays sont requis'
+          : 'Name, email, phone and country are required'
       );
       return false;
     }
@@ -126,8 +126,8 @@ export default function ProducerProRegistration() {
       nom: form.fullName.trim(),
       email: form.email.trim().toLowerCase(),
       telephone: form.phone.replace(/\s+/g, ' ').trim(),
-      region: form.region.trim() || 'Unknown',
-      country: form.country,
+      region: location.region.trim() || 'Unknown',
+      country: location.country,
       superficie: Number(form.farmSizeHectares) || 0,
       cultures,
       latitude: '0',
@@ -301,7 +301,6 @@ export default function ProducerProRegistration() {
                 ['fullName', isFr ? 'Nom complet *' : 'Full Name *', isFr ? 'Prénom et nom' : 'First and last name', 'text'],
                 ['email', isFr ? 'Email *' : 'Email *', 'your@email.com', 'email'],
                 ['phone', isFr ? 'Téléphone *' : 'Phone *', '+223...', 'tel'],
-                ['region', isFr ? 'Région' : 'Region', isFr ? 'Ex: Ségou, Mopti' : 'e.g. Segou, Mopti', 'text'],
               ].map(([field, label, placeholder, type]) => (
                 <div key={field}>
                   <label className="block text-white/60 text-xs font-medium mb-1.5">
@@ -316,24 +315,13 @@ export default function ProducerProRegistration() {
                   />
                 </div>
               ))}
-              <div>
-                <label className="block text-white/60 text-xs font-medium mb-1.5">
-                  {isFr ? 'Pays' : 'Country'}
-                </label>
-                <select
-                  value={form.country}
-                  onChange={(e) => set('country', e.target.value)}
-                  className="w-full bg-black/30 border border-white/15 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500/60"
-                >
-                  {['Mali', 'Senegal', 'Burkina Faso', 'Ghana', 'Nigeria', "Côte d'Ivoire", 'Other'].map(
-                    (c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
+              <LocationSelector
+                value={location}
+                onChange={setLocation}
+                required={true}
+                showDetectedBanner={true}
+                className="[&_label]:text-white/60 [&_select]:bg-black/30 [&_select]:border-white/15 [&_select]:text-white [&_select]:rounded-lg"
+              />
             </>
           )}
 

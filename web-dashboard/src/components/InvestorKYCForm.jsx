@@ -2,22 +2,26 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
-import { INVESTOR_RESIDENCE_COUNTRIES } from '../data/investorResidenceCountries';
+import { AFRICAN_COUNTRIES } from '../data/africanCountries';
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 const API = API_BASE_URL.replace(/\/$/, '');
 
-const AFRICAN_COUNTRIES = [
-  'Mali', 'Senegal', 'Burkina Faso', 'Ghana', 'Nigeria',
-  "Côte d'Ivoire", 'Ivory Coast', 'Cameroon', 'Kenya',
-  'Tanzania', 'Uganda', 'Rwanda', 'Ethiopia', 'Togo',
-  'Benin', 'Niger', 'Guinea', 'Sierra Leone', 'Liberia',
-  'Gambia', 'Guinea-Bissau', 'Mauritania', 'Cape Verde',
-  'South Africa', 'Egypt', 'Morocco', 'Other African',
+const KYC_COUNTRIES = [
+  ...AFRICAN_COUNTRIES,
+  'France',
+  'United Kingdom',
+  'United States',
+  'Canada',
 ];
+
 const DIASPORA_COUNTRIES = [
-  'USA', 'UK', 'France', 'Canada',
-  'United States', 'United Kingdom',
+  'France',
+  'United Kingdom',
+  'United States',
+  'Canada',
+  'UK',
+  'USA',
 ];
 
 const STEP_LABELS_EN = ['Identity', 'Documents', 'Address', 'Finances', 'Legal'];
@@ -54,14 +58,6 @@ function getCategory(country) {
     (c) => c.toLowerCase() === country.toLowerCase())) return 'diaspora';
   return 'other';
 }
-
-const ALL_COUNTRIES = [
-  ...new Set([
-    ...AFRICAN_COUNTRIES,
-    ...INVESTOR_RESIDENCE_COUNTRIES,
-    ...DIASPORA_COUNTRIES.filter((c) => !['USA', 'UK'].includes(c)),
-  ]),
-].sort();
 
 const inputCls =
   'w-full rounded-xl px-3 py-3 text-sm bg-white/5 border border-white/10 outline-none focus:border-[#B5850A] text-[#F5F0E8]';
@@ -542,7 +538,7 @@ export default function InvestorKYCForm({
                 onChange={(e) => setCountryOfResidence(e.target.value)}
                 className={inputCls}
               >
-                {ALL_COUNTRIES.map((c) => (
+                {KYC_COUNTRIES.map((c) => (
                   <option key={c} value={c} className="text-black">
                     {c}
                   </option>

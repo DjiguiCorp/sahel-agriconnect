@@ -16,14 +16,25 @@ const getMainNavLinks = (isFr) => [
   { label: isFr ? 'Contact' : 'Contact', path: '/contact' },
 ];
 
+const getJoinMenuItems = (isFr) => [
+  { icon: '🌾', label: isFr ? 'Agriculteur (gratuit)' : 'Farmer (free)', to: '/inscription' },
+  { icon: '⭐', label: 'Producer Pro', to: '/producer-pro-registration' },
+  { icon: '🤝', label: isFr ? 'Coopérative' : 'Cooperative', to: '/cooperative-registration' },
+  { icon: '🏭', label: isFr ? 'Centre transformation' : 'Transformation Center', to: '/transformation-registration' },
+  { icon: '💰', label: isFr ? 'Investisseur AfriYield' : 'AfriYield Investor', to: '/afri-yield/register' },
+  { icon: '📊', label: isFr ? 'Voir tous les plans' : 'View all plans', to: '/pricing' },
+];
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [desktopPlatformOpen, setDesktopPlatformOpen] = useState(false);
   const [desktopToolsOpen, setDesktopToolsOpen] = useState(false);
   const [mobilePlatformOpen, setMobilePlatformOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [showJoinMenu, setShowJoinMenu] = useState(false);
   const desktopPlatformRef = useRef(null);
   const desktopToolsRef = useRef(null);
+  const joinMenuRef = useRef(null);
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -74,12 +85,27 @@ const Header = () => {
     setIsMenuOpen(false);
     setMobilePlatformOpen(false);
     setMobileToolsOpen(false);
+    setShowJoinMenu(false);
   };
+
+  const joinMenuItems = useMemo(() => getJoinMenuItems(isFr), [isFr]);
 
   useEffect(() => {
     setDesktopPlatformOpen(false);
     setDesktopToolsOpen(false);
+    setShowJoinMenu(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!showJoinMenu) return;
+    const handleMouseDown = (e) => {
+      if (joinMenuRef.current && !joinMenuRef.current.contains(e.target)) {
+        setShowJoinMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [showJoinMenu]);
 
   useEffect(() => {
     if (!desktopPlatformOpen) return;
@@ -119,6 +145,45 @@ const Header = () => {
   const platformLabel = isFr ? 'Plateforme' : 'Platform';
   const toolsLabel = isFr ? 'Outils' : 'Tools';
   const mainNavLinks = useMemo(() => getMainNavLinks(isFr), [isFr]);
+
+  const joinMenuDropdown = (
+    <div ref={joinMenuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setShowJoinMenu((open) => !open)}
+        className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-colors whitespace-nowrap"
+        style={{ backgroundColor: '#B5850A', color: 'black' }}
+        aria-expanded={showJoinMenu}
+        aria-haspopup="true"
+      >
+        {isFr ? 'Rejoindre' : 'Join'}
+        <ChevronDown
+          className={`w-3 h-3 shrink-0 transition-transform ${showJoinMenu ? 'rotate-180' : ''}`}
+          aria-hidden
+        />
+      </button>
+      {showJoinMenu && (
+        <div
+          className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-white/15 shadow-2xl z-50 overflow-hidden"
+          style={{ background: '#0a1f10' }}
+          role="menu"
+        >
+          {joinMenuItems.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              role="menuitem"
+              onClick={() => setShowJoinMenu(false)}
+              className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors border-b border-white/5 last:border-0"
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-md">
@@ -255,13 +320,6 @@ const Header = () => {
 
             <LanguageSelector />
 
-            <Link
-              to="/inscription"
-              className="btn-primary text-sm lg:text-base whitespace-nowrap px-5 py-2.5 shadow-sm"
-            >
-              {isFr ? 'Rejoindre' : 'Join'}
-            </Link>
-
             <button
               type="button"
               className="hidden lg:inline text-sm font-medium text-gray-600 hover:text-brand-forest whitespace-nowrap border-l border-gray-200 pl-5"
@@ -271,13 +329,11 @@ const Header = () => {
             </button>
           </div>
 
-          <div className="flex md:hidden items-center gap-2 shrink-0">
-            <Link to="/inscription" className="btn-primary text-sm py-2.5 px-3 whitespace-nowrap">
-              {isFr ? 'Rejoindre' : 'Join'}
-            </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            {joinMenuDropdown}
             <button
               type="button"
-              className="p-2.5 rounded-lg text-brand-forest hover:bg-brand-iconBg border border-transparent hover:border-brand-sage/30"
+              className="md:hidden p-2.5 rounded-lg text-brand-forest hover:bg-brand-iconBg border border-transparent hover:border-brand-sage/30"
               onClick={() => setIsMenuOpen((o) => !o)}
               aria-expanded={isMenuOpen}
               aria-controls="mobile-navigation"

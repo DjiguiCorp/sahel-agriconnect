@@ -4,7 +4,6 @@ import { MapPin } from 'lucide-react';
 import {
   AFRICAN_COUNTRY_GROUPS,
   ALL_COUNTRY_OPTIONS,
-  DIASPORA_COUNTRIES,
   legacyCountryToAppName,
   regionsForAppCountry,
 } from '../data/africanCountries';
@@ -116,10 +115,15 @@ export default function LocationSelector({
               </option>
             ))}
           </optgroup>
-          <optgroup label={isFr ? '🌐 Autres pays' : '🌐 Other Countries'}>
-            {DIASPORA_COUNTRIES.map((c) => (
-              <option key={c} value={c}>
-                {flagFor(c)} {c}
+          <optgroup label={isFr ? '✈️ Diaspora africaine' : '✈️ African Diaspora'}>
+            {[
+              ['France', 'France'],
+              ['United Kingdom', isFr ? 'Royaume-Uni' : 'United Kingdom'],
+              ['United States', isFr ? 'États-Unis' : 'United States'],
+              ['Canada', 'Canada'],
+            ].map(([value, label]) => (
+              <option key={value} value={value}>
+                {flagFor(value)} {label}
               </option>
             ))}
           </optgroup>

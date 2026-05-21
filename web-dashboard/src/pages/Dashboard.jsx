@@ -1,11 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import FarmerRegistrationForm from '../components/FarmerRegistrationForm';
-import ProcessorRegistration from '../components/ProcessorRegistration';
-import Modal from '../components/Modal';
-import { API_ENDPOINTS } from '../config/api';
-import { ALL_COUNTRIES } from '../data/africanCountries';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -29,8 +24,10 @@ const CROP_EMOJIS = {
   Maize: '🌽',
 };
 
+const darkCard = 'bg-gradient-to-br from-white/5 to-white/3 rounded-2xl border border-white/10 p-6';
+
 export default function Dashboard() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -39,8 +36,9 @@ export default function Dashboard() {
   const [processorStats, setProcessorStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [countryFilter, setCountryFilter] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isProcessorModalOpen, setIsProcessorModalOpen] = useState(false);
+  const [selectedCoop, setSelectedCoop] = useState(null);
+  const [coopDetailLoading, setCoopDetailLoading] = useState(false);
+  const [coopDetail, setCoopDetail] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -57,51 +55,190 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredFarmers = farmerStats?.recent?.filter((f) => !countryFilter || f.country === countryFilter) || [];
-  const filteredCoops = coopStats?.recent?.filter((c) => !countryFilter || c.country === countryFilter) || [];
+  const platformCountries = useMemo(
+    () =>
+      [
+        ...new Set([
+          ...(farmerStats?.byCountry || []).map((c) => c._id),
+          ...(coopStats?.byCountry || []).map((c) => c._id),
+          ...(processorStats?.byCountry || []).map((c) => c._id),
+          ...(farmerStats?.recent || []).map((f) => f.country),
+          ...(coopStats?.recent || []).map((c) => c.country),
+          ...(processorStats?.recent || []).map((p) => p.country),
+        ]),
+      ]
+        .filter(Boolean)
+        .sort((a, b) => String(a).localeCompare(String(b))),
+    [farmerStats, coopStats, processorStats]
+  );
+
+  const filteredFarmers =
+    farmerStats?.recent?.filter((f) => !countryFilter || f.country === countryFilter) || [];
+  const filteredCoops =
+    coopStats?.recent?.filter((c) => !countryFilter || c.country === countryFilter) || [];
   const filteredProcessors =
     processorStats?.recent?.filter((p) => !countryFilter || p.country === countryFilter) || [];
 
-  const allCountries = [
-    ...new Set([
-      ...ALL_COUNTRIES,
-      ...(farmerStats?.byCountry || []).map((c) => c._id),
-      ...(coopStats?.byCountry || []).map((c) => c._id),
-      ...(processorStats?.byCountry || []).map((c) => c._id),
-    ]),
-  ].filter(Boolean).sort((a, b) => a.localeCompare(b));
+  const loadCoopDetail = async (coop) => {
+    setSelectedCoop(coop);
+    setCoopDetailLoading(true);
+    setCoopDetail(null);
+    try {
+      const id = coop._id || coop.id;
+      if (id) {
+        const r = await fetch(`${API}/api/cooperatives/${id}`);
+        const d = await r.json().catch(() => ({}));
+        if (d.cooperative || d.data) {
+          setCoopDetail(d.cooperative || d.data);
+        } else {
+          setCoopDetail(coop);
+        }
+      } else {
+        setCoopDetail(coop);
+      }
+    } catch {
+      setCoopDetail(coop);
+    } finally {
+      setCoopDetailLoading(false);
+    }
+  };
 
   const tabs = [
     { key: 'overview', label: isFr ? "🌍 Vue d'ensemble" : '🌍 Overview' },
-    { key: 'farmers', label: isFr ? `👩‍🌾 Agriculteurs (${farmerStats?.total || 0})` : `👩‍🌾 Farmers (${farmerStats?.total || 0})` },
-    { key: 'cooperatives', label: isFr ? `🤝 Coopératives (${coopStats?.total || 0})` : `🤝 Cooperatives (${coopStats?.total || 0})` },
-    { key: 'processors', label: isFr ? `⚙️ Processeurs (${processorStats?.total || 0})` : `⚙️ Processors (${processorStats?.total || 0})` },
+    {
+      key: 'farmers',
+      label: isFr
+        ? `👩‍🌾 Agriculteurs (${farmerStats?.total || 0})`
+        : `👩‍🌾 Farmers (${farmerStats?.total || 0})`,
+    },
+    {
+      key: 'cooperatives',
+      label: isFr
+        ? `🤝 Coopératives (${coopStats?.total || 0})`
+        : `🤝 Cooperatives (${coopStats?.total || 0})`,
+    },
+    {
+      key: 'processors',
+      label: isFr
+        ? `🏭 Transformateurs (${processorStats?.total || 0})`
+        : `🏭 Processors (${processorStats?.total || 0})`,
+    },
+  ];
+
+  const statCards = [
+    {
+      icon: '👩‍🌾',
+      value: farmerStats?.total || 0,
+      label: isFr ? 'Agriculteurs' : 'Farmers',
+      sub: `${farmerStats?.active || 0} ${isFr ? 'actifs' : 'active'}`,
+      color: '#4CAF50',
+      bg: 'from-green-900/40 to-green-950/60',
+      border: 'border-green-500/20',
+    },
+    {
+      icon: '🤝',
+      value: coopStats?.total || 0,
+      label: isFr ? 'Coopératives' : 'Cooperatives',
+      sub: `${coopStats?.active || 0} ${isFr ? 'actives' : 'active'}`,
+      color: '#B5850A',
+      bg: 'from-amber-900/40 to-amber-950/60',
+      border: 'border-amber-500/20',
+    },
+    {
+      icon: '🏭',
+      value: processorStats?.total || 0,
+      label: isFr ? 'Transformateurs' : 'Processors',
+      sub: `${processorStats?.certified || 0} ${isFr ? 'certifiés' : 'certified'}`,
+      color: '#3b82f6',
+      bg: 'from-blue-900/40 to-blue-950/60',
+      border: 'border-blue-500/20',
+    },
+    {
+      icon: '🌾',
+      value: `${(farmerStats?.totalArea || 0).toFixed(0)} ha`,
+      label: isFr ? 'Superficie totale' : 'Total Area',
+      sub: isFr ? 'terres agricoles' : 'farmland',
+      color: '#1D9E75',
+      bg: 'from-teal-900/40 to-teal-950/60',
+      border: 'border-teal-500/20',
+    },
+    {
+      icon: '🌍',
+      value: platformCountries.length,
+      label: isFr ? 'Pays représentés' : 'Countries',
+      sub: isFr ? 'sur la plateforme' : 'on platform',
+      color: '#9C27B0',
+      bg: 'from-purple-900/40 to-purple-950/60',
+      border: 'border-purple-500/20',
+    },
   ];
 
   return (
-    <div>
-      <section style={{ background: 'linear-gradient(135deg, #1a3c2e 0%, #2d5a3d 100%)' }} className="text-white">
-        <div className="section-container py-12 md:py-16">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">
-            {isFr ? 'Tableau de bord — Écosystème agricole' : 'Dashboard — Agricultural Ecosystem'}
-          </h1>
-          <p className="text-white/70 text-lg max-w-2xl">
-            {isFr
-              ? "Vue d'ensemble en temps réel des agriculteurs, coopératives et centres de transformation enregistrés sur la plateforme."
-              : 'Real-time overview of farmers, cooperatives, and transformation centers registered on the platform.'}
-          </p>
+    <div className="min-h-screen bg-[#060f0a]">
+      <section
+        style={{
+          background: 'linear-gradient(135deg, #060f0a 0%, #0a1f10 50%, #060f0a 100%)',
+        }}
+        className="text-white border-b border-white/10"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500/15 text-green-400 border border-green-500/30 mb-3">
+                🌍 {isFr ? 'Plateforme en direct' : 'Live Platform'}
+              </span>
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                {isFr
+                  ? 'Écosystème agricole — Sahel AgriConnect'
+                  : 'Agricultural Ecosystem — Sahel AgriConnect'}
+              </h1>
+              <p className="text-white/60 text-base max-w-2xl">
+                {isFr
+                  ? 'Vue en temps réel des agriculteurs, coopératives et centres de transformation enregistrés.'
+                  : 'Real-time view of registered farmers, cooperatives, and transformation centers.'}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/inscription"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white border border-white/20 hover:bg-white/10 transition-colors"
+              >
+                + {isFr ? 'Inscrire un agriculteur' : 'Register a Farmer'}
+              </Link>
+              <Link
+                to="/cooperative-registration"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors"
+                style={{
+                  borderColor: '#B5850A',
+                  color: '#B5850A',
+                  backgroundColor: 'rgba(181,133,10,0.08)',
+                }}
+              >
+                + {isFr ? 'Inscrire une coopérative' : 'Register a Cooperative'}
+              </Link>
+              <Link
+                to="/transformation-registration"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors"
+                style={{
+                  borderColor: '#3b82f6',
+                  color: '#3b82f6',
+                  backgroundColor: 'rgba(59,130,246,0.08)',
+                }}
+              >
+                + {isFr ? 'Centre de transformation' : 'Transformation Center'}
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="section-container py-8 space-y-6">
-        <div className="rounded-xl border border-amber-500/20
-          bg-amber-500/5 p-4 flex items-center justify-between mb-6">
+      <section className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <p className="text-amber-400 font-semibold text-sm">
-              {isFr ? '💰 Voir tous nos plans tarifaires'
-                     : '💰 View all pricing plans'}
+              {isFr ? '💰 Voir tous nos plans tarifaires' : '💰 View all pricing plans'}
             </p>
-            <p className="text-gray-600 text-xs mt-0.5">
+            <p className="text-white/50 text-xs mt-0.5">
               {isFr
                 ? 'Agriculteur gratuit · Producer Pro $29.99/mois · Coopérative $199/an'
                 : 'Farmer free · Producer Pro $29.99/mo · Cooperative $199/year'}
@@ -110,45 +247,24 @@ export default function Dashboard() {
           <Link to="/pricing">
             <button
               type="button"
-              className="px-4 py-2 rounded-lg bg-amber-500
-              text-black text-xs font-bold whitespace-nowrap"
+              className="px-4 py-2 rounded-lg bg-amber-500 text-black text-xs font-bold whitespace-nowrap"
             >
               {isFr ? 'Voir les tarifs' : 'View Pricing'}
             </button>
           </Link>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-semibold text-sm"
-              style={{ background: '#1a3c2e' }}
-            >
-              + {isFr ? 'Enregistrer un agriculteur' : 'Register a farmer'}
-            </button>
-            <button
-              onClick={() => setIsProcessorModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition"
-            >
-              + {isFr ? 'Enregistrer un processeur' : 'Register a processor'}
-            </button>
-            <Link
-              to="/cooperative-registration"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm border-2 border-[#B5850A] text-[#B5850A] hover:bg-[#B5850A]/5 transition"
-            >
-              + {isFr ? 'Inscrire une coopérative' : 'Register a cooperative'}
-            </Link>
-          </div>
-
+        <div className="flex flex-col sm:flex-row gap-3 justify-end">
           <select
             value={countryFilter}
             onChange={(e) => setCountryFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+            className="rounded-xl border border-white/15 px-3 py-2.5 text-sm bg-white/5 text-white outline-none focus:ring-2 focus:ring-amber-500/40"
           >
-            <option value="">{isFr ? '🌍 Tous les pays' : '🌍 All countries'}</option>
-            {allCountries.map((c) => (
-              <option key={c} value={c}>
+            <option value="" className="text-black">
+              {isFr ? '🌍 Tous les pays' : '🌍 All countries'}
+            </option>
+            {platformCountries.map((c) => (
+              <option key={c} value={c} className="text-black">
                 {c}
               </option>
             ))}
@@ -156,57 +272,97 @@ export default function Dashboard() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="rounded-2xl h-24 bg-gray-100 animate-pulse" />
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="rounded-2xl h-28 bg-white/5 animate-pulse border border-white/10" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { icon: '👩‍🌾', value: farmerStats?.total || 0, label: isFr ? 'Agriculteurs' : 'Farmers', sub: `${farmerStats?.active || 0} ${isFr ? 'actifs' : 'active'}`, gradient: 'from-[#1a3c2e] to-[#2d5a3d]' },
-              { icon: '🤝', value: coopStats?.total || 0, label: isFr ? 'Coopératives' : 'Cooperatives', sub: `${coopStats?.active || 0} ${isFr ? 'actives' : 'active'}`, gradient: 'from-[#B5850A] to-[#9a7109]' },
-              { icon: '⚙️', value: processorStats?.total || 0, label: isFr ? 'Processeurs' : 'Processors', sub: `${processorStats?.certified || 0} ${isFr ? 'certifiés' : 'certified'}`, gradient: 'from-[#3b82f6] to-[#2563eb]' },
-              { icon: '🌾', value: `${(farmerStats?.totalArea || 0).toFixed(0)} ha`, label: isFr ? 'Superficie totale' : 'Total Area', sub: isFr ? 'terres agricoles' : 'farmland', gradient: 'from-[#059669] to-[#047857]' },
-            ].map(({ icon, value, label, sub, gradient }) => (
-              <div key={label} className={`rounded-2xl p-5 text-white bg-gradient-to-br ${gradient}`}>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+            {statCards.map(({ icon, value, label, sub, color, bg, border }) => (
+              <div
+                key={label}
+                className={`rounded-2xl p-5 bg-gradient-to-br ${bg} border ${border}`}
+              >
                 <span className="text-2xl">{icon}</span>
-                <p className="text-3xl font-bold font-mono mt-2">{value}</p>
-                <p className="text-white/80 text-sm mt-0.5">{label}</p>
-                <p className="text-white/50 text-xs mt-0.5">{sub}</p>
+                <p className="text-3xl font-bold font-mono mt-2" style={{ color }}>
+                  {value}
+                </p>
+                <p className="text-white/70 text-sm mt-0.5">{label}</p>
+                <p className="text-white/40 text-xs mt-0.5">{sub}</p>
               </div>
             ))}
           </div>
         )}
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h3 className="font-bold text-[#1a3c2e] mb-5 text-lg">🔗 {isFr ? "Flux de l'écosystème" : 'Ecosystem Flow'}</h3>
+        <div className={darkCard}>
+          <h3 className="font-bold text-white mb-5 text-lg">
+            🔗 {isFr ? "Flux de l'écosystème" : 'Ecosystem Flow'}
+          </h3>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
             {[
-              { icon: '👩‍🌾', label: isFr ? 'Agriculteurs' : 'Farmers', count: farmerStats?.total || 0, color: '#1a3c2e', desc: isFr ? 'Produisent les cultures' : 'Produce the crops', link: null },
+              {
+                icon: '👩‍🌾',
+                label: isFr ? 'Agriculteurs' : 'Farmers',
+                count: farmerStats?.total || 0,
+                color: '#4CAF50',
+                desc: isFr ? 'Produisent les cultures' : 'Produce the crops',
+                link: null,
+              },
               { arrow: true },
-              { icon: '🤝', label: isFr ? 'Coopératives' : 'Cooperatives', count: coopStats?.total || 0, color: '#B5850A', desc: isFr ? 'Agrègent et certifient' : 'Aggregate and certify', link: '/cooperatives' },
+              {
+                icon: '🤝',
+                label: isFr ? 'Coopératives' : 'Cooperatives',
+                count: coopStats?.total || 0,
+                color: '#B5850A',
+                desc: isFr ? 'Agrègent et certifient' : 'Aggregate and certify',
+                link: '/cooperatives',
+              },
               { arrow: true },
-              { icon: '⚙️', label: isFr ? 'Processeurs' : 'Processors', count: processorStats?.total || 0, color: '#3b82f6', desc: isFr ? 'Transforment en produits' : 'Transform into products', link: null },
+              {
+                icon: '🏭',
+                label: isFr ? 'Transformateurs' : 'Processors',
+                count: processorStats?.total || 0,
+                color: '#3b82f6',
+                desc: isFr ? 'Transforment en produits' : 'Transform into products',
+                link: null,
+              },
               { arrow: true },
-              { icon: '🌍', label: 'AfriYield Exchange', count: null, color: '#059669', desc: isFr ? 'Marchés internationaux' : 'International markets', link: '/afri-yield' },
+              {
+                icon: '🌍',
+                label: 'AfriYield Exchange',
+                count: null,
+                color: '#1D9E75',
+                desc: isFr ? 'Marchés internationaux' : 'International markets',
+                link: '/afri-yield',
+              },
             ].map((item, i2) =>
               item.arrow ? (
-                <div key={i2} className="text-gray-300 text-2xl font-bold hidden sm:block">→</div>
+                <div key={i2} className="text-white/20 text-2xl font-bold hidden sm:block">
+                  →
+                </div>
               ) : (
                 <div
                   key={item.label}
-                  className="flex flex-col items-center text-center p-4 rounded-2xl border-2 flex-1"
-                  style={{ borderColor: item.color + '30', background: item.color + '08' }}
+                  className="flex flex-col items-center text-center p-4 rounded-2xl border flex-1"
+                  style={{ borderColor: `${item.color}30`, background: `${item.color}08` }}
                 >
                   <span className="text-3xl mb-2">{item.icon}</span>
                   {item.count !== null && (
-                    <span className="text-2xl font-bold font-mono" style={{ color: item.color }}>{item.count}</span>
+                    <span className="text-2xl font-bold font-mono" style={{ color: item.color }}>
+                      {item.count}
+                    </span>
                   )}
-                  <p className="font-semibold text-sm" style={{ color: item.color }}>{item.label}</p>
-                  <p className="text-gray-400 text-xs mt-1">{item.desc}</p>
+                  <p className="font-semibold text-sm" style={{ color: item.color }}>
+                    {item.label}
+                  </p>
+                  <p className="text-white/40 text-xs mt-1">{item.desc}</p>
                   {item.link && (
-                    <Link to={item.link} className="text-xs font-semibold mt-2 hover:underline" style={{ color: item.color }}>
+                    <Link
+                      to={item.link}
+                      className="text-xs font-semibold mt-2 hover:underline"
+                      style={{ color: item.color }}
+                    >
                       {isFr ? 'Voir →' : 'View →'}
                     </Link>
                   )}
@@ -216,13 +372,16 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl overflow-x-auto">
+        <div className="flex gap-1 bg-white/5 p-1 rounded-2xl overflow-x-auto border border-white/10">
           {tabs.map((tab) => (
             <button
               key={tab.key}
+              type="button"
               onClick={() => setActiveTab(tab.key)}
               className={`flex-1 min-w-max py-2.5 px-3 rounded-xl text-sm font-semibold transition whitespace-nowrap ${
-                activeTab === tab.key ? 'bg-white text-[#1a3c2e] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                activeTab === tab.key
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  : 'text-white/50 hover:text-white/80'
               }`}
             >
               {tab.label}
@@ -232,10 +391,12 @@ export default function Dashboard() {
 
         {activeTab === 'overview' && (
           <div className="grid md:grid-cols-3 gap-5">
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <h3 className="font-bold text-[#1a3c2e] mb-4">🌾 {isFr ? 'Cultures principales' : 'Main Crops'}</h3>
+            <div className={darkCard.replace('p-6', 'p-5')}>
+              <h3 className="font-bold text-white mb-4">
+                🌾 {isFr ? 'Cultures principales' : 'Main Crops'}
+              </h3>
               {(farmerStats?.byCrop || []).length === 0 ? (
-                <p className="text-gray-400 text-sm">{isFr ? 'Aucune donnée.' : 'No data yet.'}</p>
+                <p className="text-white/40 text-sm">{isFr ? 'Aucune donnée.' : 'No data yet.'}</p>
               ) : (
                 <div className="space-y-2">
                   {(farmerStats?.byCrop || []).map(({ _id: crop, count }) => {
@@ -243,11 +404,16 @@ export default function Dashboard() {
                     return (
                       <div key={crop}>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-700">{CROP_EMOJIS[crop] || '🌾'} {crop}</span>
-                          <span className="font-semibold text-[#1a3c2e]">{count}</span>
+                          <span className="text-white/70">
+                            {CROP_EMOJIS[crop] || '🌾'} {crop}
+                          </span>
+                          <span className="font-semibold text-green-400">{count}</span>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-1.5">
-                          <div className="h-1.5 rounded-full bg-[#1a3c2e] transition-all" style={{ width: `${(count / max) * 100}%` }} />
+                        <div className="w-full bg-white/10 rounded-full h-1.5">
+                          <div
+                            className="h-1.5 rounded-full bg-green-500/70 transition-all"
+                            style={{ width: `${(count / max) * 100}%` }}
+                          />
                         </div>
                       </div>
                     );
@@ -256,20 +422,32 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <h3 className="font-bold text-[#1a3c2e] mb-4">🌍 {isFr ? 'Répartition par pays' : 'Distribution by Country'}</h3>
+            <div className={darkCard.replace('p-6', 'p-5')}>
+              <h3 className="font-bold text-white mb-4">
+                🌍 {isFr ? 'Répartition par pays' : 'Distribution by Country'}
+              </h3>
               {(farmerStats?.byCountry || []).length === 0 ? (
-                <p className="text-gray-400 text-sm">{isFr ? 'Aucune donnée.' : 'No data yet.'}</p>
+                <p className="text-white/40 text-sm">{isFr ? 'Aucune donnée.' : 'No data yet.'}</p>
               ) : (
                 <div className="space-y-2">
                   {(farmerStats?.byCountry || []).map(({ _id: country, count }) => (
-                    <div key={country} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-700">{country || 'Unknown'}</span>
+                    <div
+                      key={country}
+                      className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0"
+                    >
+                      <span className="text-sm text-white/70">{country || 'Unknown'}</span>
                       <div className="flex items-center gap-2">
-                        <div className="w-16 bg-gray-100 rounded-full h-1.5">
-                          <div className="h-1.5 rounded-full bg-[#B5850A]" style={{ width: `${(count / (farmerStats?.byCountry[0]?.count || 1)) * 100}%` }} />
+                        <div className="w-16 bg-white/10 rounded-full h-1.5">
+                          <div
+                            className="h-1.5 rounded-full bg-amber-500/70"
+                            style={{
+                              width: `${(count / (farmerStats?.byCountry[0]?.count || 1)) * 100}%`,
+                            }}
+                          />
                         </div>
-                        <span className="text-xs font-bold text-[#1a3c2e] w-5 text-right">{count}</span>
+                        <span className="text-xs font-bold text-amber-400 w-5 text-right">
+                          {count}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -277,25 +455,56 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <h3 className="font-bold text-[#1a3c2e] mb-4">📊 {isFr ? 'Résumé plateforme' : 'Platform Summary'}</h3>
+            <div className={darkCard.replace('p-6', 'p-5')}>
+              <h3 className="font-bold text-white mb-4">
+                📊 {isFr ? 'Résumé plateforme' : 'Platform Summary'}
+              </h3>
               <div className="space-y-3">
                 {[
-                  { label: isFr ? 'Agriculteurs actifs' : 'Active farmers', value: farmerStats?.active || 0, color: '#1a3c2e' },
-                  { label: isFr ? 'Coopératives actives' : 'Active cooperatives', value: coopStats?.active || 0, color: '#B5850A' },
-                  { label: isFr ? 'En attente paiement' : 'Awaiting payment', value: coopStats?.pending || 0, color: '#f59e0b' },
-                  { label: isFr ? 'Processeurs certifiés' : 'Certified processors', value: processorStats?.certified || 0, color: '#3b82f6' },
-                  { label: isFr ? 'Membres total coopératives' : 'Total cooperative members', value: coopStats?.totalMembers || 0, color: '#059669' },
-                  { label: isFr ? 'Superficie totale (ha)' : 'Total area (ha)', value: `${(farmerStats?.totalArea || 0).toFixed(1)}`, color: '#6d28d9' },
+                  {
+                    label: isFr ? 'Agriculteurs actifs' : 'Active farmers',
+                    value: farmerStats?.active || 0,
+                    color: '#4CAF50',
+                  },
+                  {
+                    label: isFr ? 'Coopératives actives' : 'Active cooperatives',
+                    value: coopStats?.active || 0,
+                    color: '#B5850A',
+                  },
+                  {
+                    label: isFr ? 'En attente paiement' : 'Awaiting payment',
+                    value: coopStats?.pending || 0,
+                    color: '#f59e0b',
+                  },
+                  {
+                    label: isFr ? 'Processeurs certifiés' : 'Certified processors',
+                    value: processorStats?.certified || 0,
+                    color: '#3b82f6',
+                  },
+                  {
+                    label: isFr ? 'Membres total coopératives' : 'Total cooperative members',
+                    value: coopStats?.totalMembers || 0,
+                    color: '#1D9E75',
+                  },
+                  {
+                    label: isFr ? 'Superficie totale (ha)' : 'Total area (ha)',
+                    value: `${(farmerStats?.totalArea || 0).toFixed(1)}`,
+                    color: '#9C27B0',
+                  },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{label}</span>
-                    <span className="font-bold font-mono text-lg" style={{ color }}>{value}</span>
+                    <span className="text-sm text-white/50">{label}</span>
+                    <span className="font-bold font-mono text-lg" style={{ color }}>
+                      {value}
+                    </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <Link to="/afri-yield/opportunities" className="block w-full text-center py-2.5 rounded-xl font-bold text-white text-sm" style={{ background: '#B5850A' }}>
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <Link
+                  to="/afri-yield/opportunities"
+                  className="block w-full text-center py-2.5 rounded-xl font-bold text-black text-sm bg-amber-500 hover:bg-amber-400 transition"
+                >
                   AfriYield Exchange →
                 </Link>
               </div>
@@ -305,62 +514,121 @@ export default function Dashboard() {
 
         {activeTab === 'farmers' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-[#1a3c2e]">👩‍🌾 {isFr ? 'Agriculteurs enregistrés' : 'Registered Farmers'}</h3>
-              <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold" style={{ background: '#1a3c2e' }}>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-xl font-bold text-white">
+                👩‍🌾 {isFr ? 'Agriculteurs enregistrés' : 'Registered Farmers'}
+              </h3>
+              <Link
+                to="/inscription"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-black text-sm font-semibold bg-green-500/90 hover:bg-green-500 transition"
+              >
                 + {isFr ? 'Enregistrer' : 'Register'}
-              </button>
+              </Link>
             </div>
 
             {loading ? (
-              <div className="text-center py-10 text-gray-400">{isFr ? 'Chargement...' : 'Loading...'}</div>
+              <div className="text-center py-10 text-white/50">
+                {isFr ? 'Chargement...' : 'Loading...'}
+              </div>
             ) : filteredFarmers.length === 0 ? (
-              <div className="text-center py-14 bg-white rounded-2xl border border-gray-200">
+              <div className={`text-center py-14 ${darkCard}`}>
                 <div className="text-6xl mb-3">👩‍🌾</div>
-                <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{isFr ? 'Aucun agriculteur enregistré' : 'No farmers registered yet'}</h3>
-                <p className="text-gray-500 text-sm mb-4">{isFr ? 'Les agriculteurs enregistrés apparaîtront ici.' : 'Registered farmers will appear here.'}</p>
-                <button onClick={() => setIsModalOpen(true)} className="px-5 py-2.5 rounded-xl font-bold text-white text-sm" style={{ background: '#1a3c2e' }}>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  {isFr ? 'Aucun agriculteur enregistré' : 'No farmers registered yet'}
+                </h3>
+                <p className="text-white/50 text-sm mb-4">
+                  {isFr
+                    ? 'Les agriculteurs enregistrés apparaîtront ici.'
+                    : 'Registered farmers will appear here.'}
+                </p>
+                <Link
+                  to="/inscription"
+                  className="inline-block px-5 py-2.5 rounded-xl font-bold text-black text-sm bg-green-500"
+                >
                   + {isFr ? 'Enregistrer le premier agriculteur' : 'Register first farmer'}
-                </button>
+                </Link>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className={`overflow-hidden ${darkCard} p-0`}>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-white/5 border-b border-white/10">
                       <tr>
-                        {[isFr ? 'Nom' : 'Name', isFr ? 'Cultures' : 'Crops', isFr ? 'Superficie' : 'Area', isFr ? 'Région' : 'Region', isFr ? 'Coopérative' : 'Cooperative', isFr ? 'Statut' : 'Status'].map((h) => (
-                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                        {[
+                          isFr ? 'Nom' : 'Name',
+                          isFr ? 'Cultures' : 'Crops',
+                          isFr ? 'Superficie' : 'Area',
+                          isFr ? 'Région' : 'Region',
+                          isFr ? 'Coopérative' : 'Cooperative',
+                          isFr ? 'Statut' : 'Status',
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="px-4 py-3 text-left text-xs font-semibold text-white/50 uppercase"
+                          >
+                            {h}
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {filteredFarmers.map((farmer, i3) => (
-                        <tr key={farmer._id || i3} className={`${i3 % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-[#1a3c2e]/5 transition`}>
-                          <td className="px-4 py-3 font-medium text-[#1a3c2e]">{farmer.nom || '—'}</td>
-                          <td className="px-4 py-3 text-gray-600">
+                        <tr
+                          key={farmer._id || i3}
+                          className="border-b border-white/5 hover:bg-white/5 transition"
+                        >
+                          <td className="px-4 py-3 font-medium text-white">
+                            {farmer.nom || '—'}
+                          </td>
+                          <td className="px-4 py-3">
                             <div className="flex flex-wrap gap-1">
-                              {(Array.isArray(farmer.cultures) ? farmer.cultures : [farmer.cultures]).filter(Boolean).slice(0, 3).map((c) => (
-                                <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-[#1a3c2e]/8 text-[#1a3c2e]">
-                                  {CROP_EMOJIS[c] || '🌾'} {c}
-                                </span>
-                              ))}
+                              {(Array.isArray(farmer.cultures)
+                                ? farmer.cultures
+                                : [farmer.cultures]
+                              )
+                                .filter(Boolean)
+                                .slice(0, 3)
+                                .map((c) => (
+                                  <span
+                                    key={c}
+                                    className="text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-400"
+                                  >
+                                    {CROP_EMOJIS[c] || '🌾'} {c}
+                                  </span>
+                                ))}
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-mono text-gray-700">{farmer.superficie ? `${farmer.superficie} ha` : '—'}</td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">{farmer.region || '—'}</td>
+                          <td className="px-4 py-3 font-mono text-white/70">
+                            {farmer.superficie ? `${farmer.superficie} ha` : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-white/60 text-xs">
+                            {farmer.region || '—'}
+                            {farmer.country ? ` · ${farmer.country}` : ''}
+                          </td>
                           <td className="px-4 py-3 text-xs">
                             {farmer.nomCooperative || farmer.lienCooperative === 'oui' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-[#B5850A]/10 text-[#B5850A] font-medium">
+                              <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-medium">
                                 🤝 {farmer.nomCooperative || (isFr ? 'Membre' : 'Member')}
                               </span>
                             ) : (
-                              <span className="text-gray-300">{isFr ? 'Indépendant' : 'Independent'}</span>
+                              <span className="text-white/30">
+                                {isFr ? 'Indépendant' : 'Independent'}
+                              </span>
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${farmer.statut === 'Actif' || farmer.statut === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                              {farmer.statut === 'Actif' ? (isFr ? 'Actif' : 'Active') : (farmer.statut || 'Pending')}
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                farmer.statut === 'Actif' || farmer.statut === 'active'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : 'bg-amber-500/20 text-amber-400'
+                              }`}
+                            >
+                              {farmer.statut === 'Actif'
+                                ? isFr
+                                  ? 'Actif'
+                                  : 'Active'
+                                : farmer.statut || 'Pending'}
                             </span>
                           </td>
                         </tr>
@@ -368,8 +636,10 @@ export default function Dashboard() {
                     </tbody>
                   </table>
                 </div>
-                <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-                  {filteredFarmers.length} {isFr ? 'agriculteur(s) affiché(s)' : 'farmer(s) shown'}{countryFilter && ` · ${countryFilter}`}
+                <div className="px-4 py-3 bg-white/5 border-t border-white/10 text-xs text-white/40">
+                  {filteredFarmers.length}{' '}
+                  {isFr ? 'agriculteur(s) affiché(s)' : 'farmer(s) shown'}
+                  {countryFilter && ` · ${countryFilter}`}
                 </div>
               </div>
             )}
@@ -378,52 +648,85 @@ export default function Dashboard() {
 
         {activeTab === 'cooperatives' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-[#1a3c2e]">🤝 {isFr ? 'Coopératives actives' : 'Active Cooperatives'}</h3>
-              <Link to="/cooperative-registration" className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold" style={{ background: '#B5850A' }}>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-xl font-bold text-white">
+                🤝 {isFr ? 'Coopératives enregistrées' : 'Registered Cooperatives'}
+              </h3>
+              <Link
+                to="/cooperative-registration"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-black text-sm font-semibold"
+                style={{ background: '#B5850A' }}
+              >
                 + {isFr ? 'Inscrire' : 'Register'}
               </Link>
             </div>
 
-            {filteredCoops.length === 0 ? (
-              <div className="text-center py-14 bg-white rounded-2xl border border-gray-200">
+            {loading ? (
+              <div className="text-center py-10 text-white/50">
+                {isFr ? 'Chargement...' : 'Loading...'}
+              </div>
+            ) : filteredCoops.length === 0 ? (
+              <div className={`text-center py-14 ${darkCard}`}>
                 <div className="text-6xl mb-3">🤝</div>
-                <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{isFr ? 'Aucune coopérative active' : 'No active cooperatives yet'}</h3>
-                <p className="text-gray-500 text-sm mb-4">{isFr ? 'Les coopératives actives (paiement confirmé) apparaîtront ici.' : 'Active cooperatives (payment confirmed) will appear here.'}</p>
-                <Link to="/cooperative-registration" className="px-5 py-2.5 rounded-xl font-bold text-white text-sm inline-block" style={{ background: '#B5850A' }}>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  {isFr ? 'Aucune coopérative enregistrée' : 'No cooperatives registered yet'}
+                </h3>
+                <p className="text-white/50 text-sm mb-4">
+                  {isFr
+                    ? 'Les coopératives enregistrées apparaîtront ici.'
+                    : 'Registered cooperatives will appear here.'}
+                </p>
+                <Link
+                  to="/cooperative-registration"
+                  className="inline-block px-5 py-2.5 rounded-xl font-bold text-black text-sm"
+                  style={{ background: '#B5850A' }}
+                >
                   {isFr ? 'Inscrire ma coopérative' : 'Register my cooperative'}
                 </Link>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredCoops.map((coop, i4) => (
-                  <div key={coop._id || i4} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
+                {filteredCoops.map((coop) => (
+                  <div
+                    key={coop._id || coop.cooperativeName}
+                    className="rounded-2xl border border-white/10 bg-gradient-to-br from-amber-900/20 to-amber-950/30 p-4"
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <p className="font-bold text-[#1a3c2e]">{coop.cooperativeName || coop.nomCooperative}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">🌍 {coop.regionCity || coop.region}{coop.regionCity ? ', ' : ''}{coop.country}</p>
+                        <p className="text-white font-semibold text-sm">
+                          {coop.cooperativeName || coop.name || coop.nomCooperative}
+                        </p>
+                        <p className="text-white/50 text-xs mt-0.5">
+                          {coop.country || '—'} · {coop.memberCount || 0}
+                          {isFr ? ' membres' : ' members'}
+                        </p>
                       </div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">✓ {isFr ? 'Active' : 'Active'}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
+                        {coop.certificationStatus || 'Local'}
+                      </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="bg-gray-50 rounded-lg p-2 text-center">
-                        <p className="font-bold text-[#1a3c2e] font-mono">{coop.memberCount || 0}</p>
-                        <p className="text-xs text-gray-400">{isFr ? 'membres' : 'members'}</p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-2 text-center">
-                        <p className="text-xs font-bold text-[#B5850A]">{coop.certificationStatus || 'None'}</p>
-                        <p className="text-xs text-gray-400">{isFr ? 'certification' : 'certification'}</p>
-                      </div>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {(coop.primaryCrops || []).slice(0, 3).map((crop) => (
+                        <span
+                          key={crop}
+                          className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/60"
+                        >
+                          {crop}
+                        </span>
+                      ))}
                     </div>
-                    {(coop.primaryCrops || []).length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {coop.primaryCrops.slice(0, 3).map((crop) => (
-                          <span key={crop} className="text-xs px-2 py-0.5 rounded-full bg-[#1a3c2e]/8 text-[#1a3c2e]">
-                            {CROP_EMOJIS[crop] || '🌾'} {crop}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => loadCoopDetail(coop)}
+                      className="w-full py-2 rounded-xl text-sm font-semibold transition-colors"
+                      style={{
+                        backgroundColor: 'rgba(181,133,10,0.15)',
+                        color: '#B5850A',
+                        border: '1px solid rgba(181,133,10,0.3)',
+                      }}
+                    >
+                      {isFr ? 'Voir les détails →' : 'View Details →'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -433,33 +736,63 @@ export default function Dashboard() {
 
         {activeTab === 'processors' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-[#1a3c2e]">⚙️ {isFr ? 'Centres de transformation' : 'Transformation Centers'}</h3>
-              <button onClick={() => setIsProcessorModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold" style={{ background: '#3b82f6' }}>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-xl font-bold text-white">
+                🏭 {isFr ? 'Centres de transformation' : 'Transformation Centers'}
+              </h3>
+              <Link
+                to="/transformation-registration"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors"
+                style={{
+                  borderColor: '#3b82f6',
+                  color: '#3b82f6',
+                  backgroundColor: 'rgba(59,130,246,0.08)',
+                }}
+              >
                 + {isFr ? 'Enregistrer' : 'Register'}
-              </button>
+              </Link>
             </div>
 
-            {filteredProcessors.length === 0 ? (
-              <div className="text-center py-14 bg-white rounded-2xl border border-gray-200">
-                <div className="text-6xl mb-3">⚙️</div>
-                <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{isFr ? 'Aucun processeur enregistré' : 'No processors registered yet'}</h3>
-                <p className="text-gray-500 text-sm mb-4">{isFr ? 'Les centres de transformation apparaîtront ici.' : 'Transformation centers will appear here.'}</p>
-                <button onClick={() => setIsProcessorModalOpen(true)} className="px-5 py-2.5 rounded-xl font-bold text-white text-sm" style={{ background: '#3b82f6' }}>
+            {loading ? (
+              <div className="text-center py-10 text-white/50">
+                {isFr ? 'Chargement...' : 'Loading...'}
+              </div>
+            ) : filteredProcessors.length === 0 ? (
+              <div className={`text-center py-14 ${darkCard}`}>
+                <div className="text-6xl mb-3">🏭</div>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  {isFr ? 'Aucun transformateur enregistré' : 'No processors registered yet'}
+                </h3>
+                <p className="text-white/50 text-sm mb-4">
+                  {isFr
+                    ? 'Les centres de transformation apparaîtront ici.'
+                    : 'Transformation centers will appear here.'}
+                </p>
+                <Link
+                  to="/transformation-registration"
+                  className="inline-block px-5 py-2.5 rounded-xl font-bold text-sm border border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
+                >
                   {isFr ? 'Enregistrer un centre' : 'Register a center'}
-                </button>
+                </Link>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredProcessors.map((p, i5) => (
-                  <div key={p._id || i5} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
+                  <div
+                    key={p._id || i5}
+                    className="rounded-2xl border border-white/10 bg-gradient-to-br from-blue-900/20 to-blue-950/30 p-5"
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <p className="font-bold text-[#1a3c2e]">{p.nom}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">🌍 {p.region}, {p.country}</p>
+                        <p className="font-bold text-white">{p.nom}</p>
+                        <p className="text-xs text-white/50 mt-0.5">
+                          🌍 {p.region}, {p.country}
+                        </p>
                       </div>
                       {p.certifie && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">⭐ {isFr ? 'Certifié' : 'Certified'}</span>
+                        <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 font-medium">
+                          ⭐ {isFr ? 'Certifié' : 'Certified'}
+                        </span>
                       )}
                     </div>
                     {(p.produitsTransformes || p.typesProduits) && (
@@ -472,15 +805,13 @@ export default function Dashboard() {
                           .filter(Boolean)
                           .slice(0, 3)
                           .map((type) => (
-                            <span key={type} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                            <span
+                              key={type}
+                              className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300"
+                            >
                               {type}
                             </span>
                           ))}
-                        {p.autresTypesProduits && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-[#B5850A] italic">
-                            + {p.autresTypesProduits}
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>
@@ -491,13 +822,81 @@ export default function Dashboard() {
         )}
       </section>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isFr ? 'Enregistrer un agriculteur' : 'Register a farmer'}>
-        <FarmerRegistrationForm onFarmerAdded={() => { setIsModalOpen(false); window.location.reload(); }} />
-      </Modal>
-      <Modal isOpen={isProcessorModalOpen} onClose={() => setIsProcessorModalOpen(false)} title={isFr ? 'Enregistrer un processeur' : 'Register a processor'}>
-        <ProcessorRegistration onProcessorAdded={() => { setIsProcessorModalOpen(false); window.location.reload(); }} />
-      </Modal>
+      {selectedCoop && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setSelectedCoop(null);
+            setCoopDetail(null);
+          }}
+          role="presentation"
+        >
+          <div
+            className="bg-[#0a1f10] rounded-2xl border border-white/15 p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold text-lg">
+                🤝 {isFr ? 'Détails coopérative' : 'Cooperative Details'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCoop(null);
+                  setCoopDetail(null);
+                }}
+                className="text-white/40 hover:text-white text-xl"
+              >
+                ×
+              </button>
+            </div>
+            {coopDetailLoading ? (
+              <div className="text-center py-8 text-white/50">
+                {isFr ? 'Chargement...' : 'Loading...'}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {[
+                  [isFr ? 'Nom' : 'Name', coopDetail?.cooperativeName || selectedCoop.cooperativeName],
+                  [isFr ? 'Pays' : 'Country', coopDetail?.country || selectedCoop.country],
+                  [
+                    isFr ? 'Région' : 'Region',
+                    coopDetail?.regionCity || selectedCoop.regionCity || selectedCoop.region,
+                  ],
+                  [isFr ? 'Responsable' : 'Leader', coopDetail?.leaderName || selectedCoop.leaderName],
+                  [
+                    isFr ? 'Membres' : 'Members',
+                    `${coopDetail?.memberCount ?? selectedCoop.memberCount ?? 0}`,
+                  ],
+                  [
+                    isFr ? 'Cultures' : 'Crops',
+                    (coopDetail?.primaryCrops || selectedCoop.primaryCrops || []).join(', ') ||
+                      '—',
+                  ],
+                  [
+                    isFr ? 'Certification' : 'Certification',
+                    coopDetail?.certificationStatus || selectedCoop.certificationStatus,
+                  ],
+                  [isFr ? 'Email' : 'Email', coopDetail?.email || selectedCoop.email],
+                  [isFr ? 'Téléphone' : 'Phone', coopDetail?.phone || selectedCoop.phone],
+                ]
+                  .filter(([, v]) => v && v !== '—' && v !== 'undefined' && String(v).trim() !== '')
+                  .map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex justify-between text-sm border-b border-white/5 pb-2 gap-4"
+                    >
+                      <span className="text-white/50 shrink-0">{label}</span>
+                      <span className="text-white font-medium text-right max-w-xs">{value}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

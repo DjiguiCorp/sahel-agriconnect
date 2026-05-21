@@ -5,12 +5,26 @@ import { API_ENDPOINTS } from '../config/api';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import { useGeolocation } from '../hooks/useGeolocation';
+import { AFRICAN_COUNTRIES, legacyCountryToAppName } from '../data/africanCountries';
 import {
   DEFAULT_INVESTOR_RESIDENCE,
-  INVESTOR_RESIDENCE_COUNTRIES,
   INVESTOR_RESIDENCE_I18N_KEYS,
-  normalizeInvestorResidence,
 } from '../data/investorResidenceCountries';
+
+const RESIDENCE = [
+  ...AFRICAN_COUNTRIES,
+  'France',
+  'United Kingdom',
+  'United States',
+  'Canada',
+].filter((v, i, a) => a.indexOf(v) === i);
+
+const normalizeCountry = (c) => {
+  if (c === 'USA') return 'United States';
+  if (c === 'UK') return 'United Kingdom';
+  return c;
+};
+
 const RANGES = ['$1,000–$5,000', '$5,000–$25,000', '$25,000–$100,000', '$100,000+'];
 const HEARD = ['Diaspora community', 'Social media', 'Friend or family', 'Event or conference', 'Other'];
 
@@ -40,8 +54,10 @@ export default function InvestorRegistration() {
 
   useEffect(() => {
     if (!detected || !detectedCountry) return;
-    const normalized = normalizeInvestorResidence(detectedCountry);
-    if (!normalized) return;
+    const normalized = normalizeCountry(
+      legacyCountryToAppName(detectedCountry) || detectedCountry
+    );
+    if (!RESIDENCE.some((r) => r.toLowerCase() === String(normalized).toLowerCase())) return;
     setForm((p) => {
       if (p.countryOfResidence && p.countryOfResidence !== DEFAULT_INVESTOR_RESIDENCE) return p;
       return { ...p, countryOfResidence: normalized };
@@ -102,7 +118,7 @@ export default function InvestorRegistration() {
       fullName: form.fullName,
       email: form.email,
       phone: form.phone,
-      countryOfResidence: form.countryOfResidence,
+      countryOfResidence: normalizeCountry(form.countryOfResidence),
       investmentTrack: form.investmentTrack,
       commodityInterest: commodityInterest(),
       investmentRange: form.investmentRange,
@@ -250,7 +266,7 @@ export default function InvestorRegistration() {
                   onChange={onChange}
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-[#B5850A] outline-none bg-white"
                 >
-                  {INVESTOR_RESIDENCE_COUNTRIES.map((c) => (
+                  {RESIDENCE.map((c) => (
                     <option key={c} value={c}>
                       {residenceLabel(c)}
                     </option>
