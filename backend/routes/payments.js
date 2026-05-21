@@ -261,19 +261,6 @@ router.post('/stripe/create-investment-session', async (req, res) => {
       cancel_url:
         process.env.STRIPE_INVESTMENT_CANCEL_URL ||
         `${process.env.FRONTEND_URL}/invest/${opportunityId}?cancelled=true`,
-      // Legal disclaimer shown during checkout
-      custom_text: {
-        submit: {
-          message:
-            'By completing this payment you acknowledge that ' +
-            'AfriYield Exchange is not a licensed broker-dealer, ' +
-            'projected returns are not guaranteed, and agricultural ' +
-            'investments carry risk including loss of capital.',
-        },
-      },
-      consent_collection: {
-        terms_of_service: 'required',
-      },
     });
 
     return res.json({
