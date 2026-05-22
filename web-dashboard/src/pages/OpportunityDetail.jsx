@@ -72,8 +72,8 @@ function projectedReturnLabel(opportunity) {
   const max = opportunity.expectedROIMax;
   if (min != null && max != null) return `~${min}–${max}% proj.`;
   const pct = opportunity.expectedROIPercent;
-  if (pct != null && pct !== '') return `~${pct}% proj.`;
-  return '~8% proj.';
+  if (pct != null && pct !== '' && Number(pct) > 0) return `~${pct}% proj. (not guaranteed)`;
+  return '—';
 }
 
 export default function OpportunityDetail() {
@@ -351,6 +351,23 @@ export default function OpportunityDetail() {
                 </p>
               </div>
             ))}
+          </div>
+
+          <div
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '0.75rem',
+              padding: '0.75rem 1rem',
+              fontSize: '0.75rem',
+              color: 'rgba(255,255,255,0.5)',
+              marginTop: '0.75rem',
+            }}
+          >
+            💡{' '}
+            {isFr
+              ? "5% de frais de facilitation AfriYield s'appliquent au capital déployé. Les rendements projetés sont indicatifs et non garantis."
+              : '5% AfriYield facilitation fee applies to deployed capital. Projected returns are indicative and not guaranteed.'}
           </div>
 
           {fundingTarget > 0 && (

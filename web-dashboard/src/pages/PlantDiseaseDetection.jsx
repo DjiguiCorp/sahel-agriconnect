@@ -606,7 +606,7 @@ export default function PlantDiseaseDetection() {
               </div>
 
               <Link
-                to="/enregistrer-agriculteur"
+                to="/inscription"
                 className="inline-block mt-4 text-sm font-medium text-[#60a5fa] hover:underline"
               >
                 {isFr ? 'Créer un profil agriculteur →' : 'Create a farmer profile →'}

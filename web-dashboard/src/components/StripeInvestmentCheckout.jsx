@@ -83,7 +83,9 @@ export default function StripeInvestmentCheckout({
             [isFr ? 'Montant' : 'Amount', `$${Number(amountUSD).toLocaleString()} USD`],
             [
               isFr ? 'Rendement projeté' : 'Projected return',
-              expectedROI > 0 ? `~${expectedROI}% proj.` : '—',
+              expectedROI > 0
+                ? `~${expectedROI}% proj. (not guaranteed)`
+                : '—',
             ],
             [
               isFr ? 'Mode de paiement' : 'Payment method',

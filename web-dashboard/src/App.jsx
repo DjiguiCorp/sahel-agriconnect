@@ -136,7 +136,6 @@ function App() {
                   <Route path="privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="contact" element={<Contact />} />
                   <Route path="pricing" element={<Pricing />} />
-                  <Route path="producer-pro-registration" element={<ProducerProRegistration />} />
                   <Route path="how-it-works" element={<HowItWorks />} />
                   <Route
                     path="investor-relations"
@@ -218,7 +217,9 @@ function App() {
                       </ApiSection>
                     }
                   />
+                  <Route path="producer-pro-registration" element={<ProducerProRegistration />} />
                   <Route path="transformation-registration" element={<TransformationRegistration />} />
+                  <Route path="ngo-registration" element={<Navigate to="/contact" replace />} />
                   <Route path="farmer-certification" element={<FarmerCertificationProgram />} />
                   <Route
                     path="equipment-fund"

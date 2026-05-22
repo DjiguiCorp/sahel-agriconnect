@@ -111,8 +111,8 @@ export default function InvestmentConfirmation() {
         title: i18n.language === 'fr' ? 'Envoyez vos fonds' : 'Send your funds',
         body:
           i18n.language === 'fr'
-            ? "Transférez le montant convenu par virement bancaire ou Zelle au compte Djigui Corporation. Les détails seront dans votre email."
-            : 'Transfer the agreed amount via bank wire or Zelle to the Djigui Corporation account. Details will be in your email.',
+            ? "Transférez les fonds sur le compte AfriYield Exchange. Les coordonnées bancaires complètes vous seront envoyées par email après confirmation."
+            : 'Transfer funds to the AfriYield Exchange account. Full wire details will be sent to your email after confirmation.',
       },
       {
         number: '04',
@@ -129,7 +129,10 @@ export default function InvestmentConfirmation() {
   const commodity = opportunity?.commodity || '—';
   const track = opportunity?.track || '—';
   const expectedROIPercent = Number(opportunity?.expectedROIPercent ?? 0) || 0;
-  const roiDisplay = expectedROIPercent > 0 ? `~${expectedROIPercent}% proj.` : '—';
+  const roiDisplay =
+    expectedROIPercent > 0
+      ? `~${expectedROIPercent}% proj. (not guaranteed)`
+      : '—';
   const payouts = computeBiAnnualPayouts(form.amount, expectedROIPercent);
 
   const submit = async (e) => {

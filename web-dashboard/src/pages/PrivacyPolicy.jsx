@@ -61,7 +61,7 @@ Data deletion: support@sahelagriconnect.com`,
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-brand-forest text-white">
+    <div className="min-h-screen text-white" style={{ background: 'transparent' }}>
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link to="/" className="text-brand-amber text-sm mb-8 inline-block">
           ← Back to Home

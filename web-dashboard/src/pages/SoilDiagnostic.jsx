@@ -543,7 +543,7 @@ export default function SoilDiagnostic() {
                 {isFr ? (
                   <>
                     Si vous avez déjà un identifiant agriculteur (inscription), collez-le ci-dessous. Sinon{' '}
-                    <Link to="/enregistrer-agriculteur" className="text-[#4CAF50] font-medium underline">
+                    <Link to="/inscription" className="text-[#4CAF50] font-medium underline">
                       créez votre profil
                     </Link>
                     .
@@ -551,7 +551,7 @@ export default function SoilDiagnostic() {
                 ) : (
                   <>
                     If you already have a farmer ID from registration, paste it below. Otherwise{' '}
-                    <Link to="/enregistrer-agriculteur" className="text-[#4CAF50] font-medium underline">
+                    <Link to="/inscription" className="text-[#4CAF50] font-medium underline">
                       create your profile
                     </Link>
                     .

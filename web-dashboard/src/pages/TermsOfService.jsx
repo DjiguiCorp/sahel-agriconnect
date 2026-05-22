@@ -55,7 +55,7 @@ export default function TermsOfService() {
   const isFr = i18n.language === 'fr';
 
   return (
-    <div className="min-h-screen bg-brand-forest text-white">
+    <div className="min-h-screen text-white" style={{ background: 'transparent' }}>
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link to="/" className="text-brand-amber text-sm mb-8 inline-block">
           ← {isFr ? "Retour à l'accueil" : 'Back to Home'}
@@ -151,6 +151,84 @@ export default function TermsOfService() {
             {isFr
               ? 'Pour toute question de conformité: compliance@sahelagriconnect.com'
               : 'For compliance inquiries: compliance@sahelagriconnect.com'}
+          </p>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-brand-amber mb-3">7. Investment Risk Disclosure</h2>
+          <p className="text-white/70 leading-relaxed text-sm mb-3">
+            AfriYield Exchange is an investment facilitation platform, NOT a licensed broker-dealer,
+            investment adviser, or financial institution. All investment opportunities are presented
+            for informational purposes only.
+          </p>
+          <ul className="text-white/70 text-sm space-y-2 list-disc pl-5">
+            <li>
+              Agricultural investments carry substantial risk including potential total loss of
+              invested capital.
+            </li>
+            <li>
+              Projected returns are estimates based on historical cooperative performance and are NOT
+              guaranteed.
+            </li>
+            <li>Past performance does not predict future results.</li>
+            <li>
+              A 5% facilitation fee applies to all capital successfully deployed through AfriYield
+              Exchange.
+            </li>
+            <li>
+              Investors are solely responsible for their own due diligence before committing capital.
+            </li>
+          </ul>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-brand-amber mb-3">
+            8. Regulatory Compliance by Jurisdiction
+          </h2>
+          <ul className="text-white/70 text-sm space-y-2 list-disc pl-5">
+            <li>
+              <strong className="text-white">United States:</strong> Investment opportunities are
+              available only to Accredited Investors as defined under SEC Rule 501 of Regulation D.
+              Non-accredited US investors may not participate.
+            </li>
+            <li>
+              <strong className="text-white">United Kingdom:</strong> Investors must self-certify as
+              High Net Worth, Sophisticated, or Restricted investors per FCA regulations before
+              accessing investment opportunities.
+            </li>
+            <li>
+              <strong className="text-white">France:</strong> Investors acknowledge receipt of risk
+              disclosures required by the Autorité des marchés financiers (AMF).
+            </li>
+            <li>
+              <strong className="text-white">Canada:</strong> Investors must qualify as Accredited
+              Investors under NI 45-106 or as Eligible Investors per applicable provincial securities
+              law.
+            </li>
+            <li>
+              <strong className="text-white">African countries:</strong> Investors are subject to
+              applicable national securities regulations and KYC/AML requirements.
+            </li>
+          </ul>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-brand-amber mb-3">9. KYC / AML Compliance</h2>
+          <p className="text-white/70 leading-relaxed text-sm">
+            All investors must complete identity verification (KYC) before investing. Sahel
+            AgriConnect complies with anti-money laundering (AML) regulations applicable in all
+            operating jurisdictions. Investor identity documents are retained securely for regulatory
+            compliance and are never shared with third parties except as required by law.
+          </p>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-brand-amber mb-3">10. Escrow and Payment</h2>
+          <p className="text-white/70 leading-relaxed text-sm">
+            Investment funds are processed through Stripe (card payments) or wire transfer to AfriYield
+            Exchange accounts held by Djigui Corporation. Funds are held in escrow and released to
+            cooperative partners in verified milestones. Stripe is a licensed payment processor. Djigui
+            Corporation is not a licensed bank or financial institution.
           </p>
         </section>
       </div>
