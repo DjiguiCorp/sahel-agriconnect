@@ -742,10 +742,7 @@
   "language": {
     "select": "Sélectionner la langue",
     "french": "Français",
-    "english": "English",
-    "bambara": "Bamanankan",
-    "moore": "Mòoré",
-    "fulfulde": "Fulfulde"
+    "english": "English"
   },
   "producerDashboard": {
     "title": "Mon tableau de bord producteur",

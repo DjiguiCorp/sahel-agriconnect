@@ -98,8 +98,8 @@ export default function Hero() {
 
         <p className="text-lg md:text-xl text-white/65 max-w-2xl mx-auto mb-4 font-light leading-relaxed">
           {isFr
-            ? 'Agriculteurs, coopératives, investisseurs et gouvernements — connectés sur une seule plateforme souveraine.'
-            : 'Farmers, cooperatives, investors and governments — connected on one sovereign platform.'}
+            ? 'Les coopératives au cœur. Les agriculteurs à la base. Les investisseurs au bout.'
+            : 'Cooperatives at the core. Farmers at the base. Investors at the end.'}
         </p>
 
         <p className="text-base font-semibold mb-12" style={{ color: '#B5850A' }}>

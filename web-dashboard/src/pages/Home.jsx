@@ -134,8 +134,8 @@ const Home = () => {
       icon: '🌐',
       title: isFr ? 'Multilingue' : 'Multilingual',
       desc: isFr
-        ? 'Français, anglais, bambara, fulfulde et mooré — la plateforme parle la langue de vos utilisateurs.'
-        : "French, English, Bambara, Fulfulde, and Mooré — the platform speaks your users' language.",
+        ? 'Français et anglais — la plateforme s\'adapte à vos utilisateurs à travers le Sahel.'
+        : 'French and English — the platform adapts to your users across the Sahel.',
     },
     {
       icon: '📊',

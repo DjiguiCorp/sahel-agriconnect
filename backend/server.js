@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -51,6 +52,18 @@ import { swaggerSpec } from './docs/swagger.js';
 
 // Charger les variables d'environnement
 dotenv.config();
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'production',
+    tracesSampleRate: 0.2,
+    integrations: [
+      Sentry.mongooseIntegration(),
+    ],
+  });
+  console.log('✅ Sentry error tracking initialized');
+}
 
 const app = express();
 const httpServer = createServer(app);
@@ -261,6 +274,9 @@ app.use((req, res) => {
 
 // Gestion des erreurs globales
 app.use((err, req, res, next) => {
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+  }
   console.error('Error:', err);
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',

@@ -69,5 +69,10 @@ const investorSchema = new mongoose.Schema({
   },
 });
 
+investorSchema.index({ email: 1 }, { unique: true });
+investorSchema.index({ countryOfResidence: 1 });
+investorSchema.index({ kycStatus: 1 });
+investorSchema.index({ createdAt: -1 });
+
 const Investor = mongoose.model('Investor', investorSchema);
 export default Investor;

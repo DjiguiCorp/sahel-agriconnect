@@ -17,12 +17,16 @@ const TIERS = [
     name: { en: 'Farmer Basic', fr: 'Agriculteur de base' },
     price: { monthly: 0, annual: 0 },
     badge: null,
-    audience: { en: 'For smallholder farmers', fr: 'Pour les petits agriculteurs' },
+    audience: {
+      en: 'The base of the chain. Free forever.',
+      fr: 'La base de la chaîne. Gratuit pour toujours.',
+    },
     features: {
       en: [
         'Free registration — always',
         'Soil diagnostic & disease detection (AI)',
         'Connect with local cooperatives',
+        'Connect to cooperatives and get recruited',
         'Geolocation-based cooperative discovery',
         'Request to join cooperatives near you',
         'Browse training programs',
@@ -32,6 +36,7 @@ const TIERS = [
         'Inscription gratuite — toujours',
         'Diagnostic sol & détection maladies (IA)',
         'Connexion avec coopératives locales',
+        'Connectez-vous aux coopératives et soyez recruté',
         'Découverte de coopératives par géolocalisation',
         'Demande d\'adhésion aux coopératives proches',
         'Accès aux formations',
@@ -50,7 +55,7 @@ const TIERS = [
     border: 'border-amber-500/30',
     name: { en: 'Producer Pro', fr: 'Producteur Pro' },
     price: { monthly: 29.99, annual: 299 },
-    badge: { en: 'Most Popular', fr: 'Plus populaire' },
+    badge: null,
     audience: { en: 'For serious farmers & exporters', fr: 'Pour agriculteurs & exportateurs' },
     features: {
       en: [
@@ -74,7 +79,7 @@ const TIERS = [
     },
     cta: { en: 'Start Producer Pro', fr: 'Démarrer Producteur Pro' },
     ctaRoute: '/producer-pro-registration',
-    popular: true,
+    popular: false,
   },
   {
     id: 'cooperative',
@@ -85,31 +90,34 @@ const TIERS = [
     name: { en: 'Cooperative', fr: 'Coopérative' },
     price: { monthly: null, annual: 199 },
     annualOnly: true,
-    badge: null,
-    audience: { en: 'For registered cooperatives', fr: 'Pour coopératives enregistrées' },
+    badge: { en: 'Most Popular', fr: 'Plus populaire' },
+    audience: {
+      en: 'The engine — recruit farmers, certify, export',
+      fr: 'Le moteur — recrute les agriculteurs, certifie, exporte',
+    },
     features: {
       en: [
-        'Member farmer management',
-        'Receive & send farmer join requests',
+        'Recruit and manage farmer members',
+        'Aggregate and certify production',
+        'Affiliation with transformation centers',
+        'AfriYield Exchange listing — sell to investors',
         'Equipment fund eligibility',
-        'Certified transformation center matching',
-        'AfriYield Exchange listing visibility',
-        'Cooperative dashboard & analytics',
-        'NGO & investor partnership access',
+        'Receive farmer join requests',
+        'Track A & B investment visibility',
       ],
       fr: [
-        'Gestion des membres agriculteurs',
-        'Recevoir et envoyer des demandes d\'adhésion',
+        'Recruter et gérer les agriculteurs membres',
+        'Agréger et certifier la production',
+        'Affiliation avec centres de transformation',
+        'Référencement AfriYield Exchange — vendre aux investisseurs',
         'Éligibilité au fonds d\'équipement',
-        'Matching avec centres de transformation certifiés',
-        'Visibilité sur AfriYield Exchange',
-        'Tableau de bord coopérative',
-        'Accès partenariats ONG & investisseurs',
+        'Recevoir les demandes d\'adhésion des agriculteurs',
+        'Visibilité investissements Track A & B',
       ],
     },
     cta: { en: 'Register Cooperative', fr: 'Inscrire la coopérative' },
     ctaRoute: '/cooperative-registration',
-    popular: false,
+    popular: true,
   },
   {
     id: 'transformation',
@@ -155,8 +163,8 @@ const TIERS = [
     price: { monthly: 499, annual: 4990 },
     badge: null,
     audience: {
-      en: 'For NGOs, development orgs & industries',
-      fr: 'Pour ONG, organisations de développement & industries'
+      en: 'For NGOs, development orgs & industries. Institutional access — dedicated portal on request',
+      fr: 'Pour ONG, organisations de développement & industries. Accès institutionnel — portail dédié sur demande',
     },
     features: {
       en: [
@@ -179,7 +187,7 @@ const TIERS = [
       ],
     },
     cta: { en: 'Get Started', fr: 'Commencer' },
-    ctaRoute: '/ngo-registration',
+    ctaRoute: '/contact',
     popular: false,
   },
   {
@@ -192,8 +200,8 @@ const TIERS = [
     price: { monthly: 999, annual: 9990 },
     badge: { en: 'Sovereign', fr: 'Souverain' },
     audience: {
-      en: 'For ministries & government agencies',
-      fr: 'Pour ministères & agences gouvernementales'
+      en: 'For ministries & government agencies. Institutional access — dedicated portal on request',
+      fr: 'Pour ministères & agences gouvernementales. Accès institutionnel — portail dédié sur demande',
     },
     features: {
       en: [
@@ -218,7 +226,7 @@ const TIERS = [
       ],
     },
     cta: { en: 'Contact for Licensing', fr: 'Contacter pour licence' },
-    ctaRoute: '/platform-licensing',
+    ctaRoute: '/contact',
     popular: false,
   },
   {
@@ -231,27 +239,27 @@ const TIERS = [
     price: { monthly: 29.99, annual: 299 },
     badge: null,
     audience: {
-      en: 'For diaspora & international investors',
-      fr: 'Pour investisseurs diaspora & internationaux'
+      en: 'Buy certified African commodities OR fund the cooperatives that produce them.',
+      fr: 'Achetez des matières premières africaines certifiées OU financez les coopératives qui les produisent.',
     },
     features: {
       en: [
-        'Browse all investment opportunities',
-        'Track A & Track B investment access',
-        'Projected bi-annual returns (not guaranteed)',
-        'Portfolio dashboard & analytics',
+        'Browse certified cooperative opportunities',
+        'Buy commodities directly (Track B marketplace)',
+        'Fund cooperatives and earn projected returns',
+        'Track A & B investment access',
         'KYC verification included',
-        '5% facilitation fee on capital deployed',
-        'Investor reports & updates',
+        'Portfolio dashboard & payout schedule',
+        '5% facilitation fee on deployed capital only',
       ],
       fr: [
-        'Parcourir toutes les opportunités',
-        'Accès Track A & Track B',
-        'Rendements semestriels projetés (non garantis)',
-        'Tableau de bord portefeuille',
+        'Parcourir les opportunités coopératives certifiées',
+        'Acheter des matières premières (marketplace Track B)',
+        'Financer des coopératives et percevoir des rendements',
+        'Accès investissements Track A & B',
         'Vérification KYC incluse',
-        '5% frais de facilitation sur le capital déployé',
-        'Rapports & mises à jour investisseur',
+        'Tableau de bord portefeuille et calendrier de paiements',
+        '5% frais de facilitation sur le capital déployé uniquement',
       ],
     },
     cta: { en: 'Register as Investor', fr: 'S\'inscrire comme investisseur' },

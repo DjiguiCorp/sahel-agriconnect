@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@sentry/react": "^8.0.0",
     "@hookform/resolvers": "^5.2.2",
     "@stripe/stripe-js": "^9.6.0",
     "@vercel/analytics": "^2.0.1",

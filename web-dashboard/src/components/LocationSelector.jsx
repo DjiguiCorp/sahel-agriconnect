@@ -115,15 +115,12 @@ export default function LocationSelector({
               </option>
             ))}
           </optgroup>
-          <optgroup label={isFr ? '✈️ Diaspora africaine' : '✈️ African Diaspora'}>
-            {[
-              ['France', 'France'],
-              ['United Kingdom', isFr ? 'Royaume-Uni' : 'United Kingdom'],
-              ['United States', isFr ? 'États-Unis' : 'United States'],
-              ['Canada', 'Canada'],
-            ].map(([value, label]) => (
-              <option key={value} value={value}>
-                {flagFor(value)} {label}
+          <optgroup
+            label={isFr ? '✈️ Diaspora & International' : '✈️ Diaspora & International'}
+          >
+            {['United States', 'United Kingdom', 'France', 'Canada'].map((c) => (
+              <option key={c} value={c}>
+                {c}
               </option>
             ))}
           </optgroup>

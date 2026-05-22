@@ -17,7 +17,12 @@ export const AFRICAN_COUNTRIES = [
 ];
 
 // Fast-track diaspora: full KYC required before payment
-export const FAST_TRACK_DIASPORA = ['USA', 'UK', 'France', 'Canada'];
+export const FAST_TRACK_DIASPORA = [
+  'United States',
+  'United Kingdom',
+  'France',
+  'Canada',
+];
 
 export function getCountryCategory(country) {
   if (!country) return 'other';
@@ -25,8 +30,13 @@ export function getCountryCategory(country) {
     c => c.toLowerCase() === country.toLowerCase())) {
     return 'african';
   }
-  if (FAST_TRACK_DIASPORA.some(
-    c => c.toLowerCase() === country.toLowerCase())) {
+  const normalized = country.trim().toLowerCase();
+  if (
+    FAST_TRACK_DIASPORA.some((c) => c.toLowerCase() === normalized)
+    || normalized === 'usa'
+    || normalized === 'us'
+    || normalized === 'uk'
+  ) {
     return 'diaspora';
   }
   return 'other';
@@ -166,6 +176,11 @@ const investorKYCSchema = new mongoose.Schema({
   }],
 
 }, { timestamps: true });
+
+investorKYCSchema.index({ investorEmail: 1 }, { unique: true });
+investorKYCSchema.index({ status: 1 });
+investorKYCSchema.index({ countryCategory: 1, status: 1 });
+investorKYCSchema.index({ submittedAt: -1 });
 
 const InvestorKYC = mongoose.model('InvestorKYC', investorKYCSchema);
 export default InvestorKYC;

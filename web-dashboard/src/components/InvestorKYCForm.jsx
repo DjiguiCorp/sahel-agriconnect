@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
 import { AFRICAN_COUNTRIES } from '../data/africanCountries';
+import { getCountryCategory } from '../hooks/useInvestorKYCStatus';
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 const API = API_BASE_URL.replace(/\/$/, '');
@@ -13,15 +14,6 @@ const KYC_COUNTRIES = [
   'United Kingdom',
   'United States',
   'Canada',
-];
-
-const DIASPORA_COUNTRIES = [
-  'France',
-  'United Kingdom',
-  'United States',
-  'Canada',
-  'UK',
-  'USA',
 ];
 
 const STEP_LABELS_EN = ['Identity', 'Documents', 'Address', 'Finances', 'Legal'];
@@ -49,15 +41,6 @@ const STEP_INTROS = {
     fr: 'Dernière étape — déclarations légales',
   },
 };
-
-function getCategory(country) {
-  if (!country) return 'other';
-  if (AFRICAN_COUNTRIES.some(
-    (c) => c.toLowerCase() === country.toLowerCase())) return 'african';
-  if (DIASPORA_COUNTRIES.some(
-    (c) => c.toLowerCase() === country.toLowerCase())) return 'diaspora';
-  return 'other';
-}
 
 const inputCls =
   'w-full rounded-xl px-3 py-3 text-sm bg-white/5 border border-white/10 outline-none focus:border-[#B5850A] text-[#F5F0E8]';
@@ -201,7 +184,7 @@ export default function InvestorKYCForm({
     digitalSignature: '',
   });
 
-  const category = getCategory(countryOfResidence);
+  const category = getCountryCategory(countryOfResidence);
   const isAfrican = category === 'african';
   const isDiaspora = category === 'diaspora';
 

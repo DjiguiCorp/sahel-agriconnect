@@ -96,4 +96,11 @@ opportunitySchema.virtual('daysRemaining').get(function () {
 opportunitySchema.set('toJSON', { virtuals: true });
 opportunitySchema.set('toObject', { virtuals: true });
 
+opportunitySchema.index({ status: 1 });
+opportunitySchema.index({ country: 1 });
+opportunitySchema.index({ track: 1 });
+opportunitySchema.index({ featured: 1, status: 1 });
+opportunitySchema.index({ closingDate: 1 });
+opportunitySchema.index({ createdAt: -1 });
+
 export default mongoose.model('Opportunity', opportunitySchema);

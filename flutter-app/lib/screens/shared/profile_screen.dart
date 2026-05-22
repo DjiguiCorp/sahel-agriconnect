@@ -164,7 +164,7 @@ class ProfileScreen extends StatelessWidget {
               iconBg: const Color(0xFFFAEEDA),
               iconColor: const Color(0xFF633806),
               title: 'Language',
-              subtitle: 'English · Français · Bambara · Fulani',
+              subtitle: 'English · Français',
               onTap: () => context.push('/profile/language'),
             ),
           ]),
