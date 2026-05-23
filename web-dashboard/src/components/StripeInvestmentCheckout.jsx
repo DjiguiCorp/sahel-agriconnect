@@ -111,9 +111,12 @@ export default function StripeInvestmentCheckout({
 
       <div className="flex items-center gap-2 justify-center flex-wrap">
         <span className="text-white/30 text-xs">
-          {isFr ? 'Méthodes acceptées:' : 'Accepted:'}
+          {isFr ? 'Paiement sécurisé via' : 'Secured by'}
         </span>
-        {['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay'].map((m) => (
+        <span className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded-md font-semibold">
+          Stripe
+        </span>
+        {['Visa', 'Mastercard', 'Amex'].map((m) => (
           <span
             key={m}
             className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded-md"

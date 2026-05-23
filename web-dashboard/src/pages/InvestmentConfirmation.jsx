@@ -333,14 +333,18 @@ export default function InvestmentConfirmation() {
                 id: 'stripe',
                 label:
                   i18n.language === 'fr' ? '💳 Carte bancaire' : '💳 Card payment',
-                sub: 'Visa, MC, Amex, Apple/Google Pay',
+                sub: i18n.language === 'fr'
+                  ? 'Visa, Mastercard, Amex — via Stripe'
+                  : 'Visa, Mastercard, Amex — via Stripe',
                 badge: i18n.language === 'fr' ? 'Recommandé' : 'Recommended',
               },
               {
                 id: 'wire',
                 label:
                   i18n.language === 'fr' ? '🏦 Virement bancaire' : '🏦 Wire transfer',
-                sub: 'WISE, Zelle, SWIFT',
+                sub: i18n.language === 'fr'
+                  ? 'Instructions envoyées par notre équipe sous 24h'
+                  : 'Instructions sent by our team within 24h',
                 badge: null,
               },
             ].map((m) => (

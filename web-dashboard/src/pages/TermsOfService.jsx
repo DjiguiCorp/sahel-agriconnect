@@ -91,8 +91,8 @@ export default function TermsOfService() {
             <p className="text-blue-200 text-sm font-medium">
               💳{' '}
               {isFr
-                ? "Méthodes de paiement acceptées: Virement bancaire international, WISE, Zelle (US uniquement), Mobile Money (Afrique de l'Ouest)"
-                : 'Accepted payment methods: International wire transfer, WISE, Zelle (US only), Mobile Money (West Africa)'}
+                ? 'Méthodes de paiement acceptées : paiement par carte sécurisé via Stripe (Visa, Mastercard, Amex) ; pour les investissements importants, un virement bancaire coordonné par notre équipe peut être arrangé sur demande.'
+                : 'Accepted payment methods: secure card payment via Stripe (Visa, Mastercard, Amex); for larger investments, a wire transfer coordinated directly by our team can be arranged upon request.'}
             </p>
           </div>
         </section>

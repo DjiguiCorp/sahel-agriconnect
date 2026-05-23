@@ -11,11 +11,12 @@ import {
   confirmAfriYieldInvestmentPayment,
   notifyAdminAfriYieldInvestmentPayment,
 } from '../services/emailService.js';
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-01-27.acacia' })
   : null;
 
 function ensureStripeConfigured(res) {
@@ -28,6 +29,15 @@ function ensureStripeConfigured(res) {
   }
   return true;
 }
+
+const checkoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: { success: false, error: 'Too many checkout requests. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip || 'unknown',
+});
 
 const ORANGE_BASE = process.env.ORANGE_BASE_URL || 'https://api.orange.com';
 const MTN_BASE = process.env.MTN_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
@@ -59,7 +69,7 @@ function buildPayoutSchedule({ amountDeployed, expectedROIPercent, deploymentDat
 // ── Stripe: create checkout session ────────────────────────────
 // POST /api/payments/stripe/create-session
 // Body: { email, tierKey, tierName, amountUsd, successUrl, cancelUrl }
-router.post('/stripe/create-session', async (req, res) => {
+router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
   try {
     if (!ensureStripeConfigured(res)) return;
     const {
@@ -368,7 +378,7 @@ router.post('/stripe/webhook', async (req, res) => {
 // POST /api/payments/stripe/create-investment-session
 // Body: { investorEmail, investorName, opportunityId,
 //         opportunityName, amountUSD, expectedROI }
-router.post('/stripe/create-investment-session', async (req, res) => {
+router.post('/stripe/create-investment-session', checkoutLimiter, async (req, res) => {
   try {
     if (!ensureStripeConfigured(res)) return;
 

@@ -188,7 +188,8 @@ app.use('/api/diaspora', diasporaRouter);
 app.use('/api/marketplace', marketplaceRouter);
 app.use('/api/waitlist', waitlistRouter);
 
-// Stripe (subscriptions) + Orange Money + MTN MoMo
+// Payments — Stripe (subscriptions, cooperative memberships, AfriYield investments)
+// Phase 2 stubs: Orange Money, MTN MoMo (see routes/payments.js — require env vars)
 app.use('/api/payments', paymentsRouter);
 app.use('/api/kyc', kycRoutes);
 
