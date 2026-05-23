@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
 import { AFRICAN_COUNTRIES } from '../data/africanCountries';
-import { getCountryCategory } from '../hooks/useInvestorKYCStatus';
+import { getCountryCategory } from '../lib/investorCountryCategory';
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 const API = API_BASE_URL.replace(/\/$/, '');

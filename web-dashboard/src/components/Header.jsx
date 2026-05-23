@@ -125,6 +125,22 @@ const Header = () => {
     setShowJoinMenu(false);
   };
 
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') closeMenu();
+    };
+    if (isMenuOpen) {
+      document.addEventListener('keydown', handleEsc);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
+
   const joinMenuItems = useMemo(() => getJoinMenuItems(isFr), [isFr]);
 
   useEffect(() => {
@@ -436,17 +452,22 @@ const Header = () => {
         </div>
 
         {isMenuOpen && (
-          <div
-            id="mobile-navigation"
-            className="md:hidden border-t border-white/10 py-4 pb-6 animate-fade-up"
-            style={{
-              background: 'rgba(15,34,24,0.95)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-            }}
-            role="navigation"
-            aria-label="Navigation principale"
-          >
+          <>
+            <div
+              className="fixed inset-0 z-30 md:hidden"
+              onClick={closeMenu}
+              aria-hidden="true"
+            />
+            <div
+              id="mobile-navigation"
+              className="md:hidden border-t border-white/10 py-4 pb-6 animate-fade-up relative z-40"
+              style={{
+                background: 'rgba(10,31,16,0.97)',
+                backdropFilter: 'blur(12px)',
+              }}
+              role="navigation"
+              aria-label="Navigation principale"
+            >
             <div className="flex flex-col space-y-1">
               <Link to="/" className={navLinkClass} onClick={closeMenu}>
                 {t('nav.home')}
@@ -559,7 +580,8 @@ const Header = () => {
                 </button>
               ) : null}
             </div>
-          </div>
+            </div>
+          </>
         )}
       </nav>
     </header>

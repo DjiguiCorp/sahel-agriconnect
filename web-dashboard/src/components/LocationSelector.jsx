@@ -127,24 +127,52 @@ export default function LocationSelector({
         </select>
       </div>
 
-      {value.country && regions.length > 0 && (
+      {value.country && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            className="block text-sm font-medium mb-1"
+            style={{ color: 'rgba(255,255,255,0.7)' }}
+          >
             {isFr ? 'Région / Ville' : 'Region / City'}
           </label>
-          <select
-            value={value.region}
-            onChange={(e) => onChange({ ...value, region: e.target.value })}
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-[#B5850A]"
-          >
-            <option value="">{isFr ? 'Sélectionnez une région' : 'Select a region'}</option>
-            {regions.map((r) => (
-              <option key={r} value={r}>
-                {r}
+          {regions.length > 0 ? (
+            <select
+              value={value.region}
+              onChange={(e) => onChange({ ...value, region: e.target.value })}
+              className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: 'white',
+              }}
+            >
+              <option value="">
+                {isFr ? 'Sélectionnez une région' : 'Select a region'}
               </option>
-            ))}
-            <option value="Autre">{isFr ? 'Autre' : 'Other'}</option>
-          </select>
+              {regions.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+              <option value="Autre">{isFr ? 'Autre' : 'Other'}</option>
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={value.region}
+              onChange={(e) => onChange({ ...value, region: e.target.value })}
+              placeholder={
+                isFr
+                  ? 'Ex: Paris, London, New York, Toronto...'
+                  : 'e.g. New York, Paris, London, Toronto...'
+              }
+              className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+              }}
+            />
+          )}
         </div>
       )}
     </div>

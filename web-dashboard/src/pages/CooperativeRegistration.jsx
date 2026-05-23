@@ -674,10 +674,13 @@ export default function CooperativeRegistration() {
                       </span>
                       <span className="font-bold text-teal-400">{t('cooperativeReg.plan.price')}</span>
                     </div>
-                    <p className="text-xs text-white/40 mt-1">
+                    <p
+                      className="text-xs mt-1 font-semibold"
+                      style={{ color: '#B5850A' }}
+                    >
                       {i18n.language === 'fr'
-                        ? 'Aucun paiement requis maintenant — notre équipe vous contactera pour finaliser.'
-                        : 'No payment required now — our team will contact you to finalize.'}
+                        ? "💳 Le paiement de 199$/an sera effectué à l'étape suivante via Stripe."
+                        : '💳 Payment of $199/year will be completed in the next step via Stripe.'}
                     </p>
                   </div>
 
