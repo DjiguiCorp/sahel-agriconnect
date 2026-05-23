@@ -12,7 +12,7 @@ const router = express.Router();
 // GET /api/farmers/public-stats — public summary stats, no auth required
 router.get('/public-stats', async (req, res) => {
   try {
-    const total = await Farmer.countDocuments();
+    const total = await Farmer.countDocuments({ statut: 'Actif' });
     const active = await Farmer.countDocuments({ statut: 'Actif' });
     const totalAreaResult = await Farmer.aggregate([{ $group: { _id: null, total: { $sum: '$superficie' } } }]);
     const totalArea = totalAreaResult[0]?.total || 0;

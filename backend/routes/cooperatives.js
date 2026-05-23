@@ -36,14 +36,24 @@ const authCoop = async (req, res, next) => {
 // GET /api/cooperatives/public-stats — public summary, no auth
 router.get('/public-stats', async (req, res) => {
   try {
-    const total = await CooperativePlatformRegistration.countDocuments();
-    const active = await CooperativePlatformRegistration.countDocuments({ status: 'active' });
-    const pending = await CooperativePlatformRegistration.countDocuments({ status: 'pending_payment' });
+    // total = verified cooperatives only (status: active + payment confirmed)
+    const total = await CooperativePlatformRegistration.countDocuments({
+      status: 'active',
+      paymentReceived: true,
+    });
+    const active = total; // alias kept for backwards compat
+    const pending = await CooperativePlatformRegistration.countDocuments({
+      status: 'pending_payment',
+    });
+    // byCountry: only verified cooperatives feed the country stats
     const byCountry = await CooperativePlatformRegistration.aggregate([
+      { $match: { status: 'active', paymentReceived: true } },
       { $group: { _id: '$country', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]);
+    // totalMembers: only count members from verified cooperatives
     const totalMembers = await CooperativePlatformRegistration.aggregate([
+      { $match: { status: 'active', paymentReceived: true } },
       { $group: { _id: null, total: { $sum: '$memberCount' } } },
     ]);
     const recent = await CooperativePlatformRegistration.find({ status: 'active' })

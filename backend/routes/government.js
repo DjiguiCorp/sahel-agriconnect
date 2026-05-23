@@ -444,7 +444,11 @@ router.get('/dashboard', authGov, async (req, res) => {
       recentProjects,
     ] = await Promise.all([
       Farmer.countDocuments(farmerFilter),
-      CooperativePlatformRegistration.countDocuments(countryFilter),
+      CooperativePlatformRegistration.countDocuments({
+        ...countryFilter,
+        status: 'active',
+        paymentReceived: true,
+      }),
       Processor.countDocuments(countryFilter),
       NationalProject.countDocuments(countryFilter),
       NationalProject.countDocuments({ ...countryFilter, status: 'active' }),

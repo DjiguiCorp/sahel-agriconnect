@@ -56,19 +56,24 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // allCountries: full list for the country filter dropdown
   const allCountries = useMemo(() => {
     const DIASPORA = ['France', 'United Kingdom', 'United States', 'Canada'];
-    const ALL_PLATFORM_COUNTRIES = [...AFRICAN_COUNTRIES, ...DIASPORA];
-    const registeredCountries = [
+    return [...AFRICAN_COUNTRIES, ...DIASPORA].sort((a, b) =>
+      String(a).localeCompare(String(b))
+    );
+  }, []);
+
+  // verifiedCountries: only countries where at least one verified entity exists
+  // This drives the "Pays représentés" stat card — reflects reality, not platform scope
+  const verifiedCountries = useMemo(() => {
+    return [
       ...new Set([
         ...(farmerStats?.byCountry || []).map((c) => c._id),
         ...(coopStats?.byCountry || []).map((c) => c._id),
         ...(processorStats?.byCountry || []).map((c) => c._id),
       ].filter(Boolean)),
     ];
-    return [...new Set([...ALL_PLATFORM_COUNTRIES, ...registeredCountries])].sort((a, b) =>
-      String(a).localeCompare(String(b))
-    );
   }, [farmerStats, coopStats, processorStats]);
 
   const filteredFarmers =
@@ -113,8 +118,8 @@ export default function Dashboard() {
     {
       key: 'cooperatives',
       label: isFr
-        ? `🤝 Coopératives (${coopStats?.total || 0})`
-        : `🤝 Cooperatives (${coopStats?.total || 0})`,
+        ? `🤝 Coopératives (${coopStats?.active || 0})`
+        : `🤝 Cooperatives (${coopStats?.active || 0})`,
     },
     {
       key: 'processors',
@@ -136,7 +141,7 @@ export default function Dashboard() {
     },
     {
       icon: '🤝',
-      value: coopStats?.total || 0,
+      value: coopStats?.active || 0,
       label: isFr ? 'Coopératives' : 'Cooperatives',
       sub: `${coopStats?.active || 0} ${isFr ? 'actives' : 'active'}`,
       color: '#B5850A',
@@ -163,7 +168,7 @@ export default function Dashboard() {
     },
     {
       icon: '🌍',
-      value: allCountries.length,
+      value: verifiedCountries.length,
       label: isFr ? 'Pays représentés' : 'Countries',
       sub: isFr ? 'sur la plateforme' : 'on platform',
       color: '#9C27B0',
@@ -317,7 +322,7 @@ export default function Dashboard() {
               {
                 icon: '🤝',
                 label: isFr ? 'Coopératives' : 'Cooperatives',
-                count: coopStats?.total || 0,
+                count: coopStats?.active || 0,
                 color: '#B5850A',
                 desc: isFr ? 'Agrègent et certifient' : 'Aggregate and certify',
                 link: '/cooperatives',
