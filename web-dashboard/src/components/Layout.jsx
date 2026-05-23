@@ -7,8 +7,17 @@ import SEO from './SEO';
 import CookieConsent from './CookieConsent';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 
+const REGISTRATION_PATHS = [
+  '/cooperative-registration',
+  '/transformation-registration',
+  '/producer-pro-registration',
+  '/inscription',
+  '/afri-yield/register',
+];
+
 const Layout = () => {
   const location = useLocation();
+  const hideFooter = REGISTRATION_PATHS.some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
     captureEvent(AnalyticsEvents.PAGE_VIEW, { path: location.pathname });
@@ -18,10 +27,10 @@ const Layout = () => {
     <div className="min-h-screen flex flex-col">
       <SEO path={location.pathname} />
       <Header />
-      <main className="flex-grow">
+      <main className="flex-grow min-h-0">
         <Outlet />
       </main>
-      <Footer />
+      {!hideFooter && <Footer />}
       <LanguageSettings />
       <CookieConsent />
     </div>

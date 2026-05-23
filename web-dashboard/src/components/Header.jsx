@@ -125,9 +125,21 @@ const Header = () => {
     setShowJoinMenu(false);
   };
 
+  const closeAllNav = () => {
+    closeMenu();
+    setDesktopPlatformOpen(false);
+    setDesktopToolsOpen(false);
+    setShowJoinMenu(false);
+  };
+
+  useEffect(() => {
+    closeAllNav();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') closeMenu();
+      if (e.key === 'Escape') closeAllNav();
     };
     if (isMenuOpen) {
       document.addEventListener('keydown', handleEsc);
@@ -237,13 +249,13 @@ const Header = () => {
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-50">
         <div className="flex items-center justify-between min-h-[4rem] gap-4 lg:gap-6">
-          <Link to="/" className="flex items-center gap-3 shrink-0 min-w-0 max-w-[42%] sm:max-w-none" onClick={closeMenu}>
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0" onClick={closeAllNav}>
             <img
               src="/sahel-logo.png"
               alt="Sahel AgriConnect"
-              className="h-12 w-12 rounded-xl object-cover"
+              className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-cover shrink-0"
             />
-            <span className="text-xl sm:text-2xl font-bold text-white truncate">
+            <span className="hidden sm:inline text-xl lg:text-2xl font-bold text-white truncate max-w-[12rem] lg:max-w-none">
               Sahel AgriConnect
             </span>
           </Link>
@@ -253,7 +265,7 @@ const Header = () => {
             className="hidden lg:flex flex-1 items-center justify-center gap-0.5 xl:gap-1 min-w-0 px-6"
             aria-label={isFr ? 'Navigation principale' : 'Main navigation'}
           >
-            <Link to="/" className={navLinkClass}>
+            <Link to="/" className={navLinkClass} onClick={closeAllNav}>
               {t('nav.home')}
             </Link>
 
@@ -286,7 +298,7 @@ const Header = () => {
                         to={to}
                         role="menuitem"
                         className="block px-4 py-2.5 text-lg text-white/80 hover:bg-white/10 hover:text-white"
-                        onClick={() => setDesktopPlatformOpen(false)}
+                        onClick={closeAllNav}
                       >
                         {label}
                       </Link>
@@ -297,7 +309,7 @@ const Header = () => {
             </div>
 
             {mainNavLinks.map(({ label, path }) => (
-              <Link key={path} to={path} className={navLinkClass}>
+              <Link key={path} to={path} className={navLinkClass} onClick={closeAllNav}>
                 {label}
               </Link>
             ))}
@@ -350,7 +362,7 @@ const Header = () => {
                         key={to}
                         to={to}
                         role="menuitem"
-                        onClick={() => setDesktopToolsOpen(false)}
+                        onClick={closeAllNav}
                         className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/5 group"
                       >
                         <div
@@ -455,7 +467,7 @@ const Header = () => {
           <>
             <div
               className="fixed inset-0 z-30 md:hidden"
-              onClick={closeMenu}
+              onClick={closeAllNav}
               aria-hidden="true"
             />
             <div
@@ -469,7 +481,7 @@ const Header = () => {
               aria-label="Navigation principale"
             >
             <div className="flex flex-col space-y-1">
-              <Link to="/" className={navLinkClass} onClick={closeMenu}>
+              <Link to="/" className={navLinkClass} onClick={closeAllNav}>
                 {t('nav.home')}
               </Link>
 
@@ -493,7 +505,7 @@ const Header = () => {
                         key={to + label}
                         to={to}
                         className="py-2 text-lg text-white/80 hover:text-white"
-                        onClick={closeMenu}
+                        onClick={closeAllNav}
                       >
                         {label}
                       </Link>
@@ -503,7 +515,7 @@ const Header = () => {
               </div>
 
               {mainNavLinks.map(({ label, path }) => (
-                <Link key={path} to={path} className={navLinkClass} onClick={closeMenu}>
+                <Link key={path} to={path} className={navLinkClass} onClick={closeAllNav}>
                   {label}
                 </Link>
               ))}
@@ -530,10 +542,7 @@ const Header = () => {
                       <Link
                         key={to}
                         to={to}
-                        onClick={() => {
-                          setMobileToolsOpen(false);
-                          setIsMenuOpen(false);
-                        }}
+                        onClick={closeAllNav}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
                         style={{ background: 'rgba(255,255,255,0.08)' }}
                       >
@@ -558,7 +567,7 @@ const Header = () => {
               <Link
                 to="/afri-yield"
                 className={`${navLinkClass} text-[#B5850A] font-semibold`}
-                onClick={closeMenu}
+                onClick={closeAllNav}
               >
                 {isFr ? 'Investir' : 'Invest'}
               </Link>
@@ -572,7 +581,7 @@ const Header = () => {
                   type="button"
                   onClick={() => {
                     clearUser();
-                    closeMenu();
+                    closeAllNav();
                   }}
                   className="text-left text-sm text-white/50 hover:text-white/80 transition pt-3"
                 >

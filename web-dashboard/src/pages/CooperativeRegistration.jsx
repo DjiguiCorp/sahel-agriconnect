@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { API_ENDPOINTS } from '../config/api';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
+import { isStripeCheckoutAvailable } from '../lib/stripeCheckout';
 import { Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe, Loader2, Check } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LocationSelector from '../components/LocationSelector';
@@ -27,6 +28,8 @@ const INTEREST_KEYS = ['equipment', 'certification', 'diaspora', 'export'];
 const INTEREST_VALUES = ['Equipment Fund', 'Certification', 'Diaspora Investment', 'Export Program'];
 
 const TOTAL_STEPS = 4;
+const API = API_BASE_URL.replace(/\/$/, '');
+const COOP_PRICE_USD = 199;
 
 const INPUT_CLS =
   'w-full bg-black/30 border border-white/15 text-white placeholder-white/30 focus:border-teal-500/60 focus:outline-none rounded-xl px-4 py-3 text-sm';
@@ -54,7 +57,50 @@ export default function CooperativeRegistration() {
     certifiedTransformationCenter: '',
     openToProcessorAffiliation: false,
   });
-  const [state, setState] = useState({ loading: false, ok: false, err: '' });
+  const [searchParams] = useSearchParams();
+  const [state, setState] = useState({
+    loading: false,
+    ok: false,
+    err: '',
+    paymentPath: null,
+  });
+  const [benefitsOpen, setBenefitsOpen] = useState(false);
+
+  const stripeCheckout = useMemo(
+    () => isStripeCheckoutAvailable(form.country),
+    [form.country]
+  );
+
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    if (payment === 'success') {
+      setState({
+        loading: false,
+        ok: true,
+        err: '',
+        paymentPath: 'stripe',
+      });
+      if (form.email && form.leaderName) {
+        registerCooperative(form.email, form.leaderName);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (payment === 'cancelled') {
+      setState((s) => ({
+        ...s,
+        err: isFr
+          ? 'Paiement annulé. Vous pouvez réessayer à l’étape finale.'
+          : 'Payment cancelled. You can try again on the final step.',
+      }));
+      setStep(4);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [searchParams, form.email, form.leaderName, registerCooperative, isFr]);
+
+  useEffect(() => {
+    if (!state.ok) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [step, state.ok]);
 
   const toggleArrayItem = (key, value) => {
     setForm((p) => {
@@ -72,7 +118,7 @@ export default function CooperativeRegistration() {
 
   const submit = async (e) => {
     e.preventDefault();
-    setState({ loading: true, ok: false, err: '' });
+    setState({ loading: true, ok: false, err: '', paymentPath: null });
     try {
       const r = await fetch(API_ENDPOINTS.COOPERATIVES.REGISTER_PLATFORM, {
         method: 'POST',
@@ -82,22 +128,78 @@ export default function CooperativeRegistration() {
           memberCount: Number(form.memberCount || 0),
         }),
       });
+      const j = await r.json().catch(() => ({}));
       if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
         throw new Error(j?.error || 'Request failed');
       }
+
       if (form.email && form.leaderName) {
-        // Store as cooperative with pending_payment — NOT as farmer
         registerCooperative(form.email, form.leaderName);
       }
-      setState({ loading: false, ok: true, err: '' });
+
+      if (stripeCheckout) {
+        const stripeRes = await fetch(`${API}/api/payments/stripe/create-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email.trim().toLowerCase(),
+            tierKey: 'cooperative',
+            tierName: isFr ? 'Adhésion coopérative' : 'Cooperative Membership',
+            amountUsd: COOP_PRICE_USD,
+            billingInterval: 'year',
+            successUrl: `${window.location.origin}/cooperative-registration?payment=success`,
+            cancelUrl: `${window.location.origin}/cooperative-registration?payment=cancelled`,
+          }),
+        });
+        const stripeData = await stripeRes.json().catch(() => ({}));
+        if (!stripeRes.ok) {
+          throw new Error(stripeData?.error || 'Stripe checkout failed');
+        }
+        if (stripeData.url) {
+          window.location.href = stripeData.url;
+          return;
+        }
+      }
+
+      setState({ loading: false, ok: true, err: '', paymentPath: 'manual' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setState({ loading: false, ok: false, err: err.message || 'Error' });
+      setState({
+        loading: false,
+        ok: false,
+        err: err.message || 'Error',
+        paymentPath: null,
+      });
     }
   };
 
+  const BenefitsPanel = ({ compact = false }) => (
+    <div className={compact ? 'space-y-3' : 'space-y-4'}>
+      {BENEFIT_KEYS.map((key, i) => {
+        const Icon = BENEFIT_ICONS[i];
+        return (
+          <div
+            key={key}
+            className="rounded-xl p-4 border flex gap-3"
+            style={{ background: 'rgba(29,158,117,0.06)', borderColor: 'rgba(29,158,117,0.2)' }}
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#B5850A]/15 flex items-center justify-center shrink-0">
+              <Icon className="w-5 h-5 text-teal-400" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-white">{t(`cooperativeReg.benefits.${key}.title`)}</h3>
+              <p className="mt-1 text-white/55 text-xs leading-relaxed">
+                {t(`cooperativeReg.benefits.${key}.text`)}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div style={{ background: 'transparent' }}>
+    <div style={{ background: 'transparent' }} className="pb-8">
       <section
         className="text-white"
         style={{
@@ -105,43 +207,22 @@ export default function CooperativeRegistration() {
           borderBottom: '1px solid rgba(29,158,117,0.2)',
         }}
       >
-        <div className="section-container py-16 md:py-20">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+        <div className="section-container py-8 md:py-12">
+          <p className="text-teal-400 text-sm font-semibold mb-2">
+            {isFr ? '199$/an · Portail coopérative' : '$199/yr · Cooperative portal'}
+          </p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
             {t('cooperativeReg.hero.title')}
           </h1>
-          <p className="mt-4 text-lg text-white/90 max-w-3xl">
+          <p className="mt-3 text-sm sm:text-base text-white/75 max-w-2xl">
             {t('cooperativeReg.hero.subtitle')}
           </p>
         </div>
       </section>
 
-      {/* Benefits — only before success, step 1 */}
-      {!state.ok && step === 1 && (
-        <section className="section-container py-12 md:py-16">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {BENEFIT_KEYS.map((key, i) => {
-              const Icon = BENEFIT_ICONS[i];
-              return (
-                <div
-                  key={key}
-                  className="rounded-2xl p-6 border"
-                  style={{ background: 'rgba(29,158,117,0.06)', borderColor: 'rgba(29,158,117,0.2)' }}
-                >
-                  <div className="w-12 h-12 rounded-xl bg-[#B5850A]/15 flex items-center justify-center mb-4">
-                    <Icon className="w-6 h-6 text-teal-400" aria-hidden />
-                  </div>
-                  <h3 className="text-xl font-bold text-white">{t(`cooperativeReg.benefits.${key}.title`)}</h3>
-                  <p className="mt-2 text-white/60 text-sm">{t(`cooperativeReg.benefits.${key}.text`)}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Multi-step form */}
-      <section className="section-container pt-0 pb-20">
-        <div className="max-w-2xl mx-auto">
+      <section className="section-container py-6 md:py-10">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10 lg:items-start">
+          <div className="max-w-2xl mx-auto lg:mx-0 w-full min-w-0">
           {/* Progress bar */}
           {!state.ok && (
             <div className="mb-8">
@@ -201,26 +282,46 @@ export default function CooperativeRegistration() {
           {/* SUCCESS STATE */}
           {state.ok ? (
             <div
-              className="rounded-3xl p-8 md:p-12 text-center"
+              className="rounded-3xl p-6 md:p-10 text-center"
               style={{
                 background: 'rgba(29,158,117,0.1)',
                 border: '1px solid rgba(29,158,117,0.3)',
               }}
             >
-              <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl">⏳</span>
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                style={{
+                  background:
+                    state.paymentPath === 'stripe'
+                      ? 'rgba(29,158,117,0.25)'
+                      : 'rgba(245,158,11,0.2)',
+                }}
+              >
+                <span className="text-4xl">
+                  {state.paymentPath === 'stripe' ? '✅' : '⏳'}
+                </span>
               </div>
               <h2 className="text-2xl font-extrabold text-white mb-3">
-                {i18n.language === 'fr'
-                  ? 'Demande reçue — En attente de paiement'
-                  : 'Application received — Awaiting payment'}
+                {state.paymentPath === 'stripe'
+                  ? isFr
+                    ? 'Paiement reçu — Portail en activation'
+                    : 'Payment received — Portal activating'
+                  : isFr
+                    ? 'Inscription reçue — Finalisez le paiement'
+                    : 'Registration received — Complete payment'}
               </h2>
               <p className="text-white/70 mb-6 max-w-md mx-auto text-sm leading-relaxed">
-                {i18n.language === 'fr'
-                  ? 'Votre coopérative est enregistrée. Notre équipe vous contactera dans les 48 heures avec les instructions de paiement. Votre portail sera activé après confirmation du paiement de 199$/an.'
-                  : 'Your cooperative is registered. Our team will contact you within 48 hours with payment instructions. Your portal will be activated after payment confirmation of $199/year.'}
+                {state.paymentPath === 'stripe'
+                  ? isFr
+                    ? 'Merci ! Votre paiement Stripe a été enregistré. Votre portail coopérative sera actif sous 24h.'
+                    : 'Thank you! Your Stripe payment was recorded. Your cooperative portal will be active within 24 hours.'
+                  : isFr
+                    ? 'Votre coopérative est enregistrée. Finalisez le paiement de 199$/an via Orange Money, Wave, MTN ou virement — notre équipe active votre portail après confirmation.'
+                    : 'Your cooperative is registered. Complete the $199/year payment via Orange Money, Wave, MTN, or bank transfer — we activate your portal after confirmation.'}
               </p>
 
+              {state.paymentPath !== 'stripe' && (
+              <>
               <div
                 className="text-left rounded-2xl p-5 mb-6 border"
                 style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
@@ -315,6 +416,18 @@ export default function CooperativeRegistration() {
                   ? "Votre portail reste inactif jusqu'à réception du paiement. Aucune donnée n'est perdue."
                   : 'Your portal remains inactive until payment is received. No data is lost.'}
               </p>
+              </>
+              )}
+
+              {state.paymentPath === 'stripe' && (
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-black text-sm"
+                  style={{ background: '#1D9E75' }}
+                >
+                  {isFr ? 'Retour à l’accueil' : 'Back to home'}
+                </Link>
+              )}
             </div>
           ) : (
             <div
@@ -616,74 +729,6 @@ export default function CooperativeRegistration() {
                     })}
                   </div>
 
-                  {/* Summary card */}
-                  <div
-                    className="rounded-2xl p-5 border"
-                    style={{ background: 'rgba(29,158,117,0.06)', borderColor: 'rgba(29,158,117,0.2)' }}
-                  >
-                    <p className="font-bold text-white mb-3 text-sm">
-                      {i18n.language === 'fr'
-                        ? '📋 Résumé de votre inscription :'
-                        : '📋 Your registration summary:'}
-                    </p>
-                    <div className="grid sm:grid-cols-2 gap-2 text-sm text-white/80">
-                      <p>
-                        <span className="text-white/40">Coopérative:</span>{' '}
-                        <strong className="text-white">{form.cooperativeName}</strong>
-                      </p>
-                      <p>
-                        <span className="text-white/40">
-                          {i18n.language === 'fr' ? 'Responsable:' : 'Leader:'}
-                        </span>{' '}
-                        <strong className="text-white">{form.leaderName}</strong>
-                      </p>
-                      <p>
-                        <span className="text-white/40">
-                          {i18n.language === 'fr' ? 'Pays:' : 'Country:'}
-                        </span>{' '}
-                        <strong className="text-white">{form.country}</strong>
-                      </p>
-                      <p>
-                        <span className="text-white/40">
-                          {i18n.language === 'fr' ? 'Membres:' : 'Members:'}
-                        </span>{' '}
-                        <strong className="text-white">{form.memberCount}</strong>
-                      </p>
-                      {form.primaryCrops.length > 0 && (
-                        <p className="sm:col-span-2">
-                          <span className="text-white/40">
-                            {i18n.language === 'fr' ? 'Cultures:' : 'Crops:'}
-                          </span>{' '}
-                          <strong className="text-white">{form.primaryCrops.join(', ')}</strong>
-                          {form.primaryCrops.includes('Other') && form.autresCrops && (
-                            <span className="text-[#B5850A] italic">
-                              {' '}
-                              (+ {form.autresCrops})
-                            </span>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                    {/* Pricing reminder */}
-                    <div
-                      className="mt-3 pt-3 flex items-center justify-between border-t"
-                      style={{ borderColor: 'rgba(29,158,117,0.2)' }}
-                    >
-                      <span className="text-sm text-white/60">
-                        {i18n.language === 'fr' ? 'Adhésion coopérative:' : 'Cooperative membership:'}
-                      </span>
-                      <span className="font-bold text-teal-400">{t('cooperativeReg.plan.price')}</span>
-                    </div>
-                    <p
-                      className="text-xs mt-1 font-semibold"
-                      style={{ color: '#B5850A' }}
-                    >
-                      {i18n.language === 'fr'
-                        ? "💳 Le paiement de 199$/an sera effectué à l'étape suivante via Stripe."
-                        : '💳 Payment of $199/year will be completed in the next step via Stripe.'}
-                    </p>
-                  </div>
-
                   {state.err && (
                     <p className={ERR_CLS}>
                       {state.err}
@@ -816,6 +861,49 @@ export default function CooperativeRegistration() {
                     </div>
                   </div>
 
+                  <div
+                    className="rounded-2xl p-5 border"
+                    style={{ background: 'rgba(29,158,117,0.06)', borderColor: 'rgba(29,158,117,0.2)' }}
+                  >
+                    <p className="font-bold text-white mb-3 text-sm">
+                      {isFr ? '📋 Résumé' : '📋 Summary'}
+                    </p>
+                    <div className="space-y-2 text-sm text-white/80">
+                      <p>
+                        <span className="text-white/40">{isFr ? 'Coopérative' : 'Cooperative'}:</span>{' '}
+                        <strong className="text-white">{form.cooperativeName}</strong>
+                      </p>
+                      <p>
+                        <span className="text-white/40">{isFr ? 'Pays' : 'Country'}:</span>{' '}
+                        <strong className="text-white">{form.country}</strong>
+                      </p>
+                      {form.interests.length > 0 && (
+                        <p>
+                          <span className="text-white/40">{isFr ? 'Programmes' : 'Programs'}:</span>{' '}
+                          <strong className="text-white">{form.interests.join(', ')}</strong>
+                        </p>
+                      )}
+                    </div>
+                    <div
+                      className="mt-4 pt-4 border-t flex items-center justify-between gap-3"
+                      style={{ borderColor: 'rgba(29,158,117,0.2)' }}
+                    >
+                      <span className="text-sm text-white/60">
+                        {isFr ? 'Adhésion annuelle' : 'Annual membership'}
+                      </span>
+                      <span className="font-bold text-teal-400">{t('cooperativeReg.plan.price')}</span>
+                    </div>
+                    <p className="text-xs mt-3 font-medium" style={{ color: '#B5850A' }}>
+                      {stripeCheckout
+                        ? isFr
+                          ? '💳 Vous serez redirigé vers Stripe pour payer en toute sécurité.'
+                          : '💳 You will be redirected to Stripe to pay securely.'
+                        : isFr
+                          ? '📱 Notre équipe vous contactera pour Orange Money, Wave, MTN ou virement bancaire.'
+                          : '📱 Our team will contact you for Orange Money, Wave, MTN, or bank transfer.'}
+                    </p>
+                  </div>
+
                   {state.err && (
                     <p className={ERR_CLS}>
                       {state.err}
@@ -840,12 +928,46 @@ export default function CooperativeRegistration() {
                         ? isFr
                           ? 'Envoi...'
                           : 'Sending...'
-                        : t('cooperativeReg.form.submit')}
+                        : stripeCheckout
+                          ? isFr
+                            ? 'Payer avec Stripe →'
+                            : 'Pay with Stripe →'
+                          : isFr
+                            ? 'Soumettre et demander le paiement'
+                            : 'Submit and request payment'}
                     </button>
                   </div>
                 </form>
               )}
             </div>
+          )}
+          </div>
+
+          {!state.ok && (
+            <aside className="mt-8 lg:mt-0 lg:sticky lg:top-24">
+              <div className="lg:block hidden">
+                <p className="text-xs font-semibold uppercase tracking-wider text-teal-400 mb-3">
+                  {isFr ? 'Avantages inclus' : 'Included benefits'}
+                </p>
+                <BenefitsPanel />
+              </div>
+              <div className="lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setBenefitsOpen((o) => !o)}
+                  className="w-full flex items-center justify-between rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold text-white/80"
+                  style={{ background: 'rgba(29,158,117,0.08)' }}
+                >
+                  <span>{isFr ? 'Voir les avantages de l’adhésion' : 'See membership benefits'}</span>
+                  <span className="text-teal-400">{benefitsOpen ? '−' : '+'}</span>
+                </button>
+                {benefitsOpen && (
+                  <div className="mt-3">
+                    <BenefitsPanel compact />
+                  </div>
+                )}
+              </div>
+            </aside>
           )}
         </div>
       </section>

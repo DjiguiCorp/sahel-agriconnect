@@ -93,7 +93,11 @@ router.post('/register-platform', async (req, res) => {
       source: 'cooperative_registration',
     }).catch(console.error);
 
-    res.status(201).json({ success: true });
+    res.status(201).json({
+      success: true,
+      cooperativeId: cooperative._id,
+      email: cooperative.email,
+    });
   } catch (error) {
     console.error('Erreur enregistrement coopérative plateforme:', error);
     res.status(400).json({
