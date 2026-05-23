@@ -110,14 +110,18 @@ router.post('/send', async (req, res) => {
       console.log(`[DEV] OTP email ${emailRaw}: ${code}`);
     }
 
-    if (phoneRaw) {
-      console.log(`[DEV] OTP SMS ${phoneRaw}: ${code} (configure SMS provider for production)`);
+    const smsSent = false; // SMS provider not yet configured — set to true when Twilio/Africa's Talking is live
+    if (phoneRaw && !emailRaw) {
+      console.log(`[PENDING SMS] OTP for ${phoneRaw}: ${code} — SMS provider not active. Configure TWILIO_* or AFRICASTALKING_* env vars.`);
     }
 
     res.json({
       success: true,
-      message: 'Verification code sent',
+      message: emailRaw ? 'Verification code sent to email' : 'Account registered — phone verification pending SMS activation',
       isNewUser,
+      smsStatus: phoneRaw && !emailRaw
+        ? (smsSent ? 'sent' : 'pending_provider')
+        : null,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

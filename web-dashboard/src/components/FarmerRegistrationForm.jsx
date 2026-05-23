@@ -57,6 +57,7 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
   const [diseaseDetection, setDiseaseDetection] = useState(null);
   const [landDetection, setLandDetection] = useState(null);
   const [qualityLevel, setQualityLevel] = useState('');
+  const [phoneOnlyRegistration, setPhoneOnlyRegistration] = useState(false);
 
   const availableCultures = [
     'Riz',
@@ -484,7 +485,15 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
       if (email) {
         await sendOtp(email);
       } else {
+        // Phone-only path: SMS not yet live. Register immediately but flag as pending_sms_verify.
+        // The cooperative or admin will verify this farmer during onboarding.
+        await fetch(API_ENDPOINTS.FARMERS.BASE + '/flag-pending-sms', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telephone: formData.telephone, pendingVerification: true }),
+        }).catch(() => {}); // non-blocking — account already saved above
         setSuccess(true);
+        setPhoneOnlyRegistration(true);
         registerUser(formData.telephone, formData.nom);
       }
     } catch (error) {
@@ -597,9 +606,22 @@ const FarmerRegistrationForm = ({ onFarmerAdded }) => {
         )}
 
         {success && !verifyStep && (
-          <div className="mb-6 p-4 bg-green-100 border-l-4 border-green-500 rounded text-green-800">
-            <p className="font-semibold">✅ Agriculteur enregistré avec succès !</p>
-            <p className="text-sm mt-1">Consultez les solutions recommandées ci-dessous.</p>
+          <div className="mb-6 p-4 rounded-xl border" style={{
+            background: phoneOnlyRegistration ? 'rgba(245,158,11,0.08)' : 'rgba(29,158,117,0.1)',
+            borderColor: phoneOnlyRegistration ? 'rgba(245,158,11,0.4)' : 'rgba(29,158,117,0.4)',
+          }}>
+            <p className="font-semibold" style={{ color: phoneOnlyRegistration ? '#B5850A' : '#1D9E75' }}>
+              {phoneOnlyRegistration
+                ? (isFr ? '📱 Compte créé — vérification en attente' : '📱 Account created — verification pending')
+                : '✅ ' + (isFr ? 'Compte créé et vérifié !' : 'Account created and verified!')}
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              {phoneOnlyRegistration
+                ? (isFr
+                    ? 'Votre compte est enregistré. Comme vous n\'avez pas fourni d\'email, la vérification par SMS sera activée prochainement. Votre coopérative ou notre équipe confirmera votre compte. Ajoutez un email dans votre profil pour accélérer la vérification.'
+                    : 'Your account is registered. Since no email was provided, SMS verification will be activated soon. Your cooperative or our team will confirm your account. Adding an email to your profile will speed up verification.')
+                : (isFr ? 'Consultez les solutions recommandées ci-dessous.' : 'See recommended solutions below.')}
+            </p>
           </div>
         )}
 
