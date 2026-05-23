@@ -298,8 +298,8 @@ export default function Pricing() {
       q: isFr ? 'Quels modes de paiement sont acceptés?'
         : 'What payment methods are accepted?',
       a: isFr
-        ? 'Carte bancaire (Visa, Mastercard, Amex), virement WISE, Mobile Money (Orange Money, Wave) et Zelle (USA).'
-        : 'Card (Visa, Mastercard, Amex), WISE transfer, Mobile Money (Orange Money, Wave) and Zelle (USA).',
+        ? 'Paiement sécurisé par carte via Stripe (Visa, Mastercard, Amex).'
+        : 'Secure card payment via Stripe (Visa, Mastercard, Amex).',
     },
     {
       q: isFr ? 'Le gouvernement a-t-il son propre portail?'

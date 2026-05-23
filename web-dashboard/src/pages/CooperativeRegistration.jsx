@@ -43,7 +43,7 @@ export default function CooperativeRegistration() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     cooperativeName: '',
-    country: 'Sénégal',
+    country: 'Senegal',
     regionCity: '',
     memberCount: '',
     primaryCrops: [],
@@ -71,6 +71,10 @@ export default function CooperativeRegistration() {
     [form.country]
   );
 
+  const showStripeSuccess =
+    state.ok && stripeCheckout && state.paymentPath === 'stripe';
+  const showManualSuccess = state.ok && !showStripeSuccess;
+
   useEffect(() => {
     const payment = searchParams.get('payment');
     if (payment === 'success') {
@@ -78,7 +82,7 @@ export default function CooperativeRegistration() {
         loading: false,
         ok: true,
         err: '',
-        paymentPath: 'stripe',
+        paymentPath: stripeCheckout ? 'stripe' : 'manual',
       });
       if (form.email && form.leaderName) {
         registerCooperative(form.email, form.leaderName);
@@ -94,7 +98,7 @@ export default function CooperativeRegistration() {
       setStep(4);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [searchParams, form.email, form.leaderName, registerCooperative, isFr]);
+  }, [searchParams, form.email, form.leaderName, registerCooperative, isFr, stripeCheckout]);
 
   useEffect(() => {
     if (!state.ok) {
@@ -291,18 +295,15 @@ export default function CooperativeRegistration() {
               <div
                 className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
                 style={{
-                  background:
-                    state.paymentPath === 'stripe'
-                      ? 'rgba(29,158,117,0.25)'
-                      : 'rgba(245,158,11,0.2)',
+                  background: showStripeSuccess
+                    ? 'rgba(29,158,117,0.25)'
+                    : 'rgba(245,158,11,0.2)',
                 }}
               >
-                <span className="text-4xl">
-                  {state.paymentPath === 'stripe' ? '✅' : '⏳'}
-                </span>
+                <span className="text-4xl">{showStripeSuccess ? '✅' : '⏳'}</span>
               </div>
               <h2 className="text-2xl font-extrabold text-white mb-3">
-                {state.paymentPath === 'stripe'
+                {showStripeSuccess
                   ? isFr
                     ? 'Paiement reçu — Portail en activation'
                     : 'Payment received — Portal activating'
@@ -311,16 +312,16 @@ export default function CooperativeRegistration() {
                     : 'Registration received — Complete payment'}
               </h2>
               <p className="text-white/70 mb-6 max-w-md mx-auto text-sm leading-relaxed">
-                {state.paymentPath === 'stripe'
+                {showStripeSuccess
                   ? isFr
                     ? 'Merci ! Votre paiement Stripe a été enregistré. Votre portail coopérative sera actif sous 24h.'
                     : 'Thank you! Your Stripe payment was recorded. Your cooperative portal will be active within 24 hours.'
                   : isFr
-                    ? 'Votre coopérative est enregistrée. Finalisez le paiement de 199$/an via Orange Money, Wave, MTN ou virement — notre équipe active votre portail après confirmation.'
-                    : 'Your cooperative is registered. Complete the $199/year payment via Orange Money, Wave, MTN, or bank transfer — we activate your portal after confirmation.'}
+                    ? 'Votre coopérative est enregistrée. Contactez notre équipe pour finaliser le paiement de 199$/an — votre portail sera activé après confirmation.'
+                    : 'Your cooperative is registered. Contact our team to complete the $199/year payment — your portal will be activated after confirmation.'}
               </p>
 
-              {state.paymentPath !== 'stripe' && (
+              {showManualSuccess && (
               <>
               <div
                 className="text-left rounded-2xl p-5 mb-6 border"
@@ -344,8 +345,8 @@ export default function CooperativeRegistration() {
                       title: i18n.language === 'fr' ? 'Paiement — 199$/an' : 'Payment — $199/year',
                       desc:
                         i18n.language === 'fr'
-                          ? 'Virement bancaire, Mobile Money ou Western Union'
-                          : 'Bank transfer, Mobile Money, or Western Union',
+                          ? 'Notre équipe vous envoie les instructions de paiement par email'
+                          : 'Our team sends you payment instructions by email',
                     },
                     {
                       icon: '3️⃣',
@@ -380,23 +381,17 @@ export default function CooperativeRegistration() {
                 style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
               >
                 <p className="font-semibold text-white text-sm mb-2">
-                  💳 {i18n.language === 'fr' ? 'Méthodes de paiement acceptées :' : 'Accepted payment methods:'}
+                  {i18n.language === 'fr'
+                    ? '📧 Paiement manuel (hors Stripe)'
+                    : '📧 Manual payment (outside Stripe)'}
                 </p>
-                <div className="flex flex-wrap gap-2 text-xs text-white/60">
-                  {['Mobile Money (Orange, Wave, MTN)', 'Virement bancaire', 'Western Union', 'MoneyGram'].map(
-                    (m) => (
-                      <span
-                        key={m}
-                        className="px-2 py-1 rounded-lg border"
-                        style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
-                      >
-                        {m}
-                      </span>
-                    )
-                  )}
-                </div>
-                <p className="text-xs text-white/40 mt-2">
-                  {i18n.language === 'fr' ? 'Contactez-nous pour les détails de paiement : ' : 'Contact us for payment details: '}
+                <p className="text-xs text-white/55 leading-relaxed">
+                  {i18n.language === 'fr'
+                    ? 'Les coopératives en Afrique peuvent régler par coordination avec notre équipe. Nous vous enverrons les instructions par email — pas de paiement en ligne sur cette voie.'
+                    : 'Cooperatives in Africa can pay by coordinating with our team. We will email you instructions — no online checkout on this path.'}
+                </p>
+                <p className="text-xs text-white/40 mt-3">
+                  {i18n.language === 'fr' ? 'Contact : ' : 'Contact: '}
                   <a href="mailto:info@djiguicorporation.org" className="text-teal-400 font-semibold hover:underline">
                     info@djiguicorporation.org
                   </a>
@@ -419,7 +414,7 @@ export default function CooperativeRegistration() {
               </>
               )}
 
-              {state.paymentPath === 'stripe' && (
+              {showStripeSuccess && (
                 <Link
                   to="/"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-black text-sm"
@@ -893,16 +888,49 @@ export default function CooperativeRegistration() {
                       </span>
                       <span className="font-bold text-teal-400">{t('cooperativeReg.plan.price')}</span>
                     </div>
-                    <p className="text-xs mt-3 font-medium" style={{ color: '#B5850A' }}>
-                      {stripeCheckout
-                        ? isFr
-                          ? '💳 Vous serez redirigé vers Stripe pour payer en toute sécurité.'
-                          : '💳 You will be redirected to Stripe to pay securely.'
-                        : isFr
-                          ? '📱 Notre équipe vous contactera pour Orange Money, Wave, MTN ou virement bancaire.'
-                          : '📱 Our team will contact you for Orange Money, Wave, MTN, or bank transfer.'}
-                    </p>
                   </div>
+
+                  {stripeCheckout ? (
+                    <div
+                      className="rounded-xl p-4 border text-left"
+                      style={{
+                        background: 'rgba(99,91,255,0.08)',
+                        borderColor: 'rgba(99,91,255,0.25)',
+                      }}
+                    >
+                      <p className="font-semibold text-white text-sm mb-1">
+                        {isFr ? '💳 Paiement en ligne (Stripe)' : '💳 Online payment (Stripe)'}
+                      </p>
+                      <p className="text-xs text-white/55 leading-relaxed">
+                        {isFr
+                          ? 'Après validation, vous serez redirigé vers Stripe pour payer en toute sécurité (Visa, Mastercard, Amex).'
+                          : 'After you submit, you will be redirected to Stripe to pay securely (Visa, Mastercard, Amex).'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div
+                      className="rounded-xl p-4 border text-left"
+                      style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
+                    >
+                      <p className="font-semibold text-white text-sm mb-1">
+                        {isFr ? '📧 Paiement par coordination' : '📧 Coordinated payment'}
+                      </p>
+                      <p className="text-xs text-white/55 leading-relaxed">
+                        {isFr
+                          ? 'Pour les coopératives en Afrique : soumettez ce formulaire, puis notre équipe vous enverra les instructions de paiement par email. Pas de carte bancaire en ligne sur cette voie.'
+                          : 'For cooperatives in Africa: submit this form, then our team will email you payment instructions. No online card checkout on this path.'}
+                      </p>
+                      <p className="text-xs text-white/40 mt-2">
+                        {isFr ? 'Contact : ' : 'Contact: '}
+                        <a
+                          href="mailto:info@djiguicorporation.org"
+                          className="text-teal-400 font-semibold hover:underline"
+                        >
+                          info@djiguicorporation.org
+                        </a>
+                      </p>
+                    </div>
+                  )}
 
                   {state.err && (
                     <p className={ERR_CLS}>
@@ -921,7 +949,11 @@ export default function CooperativeRegistration() {
                     <button
                       type="submit"
                       disabled={state.loading}
-                      className="flex-1 rounded-xl bg-[#B5850A] text-black font-bold py-3.5 hover:bg-[#9a7109] transition disabled:opacity-60 inline-flex items-center justify-center gap-2 text-sm"
+                      className={`flex-1 rounded-xl text-black font-bold py-3.5 transition disabled:opacity-60 inline-flex items-center justify-center gap-2 text-sm ${
+                        stripeCheckout
+                          ? 'bg-[#1D9E75] hover:opacity-90'
+                          : 'bg-[#B5850A] hover:bg-[#9a7109]'
+                      }`}
                     >
                       {state.loading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden /> : null}
                       {state.loading

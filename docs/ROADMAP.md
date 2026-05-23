@@ -15,14 +15,15 @@ Cette roadmap présente le plan de développement de Sahel AgriConnect sur 5 ans
 - ✅ Gestion coopératives opérationnelle
 - ✅ Partenariat diaspora connecté
 - 🔄 Intégration backend complète
-- 🔄 Application mobile Flutter (beta)
+- 🔄 Application mobile Flutter (beta) — **in progress** (scaffold + écrans 6 rôles dans `flutter-app/`)
 
 **Livrables :**
-- [x] Frontend React déployé sur Vercel
+- [x] Frontend React déployé sur Vercel (MVP production)
 - [x] Backend Node.js déployé sur Render.com
 - [x] Base de données MongoDB Atlas configurée
-- [ ] API complète documentée
-- [ ] Application mobile beta
+- [x] Paiements Stripe (Producer Pro, coopérative, investissements AfriYield)
+- [x] Application Flutter scaffoldée (`flutter-app/`, 6 rôles) — publication beta en cours
+- [ ] API complète documentée (OpenAPI)
 
 **Métriques :**
 - 1,000+ agriculteurs enregistrés
@@ -73,6 +74,17 @@ Cette roadmap présente le plan de développement de Sahel AgriConnect sur 5 ans
 ---
 
 ## 📅 Phase 2: Expansion (2027)
+
+### Internationalisation régionale (Phase 2)
+
+**Objectifs :**
+- Étendre l’i18n au-delà de FR/EN pour les utilisateurs sur le terrain
+- Aligner web-dashboard, Flutter et documentation produit
+
+**Livrables :**
+- Fichiers de traduction Bambara, Mooré et Fulfulde (`web-dashboard/src/locales/`)
+- Sélecteurs de langue web et Flutter mis à jour (EN / FR / langues Phase 2)
+- Revue qualité et glossaire agricole partagé pour les trois langues
 
 ### Q1 2027 - Distribution d'Intrants
 
@@ -219,11 +231,13 @@ Cette roadmap présente le plan de développement de Sahel AgriConnect sur 5 ans
 
 ### Phase 1 (2026)
 - ✅ MVP fonctionnel
+- 🔄 Application mobile Flutter (beta) — **in progress**
 - ✅ 10,000+ agriculteurs
 - ✅ Infrastructure stable
 - ✅ Formation utilisateurs
 
 ### Phase 2 (2027)
+- 📅 i18n Bambara, Mooré, Fulfulde (web + Flutter)
 - 📅 Distribution intrants
 - 📅 Accès marchés
 - 📅 Traçabilité complète
@@ -258,21 +272,32 @@ Cette roadmap présente le plan de développement de Sahel AgriConnect sur 5 ans
 
 ---
 
-## 🚀 Prochaines Étapes Immédiates
+## 🚀 Sprints actuels (2026)
 
-### Janvier 2025
-- [ ] Finaliser intégration backend
-- [ ] Lancer application mobile beta
-- [ ] Programme pilote 3 régions
-- [ ] Formation première cohorte
+### Acquis — Q1 2026 ✅
 
-### Février-Mars 2025
-- [ ] Expansion à 10 régions
-- [ ] Intégration ministères
-- [ ] Partenariats fournisseurs
-- [ ] Optimisation performance
+- ✅ **MVP déployé** — web-dashboard (Vercel), API (Render), MongoDB Atlas
+- ✅ **Flutter scaffoldé** — `flutter-app/` avec écrans pour les 6 rôles (beta en cours de publication)
+- ✅ **Stripe intégré** — checkout web (Producer Pro, adhésion coopérative $199/an, investissements AfriYield)
+
+### Q2 2026 — Stabilisation (avril–juin)
+
+- [ ] Publier l’application Flutter en beta (TestFlight / Play Console)
+- [ ] Finaliser documentation API (Swagger / OpenAPI)
+- [ ] Tests automatisés sur parcours critiques (auth, paiements, enregistrements)
+- [ ] Programme pilote — 3 régions (Mali, Burkina Faso, Niger)
+- [ ] Formation première cohorte (coopératives, agents terrain)
+- [ ] Correction bugs production et UX mobile (web + Flutter)
+
+### Q3 2026 — Expansion initiale (juillet–septembre)
+
+- [ ] Extension du pilote à 10 régions
+- [ ] Intégration APIs ministères (portail gouvernemental)
+- [ ] Partenariats fournisseurs d’intrants
+- [ ] Optimisation performance et observabilité (Sentry, métriques)
+- [ ] Préparation offline-first PWA + SMS fallback (voir Phase 2 architecture)
 
 ---
 
-*Dernière mise à jour : Décembre 2024*
+*Dernière mise à jour : Mai 2026*
 

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/auth_state.dart';
+import '../core/feature_flags.dart';
 import '../core/glass.dart';
 import '../core/language_provider.dart';
 import '../core/theme.dart';
@@ -1277,55 +1278,54 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search_rounded, color: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        lp.t('Search coming soon', 'Recherche bientôt'),
+            actions: FeatureFlags.exploreSearchEnabled
+                ? [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.search_rounded,
+                        color: Colors.white,
                       ),
-                      behavior: SnackBarBehavior.floating,
+                      onPressed: () {
+                        // Search UI ships when FeatureFlags.exploreSearchEnabled is true.
+                      },
                     ),
-                  );
-                },
-              ),
-            ],
+                  ]
+                : null,
           ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            sliver: SliverToBoxAdapter(
-              child: TextField(
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                cursorColor: AppColors.gold,
-                decoration: InputDecoration(
-                  hintText: lp.t(
-                    'Search crops, regions, cooperatives…',
-                    'Rechercher cultures, régions, coopératives…',
-                  ),
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.35),
-                    fontSize: 13,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: Colors.white.withValues(alpha: 0.45),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.06),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 14,
+          if (FeatureFlags.exploreSearchEnabled)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: TextField(
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  cursorColor: AppColors.gold,
+                  decoration: InputDecoration(
+                    hintText: lp.t(
+                      'Search crops, regions, cooperatives…',
+                      'Rechercher cultures, régions, coopératives…',
+                    ),
+                    hintStyle: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      fontSize: 13,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: Colors.white.withValues(alpha: 0.45),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.06),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           SliverToBoxAdapter(
             child: SizedBox(
               height: 72,

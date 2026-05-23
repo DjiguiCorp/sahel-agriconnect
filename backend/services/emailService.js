@@ -353,6 +353,81 @@ export async function confirmInvestorRegistration(investor) {
   });
 }
 
+export async function confirmAfriYieldInvestmentPayment({
+  investorEmail,
+  investorName,
+  opportunityName,
+  amountUSD,
+}) {
+  const resend = getResend();
+  if (!resend || !investorEmail) return;
+  const amt = Number(amountUSD) || 0;
+  const portal =
+    process.env.FRONTEND_URL || 'https://afriyieldexchange.com';
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: investorEmail,
+    subject: `AfriYield Exchange — Investment confirmed ($${amt.toLocaleString()} USD)`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;">
+          <h1 style="color:#B5850A;margin:0;font-size:20px;">Investment confirmed</h1>
+        </div>
+        <div style="padding:24px;background:#f9f9f9;border:1px solid #e0e0e0;">
+          <p style="color:#333;">Hello <strong>${investorName || 'Investor'}</strong>,</p>
+          <p style="color:#555;">Your payment via Stripe has been received and your investment is now recorded on AfriYield Exchange.</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;width:40%;">Opportunity</td><td style="padding:8px 0;color:#555;">${opportunityName || '—'}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Amount</td><td style="padding:8px 0;color:#1a3c2e;font-weight:bold;">$${amt.toLocaleString()} USD</td></tr>
+          </table>
+          <p style="color:#555;font-size:14px;">Projected returns are not guaranteed. You can track your investment in your investor dashboard.</p>
+          <div style="margin-top:20px;text-align:center;">
+            <a href="${portal}/investor/dashboard?email=${encodeURIComponent(investorEmail)}" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">View dashboard →</a>
+          </div>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function notifyAdminAfriYieldInvestmentPayment({
+  investorEmail,
+  investorName,
+  opportunityName,
+  opportunityId,
+  amountUSD,
+  stripeSessionId,
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const amt = Number(amountUSD) || 0;
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: ADMIN_EMAIL,
+    subject: `💰 AfriYield investment paid — $${amt.toLocaleString()} | ${opportunityName || opportunityId}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;">
+          <h1 style="color:#B5850A;margin:0;font-size:20px;">AfriYield Stripe investment</h1>
+          <p style="color:white;margin:8px 0 0;font-size:14px;">Payment recorded in MongoDB</p>
+        </div>
+        <div style="padding:24px;background:#f9f9f9;border:1px solid #e0e0e0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;width:40%;">Investor</td><td style="padding:8px 0;color:#555;">${investorName || '—'}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Email</td><td style="padding:8px 0;color:#555;">${investorEmail}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Opportunity</td><td style="padding:8px 0;color:#555;">${opportunityName || '—'}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Amount</td><td style="padding:8px 0;color:#1a3c2e;font-weight:bold;font-size:16px;">$${amt.toLocaleString()} USD</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Stripe session</td><td style="padding:8px 0;color:#555;font-size:12px;">${stripeSessionId || '—'}</td></tr>
+          </table>
+          <div style="margin-top:20px;">
+            <a href="${process.env.FRONTEND_URL || ''}/admin/central" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Open admin dashboard</a>
+          </div>
+        </div>
+      </div>
+    `,
+  });
+}
+
 export async function confirmCooperativeRegistration(cooperative) {
   const resend = getResend();
   if (!resend) return;

@@ -556,16 +556,17 @@ export default function ProducerProRegistration() {
 
               <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                 <p className="text-white/60 text-xs font-semibold mb-2">
-                  {isFr ? '💳 Méthodes de paiement acceptées:' : '💳 Accepted payment methods:'}
+                  {isFr ? '💳 Paiement sécurisé' : '💳 Secure payment'}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay', 'Orange Money', 'Wave', 'Zelle'].map(
-                    (m) => (
-                      <span key={m} className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded-md">
-                        {m}
-                      </span>
-                    )
-                  )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold bg-[#635BFF]/25 text-[#a5a0ff] px-2.5 py-1 rounded-md border border-[#635BFF]/40">
+                    Stripe
+                  </span>
+                  {['Visa', 'Mastercard', 'Amex'].map((m) => (
+                    <span key={m} className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded-md">
+                      {m}
+                    </span>
+                  ))}
                 </div>
                 <p className="text-white/30 text-xs mt-2">
                   🔒{' '}

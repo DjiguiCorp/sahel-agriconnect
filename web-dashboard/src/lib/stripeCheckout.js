@@ -1,8 +1,14 @@
-import { AFRICAN_COUNTRIES } from '../data/africanCountries';
+import { AFRICAN_COUNTRIES, legacyCountryToAppName } from '../data/africanCountries';
 
-/** Card checkout via Stripe — diaspora / international. West Africa uses mobile money. */
-export function isStripeCheckoutAvailable(country) {
+function isAfricanCountry(country) {
   if (!country || !String(country).trim()) return false;
-  const normalized = String(country).trim().toLowerCase();
-  return !AFRICAN_COUNTRIES.some((c) => c.toLowerCase() === normalized);
+  const raw = String(country).trim();
+  const canonical = legacyCountryToAppName(raw) || raw;
+  const candidates = [raw, canonical].map((c) => c.toLowerCase());
+  return AFRICAN_COUNTRIES.some((c) => candidates.includes(c.toLowerCase()));
+}
+
+/** Card checkout via Stripe — diaspora / international. African countries use manual coordination. */
+export function isStripeCheckoutAvailable(country) {
+  return !isAfricanCountry(country);
 }

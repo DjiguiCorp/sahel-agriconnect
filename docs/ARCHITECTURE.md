@@ -2,7 +2,7 @@
 
 ## Vue d'Ensemble
 
-Sahel AgriConnect est une application full-stack moderne construite avec React (frontend) et Node.js (backend), déployée sur Vercel et Render.com.
+Sahel AgriConnect est une application full-stack moderne : **React** (web-dashboard), **Flutter** (flutter-app — iOS/Android, six rôles), et **Node.js** (backend), déployée sur Vercel (web), stores/app builds (mobile), et Render.com (API).
 
 ---
 
@@ -10,15 +10,16 @@ Sahel AgriConnect est une application full-stack moderne construite avec React (
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        CLIENT                                │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  React Frontend (Vercel)                              │  │
-│  │  - Pages: Home, Dashboard, Admin, etc.                │  │
-│  │  - Components: Forms, Tables, Charts                  │  │
-│  │  - Context: Auth, WebSocket                            │  │
-│  │  - i18n: FR, EN, Bambara, Mooré, Fulfulde            │  │
-│  └───────────────────┬──────────────────────────────────┘  │
-└───────────────────────┼─────────────────────────────────────┘
+│                        CLIENTS                               │
+│  ┌────────────────────────┐ ┌────────────────────────────┐ │
+│  │ React (web-dashboard)   │ │ Flutter (flutter-app)      │ │
+│  │ Vercel — web + admin    │ │ iOS/Android — 6 role flows │ │
+│  │ i18n: FR, EN            │ │ i18n: FR, EN               │ │
+│  └───────────┬────────────┘ └─────────────┬──────────────┘ │
+└──────────────┼────────────────────────────┼────────────────┘
+               │                            │
+               └────────────┬───────────────┘
+                            │
                         │
                         │ HTTPS/REST API
                         │ WebSocket (Socket.io)
@@ -48,11 +49,13 @@ Sahel AgriConnect est une application full-stack moderne construite avec React (
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Internationalisation (i18n)** — Production scope today is **Français (FR)** and **English (EN)** only (`web-dashboard/src/locales/en.json`, `fr.json`; language selectors on web and Flutter expose EN/FR). Additional languages (Bambara, Mooré, Fulfulde) are planned for Phase 2 (see `ROADMAP.md`).
+
 ---
 
-## Stack Technologique
+## Stack Technologique (actuel)
 
-### Frontend
+### Web — `web-dashboard/`
 
 | Technologie | Version | Usage |
 |------------|---------|-------|
@@ -62,6 +65,18 @@ Sahel AgriConnect est une application full-stack moderne construite avec React (
 | React Router | 6+ | Routing |
 | i18next | 23+ | Internationalization |
 | Socket.io Client | 4+ | WebSocket |
+
+### Mobile — `flutter-app/` (en production / beta)
+
+| Technologie | Version | Usage |
+|------------|---------|-------|
+| Flutter | 3+ | UI native iOS & Android |
+| Dart | 3+ | Langage application |
+| go_router | 13+ | Navigation |
+| Provider | 6+ | State management |
+| dio | 5+ | Client HTTP REST |
+
+Écrans en place pour les six rôles (agriculteur, coopérative, investisseur, gouvernement, ONG, transformation) ; même API backend que le web.
 
 ### Backend
 
@@ -108,16 +123,27 @@ web-dashboard/
 │   ├── config/             # Configuration
 │   │   ├── api.js          # Endpoints API
 │   │   └── ...
-│   ├── locales/            # Traductions i18n
+│   ├── locales/            # i18n — FR + EN (Phase 1)
 │   │   ├── fr.json
-│   │   ├── en.json
-│   │   └── ...
+│   │   └── en.json
 │   ├── data/               # Données mockées
 │   ├── App.jsx             # Composant racine
 │   └── main.jsx            # Point d'entrée
 ├── public/                 # Assets statiques
 ├── package.json
 └── vite.config.js
+```
+
+### Mobile (`flutter-app/`)
+
+```
+flutter-app/
+├── lib/
+│   ├── core/               # Router, thème, auth, i18n
+│   ├── screens/            # Flux par rôle (farmer, coop, investor, …)
+│   └── widgets/
+├── pubspec.yaml
+└── …
 ```
 
 ### Backend (`backend/`)
@@ -296,8 +322,10 @@ User          Frontend        Backend         MongoDB
 
 - **Blockchain** : Traçabilité immuable (optionnel)
 - **IA/ML** : Recommandations personnalisées
-- **Mobile App** : Flutter application native
-- **Offline Support** : Service Workers + IndexedDB
+- **Offline-first PWA** : Web dashboard utilisable hors ligne (Service Workers, cache, file d’attente de sync)
+- **SMS / USSD fallback** : Parcours légers pour agriculteurs à faible connectivité (alertes, statuts, rappels — sans dépendre du smartphone)
+
+> **Note :** L’application **Flutter** (`flutter-app/`) fait partie du stack **actuel** (beta Q1 2026), pas de la Phase 2.
 
 ### Phase 3 (2028+)
 
@@ -308,5 +336,5 @@ User          Frontend        Backend         MongoDB
 
 ---
 
-*Dernière mise à jour : Décembre 2024*
+*Dernière mise à jour : Mai 2026*
 

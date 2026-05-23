@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, BUILD_VERSION } from '../config/api';
-import { AlertTriangle, Search, Lightbulb } from 'lucide-react';
+import { AlertTriangle, Search } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -18,7 +18,6 @@ const AdminLogin = () => {
   const envApiUrl = import.meta.env.VITE_API_BASE_URL;
   const isPlaceholder = envApiUrl?.includes('votre-backend') || envApiUrl?.includes('placeholder');
   const hasEnvVar = !!envApiUrl && !isPlaceholder;
-  const isProduction = import.meta.env.PROD;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,7 +60,7 @@ const AdminLogin = () => {
           </div>
 
           {/* Configuration Warning - Only show if there's an issue */}
-          {(isPlaceholder || (!hasEnvVar && isProduction)) && (
+          {(isPlaceholder || (!hasEnvVar && import.meta.env.PROD)) && (
             <div className="mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 rounded text-yellow-800">
               <p className="font-semibold mb-2 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 shrink-0" aria-hidden />
@@ -91,12 +90,11 @@ const AdminLogin = () => {
             </div>
           )}
 
-          {/* Debug Info - Only in production when there's an issue */}
-          {isProduction && (isPlaceholder || !hasEnvVar) && (
+          {import.meta.env.DEV && (isPlaceholder || !hasEnvVar) && (
             <div className="mb-6 p-3 bg-gray-50 border rounded text-xs">
               <p className="font-semibold mb-2 flex items-center gap-2">
                 <Search className="w-4 h-4 shrink-0" aria-hidden />
-                Informations de débogage
+                Informations de débogage (dev)
               </p>
               <div className="space-y-1 font-mono">
                 <p><strong>Build Version:</strong> {BUILD_VERSION}</p>

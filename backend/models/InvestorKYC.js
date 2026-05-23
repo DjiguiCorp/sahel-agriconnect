@@ -177,7 +177,6 @@ const investorKYCSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-investorKYCSchema.index({ investorEmail: 1 }, { unique: true });
 investorKYCSchema.index({ status: 1 });
 investorKYCSchema.index({ countryCategory: 1, status: 1 });
 investorKYCSchema.index({ submittedAt: -1 });

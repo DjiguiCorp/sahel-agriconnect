@@ -1,7 +1,16 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Stripe from 'stripe';
 import PremiumSubscription from '../models/PremiumSubscription.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import Investment from '../models/Investment.js';
+import Opportunity from '../models/Opportunity.js';
+import Investor from '../models/Investor.js';
+import PendingNotification from '../models/PendingNotification.js';
+import {
+  confirmAfriYieldInvestmentPayment,
+  notifyAdminAfriYieldInvestmentPayment,
+} from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -23,6 +32,29 @@ function ensureStripeConfigured(res) {
 const ORANGE_BASE = process.env.ORANGE_BASE_URL || 'https://api.orange.com';
 const MTN_BASE = process.env.MTN_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
 const MTN_ENV = process.env.MTN_ENVIRONMENT || 'sandbox';
+
+function addMonths(date, months) {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function round2(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return 0;
+  return Math.round(v * 100) / 100;
+}
+
+function buildPayoutSchedule({ amountDeployed, expectedROIPercent, deploymentDate }) {
+  const principal = Number(amountDeployed) || 0;
+  const roi = Number(expectedROIPercent) || 0;
+  const perHalf = (principal * (roi / 100)) / 2;
+  const base = deploymentDate ? new Date(deploymentDate) : new Date();
+  return [
+    { payoutDate: addMonths(base, 6), amount: round2(perHalf), status: 'scheduled', notes: '' },
+    { payoutDate: addMonths(base, 12), amount: round2(perHalf), status: 'scheduled', notes: '' },
+  ];
+}
 
 // ── Stripe: create checkout session ────────────────────────────
 // POST /api/payments/stripe/create-session
@@ -153,36 +185,123 @@ router.post('/stripe/webhook', async (req, res) => {
           investorName,
         } = session.metadata || {};
 
-        // Save investment record to database
-        // Import Investment model at top of file:
-        // import Investment from '../models/Investment.js';
-        //
-        // await Investment.create({
-        //   investorEmail: investorEmail || email,
-        //   investorName,
-        //   opportunityId,
-        //   opportunityName,
-        //   amountDeployedUSD: Number(amountUSD),
-        //   status: 'active',
-        //   paymentMethod: 'stripe',
-        //   stripeSessionId: session.id,
-        //   stripePaymentIntentId: session.payment_intent,
-        //   paidAt: new Date(),
-        // });
+        const investorEmailLower = String(investorEmail || email || '')
+          .trim()
+          .toLowerCase();
+        const amountDeployed =
+          Number(amountUSD) || (session.amount_total || 0) / 100;
+        const oppId =
+          opportunityId && mongoose.Types.ObjectId.isValid(opportunityId)
+            ? opportunityId
+            : null;
+        const opp = oppId ? await Opportunity.findById(oppId).lean() : null;
+        const investor = investorEmailLower
+          ? await Investor.findOne({ email: investorEmailLower }).lean()
+          : null;
+        const track = ['Track A', 'Track B'].includes(opp?.track)
+          ? opp.track
+          : 'Track B';
+        const expectedROIPercent =
+          Number(session.metadata?.expectedROI) ||
+          Number(opp?.expectedROIMin) ||
+          8;
+        const deploymentDate = new Date();
+        const adminNotes = [
+          `stripeSessionId=${session.id}`,
+          `stripePaymentIntent=${session.payment_intent || ''}`,
+          'paymentMethod=stripe',
+        ].join('; ');
 
-        // For now, log it (replace with DB save when Investment model is ready)
-        console.log('✅ AfriYield investment payment received:', {
-          email: investorEmail || email,
-          opportunityId,
-          amount: amountUSD,
-          sessionId: session.id,
+        let investment = await Investment.findOne({
+          adminNotes: { $regex: session.id },
         });
+        let investmentCreated = false;
+
+        if (!investment && investorEmailLower && amountDeployed > 0 && oppId) {
+          investment = await Investment.create({
+            investorId: investor?._id,
+            investorName: investorName || investor?.fullName || '',
+            investorEmail: investorEmailLower,
+            opportunityId: opp._id,
+            opportunityName: opportunityName || opp?.centerName || '',
+            track,
+            commodity: opp?.commodity || '',
+            amountDeployed,
+            currency: 'USD',
+            deploymentDate,
+            expectedROIPercent,
+            payoutSchedule: buildPayoutSchedule({
+              amountDeployed,
+              expectedROIPercent,
+              deploymentDate,
+            }),
+            status: 'active',
+            adminNotes,
+          });
+          investmentCreated = true;
+          console.log('✅ AfriYield investment saved:', {
+            id: investment._id,
+            email: investorEmailLower,
+            opportunityId: oppId,
+            amount: amountDeployed,
+            sessionId: session.id,
+          });
+        } else if (investment) {
+          console.log('AfriYield investment already recorded:', session.id);
+        }
+
+        if (investmentCreated && investment && opp) {
+          const updatedOpp = await Opportunity.findByIdAndUpdate(
+            opp._id,
+            {
+              $inc: { amountRaised: amountDeployed },
+              $set: { updatedAt: new Date() },
+            },
+            { new: true }
+          );
+          if (
+            updatedOpp &&
+            updatedOpp.amountSought > 0 &&
+            updatedOpp.amountRaised >= updatedOpp.amountSought
+          ) {
+            await Opportunity.findByIdAndUpdate(opp._id, { status: 'funded' });
+          }
+        }
+
+        if (investmentCreated && investment) {
+          await PendingNotification.create({
+            recipientName: 'Admin',
+            recipientEmail: process.env.ADMIN_EMAIL || 'contact@djiguicorporation.org',
+            message:
+              `✅ AfriYield investment paid (Stripe): ${investment.investorName || investorEmailLower} `
+              + `(${investorEmailLower}) — $${amountDeployed.toLocaleString()} USD in `
+              + `${investment.opportunityName || opportunityName || oppId}. `
+              + `Session: ${session.id}`,
+            source: 'afriyield_stripe_investment',
+            channel: 'email',
+            status: 'pending',
+          });
+
+          confirmAfriYieldInvestmentPayment({
+            investorEmail: investorEmailLower,
+            investorName: investment.investorName,
+            opportunityName: investment.opportunityName,
+            amountUSD: amountDeployed,
+          }).catch(console.error);
+
+          notifyAdminAfriYieldInvestmentPayment({
+            investorEmail: investorEmailLower,
+            investorName: investment.investorName,
+            opportunityName: investment.opportunityName,
+            opportunityId: String(oppId || opportunityId || ''),
+            amountUSD: amountDeployed,
+            stripeSessionId: session.id,
+          }).catch(console.error);
+        }
 
         // Notify KYC service that African investor has paid
         const { getCountryCategory } = await import(
           '../models/InvestorKYC.js');
-        const investorEmailLower =
-          (investorEmail || email || '').toLowerCase();
         if (investorEmailLower) {
           const cat = getCountryCategory(
             session.metadata?.country || '');
@@ -202,10 +321,6 @@ router.post('/stripe/webhook', async (req, res) => {
             );
           }
         }
-
-        // TODO: Send confirmation email via SendGrid/Resend
-        // TODO: Notify admin dashboard
-        // TODO: Update opportunity funding progress
       }
 
       // ── Cooperative annual membership ───────────────────────
@@ -397,6 +512,9 @@ router.get('/stripe/investment-session/:sessionId', async (req, res) => {
   }
 });
 
+// ── Phase 2 / not yet live ──────────────────────────────────────
+// Orange Money routes below are functional stubs. They require ORANGE_* env vars
+// and are not connected to any frontend checkout flow.
 // ── Orange Money helpers ────────────────────────────────────────
 async function getOrangeAccessToken() {
   if (!process.env.ORANGE_CLIENT_ID || !process.env.ORANGE_CLIENT_SECRET) {
@@ -507,6 +625,9 @@ router.post('/orange/webhook', express.json(), async (req, res) => {
   }
 });
 
+// ── Phase 2 / not yet live ──────────────────────────────────────
+// MTN MoMo routes below are functional stubs. They require MTN_* env vars
+// and are not connected to any frontend checkout flow.
 // ── MTN MoMo helpers ────────────────────────────────────────────
 async function getMtnAccessToken() {
   if (!process.env.MTN_API_USER || !process.env.MTN_API_KEY) {
