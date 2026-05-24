@@ -471,6 +471,10 @@ class _LoginScreenState extends State<LoginScreen> {
         final merged = _sessionUserFrom(token, userMap);
         if (!mounted) return;
         await context.read<AuthState>().setSession(widget.role, token, merged);
+        final seed = res['sessionSeed'] as String?;
+        if (seed != null && seed.isNotEmpty) {
+          await context.read<AuthState>().storeSeed(seed, widget.role.name);
+        }
         if (!mounted) return;
         if (widget.role == AuthRole.investor) {
           final bioPassed = await AuthService.authenticateWithBiometrics(

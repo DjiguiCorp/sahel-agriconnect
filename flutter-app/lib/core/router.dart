@@ -6,6 +6,7 @@ import 'age_gate_refresh.dart';
 import 'auth_state.dart';
 import 'terms_refresh.dart';
 import '../screens/age_gate_screen.dart';
+import '../screens/auth/biometric_relogin_screen.dart';
 import '../screens/auth/farmer_auth_screen.dart';
 import '../screens/auth/investor_kyc_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -107,6 +108,14 @@ GoRouter buildRouter(
 
       final loggedIn = authState.isLoggedIn;
 
+      // If not logged in but a device seed exists → offer biometric re-login
+      if (!loggedIn && loc != '/relogin' && loc != '/home' &&
+          !loc.startsWith('/login') && !loc.startsWith('/register') &&
+          !loc.startsWith('/guest')) {
+        final hasSeed = await authState.hasSavedSession();
+        if (hasSeed) return '/relogin';
+      }
+
       if (loggedIn && loc.startsWith('/guest/')) {
         return _dashboardRoute(authState.role);
       }
@@ -206,6 +215,10 @@ GoRouter buildRouter(
       GoRoute(
         path: '/login/processor',
         builder: (_, __) => const LoginScreen(role: AuthRole.processor),
+      ),
+      GoRoute(
+        path: '/relogin',
+        builder: (_, __) => const BiometricReLoginScreen(),
       ),
       GoRoute(
         path: '/pending-vetting',

@@ -9,6 +9,7 @@ import PendingNotification from '../models/PendingNotification.js';
 import GovernmentDirective from '../models/GovernmentDirective.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { buildTerritoryIntelligence } from '../services/governmentTerritoryService.js';
+import DeviceSession from '../models/DeviceSession.js';
 
 // Accepted institutional domain patterns — covers all 54 African countries.
 const GOVERNMENT_DOMAINS = [
@@ -312,11 +313,17 @@ router.post('/login', async (req, res) => {
         accessTier: admin.accessTier || 'pilot',
       },
       process.env.JWT_SECRET,
-      { expiresIn: '8h' }
+      { expiresIn: '90d' }
+    );
+    const sessionSeed = await DeviceSession.issue(
+      admin._id.toString(),
+      'government',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
     res.json({
       success: true,
       token,
+      sessionSeed,
       admin: {
         name: admin.name,
         email: admin.email,

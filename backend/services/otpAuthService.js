@@ -7,6 +7,7 @@ import Investor from '../models/Investor.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import GovernmentAdmin from '../models/GovernmentAdmin.js';
 import Processor from '../models/Processor.js';
+import DeviceSession from '../models/DeviceSession.js';
 import { normalizePhone, farmerTelephoneQuery } from '../utils/phone.js';
 
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
@@ -151,7 +152,7 @@ async function accountExistsForRole(role, email, phone) {
 /**
  * Mobile-compatible OTP verify (verificationId + otp).
  */
-export async function verifyOtp({ verificationId, otp, role }) {
+export async function verifyOtp({ verificationId, otp, role, deviceHint = '' }) {
   const code = String(otp ?? '').trim();
   if (!verificationId || !code) {
     throw Object.assign(new Error('verificationId and otp required'), { status: 400 });
@@ -202,26 +203,32 @@ export async function verifyOtp({ verificationId, otp, role }) {
         nom: farmer.nom,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' },
+      { expiresIn: '90d' },
+    );
+    const sessionSeed = await DeviceSession.issue(
+      farmer._id.toString(),
+      'farmer',
+      deviceHint,
     );
     return {
       success: true,
       verified: true,
       isNewUser: false,
       token,
+      sessionSeed,
       user: farmerSummary(farmer),
       accountStatus: farmer.statut === 'Actif' ? 'active' : 'pending_vetting',
     };
   }
 
   if (purpose === 'login') {
-    return issueRoleLoginToken(roleNorm, email, phone);
+    return issueRoleLoginToken(roleNorm, email, phone, deviceHint);
   }
 
   return { success: true, verified: true };
 }
 
-async function issueRoleLoginToken(role, email, phone) {
+async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
   if (role === 'investor') {
     if (!email) throw Object.assign(new Error('Email required for investor login'), { status: 400 });
     const investor = await Investor.findOne({ email }).lean();
@@ -234,11 +241,17 @@ async function issueRoleLoginToken(role, email, phone) {
     const token = jwt.sign(
       { role: 'investor', email: investor.email, name: investor.fullName },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' },
+      { expiresIn: '90d' },
+    );
+    const sessionSeed = await DeviceSession.issue(
+      investor._id.toString(),
+      'investor',
+      deviceHint,
     );
     return {
       success: true,
       token,
+      sessionSeed,
       accountStatus: 'active',
       user: { email: investor.email, name: investor.fullName, status: investor.status },
     };
@@ -270,9 +283,20 @@ async function issueRoleLoginToken(role, email, phone) {
         name: coop.cooperativeName,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '8h' },
+      { expiresIn: '90d' },
     );
-    return { success: true, token, accountStatus: 'active', user: { email: coop.email, name: coop.cooperativeName } };
+    const sessionSeed = await DeviceSession.issue(
+      coop._id.toString(),
+      'cooperative',
+      deviceHint,
+    );
+    return {
+      success: true,
+      token,
+      sessionSeed,
+      accountStatus: 'active',
+      user: { email: coop.email, name: coop.cooperativeName },
+    };
   }
 
   if (role === 'government' || role === 'ngo') {
@@ -287,6 +311,7 @@ async function issueRoleLoginToken(role, email, phone) {
     if (admin.status !== 'active') {
       return { success: true, accountStatus: 'pending_vetting', message: 'Account not active.' };
     }
+    const deviceRole = role === 'ngo' ? 'ngo' : 'government';
     const token = jwt.sign(
       {
         id: admin._id,
@@ -299,9 +324,20 @@ async function issueRoleLoginToken(role, email, phone) {
         orgType: admin.orgType || 'government',
       },
       process.env.JWT_SECRET,
-      { expiresIn: '8h' },
+      { expiresIn: '90d' },
     );
-    return { success: true, token, accountStatus: 'active', user: { email: admin.email, name: admin.name } };
+    const sessionSeed = await DeviceSession.issue(
+      admin._id.toString(),
+      deviceRole,
+      deviceHint,
+    );
+    return {
+      success: true,
+      token,
+      sessionSeed,
+      accountStatus: 'active',
+      user: { email: admin.email, name: admin.name },
+    };
   }
 
   if (role === 'processor') {
@@ -322,9 +358,20 @@ async function issueRoleLoginToken(role, email, phone) {
         name: p.nom,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' },
+      { expiresIn: '90d' },
     );
-    return { success: true, token, accountStatus: 'active', user: { email: p.email, nom: p.nom } };
+    const sessionSeed = await DeviceSession.issue(
+      p._id.toString(),
+      'processor',
+      deviceHint,
+    );
+    return {
+      success: true,
+      token,
+      sessionSeed,
+      accountStatus: 'active',
+      user: { email: p.email, nom: p.nom },
+    };
   }
 
   throw Object.assign(new Error('Unsupported role'), { status: 400 });

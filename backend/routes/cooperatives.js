@@ -15,6 +15,7 @@ import { countryFilter } from '../middleware/countryFilter.js';
 import { confirmCooperativeRegistration, notifyAdminNewCooperative } from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import { dispatchNotification } from './notifications.js';
+import DeviceSession from '../models/DeviceSession.js';
 
 const router = express.Router();
 
@@ -288,12 +289,19 @@ router.post('/login', async (req, res) => {
         name: coop.cooperativeName,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '8h' }
+      { expiresIn: '90d' }
+    );
+
+    const sessionSeed = await DeviceSession.issue(
+      coop._id.toString(),
+      'cooperative',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
 
     res.json({
       success: true,
       token,
+      sessionSeed,
       cooperative: {
         _id: coop._id,
         cooperativeName: coop.cooperativeName,
@@ -339,11 +347,17 @@ router.post('/session', async (req, res) => {
         name: coop.cooperativeName,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '90d' }
+    );
+    const sessionSeed = await DeviceSession.issue(
+      coop._id.toString(),
+      'cooperative',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
     res.json({
       success: true,
       token,
+      sessionSeed,
       cooperative: {
         _id: coop._id,
         cooperativeName: coop.cooperativeName,

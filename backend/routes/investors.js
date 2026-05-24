@@ -6,6 +6,7 @@ import { authenticateInvestor, authenticateToken } from '../middleware/auth.js';
 import { confirmInvestorRegistration, notifyAdminNewInvestor } from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import jwt from 'jsonwebtoken';
+import DeviceSession from '../models/DeviceSession.js';
 import { normalizeInvestorResidence } from '../constants/investorResidenceCountries.js';
 
 const router = express.Router();
@@ -42,12 +43,19 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { role: 'investor', email: investor.email, name: investor.fullName },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '90d' }
+    );
+
+    const sessionSeed = await DeviceSession.issue(
+      investor._id.toString(),
+      'investor',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
 
     return res.json({
       success: true,
       token,
+      sessionSeed,
       investor: { email: investor.email, fullName: investor.fullName, status: investor.status },
     });
   } catch (e) {

@@ -15,6 +15,7 @@ import {
   computeInsights,
   programToClient,
 } from '../services/ngoReportService.js';
+import DeviceSession from '../models/DeviceSession.js';
 
 const router = express.Router();
 
@@ -115,12 +116,19 @@ router.post('/login', async (req, res) => {
         orgType,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '8h' }
+      { expiresIn: '90d' }
+    );
+
+    const sessionSeed = await DeviceSession.issue(
+      admin._id.toString(),
+      'ngo',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
 
     res.json({
       success: true,
       token,
+      sessionSeed,
       admin: {
         id: admin._id,
         name: admin.name,

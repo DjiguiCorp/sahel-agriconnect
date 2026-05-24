@@ -6,6 +6,7 @@ import VerificationCode from '../models/VerificationCode.js';
 import Farmer from '../models/Farmer.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import { farmerTelephoneQuery } from '../utils/phone.js';
+import DeviceSession from '../models/DeviceSession.js';
 
 const router = express.Router();
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
@@ -193,15 +194,23 @@ router.post('/confirm', async (req, res) => {
           nom: farmer.nom,
         },
         process.env.JWT_SECRET,
-        { expiresIn: '30d' },
+        { expiresIn: '90d' },
       );
 
+      // Issue a device session seed for biometric re-login (no OTP needed on same device)
+      const sessionSeed = await DeviceSession.issue(
+        farmer._id.toString(),
+        'farmer',
+        req.headers['user-agent']?.slice(0, 80) || '',
+      );
       return res.json({
         success: true,
         verified: true,
         isNewUser: false,
         token,
+        role: 'farmer',
         user: farmerSummary(farmer),
+        sessionSeed, // store this in flutter_secure_storage; never log it
       });
     }
 

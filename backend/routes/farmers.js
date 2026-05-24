@@ -7,6 +7,7 @@ import { validateFarmer, validateFarmerUpdate } from '../middleware/validation.j
 import { countryFilter } from '../middleware/countryFilter.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import { normalizePhone, farmerTelephoneQuery } from '../utils/phone.js';
+import DeviceSession from '../models/DeviceSession.js';
 
 const router = express.Router();
 
@@ -64,12 +65,19 @@ router.post('/session', async (req, res) => {
         nom: farmer.nom,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' }
+      { expiresIn: '90d' }
+    );
+
+    const sessionSeed = await DeviceSession.issue(
+      farmer._id.toString(),
+      'farmer',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
 
     res.json({
       success: true,
       token,
+      sessionSeed,
       farmer: {
         nom: farmer.nom,
         email: farmer.email,
@@ -160,12 +168,19 @@ router.post('/register-mobile', async (req, res) => {
         nom: lean.nom,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' },
+      { expiresIn: '90d' },
+    );
+
+    const sessionSeed = await DeviceSession.issue(
+      farmer._id.toString(),
+      'farmer',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
 
     res.status(201).json({
       success: true,
       token,
+      sessionSeed,
       farmer: {
         id: farmer._id.toString(),
         nom: lean.nom,

@@ -8,6 +8,7 @@ import Farmer from '../models/Farmer.js';
 import Processor from '../models/Processor.js';
 import { authenticateToken, authenticateAnyUser } from '../middleware/auth.js';
 import { sendOtp, verifyOtp } from '../services/otpAuthService.js';
+import DeviceSession from '../models/DeviceSession.js';
 
 const router = express.Router();
 
@@ -36,7 +37,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: admin._id, email: admin.email, role: admin.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '90d' }
     );
 
     res.json({
@@ -123,6 +124,7 @@ router.post('/verify-otp', async (req, res) => {
       verificationId: req.body?.verificationId,
       otp: req.body?.otp,
       role: req.body?.role,
+      deviceHint: req.headers['user-agent']?.slice(0, 80) || '',
     });
     res.json(result);
   } catch (e) {
@@ -173,6 +175,76 @@ router.post('/fcm-token', authenticateAnyUser, async (req, res) => {
     return res.status(400).json({ error: 'Unsupported role' });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/auth/silent-refresh
+// Called by the mobile app when the user has a stored sessionSeed and passed
+// biometric auth. Issues a new 90-day JWT without requiring an OTP.
+router.post('/silent-refresh', async (req, res) => {
+  try {
+    const rawSeed = String(req.body?.sessionSeed || '').trim();
+    if (!rawSeed || rawSeed.length < 32) {
+      return res.status(400).json({ success: false, error: 'Invalid session seed' });
+    }
+
+    const session = await DeviceSession.validate(rawSeed);
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        error: 'Session expired or not found. Please log in again.',
+        code: 'SESSION_EXPIRED',
+      });
+    }
+
+    // Look up the user from whichever collection matches the role
+    const { userId, role } = session;
+    let user = null;
+    let userName = '';
+    let userEmail = '';
+
+    if (role === 'farmer') {
+      const FarmerModel = (await import('../models/Farmer.js')).default;
+      user = await FarmerModel.findById(userId).lean();
+      userName = user?.nom || user?.name || '';
+      userEmail = user?.email || '';
+    } else if (role === 'investor') {
+      const InvestorModel = (await import('../models/Investor.js')).default;
+      user = await InvestorModel.findById(userId).lean();
+      userName = user?.fullName || user?.name || '';
+      userEmail = user?.email || '';
+    } else if (role === 'cooperative') {
+      const CooperativePlatformRegistration = (await import('../models/CooperativePlatformRegistration.js')).default;
+      user = await CooperativePlatformRegistration.findById(userId).lean();
+      userName = user?.leaderName || user?.cooperativeName || '';
+      userEmail = user?.email || '';
+    } else if (role === 'government' || role === 'ngo') {
+      const GovernmentAdmin = (await import('../models/GovernmentAdmin.js')).default;
+      user = await GovernmentAdmin.findById(userId).lean();
+      userName = user?.name || '';
+      userEmail = user?.email || '';
+    } else if (role === 'processor') {
+      const ProcessorModel = (await import('../models/Processor.js')).default;
+      user = await ProcessorModel.findById(userId).lean();
+      userName = user?.nom || user?.name || '';
+      userEmail = user?.email || '';
+    }
+
+    if (!user) {
+      await DeviceSession.deleteOne({ _id: session._id });
+      return res.status(404).json({ success: false, error: 'Account not found', code: 'ACCOUNT_NOT_FOUND' });
+    }
+
+    const jwtModule = await import('jsonwebtoken');
+    const token = jwtModule.default.sign(
+      { id: userId, role, name: userName, email: userEmail },
+      process.env.JWT_SECRET,
+      { expiresIn: '90d' },
+    );
+
+    res.json({ success: true, token, role, name: userName, email: userEmail });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

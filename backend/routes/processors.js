@@ -5,6 +5,7 @@ import Processor from '../models/Processor.js';
 import { authenticateAnyUser, authenticateToken } from '../middleware/auth.js';
 import { validateProcessor } from '../middleware/validation.js';
 import { countryFilter } from '../middleware/countryFilter.js';
+import DeviceSession from '../models/DeviceSession.js';
 
 const router = express.Router();
 
@@ -45,12 +46,19 @@ router.post('/session', async (req, res) => {
         name: p.nom,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' }
+      { expiresIn: '90d' }
+    );
+
+    const sessionSeed = await DeviceSession.issue(
+      p._id.toString(),
+      'processor',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
 
     res.json({
       success: true,
       token,
+      sessionSeed,
       processor: {
         nom: p.nom,
         email: p.email,
@@ -92,12 +100,19 @@ router.post('/login', async (req, res) => {
         name: p.nom,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' },
+      { expiresIn: '90d' },
+    );
+
+    const sessionSeed = await DeviceSession.issue(
+      p._id.toString(),
+      'processor',
+      req.headers['user-agent']?.slice(0, 80) || '',
     );
 
     return res.json({
       success: true,
       token,
+      sessionSeed,
       processor: {
         nom: p.nom,
         email: p.email,

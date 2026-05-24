@@ -19,6 +19,9 @@ class AuthState extends ChangeNotifier {
     ),
   );
 
+  static const String _seedKey = 'session_seed';
+  static const String _savedRoleKey = 'saved_role';
+
   AuthRole _role = AuthRole.none;
   String? _token;
   Map<String, dynamic>? _user;
@@ -121,6 +124,8 @@ class AuthState extends ChangeNotifier {
     Map<String, dynamic> userData,
   ) async {
     await _storage.write(key: 'token_${role.name}', value: token);
+    // sessionSeed is passed separately when available (from OTP login response)
+    // Stored here via storeSeed() — see below.
     _role = role;
     _token = token;
     _isGuest = false;
@@ -133,6 +138,32 @@ class AuthState extends ChangeNotifier {
 
     notifyListeners();
     AuthService.resetActivity();
+  }
+
+  /// Called after a successful OTP login when the backend returns a sessionSeed.
+  /// Stores it permanently (survives logout) for biometric re-login.
+  Future<void> storeSeed(String seed, String role) async {
+    await _storage.write(key: _seedKey, value: seed);
+    await _storage.write(key: _savedRoleKey, value: role);
+  }
+
+  /// Returns the stored sessionSeed if present (used for biometric re-login).
+  Future<String?> getSavedSeed() => _storage.read(key: _seedKey);
+
+  /// Returns the role associated with the saved seed.
+  Future<String?> getSavedRole() => _storage.read(key: _savedRoleKey);
+
+  /// True if a biometric re-login shortcut is available.
+  Future<bool> hasSavedSession() async {
+    final seed = await getSavedSeed();
+    return seed != null && seed.isNotEmpty;
+  }
+
+  /// Clears the device seed (called only when user explicitly asks to
+  /// "sign out of all devices" or when silent-refresh returns SESSION_EXPIRED).
+  Future<void> clearSeed() async {
+    await _storage.delete(key: _seedKey);
+    await _storage.delete(key: _savedRoleKey);
   }
 
   /// Marks the user as a guest, allowing read-only browsing of the public
@@ -174,6 +205,8 @@ class AuthState extends ChangeNotifier {
     for (final role in AuthRole.values.where((r) => r != AuthRole.none)) {
       await _storage.delete(key: 'token_${role.name}');
     }
+    await _storage.delete(key: _seedKey);
+    await _storage.delete(key: _savedRoleKey);
     await _storage.delete(key: 'farmer_email');
     await _storage.delete(key: 'farmer_name');
     _role = AuthRole.none;

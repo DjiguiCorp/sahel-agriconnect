@@ -400,6 +400,8 @@ const connectDB = async () => {
     await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 15_000,
     });
+    // Ensure DeviceSession TTL index is active
+    import('./models/DeviceSession.js').then(m => m.default.syncIndexes()).catch(() => {});
     console.log('✅ MongoDB connecté avec succès');
     await ensureAdminAccount();
   } catch (error) {

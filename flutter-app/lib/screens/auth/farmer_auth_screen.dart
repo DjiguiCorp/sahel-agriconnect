@@ -415,6 +415,11 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       userMap['nom']?.toString() ?? userMap['name']?.toString() ?? '',
     );
     await auth.setSession(AuthRole.farmer, token, merged);
+    // Store sessionSeed for biometric re-login (seed comes from OTP verify response)
+    final seed = res['sessionSeed'] as String?;
+    if (seed != null && seed.isNotEmpty) {
+      await auth.storeSeed(seed, 'farmer');
+    }
     if (!mounted) return;
     context.go('/farmer');
   }
