@@ -53,6 +53,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   String _savedEmail = '';
   String _savedName = '';
   bool _checkingSession = true;
+  bool _showManualCode = false;
 
   static const _crops = [
     'Shea Butter',
@@ -196,6 +197,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       _error = '';
       _accountStatusMessage = null;
       _verificationId = null;
+      _showManualCode = false;
     });
     _clearOtpFields();
   }
@@ -361,6 +363,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         _loading = false;
         _verificationId = vid ?? 'mock-id';
         _step = FarmerAuthStep.otp;
+        _showManualCode = false;
       });
       _clearOtpFields();
       _startResendCountdown();
@@ -1083,8 +1086,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  lp.t('Enter your verification code',
-                      'Entrez votre code de vérification'),
+                  lp.t('Check your email', 'Vérifiez votre email'),
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
@@ -1092,49 +1094,79 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                    children: [
-                      TextSpan(text: '${lp.t('Sent to', 'Envoyé à')} '),
-                      TextSpan(
-                        text: _maskedDestination(_contact),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1a3c2e),
-                        ),
-                      ),
-                    ],
+                Text(
+                  lp.t(
+                    'We sent a sign-in link to $_contact. Tap the button in the email to sign in instantly.',
+                    'Nous avons envoyé un lien de connexion à $_contact. Appuyez sur le bouton dans l\'email pour vous connecter instantanément.',
                   ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500], height: 1.5),
                 ),
-                const SizedBox(height: 12),
-                OtpCodeRow(
-                  controllers: _otpCtrl,
-                  focusNodes: _otpFocus,
-                  enabled: !_loading,
-                  onDigitChanged: _onOtpDigitChanged,
+                const SizedBox(height: 8),
+                Text(
+                  lp.t(
+                    'The link expires in 15 minutes.',
+                    'Le lien expire dans 15 minutes.',
+                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[400]),
                 ),
-                if (kDebugMode) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.5),
+                if (!_showManualCode) ...[
+                  const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () {
+                            setState(() => _showManualCode = true);
+                            _otpFocus[0].requestFocus();
+                          },
+                    child: Text(
+                      lp.t(
+                        'Enter code manually instead',
+                        'Entrer le code manuellement',
                       ),
-                    ),
-                    child: const Text(
-                      '🔧 Dev mode: Backend OTP not configured yet.\n'
-                      'Enter any 6 digits to continue testing.',
-                      style: TextStyle(color: Colors.orange, fontSize: 12),
-                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1a3c2e),
+                      ),
                     ),
                   ),
                 ],
+                Visibility(
+                  visible: _showManualCode,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      OtpCodeRow(
+                        controllers: _otpCtrl,
+                        focusNodes: _otpFocus,
+                        enabled: !_loading,
+                        onDigitChanged: _onOtpDigitChanged,
+                      ),
+                      if (kDebugMode) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.orange.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: const Text(
+                            '🔧 Dev mode: Backend OTP not configured yet.\n'
+                            'Enter any 6 digits to continue testing.',
+                            style: TextStyle(color: Colors.orange, fontSize: 12),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 if (_error.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   _inlineError(_error),
                 ],
                 const SizedBox(height: 12),
