@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, BUILD_VERSION } from '../config/api';
@@ -12,7 +12,9 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
+  const sessionExpired = searchParams.get('expired') === '1';
 
   // Environment variable diagnostics
   const envApiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -28,7 +30,12 @@ const AdminLogin = () => {
       const result = await login(email, password);
       
       if (result.success) {
-        navigate('/admin/central');
+        const returnTo = searchParams.get('return') || '/admin/central';
+        const tab = searchParams.get('tab');
+        const sub = searchParams.get('sub');
+        if (tab) sessionStorage.setItem('admin_initial_tab', tab);
+        if (sub) sessionStorage.setItem('admin_afriyield_sub', sub);
+        navigate(returnTo.startsWith('/') ? returnTo : '/admin/central', { replace: true });
       } else {
         setError(result.error || t('admin.login.error'));
       }
@@ -84,6 +91,13 @@ const AdminLogin = () => {
           )}
 
           {/* Error Message */}
+          {sessionExpired && !error && (
+            <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded text-amber-900 text-sm">
+              <p className="font-semibold">
+                Votre session administrateur a expiré. Reconnectez-vous pour accéder au tableau de bord et réviser les KYC.
+              </p>
+            </div>
+          )}
           {error && (
             <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 rounded text-red-800">
               <p className="font-semibold">{error}</p>

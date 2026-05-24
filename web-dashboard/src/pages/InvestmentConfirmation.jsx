@@ -251,14 +251,19 @@ export default function InvestmentConfirmation() {
                 </button>
               )}
               {kycState.kycUnderReview && (
-                <div className="flex flex-col gap-2 items-center">
-                  <div
-                    className="animate-spin w-8 h-8 rounded-full border-2 border-transparent"
-                    style={{ borderTopColor: '#60a5fa' }}
-                  />
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                    {isFr ? 'En attente de validation...' : 'Awaiting validation...'}
+                <div className="flex flex-col gap-3 items-center">
+                  <p className="text-xs text-center max-w-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                    {isFr
+                      ? 'Votre dossier est en file d\'attente. Vous pouvez revenir aux opportunités — nous vous enverrons un email dès approbation.'
+                      : 'Your file is in the review queue. You can return to opportunities — we will email you once approved.'}
                   </p>
+                  <Link
+                    to="/afri-yield/opportunities"
+                    className="px-6 py-3 rounded-xl font-bold text-sm"
+                    style={{ backgroundColor: '#B5850A', color: '#0d1f17' }}
+                  >
+                    {isFr ? '← Retour aux opportunités' : '← Back to opportunities'}
+                  </Link>
                 </div>
               )}
             </div>

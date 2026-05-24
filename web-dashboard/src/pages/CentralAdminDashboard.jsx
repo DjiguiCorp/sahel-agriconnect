@@ -19,7 +19,7 @@ import BenefitsTab from '../components/admin/BenefitsTab';
 import TrainingsManagement from '../components/admin/TrainingsManagement';
 import IrrigationTab from '../components/admin/IrrigationTab';
 import OptimizationTab from '../components/admin/OptimizationTab';
-import AfriYieldAdminTab from '../components/admin/AfriYieldAdminTab';
+import AfriYieldManagement from '../components/admin/AfriYieldManagement';
 import CountryLicensesManagement from '../components/admin/CountryLicensesManagement';
 import GovernanceTab from '../components/admin/GovernanceTab';
 import FarmerNeedsTab from '../components/admin/FarmerNeedsTab';
@@ -51,6 +51,7 @@ import {
   Trash2,
   Wheat,
 } from 'lucide-react';
+import { authHeaders, handleAdminApiUnauthorized } from '../utils/adminSession';
 
 const BASE_TABS = [
   { id: 'overview', labelKey: 'adminDashboard.tabs.overview', shortKey: 'adminDashboard.tabsShort.overview', Icon: ShieldAlert },
@@ -73,14 +74,6 @@ const BASE_TABS = [
   { id: 'reports', labelKey: 'adminDashboard.tabs.reports', shortKey: 'adminDashboard.tabsShort.reports', Icon: BarChart3 },
   { id: 'afriyield', labelKey: 'adminDashboard.tabs.afriyield', shortKey: 'adminDashboard.tabsShort.afriyield', Icon: Coins, accent: 'gold' },
 ];
-
-function authHeaders() {
-  const token = localStorage.getItem('adminToken');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
 
 function fmtMoney(n) {
   const v = Number(n);
@@ -252,6 +245,7 @@ function OverviewControlTower({ onGoTab }) {
       ]);
 
       const farmersPendingJson = await farmersPendingRes.json().catch(() => ({}));
+      if (handleAdminApiUnauthorized(farmersPendingRes, farmersPendingJson)) return;
       const oppAllJson = await oppAllRes.json().catch(() => ({}));
       const expertNewJson = await expertNewRes.json().catch(() => ({}));
       const quoteNewJson = await quoteNewRes.json().catch(() => ({}));
@@ -268,7 +262,11 @@ function OverviewControlTower({ onGoTab }) {
       const expertRecentJson = await expertRecentRes.json().catch(() => ({}));
       const quoteRecentJson = await quoteRecentRes.json().catch(() => ({}));
 
-      if (!oppAllRes.ok) throw new Error(oppAllJson.error || 'Failed to load overview');
+      if (!oppAllRes.ok) {
+        const oppErr = oppAllJson.error || 'Failed to load overview';
+        if (handleAdminApiUnauthorized(oppAllRes, oppAllJson)) return;
+        throw new Error(oppErr);
+      }
 
       setPendingFarmers(Number(farmersPendingJson?.pagination?.total || (farmersPendingJson?.farmers?.length ?? 0)));
       const opps = Array.isArray(oppAllJson?.opportunities) ? oppAllJson.opportunities : [];
@@ -1593,6 +1591,19 @@ const CentralAdminDashboard = () => {
   const { country: detectedCountry } = useGeolocation();
   const [globalCountryFilter, setGlobalCountryFilter] = useState('');
 
+  useEffect(() => {
+    const tab = sessionStorage.getItem('admin_initial_tab');
+    const sub = sessionStorage.getItem('admin_afriyield_sub');
+    if (tab) {
+      setActiveTab(tab);
+      sessionStorage.removeItem('admin_initial_tab');
+    }
+    if (sub) {
+      sessionStorage.setItem('admin_afriyield_sub_pending', sub);
+      sessionStorage.removeItem('admin_afriyield_sub');
+    }
+  }, []);
+
   const handleDeletionRequestsLoaded = useCallback((requests) => {
     setDeletionRequestsPendingCount(countDeletionRequestsNeedingAttention(requests));
   }, []);
@@ -1862,7 +1873,7 @@ const CentralAdminDashboard = () => {
           {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
           {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'reports' && <ReportsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'afriyield' && <AfriYieldAdminTab token={adminToken} isFr={isFr} />}
+          {activeTab === 'afriyield' && <AfriYieldManagement />}
           {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}
         </div>
       </main>

@@ -1,4 +1,5 @@
 import { createRequire } from 'module';
+import { adminPanelLoginUrl } from '../utils/adminPanelUrl.js';
 
 const require = createRequire(import.meta.url);
 
@@ -45,7 +46,7 @@ export async function notifyAdminNewProducer(producer) {
             <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Téléphone</td><td style="padding:8px 0;color:#555;">${producer.phone}</td></tr>
           </table>
           <div style="margin-top:20px;">
-            <a href="${process.env.FRONTEND_URL}/admin/central" style="background:#1a3c2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Voir dans le Dashboard Admin</a>
+            <a href="${adminPanelLoginUrl()}" style="background:#1a3c2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Voir dans le Dashboard Admin</a>
           </div>
         </div>
       </div>
@@ -77,7 +78,7 @@ export async function notifyAdminNewBuyer(buyer) {
             <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Téléphone</td><td style="padding:8px 0;color:#555;">${buyer.phone || '—'}</td></tr>
           </table>
           <div style="margin-top:20px;">
-            <a href="${process.env.FRONTEND_URL}/admin/central" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Voir dans le Dashboard Admin</a>
+            <a href="${adminPanelLoginUrl()}" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Voir dans le Dashboard Admin</a>
           </div>
         </div>
       </div>
@@ -119,9 +120,9 @@ export async function notifyAdminNewInvestor(investor) {
               <li>Envoyer un one-pager AfriYield Exchange après l'appel</li>
             </ol>
           </div>
-          <div style="margin-top:20px;display:flex;gap:12px;">
-            <a href="mailto:${investor.email}" style="background:#1a3c2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Répondre à l'investisseur</a>
-            <a href="${process.env.FRONTEND_URL}/admin/central" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Voir le Dashboard</a>
+          <div style="margin-top:20px;">
+            <a href="mailto:${investor.email}" style="display:inline-block;margin:0 8px 8px 0;background:#1a3c2e;color:white;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:13px;">Répondre à l'investisseur</a>
+            <a href="${adminPanelLoginUrl({ tab: 'afriyield', sub: 'investors' })}" style="display:inline-block;margin:0 0 8px 0;background:#B5850A;color:white;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:13px;">Voir le Dashboard</a>
           </div>
         </div>
       </div>
@@ -153,7 +154,7 @@ export async function notifyAdminNewCooperative(cooperative) {
             <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Téléphone</td><td style="padding:8px 0;color:#555;">${cooperative.phone}</td></tr>
           </table>
           <div style="margin-top:20px;">
-            <a href="${process.env.FRONTEND_URL}/admin/central" style="background:#1a3c2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Activer cette coopérative</a>
+            <a href="${adminPanelLoginUrl()}" style="background:#1a3c2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Activer cette coopérative</a>
           </div>
         </div>
       </div>
@@ -225,7 +226,7 @@ export async function notifyAdminExpertRequest(request) {
             <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Source</td><td style="padding:8px 0;color:#555;">${request.source}</td></tr>
           </table>
           <div style="margin-top:20px;">
-            <a href="${process.env.FRONTEND_URL}/admin/central" style="background:#1a3c2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Assigner un expert</a>
+            <a href="${adminPanelLoginUrl()}" style="background:#1a3c2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Assigner un expert</a>
           </div>
         </div>
       </div>
@@ -314,33 +315,49 @@ export async function confirmInvestorRegistration(investor) {
     subject: 'AfriYield Exchange — Bienvenue dans notre réseau d\'investisseurs 🌍',
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-        <div style="background:#1a3c2e;padding:32px;border-radius:8px 8px 0 0;text-align:center;">
-          <h1 style="color:#B5850A;margin:0;font-size:24px;">AfriYield Exchange</h1>
-          <p style="color:white;margin:8px 0 0;font-size:16px;">Bienvenue dans notre réseau</p>
+        <div style="background:#1a3c2e;padding:24px 16px;border-radius:8px 8px 0 0;text-align:center;">
+          <h1 style="color:#B5850A;margin:0;font-size:22px;line-height:1.3;font-family:Georgia,'Times New Roman',serif;">AfriYield Exchange</h1>
+          <p style="color:#ffffff;margin:10px 0 0;font-size:15px;line-height:1.4;">Bienvenue dans notre réseau</p>
         </div>
         <div style="padding:32px;background:white;border:1px solid #e0e0e0;">
           <p style="color:#333;font-size:16px;">Bonjour <strong>${investor.fullName}</strong>,</p>
           <p style="color:#555;line-height:1.7;">Nous avons bien reçu votre inscription en tant qu'investisseur AfriYield Exchange. Votre intérêt pour <strong>${investor.investmentTrack}</strong> dans le secteur <strong>${investor.commodityInterest}</strong> correspond parfaitement aux opportunités disponibles sur notre plateforme.</p>
           <div style="background:#f0f9f4;border:1px solid #1a3c2e;border-radius:8px;padding:20px;margin:24px 0;">
-            <p style="margin:0 0 12px;font-weight:bold;color:#1a3c2e;font-size:16px;">📋 Vos prochaines étapes :</p>
-            <div style="display:flex;flex-direction:column;gap:12px;">
-              <div style="display:flex;align-items:flex-start;gap:12px;">
-                <span style="background:#1a3c2e;color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;text-align:center;line-height:24px;">1</span>
-                <p style="margin:0;color:#555;"><strong>Dans les 24 heures</strong> — Un membre de notre équipe vous contactera personnellement pour discuter de vos objectifs</p>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:12px;">
-                <span style="background:#1a3c2e;color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;text-align:center;line-height:24px;">2</span>
-                <p style="margin:0;color:#555;"><strong>Appel de découverte</strong> — 15 minutes pour comprendre vos préférences et vous présenter les opportunités correspondantes</p>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:12px;">
-                <span style="background:#1a3c2e;color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;text-align:center;line-height:24px;">3</span>
-                <p style="margin:0;color:#555;"><strong>Opportunités personnalisées</strong> — Vous recevrez 2 à 3 fiches d'opportunités adaptées à votre track et budget</p>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:12px;">
-                <span style="background:#B5850A;color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;text-align:center;line-height:24px;">4</span>
-                <p style="margin:0;color:#555;"><strong>Premier investissement</strong> — Déployez votre capital avec notre accompagnement complet</p>
-              </div>
-            </div>
+            <p style="margin:0 0 16px;font-weight:bold;color:#1a3c2e;font-size:16px;">📋 Vos prochaines étapes :</p>
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+              <tr>
+                <td width="36" valign="top" style="padding:0 12px 14px 0;">
+                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">1</div>
+                </td>
+                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
+                  <strong>Dans les 24 heures</strong> — Un membre de notre équipe vous contactera personnellement pour discuter de vos objectifs
+                </td>
+              </tr>
+              <tr>
+                <td width="36" valign="top" style="padding:0 12px 14px 0;">
+                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">2</div>
+                </td>
+                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
+                  <strong>Appel de découverte</strong> — 15 minutes pour comprendre vos préférences et vous présenter les opportunités correspondantes
+                </td>
+              </tr>
+              <tr>
+                <td width="36" valign="top" style="padding:0 12px 14px 0;">
+                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">3</div>
+                </td>
+                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
+                  <strong>Opportunités personnalisées</strong> — Vous recevrez 2 à 3 fiches d'opportunités adaptées à votre track et budget
+                </td>
+              </tr>
+              <tr>
+                <td width="36" valign="top" style="padding:0 12px 0 0;">
+                  <div style="background:#B5850A;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">4</div>
+                </td>
+                <td valign="top" style="padding:0;color:#555;font-size:14px;line-height:1.5;">
+                  <strong>Premier investissement</strong> — Déployez votre capital avec notre accompagnement complet
+                </td>
+              </tr>
+            </table>
           </div>
           <p style="color:#555;">En attendant notre contact, vous pouvez parcourir les opportunités disponibles dès maintenant.</p>
           <div style="text-align:center;margin-top:24px;">
@@ -420,7 +437,7 @@ export async function notifyAdminAfriYieldInvestmentPayment({
             <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Stripe session</td><td style="padding:8px 0;color:#555;font-size:12px;">${stripeSessionId || '—'}</td></tr>
           </table>
           <div style="margin-top:20px;">
-            <a href="${process.env.FRONTEND_URL || ''}/admin/central" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Open admin dashboard</a>
+            <a href="${adminPanelLoginUrl({ tab: 'afriyield', sub: 'kyc-reviews' })}" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Open admin dashboard</a>
           </div>
         </div>
       </div>

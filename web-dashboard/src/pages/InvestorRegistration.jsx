@@ -215,7 +215,7 @@ export default function InvestorRegistration() {
       if (returnUrl) {
         setPendingReturnUrl(returnUrl);
         localStorage.removeItem('afriyield_invest_return');
-        setTimeout(() => navigate(returnUrl), 2500);
+        setTimeout(() => navigate(returnUrl), 1200);
       }
     } catch (e) {
       console.error('KYC submit error:', e);
@@ -224,7 +224,7 @@ export default function InvestorRegistration() {
       if (returnUrl) {
         setPendingReturnUrl(returnUrl);
         localStorage.removeItem('afriyield_invest_return');
-        setTimeout(() => navigate(returnUrl), 2500);
+        setTimeout(() => navigate(returnUrl), 1200);
       }
     } finally {
       setKycSubmitting(false);

@@ -417,7 +417,15 @@ function KYCReviewPanel({ isFr }) {
 }
 
 export default function AfriYieldManagement() {
-  const [sub, setSub] = useState('opportunities');
+  const initialSub = (() => {
+    const pending = sessionStorage.getItem('admin_afriyield_sub_pending');
+    if (pending) {
+      sessionStorage.removeItem('admin_afriyield_sub_pending');
+      return pending;
+    }
+    return 'opportunities';
+  })();
+  const [sub, setSub] = useState(initialSub);
   const [loading, setLoading] = useState(true);
   const [opportunities, setOpportunities] = useState([]);
   const [investors, setInvestors] = useState([]);

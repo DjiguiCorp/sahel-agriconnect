@@ -1,4 +1,5 @@
 import { createRequire } from 'module';
+import { adminPanelLoginUrl } from '../utils/adminPanelUrl.js';
 
 const require = createRequire(import.meta.url);
 
@@ -10,7 +11,7 @@ function getResend() {
 
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 const ADMIN = process.env.ADMIN_EMAIL || 'admin@sahelagriconnect.com';
-const FRONTEND = process.env.FRONTEND_URL || 'https://afriyieldexchange.com';
+const FRONTEND = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
 
 // ── Investor: KYC submission confirmation ────────────────────
 export async function sendKYCSubmissionConfirmation({
@@ -333,7 +334,7 @@ export async function notifyAdminKYCSubmission({
               </td></tr>
           </table>
           <div style="margin-top:20px;display:flex;gap:12px;">
-            <a href="${FRONTEND}/admin/central"
+            <a href="${adminPanelLoginUrl({ tab: 'afriyield', sub: 'kyc-reviews' })}"
               style="background:#1a3c2e;color:white;
                 padding:10px 20px;border-radius:6px;
                 text-decoration:none;font-weight:bold;
