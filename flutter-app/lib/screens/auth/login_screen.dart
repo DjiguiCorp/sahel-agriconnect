@@ -254,21 +254,25 @@ class _LoginScreenState extends State<LoginScreen> {
         : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
     final body = <String, dynamic>{
       'purpose': 'login',
+      'role': widget.role.name,
       if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
       if (!contact.contains('@')) 'phone': formattedContact,
     };
     try {
       final res = await ApiService.post('/api/auth/send-otp', body);
       if (res['verificationId'] != null ||
-          res['success'] == true && res['error'] == null) {
+          (res['success'] == true && res['error'] == null)) {
         return res;
       }
-      if (_shouldMock(res)) {
+      if (kDebugMode && _shouldMock(res)) {
         return {'success': true, 'verificationId': 'mock-id'};
       }
       return res;
     } catch (_) {
-      return {'success': true, 'verificationId': 'mock-id'};
+      if (kDebugMode) {
+        return {'success': true, 'verificationId': 'mock-id'};
+      }
+      rethrow;
     }
   }
 
@@ -278,9 +282,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final res = await ApiService.post('/api/auth/verify-otp', {
         'verificationId': id,
         'otp': otp,
+        'role': widget.role.name,
       });
       if (res['token'] != null || res['success'] == true) return res;
-      if (_shouldMock(res)) {
+      if (kDebugMode && _shouldMock(res)) {
         return {
           'success': true,
           'token': 'mock-token',
@@ -289,11 +294,14 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       return res;
     } catch (_) {
-      return {
-        'success': true,
-        'token': 'mock-token',
-        'accountStatus': 'active',
-      };
+      if (kDebugMode) {
+        return {
+          'success': true,
+          'token': 'mock-token',
+          'accountStatus': 'active',
+        };
+      }
+      rethrow;
     }
   }
 

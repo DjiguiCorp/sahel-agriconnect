@@ -6,6 +6,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validateFarmer, validateFarmerUpdate } from '../middleware/validation.js';
 import { countryFilter } from '../middleware/countryFilter.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
+import { normalizePhone, farmerTelephoneQuery } from '../utils/phone.js';
 
 const router = express.Router();
 
@@ -39,13 +40,20 @@ router.get('/public-stats', async (req, res) => {
   }
 });
 
-// POST /api/farmers/session — mobile app session (JWT) by registered email
+// POST /api/farmers/session — mobile app session (JWT) by registered email or phone
 router.post('/session', async (req, res) => {
   try {
     const email = String(req.body?.email || '').toLowerCase().trim();
-    if (!email) return res.status(400).json({ error: 'email required' });
+    const phone = req.body?.phone ? normalizePhone(req.body.phone) : '';
 
-    const farmer = await Farmer.findOne({ email }).lean();
+    if (!email && !phone) {
+      return res.status(400).json({ error: 'email or phone required' });
+    }
+
+    const farmer = email
+      ? await Farmer.findOne({ email }).lean()
+      : await Farmer.findOne(farmerTelephoneQuery(phone)).lean();
+
     if (!farmer) return res.status(404).json({ success: false, error: 'Not found' });
 
     const token = jwt.sign(
@@ -75,10 +83,6 @@ router.post('/session', async (req, res) => {
   }
 });
 
-function normalizePhone(p) {
-  return String(p || '').trim().replace(/\s+/g, '');
-}
-
 // POST /api/farmers/register-mobile — complete signup after OTP (requires pendingRegistrationId)
 router.post('/register-mobile', async (req, res) => {
   try {
@@ -102,7 +106,7 @@ router.post('/register-mobile', async (req, res) => {
     }
 
     const v = await VerificationCode.findById(pendingRegistrationId);
-    if (!v || !v.used || v.purpose !== 'farmer_verify' || v.registrationUsed) {
+    if (!v || !v.used || !['farmer_verify', 'login'].includes(v.purpose) || v.registrationUsed) {
       return res.status(400).json({ success: false, error: 'Invalid or expired verification' });
     }
     const verifiedAt = new Date(v.updatedAt || v.createdAt).getTime();
@@ -119,7 +123,7 @@ router.post('/register-mobile', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Contact mismatch' });
     }
 
-    const dupQ = email ? { email } : { telephone };
+    const dupQ = email ? { email } : farmerTelephoneQuery(normalizePhone(telephone));
     const existing = await Farmer.findOne(dupQ).lean();
     if (existing) {
       return res.status(409).json({ success: false, error: 'Account already exists' });
@@ -127,7 +131,7 @@ router.post('/register-mobile', async (req, res) => {
 
     const farmer = new Farmer({
       nom,
-      telephone: telephone || `pending-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      telephone: telephone ? normalizePhone(telephone) : `pending-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
       email: email || '',
       region,
       latitude: '0',
@@ -178,9 +182,30 @@ router.post('/register-mobile', async (req, res) => {
   }
 });
 
+// PATCH /api/farmers/flag-pending-sms — phone-only web registration (SMS pending)
+router.patch('/flag-pending-sms', async (req, res) => {
+  try {
+    const telephone = normalizePhone(req.body?.telephone);
+    if (!telephone) return res.status(400).json({ error: 'telephone required' });
+
+    const farmer = await Farmer.findOneAndUpdate(
+      farmerTelephoneQuery(telephone),
+      { statut: 'En attente' },
+      { new: true },
+    );
+
+    res.json({ success: true, updated: Boolean(farmer) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/farmers - Enregistrement d'un agriculteur (public)
 router.post('/', validateFarmer, async (req, res) => {
   try {
+    if (req.body.telephone) {
+      req.body.telephone = normalizePhone(req.body.telephone);
+    }
     const farmerData = {
       ...req.body,
       localisation: `${req.body.latitude}, ${req.body.longitude}`

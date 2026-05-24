@@ -7,6 +7,7 @@ import GovernmentAdmin from '../models/GovernmentAdmin.js';
 import Farmer from '../models/Farmer.js';
 import Processor from '../models/Processor.js';
 import { authenticateToken, authenticateAnyUser } from '../middleware/auth.js';
+import { sendOtp, verifyOtp } from '../services/otpAuthService.js';
 
 const router = express.Router();
 
@@ -96,6 +97,36 @@ router.post('/mobile-handoff-token', authenticateAnyUser, async (req, res) => {
     res.json({ success: true, handoffToken });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/auth/send-otp — mobile app passwordless login (returns verificationId)
+router.post('/send-otp', async (req, res) => {
+  try {
+    const result = await sendOtp({
+      purpose: req.body?.purpose || 'login',
+      email: req.body?.email,
+      phone: req.body?.phone,
+      name: req.body?.name,
+      role: req.body?.role,
+    });
+    res.json(result);
+  } catch (e) {
+    res.status(e.status || 500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/auth/verify-otp — validate OTP and issue JWT for registered users
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const result = await verifyOtp({
+      verificationId: req.body?.verificationId,
+      otp: req.body?.otp,
+      role: req.body?.role,
+    });
+    res.json(result);
+  } catch (e) {
+    res.status(e.status || 500).json({ success: false, error: e.message });
   }
 });
 

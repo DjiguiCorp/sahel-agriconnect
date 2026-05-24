@@ -5,6 +5,7 @@ import { Resend } from 'resend';
 import VerificationCode from '../models/VerificationCode.js';
 import Farmer from '../models/Farmer.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import { farmerTelephoneQuery } from '../utils/phone.js';
 
 const router = express.Router();
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
@@ -80,7 +81,7 @@ router.post('/send', async (req, res) => {
     const email = emailRaw || '';
     const phone = phoneRaw || '';
 
-    const farmerQuery = email ? { email } : { telephone: phone };
+    const farmerQuery = emailRaw ? { email: emailRaw } : farmerTelephoneQuery(phoneRaw);
     const existing = await Farmer.findOne(farmerQuery).lean();
     const isNewUser = !existing;
 
@@ -90,7 +91,7 @@ router.post('/send', async (req, res) => {
     if (phone) invalidateQ.phone = phone;
     await VerificationCode.updateMany(invalidateQ, { used: true });
 
-    await VerificationCode.create({
+    const record = await VerificationCode.create({
       email,
       phone,
       code,
@@ -117,6 +118,7 @@ router.post('/send', async (req, res) => {
 
     res.json({
       success: true,
+      verificationId: record._id.toString(),
       message: emailRaw ? 'Verification code sent to email' : 'Account registered — phone verification pending SMS activation',
       isNewUser,
       smsStatus: phoneRaw && !emailRaw
@@ -164,7 +166,7 @@ router.post('/confirm', async (req, res) => {
     await record.save();
 
     if (purpose === 'farmer_verify') {
-      const farmerQuery = email ? { email } : { telephone: phone };
+      const farmerQuery = email ? { email } : farmerTelephoneQuery(phone);
       const farmer = await Farmer.findOne(farmerQuery).lean();
 
       if (email) {

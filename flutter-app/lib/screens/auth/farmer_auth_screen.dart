@@ -215,7 +215,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         ? contact
         : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
     final body = <String, dynamic>{
-      'purpose': 'login',
+      'purpose': 'farmer_verify',
+      'role': 'farmer',
       if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
       if (!contact.contains('@')) 'phone': formattedContact,
     };
@@ -225,12 +226,15 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           (res['success'] == true && res['error'] == null)) {
         return res;
       }
-      if (_shouldMock(res)) {
+      if (kDebugMode && _shouldMock(res)) {
         return {'success': true, 'verificationId': 'mock-id'};
       }
       return res;
     } catch (_) {
-      return {'success': true, 'verificationId': 'mock-id'};
+      if (kDebugMode) {
+        return {'success': true, 'verificationId': 'mock-id'};
+      }
+      rethrow;
     }
   }
 
@@ -240,9 +244,10 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       final res = await ApiService.post('/api/auth/verify-otp', {
         'verificationId': id,
         'otp': otp,
+        'role': 'farmer',
       });
       if (res['token'] != null || res['success'] == true) return res;
-      if (_shouldMock(res)) {
+      if (kDebugMode && _shouldMock(res)) {
         return {
           'success': true,
           'token': 'mock-token',
@@ -251,11 +256,14 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       }
       return res;
     } catch (_) {
-      return {
-        'success': true,
-        'token': 'mock-token',
-        'accountStatus': 'active',
-      };
+      if (kDebugMode) {
+        return {
+          'success': true,
+          'token': 'mock-token',
+          'accountStatus': 'active',
+        };
+      }
+      rethrow;
     }
   }
 
@@ -514,7 +522,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         'pendingRegistrationId': _pendingRegistrationId,
         'nom': _nameCtrl.text.trim(),
         'email': _contactIsEmail ? contact : null,
-        'telephone': !_contactIsEmail ? contact : null,
+        'telephone': !_contactIsEmail
+            ? '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}'
+            : null,
         'country': _selectedCountry,
         'region': _regionCtrl.text.trim(),
         'cultures': [_selectedCrop],

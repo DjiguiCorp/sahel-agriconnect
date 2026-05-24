@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
@@ -9,17 +9,20 @@ import {
   step1Fields,
   step2Fields,
 } from '../schemas/farmerRegistrationSchema';
-import { regionsByCountry } from '../data/sahelRegions';
-import { ALL_COUNTRIES } from '../data/africanCountries';
+import LocationSelector from '../components/LocationSelector';
+import { legacyCountryToAppName, regionsForAppCountry } from '../data/africanCountries';
+import { useGeolocation } from '../hooks/useGeolocation';
+import { dialPrefixForCountry, formatPhoneE164 } from '../utils/phoneDial';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { CheckCircle, Loader2, ChevronRight, ChevronLeft, MapPin, Users, Phone } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 
 const defaults = {
   full_name: '',
+  email: '',
   phone: '',
   region: '',
-  country: 'Mali',
+  country: '',
   crops: [],
   area_hectares: '',
   area_unit: 'hectares',
@@ -63,6 +66,7 @@ export default function FarmerRegistrationPage() {
     trigger,
     formState: { errors },
     setValue,
+    getValues,
   } = useForm({
     resolver: zodResolver(farmerRegistrationSchema),
     defaultValues: defaults,
@@ -70,8 +74,18 @@ export default function FarmerRegistrationPage() {
 
   const country = watch('country');
   const cooperativeMember = watch('cooperative_member');
-  const regionList =
-    regionsByCountry[country]?.length > 0 ? regionsByCountry[country] : ['Autre'];
+  const phonePrefix = dialPrefixForCountry(country || 'Mali');
+
+  const { country: detectedCountry, detected } = useGeolocation();
+
+  useEffect(() => {
+    const appCountry = legacyCountryToAppName(detectedCountry);
+    if (detected && appCountry && !getValues('country')) {
+      setValue('country', appCountry);
+      const regions = regionsForAppCountry(appCountry);
+      if (regions.length) setValue('region', regions[0]);
+    }
+  }, [detected, detectedCountry, getValues, setValue]);
 
   const nextFromStep1 = async () => {
     const ok = await trigger(step1Fields);
@@ -90,9 +104,11 @@ export default function FarmerRegistrationPage() {
     setSubmitError('');
     setSubmitting(true);
     try {
+      const phoneE164 = data.phone?.trim() ? formatPhoneE164(data.phone, data.country) : '';
       const payload = {
         nom: data.full_name.trim(),
-        telephone: data.phone.replace(/\s+/g, ' ').trim(),
+        telephone: phoneE164 || `pending-${Date.now()}`,
+        email: data.email?.trim() || '',
         region: data.region,
         country: data.country,
         cultures: data.crops,
@@ -103,6 +119,7 @@ export default function FarmerRegistrationPage() {
         latitude: '0',
         longitude: '0',
         typeExploitation: 'Familiale',
+        objectifsProduction: ['Souveraineté alimentaire locale'],
         accesElectricite: 'Non',
         accesStockage: 'Non',
       };
@@ -115,7 +132,10 @@ export default function FarmerRegistrationPage() {
 
       const json = await r.json().catch(() => null);
       if (!r.ok) {
-        const msg = json?.error || json?.message || json?.details || 'Request failed';
+        const detailMsg = Array.isArray(json?.details)
+          ? json.details.join(' · ')
+          : json?.details;
+        const msg = detailMsg || json?.error || json?.message || 'Request failed';
         throw new Error(msg);
       }
 
@@ -483,52 +503,61 @@ export default function FarmerRegistrationPage() {
                 {errors.full_name && <p className={ERR_CLS}>{errors.full_name.message}</p>}
               </div>
               <div>
-                <label htmlFor="phone" className={LABEL_CLS}>
-                  Numéro de téléphone * (format international)
+                <label htmlFor="email" className={LABEL_CLS}>
+                  {isFr ? 'Adresse email (optionnel)' : 'Email address (optional)'}
                 </label>
                 <input
-                  id="phone"
-                  type="tel"
-                  placeholder="+223 76 12 34 56"
+                  id="email"
+                  type="email"
                   className={INPUT_CLS}
-                  {...register('phone')}
-                  autoComplete="tel"
+                  placeholder={isFr ? 'votre@email.com' : 'your@email.com'}
+                  {...register('email')}
+                  autoComplete="email"
                 />
+                {errors.email && <p className={ERR_CLS}>{errors.email.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="phone" className={LABEL_CLS}>
+                  {isFr
+                    ? 'Numéro de téléphone (optionnel si email fourni)'
+                    : 'Phone number (optional if email provided)'}
+                </label>
+                <div className="flex gap-2">
+                  <span
+                    className="flex shrink-0 items-center rounded-xl border border-white/15 bg-black/30 px-3 text-sm font-medium text-white/80"
+                    aria-hidden
+                  >
+                    {phonePrefix}
+                  </span>
+                  <input
+                    id="phone"
+                    type="tel"
+                    placeholder={isFr ? '267 600 7701' : '267 600 7701'}
+                    className={`${INPUT_CLS} flex-1`}
+                    {...register('phone')}
+                    autoComplete="tel-national"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-white/40">
+                  {isFr
+                    ? 'Le préfixe suit votre pays. Entrez le numéro local ou complet (+…).'
+                    : 'Prefix follows your country. Enter local or full international number.'}
+                </p>
                 {errors.phone && <p className={ERR_CLS}>{errors.phone.message}</p>}
               </div>
-              <div>
-                <label htmlFor="country" className={LABEL_CLS}>
-                  Pays *
-                </label>
-                <select
-                  id="country"
-                  className={INPUT_CLS}
-                  style={{ color: 'white' }}
-                  {...register('country', {
-                    onChange: () => setValue('region', ''),
-                  })}
-                >
-                  {ALL_COUNTRIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="region" className={LABEL_CLS}>
-                  Région / commune *
-                </label>
-                <select id="region" className={INPUT_CLS} style={{ color: 'white' }} {...register('region')}>
-                  <option value="">— Choisir —</option>
-                  {regionList.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-                {errors.region && <p className={ERR_CLS}>{errors.region.message}</p>}
-              </div>
+              <LocationSelector
+                value={{ country: watch('country') || '', region: watch('region') || '' }}
+                onChange={({ country: c, region: r }) => {
+                  setValue('country', c, { shouldValidate: true });
+                  setValue('region', r, { shouldValidate: true });
+                }}
+                required
+                showDetectedBanner
+                className="[&_.location-selector-label]:text-white/70 [&_.location-country-trigger]:border-white/15 [&_.location-country-trigger]:bg-black/30 [&_.location-country-trigger]:text-white [&_.location-region-input]:border-white/15 [&_.location-region-input]:bg-black/30 [&_.location-region-input]:text-white [&_.location-region-pill]:border-white/20 [&_.location-region-pill]:bg-white/5 [&_.location-region-pill]:text-white/90"
+              />
+              {(errors.country || errors.region) && (
+                <p className={ERR_CLS}>{errors.country?.message || errors.region?.message}</p>
+              )}
               <button
                 type="button"
                 onClick={nextFromStep1}
