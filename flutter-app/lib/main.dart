@@ -1,3 +1,4 @@
+import 'package:app_links/app_links.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,10 +21,41 @@ import 'screens/shared/terms_screen.dart';
 import 'services/notification_service.dart';
 import 'services/offline_queue.dart';
 
+void _handleDeepLink(Uri uri) {
+  // Magic link deep link format:
+  // sahelagriconnect://auth/magic?c=123456&e=email@example.com&p=farmer_verify
+  // OR https://sahelagriconnect.com/auth/magic?c=...&e=...&p=...
+  if (uri.pathSegments.contains('magic') ||
+      (uri.host == 'auth' && uri.path.contains('magic'))) {
+    final code = uri.queryParameters['c'] ?? '';
+    final email = uri.queryParameters['e'] ?? '';
+    final purpose = uri.queryParameters['p'] ?? '';
+    if (code.isNotEmpty && email.isNotEmpty) {
+      // Navigate to the magic link handler route with the params
+      final path = '/auth/magic?c=${Uri.encodeComponent(code)}'
+          '&e=${Uri.encodeComponent(email)}'
+          '&p=${Uri.encodeComponent(purpose)}';
+      appRouter.go(path);
+    }
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final authState = AuthState();
   await authState.restoreSession();
+
+  // Listen for deep links when app is already running (background → foreground)
+  final appLinks = AppLinks();
+  appLinks.uriLinkStream.listen((uri) {
+    _handleDeepLink(uri);
+  });
+
+  // Handle launch URI (app opened via deep link from cold start)
+  final initialUri = await appLinks.getInitialLink();
+  if (initialUri != null) {
+    _handleDeepLink(initialUri);
+  }
 
   final ageAccepted = await AgeGateScreen.hasAccepted();
   final ageGate = AgeGateRefresh(ageAccepted);

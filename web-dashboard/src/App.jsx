@@ -5,6 +5,7 @@ import { WebSocketProvider } from './context/WebSocketContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary, { ApiSection } from './components/ErrorBoundary';
 import { useGeolocation } from './hooks/useGeolocation';
+import MagicLinkVerify from './pages/MagicLinkVerify';
 
 const Layout = lazy(() => import('./components/Layout'));
 const Home = lazy(() => import('./pages/Home'));
@@ -63,6 +64,7 @@ function App() {
           <Router>
             <Suspense fallback={<PageLoader />}>
               <Routes>
+                <Route path="/auth/magic" element={<MagicLinkVerify />} />
                 <Route path="/invest/success" element={<InvestmentSuccess />} />
                 <Route path="/invest/cancel" element={<Navigate to="/afri-yield" replace />} />
                 <Route path="/admin/login" element={<AdminLogin />} />

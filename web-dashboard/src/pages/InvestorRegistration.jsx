@@ -75,8 +75,15 @@ export default function InvestorRegistration() {
   const [kycSubmitted, setKycSubmitted] = useState(false);
   const [kycSubmitting, setKycSubmitting] = useState(false);
   const [pendingReturnUrl, setPendingReturnUrl] = useState(null);
+  const [paymentDone, setPaymentDone] = useState(false);
 
   useEffect(() => {
+    const paymentSuccess = searchParams.get('payment') === 'success';
+    const stepKyc = searchParams.get('step') === 'kyc';
+    if (paymentSuccess && stepKyc) {
+      setSuccess(true);
+      setPaymentDone(true);
+    }
     if (!skipToKYC) return;
     const email = localStorage.getItem('afriyield_investor_email');
     const name = localStorage.getItem('afriyield_investor_name');
@@ -299,7 +306,7 @@ export default function InvestorRegistration() {
           className="max-w-2xl mx-auto rounded-2xl border p-8 glass-card-strong"
           style={CARD_STYLE}
         >
-          {success && !kycPhase && (
+          {success && !kycPhase && !paymentDone && (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">✅</div>
               <h3 className="text-white font-bold text-xl mb-2">
@@ -307,29 +314,67 @@ export default function InvestorRegistration() {
               </h3>
               <p className="text-white/60 text-sm mb-6 max-w-sm mx-auto">
                 {isFr
-                  ? "Pour finaliser votre accès à AfriYield Exchange, une vérification d'identité (KYC) est requise. Cela protège tous les investisseurs sur la plateforme."
-                  : 'To finalize your access to AfriYield Exchange, identity verification (KYC) is required. This protects all investors on the platform.'}
+                  ? "Pour accéder à AfriYield Exchange, une cotisation d'accès annuelle est requise. Elle couvre la vérification KYC et donne accès à toutes les opportunités."
+                  : 'To access AfriYield Exchange, an annual access fee is required. It covers KYC verification and grants access to all opportunities.'}
               </p>
-              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 mb-6 text-left max-w-sm mx-auto">
-                <p className="text-amber-400 font-semibold text-sm mb-2">
-                  📋 {isFr ? 'Ce dont vous aurez besoin:' : "What you'll need:"}
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 mb-6 max-w-sm mx-auto text-left">
+                <p className="text-amber-400 font-bold text-base mb-3">
+                  AfriYield Exchange — {isFr ? 'Accès annuel' : 'Annual Access'}
                 </p>
-                <ul className="space-y-1.5 text-xs text-white/60">
-                  <li>
-                    🪪{' '}
-                    {isFr
-                      ? "Pièce d'identité officielle (passeport ou carte nationale)"
-                      : 'Official ID document (passport or national ID card)'}
-                  </li>
-                  <li>⏱️ {isFr ? '5 minutes de votre temps' : '5 minutes of your time'}</li>
-                  <li>
-                    🔒{' '}
-                    {isFr
-                      ? 'Vos données sont chiffrées et sécurisées'
-                      : 'Your data is encrypted and secure'}
-                  </li>
+                <ul className="space-y-2 text-xs text-white/60 mb-4">
+                  <li>✓ {isFr ? 'Vérification KYC incluse' : 'KYC verification included'}</li>
+                  <li>✓ {isFr ? 'Accès à toutes les opportunités Track A et B' : 'Access to all Track A and B opportunities'}</li>
+                  <li>✓ {isFr ? 'Rapports de marché mensuels' : 'Monthly market reports'}</li>
+                  <li>✓ {isFr ? 'Protection escrow sur tous les deals' : 'Escrow protection on all deals'}</li>
                 </ul>
+                <p className="text-white font-bold text-2xl text-center">$99 / {isFr ? 'an' : 'year'}</p>
               </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const API = import.meta.env.VITE_API_BASE_URL || '';
+                    const r = await fetch(`${API}/api/payments/stripe/create-session`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'afriyield_access',
+                        email: form.email,
+                        name: form.fullName,
+                        successUrl: window.location.origin + '/afri-yield/register?payment=success&step=kyc',
+                        cancelUrl: window.location.href,
+                      }),
+                    });
+                    const data = await r.json();
+                    if (data.url) window.location.href = data.url;
+                  } catch (e) {
+                    console.error('Stripe checkout error:', e);
+                  }
+                }}
+                className="w-full max-w-sm mx-auto block py-4 rounded-xl font-bold text-black text-sm"
+                style={{ backgroundColor: '#B5850A' }}
+              >
+                {isFr ? '→ Payer et accéder à AfriYield' : '→ Pay and access AfriYield'} — $99
+              </button>
+              <p className="mt-3 text-white/30 text-xs text-center">
+                {isFr
+                  ? 'Paiement sécurisé via Stripe · Visa, Mastercard, Amex'
+                  : 'Secure payment via Stripe · Visa, Mastercard, Amex'}
+              </p>
+            </div>
+          )}
+
+          {success && !kycPhase && paymentDone && (
+            <div className="text-center py-8">
+              <div className="text-5xl mb-4">💳</div>
+              <h3 className="text-white font-bold text-xl mb-2">
+                {isFr ? 'Paiement confirmé !' : 'Payment confirmed!'}
+              </h3>
+              <p className="text-white/60 text-sm mb-6 max-w-sm mx-auto">
+                {isFr
+                  ? "Votre accès est activé. Complétez maintenant la vérification KYC pour investir."
+                  : 'Your access is activated. Complete KYC verification now to start investing.'}
+              </p>
               <button
                 type="button"
                 onClick={() => setKycPhase(true)}
@@ -337,13 +382,6 @@ export default function InvestorRegistration() {
                 style={{ backgroundColor: '#B5850A' }}
               >
                 {isFr ? '→ Compléter la vérification KYC' : '→ Complete KYC Verification'}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/afri-yield')}
-                className="mt-3 w-full max-w-sm mx-auto block py-3 rounded-xl text-white/50 text-sm hover:text-white/80 transition-colors"
-              >
-                {isFr ? 'Plus tard (accès limité)' : 'Later (limited access)'}
               </button>
             </div>
           )}
@@ -528,22 +566,11 @@ export default function InvestorRegistration() {
               )}
               <button
                 type="button"
-                onClick={() => {
-                  const url = pendingReturnUrl || localStorage.getItem('afriyield_invest_return');
-                  localStorage.removeItem('afriyield_invest_return');
-                  setPendingReturnUrl(null);
-                  navigate(url || '/afri-yield');
-                }}
-                className="px-6 py-3 rounded-xl font-bold text-black text-sm mt-4"
+                onClick={() => navigate('/afri-yield/opportunities')}
+                className="w-full max-w-sm mx-auto block py-4 rounded-xl font-bold text-black text-sm"
                 style={{ backgroundColor: '#B5850A' }}
               >
-                {returnOpp
-                  ? isFr
-                    ? "→ Continuer vers l'investissement"
-                    : '→ Continue to Investment'
-                  : isFr
-                    ? 'Explorer AfriYield Exchange'
-                    : 'Explore AfriYield Exchange'}
+                {isFr ? '→ Voir les opportunités' : '→ Browse Opportunities'}
               </button>
             </div>
           )}

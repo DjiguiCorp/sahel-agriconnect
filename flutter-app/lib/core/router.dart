@@ -10,6 +10,7 @@ import '../screens/auth/biometric_relogin_screen.dart';
 import '../screens/auth/farmer_auth_screen.dart';
 import '../screens/auth/investor_kyc_screen.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/auth/magic_link_screen.dart';
 import '../screens/cooperative/cooperative_dashboard.dart';
 import '../screens/farmer/farmer_dashboard.dart';
 import '../screens/government/government_dashboard.dart';
@@ -219,6 +220,15 @@ GoRouter buildRouter(
       GoRoute(
         path: '/relogin',
         builder: (_, __) => const BiometricReLoginScreen(),
+      ),
+      GoRoute(
+        path: '/auth/magic',
+        builder: (context, state) {
+          final code = state.uri.queryParameters['c'] ?? '';
+          final email = state.uri.queryParameters['e'] ?? '';
+          final purpose = state.uri.queryParameters['p'] ?? '';
+          return MagicLinkScreen(code: code, email: email, purpose: purpose);
+        },
       ),
       GoRoute(
         path: '/pending-vetting',

@@ -21,6 +21,7 @@ dependencies:
 
   # Navigation
   go_router: ^13.2.0
+  app_links: ^6.3.0
 
   # UI & Design
   google_fonts: ^6.2.1
