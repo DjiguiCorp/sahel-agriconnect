@@ -1,45 +1,11 @@
 {
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "https://sahelagriconnect.com/afri-yield",
-      "permanent": true,
-      "has": [{ "type": "host", "value": "afriyieldexchange.com" }]
-    },
-    {
-      "source": "/(.*)",
-      "destination": "https://sahelagriconnect.com/afri-yield",
-      "permanent": true,
-      "has": [{ "type": "host", "value": "www.afriyieldexchange.com" }]
-    }
-  ],
-  "functions": {
-    "api/analyze-disease.js": {
-      "maxDuration": 30
-    }
-  },
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite",
-  "installCommand": "npm install",
-  "rewrites": [
+  "routes": [
+    { "handle": "filesystem" },
     {
-      "handle": "filesystem"
-    },
-    {
-      "source": "/((?!_vercel/|api/).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
+      "src": "^(?!/_vercel|/api).*",
+      "dest": "/index.html"
     }
   ]
 }
