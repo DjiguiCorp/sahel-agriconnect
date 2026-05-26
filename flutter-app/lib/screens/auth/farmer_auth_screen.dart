@@ -572,6 +572,10 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           _nameCtrl.text.trim(),
         );
         await auth.setSession(AuthRole.farmer, token, merged);
+        final seed = res['sessionSeed'] as String?;
+        if (seed != null && seed.isNotEmpty) {
+          await auth.storeSeed(seed, 'farmer');
+        }
         if (!mounted) return;
         context.go('/farmer');
         return;
@@ -1110,8 +1114,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                 const SizedBox(height: 8),
                 Text(
                   lp.t(
-                    'We sent a sign-in link to $_contact. Tap the button in the email to sign in instantly.',
-                    'Nous avons envoyé un lien de connexion à $_contact. Appuyez sur le bouton dans l\'email pour vous connecter instantanément.',
+                    'We sent a sign-in link to ${_maskedDestination(_contact)}. Tap the button in the email to sign in instantly.',
+                    'Nous avons envoyé un lien de connexion à ${_maskedDestination(_contact)}. Appuyez sur le bouton dans l\'email pour vous connecter instantanément.',
                   ),
                   style: TextStyle(fontSize: 14, color: Colors.grey[500], height: 1.5),
                 ),

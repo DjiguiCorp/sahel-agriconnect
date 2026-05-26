@@ -258,44 +258,34 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: _goBackToLogin,
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                      color: Colors.white,
-                    ),
-                    Expanded(
-                      child: Text(
-                        lp.t('Account review', 'Examen du compte'),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: _goBackToLogin,
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                        color: Colors.white,
+                      ),
+                      Expanded(
+                        child: Text(
+                          lp.t('Account review', 'Examen du compte'),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                           Container(
                             width: 72,
                             height: 72,
@@ -447,16 +437,18 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
                             ),
                           ],
                           const SizedBox(height: 28),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: ElevatedButton(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 52),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
                               onPressed: _checking ? null : _checkStatusManually,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.gold,
                                 foregroundColor: AppColors.forestGreen,
                                 disabledBackgroundColor:
                                     AppColors.gold.withValues(alpha: 0.4),
+                                minimumSize: const Size.fromHeight(52),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -481,16 +473,19 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: OutlinedButton(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 52),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
                               onPressed: _openPortal,
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.white,
+                                minimumSize: const Size.fromHeight(52),
                                 side: BorderSide(
                                   color: Colors.white.withValues(alpha: 0.35),
                                 ),
@@ -510,6 +505,7 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
                               ),
                             ),
                           ),
+                          ),
                           const SizedBox(height: 28),
                           Text(
                             lp.t(
@@ -522,13 +518,9 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
                               fontSize: 13,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -50,6 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final List<FocusNode> _otpFocus = List.generate(6, (_) => FocusNode());
 
   bool _loading = false;
+  bool _showManualCode = false;
   String _error = '';
   String _countryPrefix = '+223';
   String _selectedCountry = '';
@@ -86,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
       color: const Color(0xFFB5850A),
       bg: const [Color(0xFF1a3c2e), Color(0xFF2d5a3d)],
       loginEndpoint: '/api/cooperatives/lookup',
-      canSelfRegister: false,
+      canSelfRegister: true,
       registerUrl: 'https://sahelagriconnect.com/cooperative-registration',
       hint: 'cooperative@email.com or +223...',
     ),
@@ -119,8 +120,8 @@ class _LoginScreenState extends State<LoginScreen> {
       color: const Color(0xFF3B6D11),
       bg: const [Color(0xFF1a3c2e), Color(0xFF0d1f17)],
       loginEndpoint: '/api/processors/login',
-      canSelfRegister: false,
-      registerUrl: 'https://sahelagriconnect.com/dashboard',
+      canSelfRegister: true,
+      registerUrl: 'https://sahelagriconnect.com/platform-licensing',
       hint: 'processor@email.com or +223...',
     ),
   };
@@ -231,6 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _resendTimer?.cancel();
     setState(() {
       _step = _LoginStep.contact;
+      _showManualCode = false;
       _error = '';
       _accountStatusMessage = null;
       _verificationId = null;
@@ -412,6 +414,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _loading = false;
         _verificationId = vid ?? 'mock-id';
         _step = _LoginStep.otp;
+        _showManualCode = false;
       });
       _clearOtpFields();
       _startResendCountdown();
@@ -987,8 +990,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  lp.t('Enter your verification code',
-                      'Entrez votre code de vérification'),
+                  lp.t('Check your email', 'Vérifiez votre email'),
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
@@ -996,30 +998,52 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                    children: [
-                      TextSpan(
-                        text: '${lp.t('Sent to', 'Envoyé à')} ',
-                      ),
-                      TextSpan(
-                        text: _maskedDestination(_contact),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1a3c2e),
-                        ),
-                      ),
-                    ],
+                Text(
+                  lp.t(
+                    'We sent a sign-in link to $_contact. Tap the button in the email to sign in instantly.',
+                    'Nous avons envoyé un lien de connexion à $_contact. Appuyez sur le bouton dans l\'email pour vous connecter instantanément.',
                   ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500], height: 1.5),
                 ),
-                const SizedBox(height: 12),
-                OtpCodeRow(
-                  controllers: _otpCtrl,
-                  focusNodes: _otpFocus,
-                  enabled: !_loading,
-                  onDigitChanged: _onOtpDigitChanged,
+                const SizedBox(height: 8),
+                Text(
+                  lp.t(
+                    'The link expires in 15 minutes.',
+                    'Le lien expire dans 15 minutes.',
+                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[400]),
                 ),
+                if (!_showManualCode) ...[
+                  const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () {
+                            setState(() => _showManualCode = true);
+                            _otpFocus[0].requestFocus();
+                          },
+                    child: Text(
+                      lp.t(
+                        'Enter code manually instead',
+                        'Entrer le code manuellement',
+                      ),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1a3c2e),
+                      ),
+                    ),
+                  ),
+                ],
+                if (_showManualCode) ...[
+                  const SizedBox(height: 12),
+                  OtpCodeRow(
+                    controllers: _otpCtrl,
+                    focusNodes: _otpFocus,
+                    enabled: !_loading,
+                    onDigitChanged: _onOtpDigitChanged,
+                  ),
+                ],
                 if (kDebugMode) ...[
                   const SizedBox(height: 8),
                   Container(
@@ -1121,52 +1145,86 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
+  bool get _showsWebPaymentNote =>
+      widget.role == AuthRole.investor ||
+      widget.role == AuthRole.cooperative ||
+      widget.role == AuthRole.processor;
+
+  String _registerButtonLabel(LanguageProvider lp) {
+    if (!_config.canSelfRegister) {
+      return lp.t('Request access', "Demander l'accès");
+    }
+    if (widget.role == AuthRole.cooperative) {
+      return lp.t('Register (web)', "S'inscrire (web)");
+    }
+    return lp.t('Register', "S'inscrire");
+  }
+
   Widget _registerFooter(LanguageProvider lp) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFF8F4E3),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Text(
-                _config.canSelfRegister
-                    ? lp.t(
-                        'New to AfriYield Exchange?',
-                        'Nouveau sur AfriYield Exchange ?',
-                      )
-                    : lp.t(
-                        "Don't have access yet?",
-                        'Pas encore accès ?',
-                      ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _config.canSelfRegister
+                        ? lp.t(
+                            'New to AfriYield Exchange?',
+                            'Nouveau sur AfriYield Exchange ?',
+                          )
+                        : lp.t(
+                            "Don't have access yet?",
+                            'Pas encore accès ?',
+                          ),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _openUrl(_config.registerUrl),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    backgroundColor: const Color(0xFF1a3c2e),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    _registerButtonLabel(lp),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_showsWebPaymentNote) ...[
+              const SizedBox(height: 10),
+              Text(
+                lp.t(
+                  'Registration starts here. Payment is completed in the web browser.',
+                  'L\'inscription démarre ici. Le paiement s\'effectue sur le navigateur web.',
+                ),
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 11,
                   color: Colors.grey[600],
+                  height: 1.4,
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: () => _openUrl(_config.registerUrl),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                backgroundColor: const Color(0xFF1a3c2e),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(
-                _config.canSelfRegister
-                    ? lp.t('Register', "S'inscrire")
-                    : lp.t('Request access', "Demander l'accès"),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            ],
           ],
         ),
       );

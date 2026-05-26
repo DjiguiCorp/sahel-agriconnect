@@ -1818,8 +1818,41 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           child: Text(
-                            lp.t('Sign in or sign up',
-                                "S'inscrire ou se connecter"),
+                            lp.t('Sign in', 'Se connecter'),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        lp.t(
+                          'Farmer · Cooperative · Investor',
+                          'Agriculteur · Coopérative · Investisseur',
+                        ),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () => _goSignIn('/login/farmer'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            lp.t('Create an account', 'Créer un compte'),
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                             ),
