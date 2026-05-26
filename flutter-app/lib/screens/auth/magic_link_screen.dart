@@ -147,12 +147,14 @@ class _MagicLinkScreenState extends State<MagicLinkScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    lp.t(
-                      'This link can only be used once and expires in 15 minutes. '
-                      'Request a new sign-in link from the app.',
-                      'Ce lien ne peut être utilisé qu\'une seule fois et expire en 15 minutes. '
-                      'Demandez un nouveau lien depuis l\'application.',
-                    ),
+                    _error.isNotEmpty
+                        ? _error
+                        : lp.t(
+                            'This link can only be used once and expires in 15 minutes. '
+                            'Request a new sign-in link from the app.',
+                            'Ce lien ne peut être utilisé qu\'une seule fois et expire en 15 minutes. '
+                            'Demandez un nouveau lien depuis l\'application.',
+                          ),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
                   ),
