@@ -24,12 +24,18 @@ function expiresIn(minutes = 15) {
   return new Date(Date.now() + minutes * 60 * 1000);
 }
 
-function codeEmail(code, purpose, name = '') {
+function codeEmail(code, purpose, name = '', email = '') {
   const labels = {
     farmer_verify: { fr: 'Vérifiez votre compte agriculteur' },
     login: { fr: 'Votre code de connexion' },
   };
   const label = labels[purpose] || labels.login;
+
+  // Magic link: embeds the code in a URL so the user can click instead of type.
+  // Works on web; on mobile with app installed, the deep link opens the app directly.
+  const webBase = process.env.WEB_APP_URL || 'https://sahelagriconnect.com';
+  const magicUrl = `${webBase}/auth/magic?c=${encodeURIComponent(code)}&e=${encodeURIComponent(email)}&p=${encodeURIComponent(purpose)}`;
+
   return `
   <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;">
     <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
@@ -37,11 +43,26 @@ function codeEmail(code, purpose, name = '') {
       <p style="color:white;margin:4px 0 0;font-size:13px;">${label.fr}</p>
     </div>
     <div style="padding:32px;background:white;border:1px solid #e0e0e0;border-radius:0 0 8px 8px;text-align:center;">
-      ${name ? `<p style="color:#333;">Bonjour <strong>${name}</strong>,</p>` : ''}
-      <div style="background:#f0f9f4;border:2px solid #1a3c2e;border-radius:12px;padding:24px;display:inline-block;margin:16px 0;">
-        <span style="font-size:40px;font-weight:bold;color:#1a3c2e;letter-spacing:8px;font-family:monospace;">${code}</span>
+      ${name ? `<p style="color:#333;margin-bottom:8px;">Bonjour <strong>${name}</strong>,</p>` : ''}
+      <p style="color:#555;margin-bottom:24px;font-size:15px;">
+        Cliquez sur le bouton ci-dessous pour vous connecter.<br>
+        <span style="font-size:13px;color:#999;">Si l'application est installée sur votre téléphone, elle s'ouvrira automatiquement.</span>
+      </p>
+      <a href="${magicUrl}"
+         style="display:inline-block;background:#B5850A;color:white;text-decoration:none;
+                padding:16px 40px;border-radius:12px;font-size:16px;font-weight:bold;
+                margin-bottom:28px;letter-spacing:0.5px;">
+        ✓ Se connecter à Sahel AgriConnect
+      </a>
+      <div style="border-top:1px solid #eee;padding-top:20px;margin-top:4px;">
+        <p style="color:#aaa;font-size:12px;margin-bottom:12px;">
+          Bouton bloqué ? Entrez ce code manuellement :
+        </p>
+        <div style="background:#f0f9f4;border:2px solid #1a3c2e;border-radius:12px;padding:16px;display:inline-block;margin-bottom:12px;">
+          <span style="font-size:32px;font-weight:bold;color:#1a3c2e;letter-spacing:8px;font-family:monospace;">${code}</span>
+        </div>
+        <p style="color:#999;font-size:12px;">Ce lien expire dans <strong>15 minutes</strong>.</p>
       </div>
-      <p style="color:#999;font-size:13px;">Ce code expire dans <strong>15 minutes</strong>.</p>
     </div>
   </div>`;
 }
@@ -102,14 +123,23 @@ export async function sendOtp({ purpose, email, phone, name, role }) {
 
   const resend = getResend();
   if (emailRaw && resend) {
-    await resend.emails.send({
-      from: FROM,
-      to: emailRaw,
-      subject: `${code} — Code de vérification Sahel AgriConnect`,
-      html: codeEmail(code, purposeNorm, name),
-    });
+    try {
+      const sendResult = await resend.emails.send({
+        from: FROM,
+        to: emailRaw,
+        subject: `${code} — Code de vérification Sahel AgriConnect`,
+        html: codeEmail(code, purposeNorm, name, emailRaw),
+      });
+      console.log('[Resend] Email sent (send-otp):', sendResult);
+    } catch (sendErr) {
+      console.error('[Resend] Send failed (send-otp):', sendErr.message, sendErr);
+      throw Object.assign(
+        new Error('Email delivery failed. Please try again.'),
+        { status: 500, code: 'EMAIL_SEND_FAILED' },
+      );
+    }
   } else if (emailRaw) {
-    console.log(`[DEV] OTP email ${emailRaw}: ${code}`);
+    console.log(`[DEV] OTP email ${emailRaw}: ${code} (RESEND_API_KEY not set)`);
   }
 
   const smsSent = false;

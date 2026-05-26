@@ -124,14 +124,19 @@ router.post('/send', async (req, res) => {
 
     const resend = getResend();
     if (emailRaw && resend) {
-      await resend.emails.send({
-        from: FROM,
-        to: emailRaw,
-        subject: `${code} — Code de vérification Sahel AgriConnect`,
-        html: codeEmail(code, purpose, name, email),
-      });
+      try {
+        const sendResult = await resend.emails.send({
+          from: FROM,
+          to: emailRaw,
+          subject: `${code} — Code de vérification Sahel AgriConnect`,
+          html: codeEmail(code, purpose, name, emailRaw),
+        });
+        console.log('[Resend] Email sent:', sendResult);
+      } catch (sendErr) {
+        console.error('[Resend] Send failed:', sendErr.message, sendErr);
+      }
     } else if (emailRaw) {
-      console.log(`[DEV] OTP email ${emailRaw}: ${code}`);
+      console.log(`[DEV] OTP email ${emailRaw}: ${code} (RESEND_API_KEY not set)`);
     }
 
     const smsSent = false; // SMS provider not yet configured — set to true when Twilio/Africa's Talking is live

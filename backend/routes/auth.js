@@ -113,7 +113,11 @@ router.post('/send-otp', async (req, res) => {
     });
     res.json(result);
   } catch (e) {
-    res.status(e.status || 500).json({ success: false, error: e.message });
+    res.status(e.status || 500).json({
+      success: false,
+      error: e.message,
+      ...(e.code ? { code: e.code } : {}),
+    });
   }
 });
 

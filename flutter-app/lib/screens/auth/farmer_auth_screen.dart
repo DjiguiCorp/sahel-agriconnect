@@ -224,6 +224,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     };
     try {
       final res = await ApiService.post('/api/auth/send-otp', body);
+      if (res['success'] == false && res['code'] == 'EMAIL_SEND_FAILED') {
+        return res;
+      }
       if (res['verificationId'] != null ||
           (res['success'] == true && res['error'] == null)) {
         return res;
@@ -354,6 +357,17 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     });
     try {
       final res = await _sendOtpApi();
+      if (res['success'] == false && res['code'] == 'EMAIL_SEND_FAILED') {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = lp.t(
+            'Email not received. Check your email address and try again.',
+            'Email non reçu. Vérifiez votre adresse email et réessayez.',
+          );
+        });
+        return;
+      }
       if (res['success'] == false && res['verificationId'] == null) {
         throw Exception(res['error']?.toString() ?? 'Request failed');
       }
