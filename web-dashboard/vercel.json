@@ -24,7 +24,10 @@
   "installCommand": "npm install",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "handle": "filesystem"
+    },
+    {
+      "source": "/((?!_vercel/|api/).*)",
       "destination": "/index.html"
     }
   ],
