@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -210,7 +209,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             _tile(
               context,
-              icon: PhosphorIcons.whatsappLogo(),
+              icon: Icons.chat_bubble_outline_rounded,
               iconBg: const Color(0xFFEAF3DE),
               iconColor: const Color(0xFF3B6D11),
               title: 'WhatsApp support',

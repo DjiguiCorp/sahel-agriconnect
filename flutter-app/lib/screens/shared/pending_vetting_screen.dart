@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -308,7 +307,7 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
                               ),
                             ),
                             child: const Icon(
-                              PhosphorIconsRegular.hourglass,
+                              Icons.hourglass_bottom_rounded,
                               size: 36,
                               color: AppColors.gold,
                             ),
@@ -413,7 +412,7 @@ class _PendingVettingScreenState extends State<PendingVettingScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(
-                                  PhosphorIconsRegular.clock,
+                                  Icons.access_time_rounded,
                                   size: 16,
                                   color: AppColors.gold,
                                 ),
