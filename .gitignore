@@ -60,3 +60,6 @@ web-dashboard/dist/
 .cache/
 .parcel-cache/
 
+# Firebase (never commit API keys)
+**/google-services.json
+
