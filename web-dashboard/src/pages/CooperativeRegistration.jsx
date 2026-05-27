@@ -7,6 +7,7 @@ import { Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe, Loader2, Check } 
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LocationSelector from '../components/LocationSelector';
 import OtherInput from '../components/OtherInput';
+import AppReturnBanner from '../components/AppReturnBanner';
 
 const BENEFIT_KEYS = ['recruitment', 'equipment', 'certification', 'investor', 'export'];
 const BENEFIT_ICONS = [Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe];
@@ -58,6 +59,8 @@ export default function CooperativeRegistration() {
     openToProcessorAffiliation: false,
   });
   const [searchParams] = useSearchParams();
+  const fromApp = searchParams.get('from') === 'app';
+  const urlLang = i18n.language === 'en' ? 'en' : 'fr';
   const [state, setState] = useState({
     loading: false,
     ok: false,
@@ -151,8 +154,8 @@ export default function CooperativeRegistration() {
             tierName: isFr ? 'Adhésion coopérative' : 'Cooperative Membership',
             amountUsd: COOP_PRICE_USD,
             billingInterval: 'year',
-            successUrl: `${window.location.origin}/cooperative-registration?payment=success`,
-            cancelUrl: `${window.location.origin}/cooperative-registration?payment=cancelled`,
+            successUrl: `${window.location.origin}/cooperative-registration?payment=success&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
+            cancelUrl: `${window.location.origin}/cooperative-registration?payment=cancelled&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
           }),
         });
         const stripeData = await stripeRes.json().catch(() => ({}));
@@ -292,6 +295,7 @@ export default function CooperativeRegistration() {
                 border: '1px solid rgba(29,158,117,0.3)',
               }}
             >
+              <AppReturnBanner role="cooperative" />
               <div
                 className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
                 style={{

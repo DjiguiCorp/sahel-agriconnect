@@ -2,7 +2,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Menu, X, ChevronDown } from 'lucide-react';
-import { useRegisteredUser } from '../hooks/useRegisteredUser';
+import { useWebSession } from '../hooks/useWebSession';
+import { PORTAL_META } from '../lib/portalConfig';
 import LanguageSelector from './LanguageSelector';
 
 const TOOLS_ITEMS = [
@@ -68,54 +69,75 @@ const Header = () => {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isRegistered, userName, isCoopPendingPayment, isCoopActive, clearUser } = useRegisteredUser();
+  const { sessions, hasAnySession, primaryRole, signOutAll } = useWebSession();
   const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
-  const [hasGovSession, setHasGovSession] = useState(() => Boolean(localStorage.getItem('gov_token')));
 
-  useEffect(() => {
-    const syncGov = () => setHasGovSession(Boolean(localStorage.getItem('gov_token')));
-    syncGov();
-    window.addEventListener('storage', syncGov);
-    return () => window.removeEventListener('storage', syncGov);
-  }, [location.pathname]);
+  const displayName =
+    sessions[primaryRole]?.name ||
+    sessions.investor?.name ||
+    sessions.farmer?.name ||
+    sessions.cooperative?.name ||
+    '';
 
-  const platformItems = useMemo(
-    () => [
-      { to: '/dashboard', label: t('nav.dashboard') },
-      ...(isRegistered
-        ? [
-            {
-              to: '/my-dashboard',
-              label: isCoopPendingPayment
-                ? isFr
-                  ? '⏳ Paiement en attente'
-                  : '⏳ Awaiting payment'
-                : isFr
-                  ? 'Mon tableau de bord'
-                  : 'My dashboard',
-            },
-          ]
-        : []),
-      ...(isCoopActive
-        ? [{ to: '/cooperative-portal', label: isFr ? 'Portail coopérative' : 'Cooperative portal' }]
-        : []),
+  const platformItems = useMemo(() => {
+    const items = [
+      { to: '/dashboard', label: isFr ? '📊 Statistiques publiques' : '📊 Public stats' },
+      { to: '/connexion', label: isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals' },
+    ];
+    if (sessions.farmer?.active) {
+      items.push({
+        to: PORTAL_META.farmer.portalPath,
+        label: isFr ? '🌾 Mon portail agriculteur' : '🌾 My farmer portal',
+      });
+    }
+    if (sessions.cooperative?.active) {
+      const pending = sessions.cooperative.status === 'pending_payment';
+      items.push({
+        to: PORTAL_META.cooperative.portalPath,
+        label: pending
+          ? isFr
+            ? '⏳ Coopérative · paiement'
+            : '⏳ Cooperative · payment'
+          : isFr
+            ? '🤝 Portail coopérative'
+            : '🤝 Cooperative portal',
+      });
+    }
+    if (sessions.investor?.active) {
+      items.push({
+        to: PORTAL_META.investor.portalPath,
+        label: isFr ? '💰 Portail AfriYield' : '💰 AfriYield portal',
+      });
+    }
+    if (sessions.government?.active) {
+      items.push({
+        to: PORTAL_META.government.portalPath,
+        label: isFr ? '🏛️ Portail gouvernement' : '🏛️ Government portal',
+      });
+    }
+    if (sessions.ngo?.active) {
+      items.push({
+        to: PORTAL_META.ngo.portalPath,
+        label: isFr ? '🌍 Portail ONG' : '🌍 NGO portal',
+      });
+    }
+    items.push(
       { to: '/afri-yield/marketplace', label: 'Marketplace' },
       { to: '/trace', label: isFr ? 'Traçabilité' : 'Traceability' },
-      ...(hasGovSession
-        ? [{ to: '/government-portal', label: isFr ? 'Portail pays' : 'Country portal' }]
-        : []),
-    ],
-    [t, isRegistered, isCoopPendingPayment, isCoopActive, hasGovSession, isFr]
-  );
+    );
+    return items;
+  }, [sessions, isFr]);
 
   const navLinkClass =
     'text-base text-white/80 hover:text-white transition-colors font-medium px-2 py-2 lg:px-3 whitespace-nowrap';
 
   const dropdownPanelStyle = {
-    background: 'rgba(15,34,24,0.95)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255,255,255,0.14)',
+    background:
+      'linear-gradient(145deg, rgba(15,34,24,0.97) 0%, rgba(20,48,36,0.92) 100%)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    border: '1px solid rgba(255,255,255,0.16)',
+    boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
   };
 
   const closeMenu = () => {
@@ -241,10 +263,12 @@ const Header = () => {
     <header
       className="sticky top-0 z-50"
       style={{
-        background: 'rgba(15,34,24,0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        background:
+          'linear-gradient(180deg, rgba(10,28,20,0.92) 0%, rgba(15,34,24,0.88) 100%)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(181,133,10,0.15)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
       }}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-50">
@@ -428,15 +452,26 @@ const Header = () => {
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center gap-4 lg:gap-5 shrink-0 pl-4 lg:pl-6 border-l border-white/10">
-            {isRegistered && (
-              <div className="hidden xl:flex items-center gap-2 max-w-[9rem]">
-                <span className="text-sm text-white/60 truncate" title={userName || ''}>
-                  {isFr ? 'Bonjour' : 'Hi'} {userName?.split(' ')[0] || ''}
-                </span>
+          <div className="hidden md:flex items-center gap-3 lg:gap-4 shrink-0 pl-4 lg:pl-6 border-l border-white/10">
+            {hasAnySession && displayName && (
+              <div className="hidden xl:flex items-center gap-2 max-w-[11rem]">
+                <Link
+                  to={
+                    primaryRole && PORTAL_META[primaryRole]
+                      ? PORTAL_META[primaryRole].portalPath
+                      : '/connexion'
+                  }
+                  className="text-sm text-white/80 hover:text-white truncate font-medium"
+                  title={isFr ? 'Ouvrir mon portail' : 'Open my portal'}
+                >
+                  {isFr ? 'Bonjour' : 'Hi'} {displayName.split(' ')[0]}
+                </Link>
                 <button
                   type="button"
-                  onClick={clearUser}
+                  onClick={() => {
+                    signOutAll();
+                    navigate('/');
+                  }}
                   className="text-xs text-white/40 hover:text-white/70 transition shrink-0"
                   title={isFr ? 'Se déconnecter' : 'Sign out'}
                 >
@@ -446,6 +481,13 @@ const Header = () => {
             )}
 
             <LanguageSelector />
+
+            <Link
+              to="/connexion"
+              className="hidden lg:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-white border border-white/20 hover:bg-white/10 transition whitespace-nowrap"
+            >
+              {isFr ? 'Connexion' : 'Sign in'}
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -572,20 +614,25 @@ const Header = () => {
                 {isFr ? 'Investir' : 'Invest'}
               </Link>
 
+              <Link to="/connexion" className={navLinkClass} onClick={closeAllNav}>
+                {isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals'}
+              </Link>
+
               <div className="pt-4">
                 <LanguageSelector />
               </div>
 
-              {isRegistered ? (
+              {hasAnySession ? (
                 <button
                   type="button"
                   onClick={() => {
-                    clearUser();
+                    signOutAll();
                     closeAllNav();
+                    navigate('/');
                   }}
                   className="text-left text-sm text-white/50 hover:text-white/80 transition pt-3"
                 >
-                  {isFr ? 'Se déconnecter' : 'Sign out'}
+                  {isFr ? 'Se déconnecter (tous les profils)' : 'Sign out (all profiles)'}
                 </button>
               ) : null}
             </div>

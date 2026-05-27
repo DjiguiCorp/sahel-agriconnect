@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
+import { useWebSession } from '../hooks/useWebSession';
 import { API_ENDPOINTS } from '../config/api';
 import { CROP_EMOJIS } from './producer-dashboard/constants';
 
@@ -42,6 +43,17 @@ function ProducerDashboard() {
   const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
   const navigate = useNavigate();
   const { userEmail, userName, userPhone, isRegistered, clearUser, registerUser } = useRegisteredUser();
+  const { sessions } = useWebSession();
+
+  useEffect(() => {
+    const investorOnly =
+      sessions.investor?.active &&
+      !sessions.farmer?.active &&
+      !sessions.cooperative?.active;
+    if (investorOnly) {
+      navigate('/afri-yield/portal', { replace: true });
+    }
+  }, [sessions, navigate]);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [loadedTabs, setLoadedTabs] = useState(() => new Set(['overview']));

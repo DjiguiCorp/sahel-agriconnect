@@ -128,6 +128,11 @@ function AccessScreen({ onAccess, t }) {
         sessionStorage.setItem('afriyield_token', token);
         sessionStorage.setItem('afriyield_investor_email', investor.email);
         sessionStorage.setItem('afriyield_investor_name', investor.fullName || '');
+        localStorage.setItem('afriyield_investor_email', investor.email);
+        localStorage.setItem('afriyield_investor_name', investor.fullName || '');
+        localStorage.removeItem('sac_user_email');
+        localStorage.removeItem('sac_user_name');
+        window.dispatchEvent(new Event('web_session_updated'));
         onAccess(investor);
       } else {
         setNotFound(true);
@@ -1320,10 +1325,12 @@ export default function InvestorPortal() {
     sessionStorage.removeItem('afriyield_token');
     sessionStorage.removeItem('afriyield_investor_email');
     sessionStorage.removeItem('afriyield_investor_name');
-    // Also clear shared header greeting (Sahel AgriConnect registered user)
+    localStorage.removeItem('afriyield_investor_email');
+    localStorage.removeItem('afriyield_investor_name');
     localStorage.removeItem('sac_user_email');
     localStorage.removeItem('sac_user_name');
     window.dispatchEvent(new Event('sac_user_updated'));
+    window.dispatchEvent(new Event('web_session_updated'));
     setInvestor(null);
     setInvestments([]);
     setNotifications([]);

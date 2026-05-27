@@ -572,15 +572,26 @@ export default function AfriYieldExchange() {
                 )}
               </div>
             </div>
-            {kycState.needsKYC && (
-              <Link
-                to="/afri-yield/register?step=kyc"
-                className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold text-black"
-                style={{ backgroundColor: '#B5850A' }}
-              >
-                {isFr ? 'Compléter KYC →' : 'Complete KYC →'}
-              </Link>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {(kycState.needsKYC || kycState.kycUnderReview || kycState.canInvest) && (
+                <Link
+                  to="/afri-yield/portal"
+                  className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold text-black"
+                  style={{ backgroundColor: '#1D9E75' }}
+                >
+                  {isFr ? 'Mon portail AfriYield →' : 'My AfriYield portal →'}
+                </Link>
+              )}
+              {kycState.needsKYC && (
+                <Link
+                  to="/afri-yield/register?step=kyc"
+                  className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold text-black"
+                  style={{ backgroundColor: '#B5850A' }}
+                >
+                  {isFr ? 'Compléter KYC →' : 'Complete KYC →'}
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}

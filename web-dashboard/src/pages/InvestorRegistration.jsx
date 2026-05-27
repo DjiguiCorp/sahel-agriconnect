@@ -3,13 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { Loader2 } from 'lucide-react';
-import { useRegisteredUser } from '../hooks/useRegisteredUser';
+import { useWebSession } from '../hooks/useWebSession';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { AFRICAN_COUNTRIES, legacyCountryToAppName } from '../data/africanCountries';
 import {
   DEFAULT_INVESTOR_RESIDENCE,
   INVESTOR_RESIDENCE_I18N_KEYS,
 } from '../data/investorResidenceCountries';
+import AppReturnBanner from '../components/AppReturnBanner';
 
 const RESIDENCE = [
   ...AFRICAN_COUNTRIES,
@@ -48,8 +49,10 @@ export default function InvestorRegistration() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const skipToKYC = searchParams.get('step') === 'kyc';
+  const fromApp = searchParams.get('from') === 'app';
+  const urlLang = i18n.language === 'en' ? 'en' : 'fr';
   const isFr = i18n.language === 'fr';
-  const { registerUser } = useRegisteredUser();
+  const { registerInvestor } = useWebSession();
   const { country: detectedCountry, detected } = useGeolocation();
   const [form, setForm] = useState({
     fullName: '',
@@ -186,7 +189,7 @@ export default function InvestorRegistration() {
       setIdFile(null);
       setIdUploaded(false);
       setSuccess(true);
-      registerUser(form.email, form.fullName);
+      registerInvestor(form.email, form.fullName);
     } catch (err) {
       setError(err.message || t('afriYield.registration.networkError'));
     } finally {
@@ -341,8 +344,8 @@ export default function InvestorRegistration() {
                         type: 'afriyield_access',
                         email: form.email,
                         name: form.fullName,
-                        successUrl: window.location.origin + '/afri-yield/register?payment=success&step=kyc',
-                        cancelUrl: window.location.href,
+                        successUrl: `${window.location.origin}/afri-yield/register?payment=success&step=kyc&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
+                        cancelUrl: `${window.location.href.split('?')[0]}?payment=cancelled&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
                       }),
                     });
                     const data = await r.json();
@@ -366,6 +369,7 @@ export default function InvestorRegistration() {
 
           {success && !kycPhase && paymentDone && (
             <div className="text-center py-8">
+              <AppReturnBanner role="investor" />
               <div className="text-5xl mb-4">💳</div>
               <h3 className="text-white font-bold text-xl mb-2">
                 {isFr ? 'Paiement confirmé !' : 'Payment confirmed!'}
@@ -566,11 +570,18 @@ export default function InvestorRegistration() {
               )}
               <button
                 type="button"
-                onClick={() => navigate('/afri-yield/opportunities')}
-                className="w-full max-w-sm mx-auto block py-4 rounded-xl font-bold text-black text-sm"
-                style={{ backgroundColor: '#B5850A' }}
+                onClick={() => navigate('/afri-yield/portal')}
+                className="w-full max-w-sm mx-auto block py-4 rounded-xl font-bold text-black text-sm mb-3"
+                style={{ backgroundColor: '#1D9E75' }}
               >
-                {isFr ? '→ Voir les opportunités' : '→ Browse Opportunities'}
+                {isFr ? '→ Mon portail AfriYield' : '→ My AfriYield portal'}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/afri-yield/opportunities')}
+                className="w-full max-w-sm mx-auto block py-3 rounded-xl font-bold text-white text-sm border border-white/20"
+              >
+                {isFr ? 'Voir les opportunités' : 'Browse opportunities'}
               </button>
             </div>
           )}

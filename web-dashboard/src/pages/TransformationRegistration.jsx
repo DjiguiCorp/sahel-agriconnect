@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProcessorRegistration from '../components/ProcessorRegistration';
+import AppReturnBanner from '../components/AppReturnBanner';
 
 export default function TransformationRegistration() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromApp = searchParams.get('from') === 'app';
   const [success, setSuccess] = useState(false);
 
   return (
@@ -97,6 +100,7 @@ export default function TransformationRegistration() {
           <div className="p-6 registration-dark-zone">
             {success ? (
               <div className="text-center py-8">
+                <AppReturnBanner role="processor" />
                 <div className="text-5xl mb-4">🏭</div>
                 <h3 className="text-white font-bold text-xl mb-2">
                   {isFr ? 'Enregistrement reçu !' : 'Registration Received!'}

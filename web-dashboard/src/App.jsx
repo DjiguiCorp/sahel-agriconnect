@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary, { ApiSection } from './components/ErrorBoundary';
 import { useGeolocation } from './hooks/useGeolocation';
 import MagicLinkVerify from './pages/MagicLinkVerify';
+import SignInHub from './pages/SignInHub';
 
 const Layout = lazy(() => import('./components/Layout'));
 const Home = lazy(() => import('./pages/Home'));
@@ -137,6 +138,9 @@ function App() {
                   <Route path="privacy" element={<PrivacyPolicy />} />
                   <Route path="privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="contact" element={<Contact />} />
+                  <Route path="connexion" element={<SignInHub />} />
+                  <Route path="login" element={<SignInHub />} />
+                  <Route path="sign-in" element={<Navigate to="/connexion" replace />} />
                   <Route path="pricing" element={<Pricing />} />
                   <Route path="how-it-works" element={<HowItWorks />} />
                   <Route

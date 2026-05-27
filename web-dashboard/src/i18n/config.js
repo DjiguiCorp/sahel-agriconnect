@@ -91,11 +91,14 @@ if (langParam === 'en' || langParam === 'fr') {
 }
 
 // Détecter et appliquer la langue depuis la géolocalisation après l'initialisation
-getInitialLanguage().then((detectedLang) => {
-  if (detectedLang && detectedLang !== i18n.language) {
-    i18n.changeLanguage(detectedLang);
-    console.log(`🌍 Langue détectée et appliquée: ${detectedLang}`);
-  }
-});
+// Skip when ?lang= was set (e.g. opened from mobile app in English).
+if (!(langParam === 'en' || langParam === 'fr')) {
+  getInitialLanguage().then((detectedLang) => {
+    if (detectedLang && detectedLang !== i18n.language) {
+      i18n.changeLanguage(detectedLang);
+      console.log(`🌍 Langue détectée et appliquée: ${detectedLang}`);
+    }
+  });
+}
 
 export default i18n;
