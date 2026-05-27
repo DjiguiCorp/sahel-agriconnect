@@ -198,35 +198,28 @@ const Header = () => {
   const mainNavLinks = useMemo(() => getMainNavLinks(isFr), [isFr]);
 
   const signInItems = useMemo(() => {
-    const base = [
-      { to: '/connexion', label: isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals' },
-    ];
-    // Quick access to role portals when logged in.
-    const portalShortcuts = [];
-    Object.keys(PORTAL_META).forEach((role) => {
+    const make = (role) => {
       const meta = PORTAL_META[role];
-      if (!meta) return;
       const session = sessions?.[role];
-      if (session?.active) {
-        portalShortcuts.push({
-          to: meta.portalPath,
-          label: `${meta.icon} ${isFr ? meta.labelFr : meta.labelEn}`,
-        });
-      }
-    });
-    if (portalShortcuts.length) {
-      base.push(...portalShortcuts);
-    }
-    // Always show direct sign-in entries (no burying under Platform).
-    base.push(
-      { to: PORTAL_META.farmer.signInPath, label: `${PORTAL_META.farmer.icon} ${isFr ? 'Agriculteur' : 'Farmer'}` },
-      { to: PORTAL_META.cooperative.signInPath, label: `${PORTAL_META.cooperative.icon} ${isFr ? 'Coopérative' : 'Cooperative'}` },
-      { to: PORTAL_META.processor.signInPath, label: `${PORTAL_META.processor.icon} ${isFr ? 'Transformation' : 'Processing'}` },
-      { to: PORTAL_META.investor.signInPath, label: `${PORTAL_META.investor.icon} ${isFr ? 'AfriYield' : 'AfriYield'}` },
-      { to: PORTAL_META.government.signInPath, label: `${PORTAL_META.government.icon} ${isFr ? 'Gouvernement' : 'Government'}` },
-      { to: PORTAL_META.ngo.signInPath, label: `${PORTAL_META.ngo.icon} ${isFr ? 'ONG' : 'NGO'}` },
-    );
-    return base;
+      return {
+        role,
+        to: meta.signInPath,
+        portalTo: meta.portalPath,
+        icon: meta.icon,
+        label: isFr ? meta.labelFr : meta.labelEn,
+        name: session?.name || '',
+        active: Boolean(session?.active),
+      };
+    };
+    return [
+      { kind: 'hub', to: '/connexion', label: isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals' },
+      { kind: 'role', ...make('farmer') },
+      { kind: 'role', ...make('cooperative') },
+      { kind: 'role', ...make('processor') },
+      { kind: 'role', ...make('investor') },
+      { kind: 'role', ...make('government') },
+      { kind: 'role', ...make('ngo') },
+    ];
   }, [sessions, isFr]);
 
   const joinMenuDropdown = (
@@ -458,33 +451,6 @@ const Header = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3 lg:gap-4 shrink-0 pl-4 lg:pl-6 border-l border-white/10">
-            {hasAnySession && displayName && (
-              <div className="hidden xl:flex items-center gap-2 max-w-[11rem]">
-                <Link
-                  to={
-                    primaryRole && PORTAL_META[primaryRole]
-                      ? PORTAL_META[primaryRole].portalPath
-                      : '/connexion'
-                  }
-                  className="text-sm text-white/80 hover:text-white truncate font-medium"
-                  title={isFr ? 'Ouvrir mon portail' : 'Open my portal'}
-                >
-                  {isFr ? 'Bonjour' : 'Hi'} {displayName.split(' ')[0]}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    signOutAll();
-                    navigate('/');
-                  }}
-                  className="text-xs text-white/40 hover:text-white/70 transition shrink-0"
-                  title={isFr ? 'Se déconnecter' : 'Sign out'}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
             <LanguageSelector />
 
             <div ref={desktopSignInRef} className="relative hidden lg:block">
@@ -503,17 +469,72 @@ const Header = () => {
               </button>
               {desktopSignInOpen && (
                 <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-white/15 shadow-2xl z-50 overflow-hidden" style={dropdownPanelStyle} role="menu">
-                  {signInItems.map((item) => (
-                    <Link
-                      key={item.to + item.label}
-                      to={item.to}
-                      role="menuitem"
-                      onClick={() => setDesktopSignInOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors border-b border-white/5 last:border-0"
-                    >
-                      <span className="truncate">{item.label}</span>
-                    </Link>
-                  ))}
+                  {hasAnySession && displayName ? (
+                    <div className="px-4 py-3 border-b border-white/10">
+                      <div className="flex items-center justify-between gap-3">
+                        <Link
+                          to={primaryRole && PORTAL_META[primaryRole] ? PORTAL_META[primaryRole].portalPath : '/connexion'}
+                          onClick={() => setDesktopSignInOpen(false)}
+                          className="text-sm text-white/85 hover:text-white font-semibold truncate"
+                          title={isFr ? 'Ouvrir mon portail' : 'Open my portal'}
+                        >
+                          {isFr ? 'Bonjour' : 'Hi'} {displayName.split(' ')[0]}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            signOutAll();
+                            setDesktopSignInOpen(false);
+                            navigate('/');
+                          }}
+                          className="text-xs text-white/45 hover:text-white/80 transition shrink-0"
+                        >
+                          {isFr ? 'Déconnexion' : 'Sign out'}
+                        </button>
+                      </div>
+                      <p className="text-[11px] mt-1 text-white/45">
+                        {isFr ? 'Votre session apparaît à côté du portail.' : 'Your session appears next to the portal.'}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {signInItems.map((item) => {
+                    if (item.kind === 'hub') {
+                      return (
+                        <Link
+                          key={item.to + item.label}
+                          to={item.to}
+                          role="menuitem"
+                          onClick={() => setDesktopSignInOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors border-b border-white/5"
+                        >
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+                      );
+                    }
+                    const label = `${item.icon} ${item.label}`;
+                    return (
+                      <div
+                        key={item.role}
+                        className="flex items-center justify-between gap-3 px-4 py-3 text-sm border-b border-white/5 last:border-0"
+                      >
+                        <Link
+                          to={item.active ? item.portalTo : item.to}
+                          role="menuitem"
+                          onClick={() => setDesktopSignInOpen(false)}
+                          className="text-white/80 hover:text-white transition-colors truncate"
+                          title={item.active ? (isFr ? 'Ouvrir mon portail' : 'Open my portal') : undefined}
+                        >
+                          {label}
+                        </Link>
+                        {item.active ? (
+                          <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/25">
+                            {isFr ? 'Connecté' : 'Signed in'}
+                          </span>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                   {hasAnySession ? (
                     <button
                       type="button"
@@ -675,16 +696,61 @@ const Header = () => {
                 </button>
                 {mobileSignInOpen && (
                   <div className="mt-2 flex flex-col space-y-1 border-l border-white/15 pl-3 ml-1">
-                    {signInItems.map(({ to, label }) => (
-                      <Link
-                        key={to + label}
-                        to={to}
-                        className="py-2 text-lg text-white/80 hover:text-white"
-                        onClick={closeAllNav}
-                      >
-                        {label}
-                      </Link>
-                    ))}
+                    {hasAnySession && displayName ? (
+                      <div className="py-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <Link
+                            to={primaryRole && PORTAL_META[primaryRole] ? PORTAL_META[primaryRole].portalPath : '/connexion'}
+                            className="text-white/85 font-semibold"
+                            onClick={closeAllNav}
+                          >
+                            {isFr ? 'Bonjour' : 'Hi'} {displayName.split(' ')[0]}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              signOutAll();
+                              closeAllNav();
+                              navigate('/');
+                            }}
+                            className="text-xs text-white/50 hover:text-white/80"
+                          >
+                            {isFr ? 'Déconnexion' : 'Sign out'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {signInItems.map((item) => {
+                      if (item.kind === 'hub') {
+                        return (
+                          <Link
+                            key={item.to + item.label}
+                            to={item.to}
+                            className="py-2 text-lg text-white/80 hover:text-white"
+                            onClick={closeAllNav}
+                          >
+                            {item.label}
+                          </Link>
+                        );
+                      }
+                      const label = `${item.icon} ${item.label}`;
+                      return (
+                        <Link
+                          key={item.role}
+                          to={item.active ? item.portalTo : item.to}
+                          className="py-2 text-lg text-white/80 hover:text-white flex items-center justify-between gap-3"
+                          onClick={closeAllNav}
+                        >
+                          <span>{label}</span>
+                          {item.active ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/25">
+                              {isFr ? 'Connecté' : 'Signed in'}
+                            </span>
+                          ) : null}
+                        </Link>
+                      );
+                    })}
                     {hasAnySession ? (
                       <button
                         type="button"
