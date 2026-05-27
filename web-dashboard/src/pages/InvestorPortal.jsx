@@ -17,6 +17,7 @@ import {
   Star,
   X,
   Trash2,
+  LogOut,
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import { API_ENDPOINTS } from '../config/api';
@@ -1545,8 +1546,41 @@ export default function InvestorPortal() {
         </div>
 
         <div className="mt-auto px-4 pb-5 pt-6">
-          <button type="button" onClick={signOut} className="text-xs w-full text-left hover:opacity-80" style={{ color: 'rgba(245,240,232,0.55)' }}>
-            {t('investorPortal.signOut')}
+          <button
+            type="button"
+            onClick={signOut}
+            className="w-full rounded-2xl px-4 py-3 text-left transition"
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.14)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.10)',
+            }}
+            aria-label={t('investorPortal.signOut')}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-bold truncate" style={{ color: '#F5F0E8' }}>
+                  {t('investorPortal.signOut')}
+                </p>
+                <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(245,240,232,0.55)' }}>
+                  {i18n.language === 'fr'
+                    ? 'Fermer votre session AfriYield'
+                    : 'Sign out of AfriYield'}
+                </p>
+              </div>
+              <span
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{
+                  background: 'rgba(181,133,10,0.16)',
+                  border: '1px solid rgba(181,133,10,0.28)',
+                }}
+                aria-hidden="true"
+              >
+                <LogOut className="w-4 h-4" style={{ color: '#B5850A' }} />
+              </span>
+            </div>
           </button>
         </div>
       </aside>
