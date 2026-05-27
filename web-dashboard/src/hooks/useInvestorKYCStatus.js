@@ -11,6 +11,10 @@ export function useInvestorKYCStatus() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(!!email);
   const [category, setCategory] = useState(null);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [photoIdUploaded, setPhotoIdUploaded] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [additionalDocsRequested, setAdditionalDocsRequested] = useState('');
 
   useEffect(() => {
     if (!email) {
@@ -23,20 +27,24 @@ export function useInvestorKYCStatus() {
         if (d.success) {
           setStatus(d.status || 'not_started');
           setCategory(d.category || null);
+          setPaymentVerified(!!d.paymentVerified);
+          setPhotoIdUploaded(!!d.photoIdUploaded);
+          setRejectionReason(d.rejectionReason || '');
+          setAdditionalDocsRequested(d.additionalDocsRequested || '');
         }
       })
       .catch(() => setStatus('not_started'))
       .finally(() => setLoading(false));
   }, [email]);
 
-  // Can this investor proceed to payment?
-  const canInvest = status === 'approved' || status === 'african_pending_review'; // African paid first
-
-  // Is registered but KYC incomplete?
+  const canInvest = status === 'approved' || status === 'african_pending_review';
   const needsKYC = !!email && (status === 'not_started' || status === 'in_progress');
-
-  // Is waiting for review?
-  const kycUnderReview = status === 'pending_review' || status === 'pending_kyc';
+  const kycUnderReview =
+    status === 'pending_review'
+    || status === 'pending_kyc'
+    || status === 'african_pending_review';
+  const kycApproved = status === 'approved';
+  const portalReady = kycApproved && paymentVerified;
 
   return {
     email,
@@ -44,9 +52,21 @@ export function useInvestorKYCStatus() {
     loading,
     status,
     category,
+    paymentVerified,
+    photoIdUploaded,
+    rejectionReason,
+    additionalDocsRequested,
     isRegistered: !!email,
     canInvest,
     needsKYC,
     kycUnderReview,
+    kycApproved,
+    portalReady,
+    kycSnapshot: {
+      status,
+      paymentVerified,
+      rejectionReason,
+      additionalDocsRequested,
+    },
   };
 }

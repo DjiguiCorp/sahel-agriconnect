@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import TransactionTracker from '../components/TransactionTracker';
+import InvestorAccountStatus from '../components/InvestorAccountStatus';
 
 const API = API_BASE_URL.replace(/\/$/, '');
 const EUR_RATE = 0.92;
@@ -272,12 +273,13 @@ function AccessScreen({ onAccess, t }) {
 }
 
 /* ─── HOME TAB ──────────────────────────────────────────────────────── */
-function HomeTab({ investor, investments, notifications, t, navigate, onOpenNotifications }) {
+function HomeTab({ investor, investments, notifications, kyc, t, navigate, onOpenNotifications }) {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
   const firstName = (investor?.fullName || '').split(' ')[0];
   const hasInvestments = investments && investments.length > 0;
   const mainInv = hasInvestments ? investments[0] : null;
+  const showStatusTracker = !hasInvestments || (kyc && (!kyc.paymentVerified || kyc.status !== 'approved'));
   const totalDeployed = (investments || []).reduce((s, i) => s + (Number(i.amountDeployed) || 0), 0);
   const activeCount = (investments || []).filter((i) => i.status === 'active').length;
   const completedCount = (investments || []).filter((i) => i.status === 'completed').length;
@@ -318,6 +320,10 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
               {t('investorPortal.home.subtitle')}
             </p>
           </div>
+
+          {showStatusTracker && kyc ? (
+            <InvestorAccountStatus kyc={kyc} hasInvestments={hasInvestments} isFr={isFr} />
+          ) : null}
 
           {/* Main investment card — desktop wider with 1-row stats */}
           <div className="mx-4 md:mx-6 rounded-2xl p-5" style={{ background: '#132a1e', border: '1px solid rgba(181,133,10,0.25)' }}>
@@ -497,8 +503,9 @@ function HomeTab({ investor, investments, notifications, t, navigate, onOpenNoti
 }
 
 /* ─── MY PORTFOLIO TAB ─────────────────────────────────────────────── */
-function PortfolioTab({ investments, investor, t, navigate }) {
+function PortfolioTab({ investments, investor, kyc, t, navigate }) {
   const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
   if (!investments || investments.length === 0) {
     return (
       <div className="px-4 pt-8 pb-24 flex flex-col items-center text-center">
@@ -509,6 +516,11 @@ function PortfolioTab({ investments, investor, t, navigate }) {
         <p className="text-sm mb-6 max-w-xs" style={{ color: 'rgba(245,240,232,0.55)' }}>
           {t('investorPortal.portfolio.emptySub')}
         </p>
+        {kyc ? (
+          <div className="w-full max-w-md mb-4 text-left">
+            <InvestorAccountStatus kyc={kyc} hasInvestments={false} isFr={isFr} />
+          </div>
+        ) : null}
         <div className="max-w-md w-full mb-4">
           <InvestmentPaymentNotice t={t} />
         </div>
@@ -1283,6 +1295,7 @@ export default function InvestorPortal() {
   const [activeTab, setActiveTab] = useState('home');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [kyc, setKyc] = useState(null);
 
   useEffect(() => {
     const token = sessionStorage.getItem('afriyield_token');
@@ -1298,9 +1311,10 @@ export default function InvestorPortal() {
     try {
       const token = sessionStorage.getItem('afriyield_token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const [invRes, noteRes] = await Promise.allSettled([
+      const [invRes, noteRes, kycRes] = await Promise.allSettled([
         fetch(`${API}/api/investments/investor/${encodeURIComponent(email)}`, { headers }),
         fetch(`${API}/api/investor-notifications/${encodeURIComponent(email)}`, { headers }),
+        fetch(`${API}/api/kyc/status/${encodeURIComponent(email)}`),
       ]);
       if (invRes.status === 'fulfilled' && invRes.value.ok) {
         const d = await invRes.value.json();
@@ -1310,6 +1324,17 @@ export default function InvestorPortal() {
       if (noteRes.status === 'fulfilled' && noteRes.value.ok) {
         const d = await noteRes.value.json();
         setNotifications(d?.notifications || []);
+      }
+      if (kycRes.status === 'fulfilled' && kycRes.value.ok) {
+        const d = await kycRes.value.json();
+        if (d.success) {
+          setKyc({
+            status: d.status,
+            paymentVerified: d.paymentVerified,
+            rejectionReason: d.rejectionReason,
+            additionalDocsRequested: d.additionalDocsRequested,
+          });
+        }
       }
     } catch {
       /* ignore */
@@ -1365,6 +1390,18 @@ export default function InvestorPortal() {
 
   const initials = getInitials(investor?.fullName);
   const isPremium = false;
+  const accountStatusLabel = (() => {
+    if (!kyc) return t('investorPortal.premium.currentFree');
+    if (kyc.status === 'rejected') return isFr ? 'KYC refusé' : 'KYC declined';
+    if (kyc.status === 'approved' && kyc.paymentVerified) {
+      return isFr ? 'Compte actif' : 'Active account';
+    }
+    if (['pending_review', 'pending_kyc', 'african_pending_review', 'additional_docs'].includes(kyc.status)) {
+      return isFr ? 'KYC en cours' : 'KYC in review';
+    }
+    if (kyc.paymentVerified) return isFr ? 'Paiement reçu' : 'Payment received';
+    return isFr ? 'En traitement' : 'Processing';
+  })();
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#0d1f17', fontFamily: "'DM Sans', sans-serif" }}>
@@ -1385,8 +1422,8 @@ export default function InvestorPortal() {
             </p>
           </div>
           <div className="mt-3 inline-flex items-center gap-2">
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: isPremium ? 'rgba(181,133,10,0.15)' : 'rgba(255,255,255,0.06)', color: isPremium ? '#B5850A' : 'rgba(245,240,232,0.65)', border: '1px solid rgba(181,133,10,0.25)' }}>
-              {isPremium ? t('investorPortal.premium.currentPremium') : t('investorPortal.premium.currentFree')}
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(181,133,10,0.12)', color: '#B5850A', border: '1px solid rgba(181,133,10,0.25)' }}>
+              {accountStatusLabel}
             </span>
           </div>
         </div>
@@ -1414,20 +1451,7 @@ export default function InvestorPortal() {
           ))}
         </div>
 
-        <div className="mt-auto px-4 pb-5 pt-6 space-y-3">
-          <div className="rounded-2xl p-4" style={{ background: '#132a1e', border: '1px solid rgba(181,133,10,0.25)' }}>
-            <div className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-[#B5850A]" />
-              <p className="font-semibold text-white text-sm">
-                {i18n.language === 'fr' ? 'Passer à Premium' : 'Upgrade to Premium'}
-              </p>
-            </div>
-            <p className="tabular-nums text-[#B5850A] font-bold text-lg mt-2">{t('investorPortal.premium.price')}</p>
-            <button type="button" onClick={() => setShowPremiumModal(true)} className="text-xs font-bold text-[#B5850A] mt-2 hover:underline">
-              <span>{i18n.language === 'fr' ? 'En savoir plus →' : 'Learn more →'}</span>
-            </button>
-          </div>
-
+        <div className="mt-auto px-4 pb-5 pt-6">
           <button type="button" onClick={signOut} className="text-xs w-full text-left hover:opacity-80" style={{ color: 'rgba(245,240,232,0.55)' }}>
             {t('investorPortal.signOut')}
           </button>
@@ -1538,13 +1562,14 @@ export default function InvestorPortal() {
                 investor={investor}
                 investments={investments}
                 notifications={notifications}
+                kyc={kyc}
                 t={t}
                 navigate={navigate}
                 onOpenNotifications={() => setShowNotifications(true)}
               />
             )}
             {activeTab === 'portfolio' && (
-              <PortfolioTab investments={investments} investor={investor} t={t} navigate={navigate} />
+              <PortfolioTab investments={investments} investor={investor} kyc={kyc} t={t} navigate={navigate} />
             )}
             {activeTab === 'prices' && <PricesTab onOpenPremium={() => setShowPremiumModal(true)} />}
             {activeTab === 'news' && <NewsTab t={t} onOpenPremium={() => setShowPremiumModal(true)} />}

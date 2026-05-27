@@ -197,10 +197,32 @@ export default function InvestorRegistration() {
     }
   };
 
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   const submitKyc = async () => {
     if (!idFile) return;
+    if (!['passport', 'national_id'].includes(idType)) {
+      setError(
+        isFr
+          ? 'Seuls le passeport ou la carte nationale d\'identité sont acceptés.'
+          : 'Only passport or national ID are accepted.'
+      );
+      return;
+    }
+    if (!idFile.type.startsWith('image/')) {
+      setError(isFr ? 'Veuillez téléverser une photo (JPG ou PNG).' : 'Please upload a photo (JPG or PNG).');
+      return;
+    }
     setKycSubmitting(true);
+    setError(null);
     try {
+      const photoIdUrl = await fileToDataUrl(idFile);
       const res = await fetch(`${API_BASE_URL}/api/kyc/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,6 +231,8 @@ export default function InvestorRegistration() {
           investorName: form.fullName,
           countryOfResidence: normalizeCountry(form.countryOfResidence),
           idType,
+          photoIdType: idType,
+          photoIdUrl,
           photoIdUploaded: true,
           acceptedTerms: true,
           acceptedRiskDisclosure: true,
@@ -217,8 +241,9 @@ export default function InvestorRegistration() {
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok && !data.success) {
-        console.error('KYC submit error:', data.error || res.status);
+      if (!res.ok || data.success === false) {
+        setError(data.error || (isFr ? 'Échec de l\'envoi KYC' : 'KYC submission failed'));
+        return;
       }
       setKycSubmitted(true);
       const returnUrl = localStorage.getItem('afriyield_invest_return');

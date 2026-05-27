@@ -255,9 +255,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final formattedContact = contact.contains('@')
         ? contact
         : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
+    final lang = context.read<LanguageProvider>().lang;
     final body = <String, dynamic>{
       'purpose': 'login',
       'role': widget.role.name,
+      'lang': lang,
       if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
       if (!contact.contains('@')) 'phone': formattedContact,
     };
@@ -360,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final lang = context.read<LanguageProvider>().lang;
 
     final separator = url.contains('?') ? '&' : '?';
-    final localizedUrl = '$url${separator}lang=$lang';
+    final localizedUrl = '$url${separator}lang=$lang&from=app';
 
     final uri = Uri.parse(localizedUrl);
     if (await canLaunchUrl(uri)) {

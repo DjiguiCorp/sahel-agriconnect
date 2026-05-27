@@ -13,6 +13,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/magic_link_screen.dart';
 import '../screens/cooperative/cooperative_dashboard.dart';
 import '../screens/farmer/farmer_dashboard.dart';
+import '../screens/farmer/farmer_onboarding_screen.dart';
 import '../screens/government/government_dashboard.dart';
 import '../screens/home_screen.dart';
 import '../screens/investor/investor_dashboard.dart';
@@ -234,10 +235,14 @@ GoRouter buildRouter(
       GoRoute(
         path: '/auth/magic',
         builder: (context, state) {
-          final code = state.uri.queryParameters['c'] ?? '';
-          final email = state.uri.queryParameters['e'] ?? '';
-          final purpose = state.uri.queryParameters['p'] ?? '';
-          return MagicLinkScreen(code: code, email: email, purpose: purpose);
+          final q = state.uri.queryParameters;
+          return MagicLinkScreen(
+            code: q['c'] ?? '',
+            email: q['e'] ?? '',
+            purpose: q['p'] ?? '',
+            role: q['r'],
+            lang: q['lang'],
+          );
         },
       ),
       GoRoute(
@@ -251,6 +256,10 @@ GoRouter buildRouter(
             verificationId: extra['verificationId'],
           );
         },
+      ),
+      GoRoute(
+        path: '/farmer/onboarding',
+        builder: (_, __) => const FarmerOnboardingScreen(),
       ),
       GoRoute(
         path: '/farmer',

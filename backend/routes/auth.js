@@ -110,6 +110,7 @@ router.post('/send-otp', async (req, res) => {
       phone: req.body?.phone,
       name: req.body?.name,
       role: req.body?.role,
+      lang: req.body?.lang,
     });
     res.json(result);
   } catch (e) {

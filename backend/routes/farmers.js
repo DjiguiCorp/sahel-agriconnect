@@ -2,7 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import Farmer from '../models/Farmer.js';
 import VerificationCode from '../models/VerificationCode.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, authenticateAnyUser } from '../middleware/auth.js';
 import { validateFarmer, validateFarmerUpdate } from '../middleware/validation.js';
 import { countryFilter } from '../middleware/countryFilter.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
@@ -88,6 +88,115 @@ router.post('/session', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/farmers/me — authenticated farmer profile (mobile)
+router.get('/me', authenticateAnyUser, async (req, res) => {
+  try {
+    if (req.mobileUser?.role !== 'farmer') {
+      return res.status(403).json({ success: false, error: 'Farmer access only' });
+    }
+    const farmer = await Farmer.findById(req.mobileUser.id).lean();
+    if (!farmer) {
+      return res.status(404).json({ success: false, error: 'Farmer not found' });
+    }
+    const profileComplete =
+      Number(farmer.superficie) > 0 &&
+      Boolean(farmer.country) &&
+      Array.isArray(farmer.cultures) &&
+      farmer.cultures.length > 0 &&
+      farmer.accesElectricite &&
+      farmer.accesStockage;
+    res.json({
+      success: true,
+      farmer: {
+        id: farmer._id.toString(),
+        nom: farmer.nom,
+        email: farmer.email,
+        telephone: farmer.telephone,
+        country: farmer.country,
+        region: farmer.region,
+        superficie: farmer.superficie,
+        cultures: farmer.cultures,
+        typeExploitation: farmer.typeExploitation,
+        lienCooperative: farmer.lienCooperative,
+        accesElectricite: farmer.accesElectricite,
+        accesStockage: farmer.accesStockage,
+        besoinSolaire: farmer.besoinSolaire,
+        besoinCollecte: farmer.besoinCollecte,
+        defis: farmer.defis,
+        statut: farmer.statut,
+      },
+      profileComplete,
+    });
+  } catch (err) {
+    console.error('farmers/me:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PATCH /api/farmers/complete-profile — farmer completes land/needs onboarding (mobile)
+router.patch('/complete-profile', authenticateAnyUser, async (req, res) => {
+  try {
+    if (req.mobileUser?.role !== 'farmer') {
+      return res.status(403).json({ success: false, error: 'Farmer access only' });
+    }
+    const body = req.body || {};
+    const updates = {};
+    if (body.superficie != null) {
+      const area = Number(body.superficie);
+      if (!Number.isFinite(area) || area <= 0) {
+        return res.status(400).json({ success: false, error: 'superficie must be > 0' });
+      }
+      updates.superficie = area;
+    }
+    if (body.country) updates.country = String(body.country).trim();
+    if (body.region) updates.region = String(body.region).trim();
+    if (Array.isArray(body.cultures) && body.cultures.length) {
+      updates.cultures = body.cultures.map(String);
+    }
+    if (body.typeExploitation) updates.typeExploitation = String(body.typeExploitation);
+    if (body.lienCooperative) updates.lienCooperative = String(body.lienCooperative);
+    if (body.nomCooperative) updates.nomCooperative = String(body.nomCooperative);
+    if (Array.isArray(body.objectifsProduction) && body.objectifsProduction.length) {
+      updates.objectifsProduction = body.objectifsProduction.map(String);
+    }
+    if (body.accesElectricite) updates.accesElectricite = String(body.accesElectricite);
+    if (body.besoinSolaire) updates.besoinSolaire = String(body.besoinSolaire);
+    if (body.accesStockage) updates.accesStockage = String(body.accesStockage);
+    if (body.besoinCollecte) updates.besoinCollecte = String(body.besoinCollecte);
+    if (Array.isArray(body.defis)) updates.defis = body.defis.map(String);
+    if (body.investissementCooperative) {
+      updates.investissementCooperative = String(body.investissementCooperative);
+    }
+    if (body.latitude != null) updates.latitude = String(body.latitude);
+    if (body.longitude != null) updates.longitude = String(body.longitude);
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, error: 'No profile fields provided' });
+    }
+
+    const farmer = await Farmer.findByIdAndUpdate(
+      req.mobileUser.id,
+      { $set: updates },
+      { new: true, runValidators: true },
+    );
+    if (!farmer) {
+      return res.status(404).json({ success: false, error: 'Farmer not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated',
+      profileComplete:
+        farmer.superficie > 0 &&
+        Boolean(farmer.country) &&
+        farmer.cultures?.length > 0,
+    });
+  } catch (err) {
+    console.error('complete-profile:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

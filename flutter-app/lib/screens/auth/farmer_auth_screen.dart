@@ -265,9 +265,11 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     final formattedContact = contact.contains('@')
         ? contact
         : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
+    final lang = context.read<LanguageProvider>().lang;
     final body = <String, dynamic>{
       'purpose': 'farmer_verify',
       'role': 'farmer',
+      'lang': lang,
       if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
       if (!contact.contains('@')) 'phone': formattedContact,
     };
@@ -514,7 +516,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       await auth.storeSeed(seed, 'farmer');
     }
     if (!mounted) return;
-    context.go('/farmer');
+    context.go('/farmer/onboarding');
   }
 
   Future<void> _verifyOtp() async {
@@ -715,7 +717,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           await auth.storeSeed(seed, 'farmer');
         }
         if (!mounted) return;
-        context.go('/farmer');
+        context.go('/farmer/onboarding');
         return;
       }
       if (!mounted) return;

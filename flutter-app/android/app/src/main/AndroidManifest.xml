@@ -47,6 +47,8 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="sahelagriconnect"/>
+                <data android:scheme="sahelagriconnect" android:host="payment"/>
+                <data android:scheme="sahelagriconnect" android:host="auth"/>
             </intent-filter>
 
             <!-- App Links: HTTPS deep links from sahelagriconnect.com -->

@@ -11,6 +11,31 @@ import {
 
 const router = express.Router();
 
+const GOVERNMENT_ID_TYPES = ['passport', 'national_id'];
+const MAX_PHOTO_ID_CHARS = 4_500_000; // ~3MB base64
+
+function validatePhotoId({ category, photoIdUrl, photoIdUploaded, idType }) {
+  if (category === 'african') {
+    if (photoIdUrl && photoIdUrl.length > MAX_PHOTO_ID_CHARS) {
+      return 'ID image is too large (max ~3MB)';
+    }
+    return null;
+  }
+  if (!photoIdUploaded || !photoIdUrl) {
+    return 'A clear photo of your passport or national ID is required';
+  }
+  if (!GOVERNMENT_ID_TYPES.includes(idType)) {
+    return 'Only passport or national ID are accepted for verification';
+  }
+  if (!String(photoIdUrl).startsWith('data:image/')) {
+    return 'Invalid ID image format';
+  }
+  if (photoIdUrl.length > MAX_PHOTO_ID_CHARS) {
+    return 'ID image is too large (max ~3MB)';
+  }
+  return null;
+}
+
 // ── POST /api/kyc/submit ─────────────────────────────────────
 // Submit KYC — behavior differs by country category
 router.post('/submit', async (req, res) => {
@@ -33,6 +58,7 @@ router.post('/submit', async (req, res) => {
       isUSPerson_FATCA, acceptedTerms,
       acceptedRiskDisclosure, acceptedPrivacyPolicy,
       digitalSignature,
+      photoIdUrl, photoIdUploaded, photoIdType,
     } = req.body;
 
     if (!investorEmail || !countryOfResidence) {
@@ -43,6 +69,16 @@ router.post('/submit', async (req, res) => {
     }
 
     const category = getCountryCategory(countryOfResidence);
+    const resolvedIdType = photoIdType || idType;
+    const photoError = validatePhotoId({
+      category,
+      photoIdUrl,
+      photoIdUploaded: !!photoIdUploaded,
+      idType: resolvedIdType,
+    });
+    if (photoError) {
+      return res.status(400).json({ success: false, error: photoError });
+    }
 
     // Determine KYC status based on country category
     let status;
@@ -77,7 +113,10 @@ router.post('/submit', async (req, res) => {
         status,
         dateOfBirth, nationality, placeOfBirth,
         occupation, employerName,
-        idType, idNumber, idIssuingCountry, idExpiryDate,
+        idType: resolvedIdType, idNumber, idIssuingCountry, idExpiryDate,
+        photoIdUploaded: !!photoIdUploaded && !!photoIdUrl,
+        photoIdUrl: photoIdUrl || undefined,
+        photoIdType: resolvedIdType,
         addressLine1, addressLine2, city,
         stateProvince, postalCode, addressDocumentType,
         sourceOfFunds, sourceOfFundsDetail,
@@ -207,8 +246,8 @@ router.get('/admin/pending', async (req, res) => {
     const pending = await InvestorKYC.find(filter)
       .sort({ submittedAt: 1 })
       .select('investorEmail investorName countryOfResidence ' +
-        'countryCategory status submittedAt idType ' +
-        'isPEP hasCriminalRecord photoIdUploaded ' +
+        'countryCategory status submittedAt idType idNumber ' +
+        'isPEP hasCriminalRecord photoIdUploaded photoIdType ' +
         'accreditedBasisUS paymentVerified');
 
     // Group by category for admin clarity
@@ -220,6 +259,26 @@ router.get('/admin/pending', async (req, res) => {
     };
 
     return res.json({ success: true, kycs: pending, grouped });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ── GET /api/kyc/admin/detail/:email ─────────────────────────
+router.get('/admin/detail/:email', async (req, res) => {
+  try {
+    const kyc = await InvestorKYC.findOne({
+      investorEmail: req.params.email.toLowerCase(),
+    }).select(
+      'investorEmail investorName countryOfResidence countryCategory status ' +
+      'submittedAt idType idNumber photoIdUploaded photoIdType photoIdUrl ' +
+      'paymentVerified paymentVerifiedAt isPEP hasCriminalRecord ' +
+      'reviewNotes rejectionReason additionalDocsRequested'
+    );
+    if (!kyc) {
+      return res.status(404).json({ success: false, error: 'KYC not found' });
+    }
+    return res.json({ success: true, kyc });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
   }
@@ -239,6 +298,31 @@ router.post('/admin/review', async (req, res) => {
         success: false,
         error: 'decision must be approved, rejected, or additional_docs',
       });
+    }
+
+    const existing = await InvestorKYC.findOne({
+      investorEmail: investorEmail.toLowerCase(),
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'KYC not found' });
+    }
+
+    if (decision === 'approved') {
+      if (!existing.photoIdUrl || !existing.photoIdUploaded) {
+        return res.status(400).json({
+          success: false,
+          error: 'Cannot approve: no government ID image on file',
+        });
+      }
+      if (
+        existing.countryCategory !== 'african'
+        && !GOVERNMENT_ID_TYPES.includes(existing.idType)
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: 'Cannot approve: ID must be passport or national ID',
+        });
+      }
     }
 
     const kyc = await InvestorKYC.findOneAndUpdate(

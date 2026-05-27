@@ -134,6 +134,9 @@ function KYCReviewPanel({ isFr }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [reviewing, setReviewing] = useState(null);
+  const [reviewDetail, setReviewDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [reviewError, setReviewError] = useState('');
   const [decision, setDecision] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -156,9 +159,43 @@ function KYCReviewPanel({ isFr }) {
     ? kycs
     : kycs.filter((k) => k.countryCategory === filter);
 
+  const openReview = async (kyc) => {
+    setReviewing(kyc);
+    setReviewDetail(null);
+    setReviewError('');
+    setDecision('');
+    setNote('');
+    setDetailLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/kyc/admin/detail/${encodeURIComponent(kyc.investorEmail)}`,
+        { headers: authHeaders() }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Could not load KYC documents');
+      }
+      setReviewDetail(data.kyc);
+    } catch (e) {
+      setReviewError(e.message || 'Load failed');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const submitReview = async () => {
     if (!decision) return;
+    const doc = reviewDetail || reviewing;
+    if (decision === 'approved' && (!doc?.photoIdUrl || !doc?.photoIdUploaded)) {
+      setReviewError(
+        isFr
+          ? 'Impossible d\'approuver : aucune pièce d\'identité téléversée.'
+          : 'Cannot approve: no ID document uploaded.'
+      );
+      return;
+    }
     setSubmitting(true);
+    setReviewError('');
     try {
       const res = await fetch(`${API_BASE_URL}/api/kyc/admin/review`, {
         method: 'POST',
@@ -178,10 +215,11 @@ function KYCReviewPanel({ isFr }) {
       }
       setKycs((prev) => prev.filter((k) => k.investorEmail !== reviewing.investorEmail));
       setReviewing(null);
+      setReviewDetail(null);
       setDecision('');
       setNote('');
     } catch (e) {
-      console.error(e);
+      setReviewError(e.message || 'Review failed');
     } finally {
       setSubmitting(false);
     }
@@ -308,7 +346,7 @@ function KYCReviewPanel({ isFr }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setReviewing(kyc)}
+                  onClick={() => openReview(kyc)}
                   className="px-3 py-1.5 rounded-lg text-xs font-bold text-black shrink-0"
                   style={{ backgroundColor: '#B5850A' }}
                 >
@@ -322,7 +360,7 @@ function KYCReviewPanel({ isFr }) {
 
       {reviewing ? (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 max-w-md w-full space-y-4">
+          <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 max-w-lg w-full space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-white font-bold text-lg">
               KYC Review — {reviewing.investorName}
             </h3>
@@ -338,21 +376,56 @@ function KYCReviewPanel({ isFr }) {
                 </strong>
               </p>
               <p>
+                {isFr ? 'Document: ' : 'ID type: '}
+                <strong className="text-white">
+                  {(reviewDetail || reviewing).idType || '—'}
+                  {(reviewDetail || reviewing).idNumber
+                    ? ` · ${(reviewDetail || reviewing).idNumber}`
+                    : ''}
+                </strong>
+              </p>
+              <p>
                 {isFr ? 'Paiement: ' : 'Payment: '}
-                <strong className={reviewing.paymentVerified ? 'text-green-400' : 'text-amber-400'}>
-                  {reviewing.paymentVerified
+                <strong className={(reviewDetail || reviewing).paymentVerified ? 'text-green-400' : 'text-amber-400'}>
+                  {(reviewDetail || reviewing).paymentVerified
                     ? isFr ? 'Vérifié' : 'Verified'
                     : isFr ? 'Pas encore payé' : 'Not yet paid'}
                 </strong>
               </p>
             </div>
+            {detailLoading ? (
+              <p className="text-white/50 text-sm text-center py-4">
+                {isFr ? 'Chargement du document...' : 'Loading ID document...'}
+              </p>
+            ) : reviewDetail?.photoIdUrl ? (
+              <div className="rounded-xl border border-white/15 overflow-hidden bg-black/40">
+                <img
+                  src={reviewDetail.photoIdUrl}
+                  alt="Government ID"
+                  className="w-full max-h-72 object-contain"
+                />
+                <p className="text-xs text-white/40 px-3 py-2">
+                  {isFr ? 'Vérifiez que c\'est un passeport ou une carte d\'identité valide.' : 'Confirm this is a valid passport or national ID.'}
+                </p>
+              </div>
+            ) : (
+              <p className="text-red-400 text-sm font-medium rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
+                {isFr
+                  ? 'Aucune image d\'identité — demandez un nouveau document avant approbation.'
+                  : 'No ID image on file — request documents before approving.'}
+              </p>
+            )}
+            {reviewError ? (
+              <p className="text-red-400 text-sm">{reviewError}</p>
+            ) : null}
             <div className="space-y-2">
               {['approved', 'additional_docs', 'rejected'].map((d) => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => setDecision(d)}
-                  className={`w-full py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                  disabled={d === 'approved' && !reviewDetail?.photoIdUrl}
+                  className={`w-full py-2.5 rounded-xl text-sm font-semibold border transition-all disabled:opacity-40 ${
                     decision === d
                       ? d === 'approved'
                         ? 'bg-green-500 text-white border-green-500'
@@ -390,6 +463,8 @@ function KYCReviewPanel({ isFr }) {
                 type="button"
                 onClick={() => {
                   setReviewing(null);
+                  setReviewDetail(null);
+                  setReviewError('');
                   setDecision('');
                   setNote('');
                 }}
@@ -914,7 +989,7 @@ export default function AfriYieldManagement() {
   }
 
   return (
-    <div>
+    <div className="text-gray-900 [&_th]:text-gray-900 [&_td]:text-gray-900 [&_h2]:text-gray-900 [&_p]:text-gray-700">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-primary-green mb-2">AfriYield Exchange</h2>
         <p className="text-gray-600">Manage investment opportunities, investors, and meeting requests.</p>
@@ -949,9 +1024,9 @@ export default function AfriYieldManagement() {
           </div>
           <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-left">
+              <thead className="bg-gray-50 text-left text-gray-900">
                 <tr>
-                  <th className="px-3 py-2 font-semibold">Center Name</th>
+                  <th className="px-3 py-2 font-semibold text-gray-900">Center Name</th>
                   <th className="px-3 py-2 font-semibold">Location</th>
                   <th className="px-3 py-2 font-semibold">Commodity</th>
                   <th className="px-3 py-2 font-semibold">Track</th>

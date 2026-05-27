@@ -80,6 +80,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
   int _tab = 0;
   List<Map<String, dynamic>> _investments = [];
   List<Map<String, dynamic>> _opportunities = [];
+  Map<String, dynamic>? _kycStatus;
   bool _loading = true;
 
   double get _totalDeployed => _investments.fold<double>(
@@ -110,14 +111,20 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
   Future<void> _load() async {
     final auth = context.read<AuthState>();
     try {
-      final res = await ApiService.getInvestorPortal(
-        auth.token ?? '',
-        email: auth.displayEmail,
-      );
+      final email = auth.displayEmail;
+      final results = await Future.wait([
+        ApiService.getInvestorPortal(auth.token ?? '', email: email),
+        ApiService.getKycStatus(email),
+      ]);
+      final res = results[0];
+      final kyc = results[1];
       if (!mounted) return;
       setState(() {
         _investments = _parseList(res['investments']);
         _opportunities = _parseList(res['opportunities']);
+        if (kyc['success'] == true) {
+          _kycStatus = Map<String, dynamic>.from(kyc);
+        }
         _loading = false;
       });
     } catch (_) {
@@ -224,6 +231,8 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                       _UpdatesTab(isFr: isFr),
                       _InvestorAccountTab(
                         isFr: isFr,
+                        kycStatus: _kycStatus,
+                        hasInvestments: _investments.isNotEmpty,
                         onTabChange: _goTab,
                       ),
                     ],
@@ -2090,16 +2099,97 @@ class _UpdatesTabState extends State<_UpdatesTab> {
   }
 }
 
+class _KycAccountStatusCard extends StatelessWidget {
+  const _KycAccountStatusCard({
+    required this.kyc,
+    required this.hasInvestments,
+    required this.isFr,
+  });
+
+  final Map<String, dynamic> kyc;
+  final bool hasInvestments;
+  final bool isFr;
+
+  String _line(String key, String en, String fr) {
+    final status = kyc['status']?.toString() ?? 'not_started';
+    final paid = kyc['paymentVerified'] == true;
+    switch (key) {
+      case 'kyc':
+        if (status == 'approved') return isFr ? '✓ KYC approuvé' : '✓ KYC approved';
+        if (['pending_review', 'pending_kyc', 'african_pending_review']
+            .contains(status)) {
+          return isFr ? '⏳ KYC en cours d\'examen' : '⏳ KYC under review';
+        }
+        if (status == 'rejected') {
+          return isFr ? '✗ KYC refusé' : '✗ KYC declined';
+        }
+        return isFr ? '○ KYC à compléter' : '○ KYC pending';
+      case 'payment':
+        return paid
+            ? (isFr ? '✓ Paiement reçu' : '✓ Payment received')
+            : (isFr ? '○ Paiement en attente' : '○ Payment pending');
+      case 'investment':
+        return hasInvestments
+            ? (isFr ? '✓ Investissement actif' : '✓ Investment active')
+            : (isFr ? '○ Investissement en traitement' : '○ Investment processing');
+      default:
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _gold.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isFr ? 'État de votre compte' : 'Your account status',
+            style: const TextStyle(
+              color: _gold,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isFr
+                ? 'Votre investissement apparaît après paiement confirmé et KYC approuvé.'
+                : 'Your investment appears after payment is confirmed and KYC is approved.',
+            style: const TextStyle(color: _muted, fontSize: 11, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          Text(_line('kyc', '', ''), style: const TextStyle(color: _text, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text(_line('payment', '', ''), style: const TextStyle(color: _text, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text(_line('investment', '', ''), style: const TextStyle(color: _text, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 // TAB 4: ACCOUNT
 // ══════════════════════════════════════════════════════════════
 class _InvestorAccountTab extends StatelessWidget {
   const _InvestorAccountTab({
     required this.isFr,
+    required this.kycStatus,
+    required this.hasInvestments,
     required this.onTabChange,
   });
 
   final bool isFr;
+  final Map<String, dynamic>? kycStatus;
+  final bool hasInvestments;
   final ValueChanged<int> onTabChange;
 
   @override
@@ -2202,6 +2292,14 @@ class _InvestorAccountTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
+        if (kycStatus != null && (!hasInvestments || kycStatus!['paymentVerified'] != true))
+          _KycAccountStatusCard(
+            kyc: kycStatus!,
+            hasInvestments: hasInvestments,
+            isFr: isFr,
+          ),
+        if (kycStatus != null && (!hasInvestments || kycStatus!['paymentVerified'] != true))
+          const SizedBox(height: 16),
         _section(isFr ? 'NAVIGATION' : 'NAVIGATION', [
           _tile(
             context,

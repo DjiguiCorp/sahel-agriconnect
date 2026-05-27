@@ -1,11 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import '../../core/safe_insets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
+import '../../services/api_service.dart';
 
 /// Investor identity verification (KYC) after OTP login, before dashboard access.
 class InvestorKycScreen extends StatefulWidget {
@@ -30,6 +35,8 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
   bool _agreeRisk = false;
   bool _submitting = false;
   int _step = 0;
+  String? _idPhotoBase64;
+  String? _idPhotoName;
 
   static const _bg = Color(0xFF0A1628);
   static const _surface = Color(0xFF1a2744);
@@ -48,6 +55,22 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
     _addressCtrl.dispose();
     _sourceCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickIdPhoto(bool isFr) async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _idPhotoBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      _idPhotoName = file.name;
+    });
   }
 
   Future<void> _submit() async {
@@ -79,13 +102,72 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
       );
       return;
     }
+    if (_idPhotoBase64 == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isFr
+                ? 'Téléversez une photo de votre passeport ou carte d\'identité.'
+                : 'Upload a photo of your passport or national ID.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (!['passport', 'national_id'].contains(_idType)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isFr
+                ? 'Seuls le passeport ou la carte nationale sont acceptés.'
+                : 'Only passport or national ID are accepted.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     setState(() => _submitting = true);
+    final auth = context.read<AuthState>();
+    final email = auth.displayEmail.trim().toLowerCase();
+    final country = _countryCtrl.text.trim().isNotEmpty
+        ? _countryCtrl.text.trim()
+        : 'United States';
+    final res = await ApiService.submitInvestorKyc({
+      'investorEmail': email,
+      'investorName': _nameCtrl.text.trim(),
+      'countryOfResidence': country,
+      'idType': _idType,
+      'photoIdType': _idType,
+      'idNumber': _idNumberCtrl.text.trim(),
+      'photoIdUrl': _idPhotoBase64,
+      'photoIdUploaded': true,
+      'acceptedTerms': true,
+      'acceptedRiskDisclosure': true,
+      'acceptedPrivacyPolicy': true,
+      'digitalSignature': _nameCtrl.text.trim(),
+    });
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('kyc_submitted', true);
-    await prefs.setString('kyc_name', _nameCtrl.text.trim());
-    await prefs.setString('kyc_id_type', _idType);
-    await prefs.setString('kyc_id_number', _idNumberCtrl.text.trim());
-    await prefs.setString('kyc_country', _countryCtrl.text.trim());
+    if (res['success'] == true) {
+      await prefs.setBool('kyc_submitted', true);
+      await prefs.setString('kyc_name', _nameCtrl.text.trim());
+      await prefs.setString('kyc_id_type', _idType);
+      await prefs.setString('kyc_id_number', _idNumberCtrl.text.trim());
+      await prefs.setString('kyc_country', country);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res['error']?.toString() ??
+                (isFr ? 'Échec de l\'envoi KYC' : 'KYC submission failed'),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => _submitting = false);
+      return;
+    }
     if (mounted) {
       setState(() => _submitting = false);
       context.go('/investor');
@@ -295,6 +377,31 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
                     : 'Number as it appears on document',
               ),
               const SizedBox(height: 12),
+              _lbl(isFr ? 'Photo du document *' : 'Document photo *'),
+              OutlinedButton.icon(
+                onPressed: () => _pickIdPhoto(isFr),
+                icon: const Icon(Icons.camera_alt_outlined, color: _gold),
+                label: Text(
+                  _idPhotoName ??
+                      (isFr
+                          ? 'Choisir passeport / carte d\'identité'
+                          : 'Choose passport / national ID photo'),
+                  style: TextStyle(
+                    color: _idPhotoName != null ? Colors.greenAccent : _muted,
+                    fontSize: 13,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _gold,
+                  side: BorderSide(
+                    color: _idPhotoName != null
+                        ? Colors.greenAccent
+                        : Colors.white24,
+                  ),
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+              const SizedBox(height: 12),
               _lbl(isFr ? 'Adresse de résidence' : 'Residential Address'),
               _tf(
                 _addressCtrl,
@@ -331,6 +438,32 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
                 SnackBar(
                   content: Text(
                     isFr ? 'Numéro de document requis' : 'Document number required',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            if (_idPhotoBase64 == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isFr
+                        ? 'Photo du passeport ou carte d\'identité requise'
+                        : 'Passport or national ID photo required',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            if (!['passport', 'national_id'].contains(_idType)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isFr
+                        ? 'Utilisez un passeport ou une carte nationale'
+                        : 'Use a passport or national ID',
                   ),
                   backgroundColor: Colors.red,
                 ),

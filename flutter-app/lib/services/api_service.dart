@@ -69,6 +69,37 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> patch(
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+    int retries = 1,
+  }) async {
+    try {
+      final res = await _dio.patch(
+        path,
+        data: body,
+        options: Options(
+          headers: {if (token != null) 'Authorization': 'Bearer $token'},
+        ),
+      );
+      return _decode(res.data);
+    } on DioException catch (e) {
+      if (retries > 0 &&
+          (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.connectionError)) {
+        await Future.delayed(const Duration(seconds: 3));
+        return patch(path, body, token: token, retries: retries - 1);
+      }
+      return _decode(e.response?.data)
+        ..putIfAbsent('success', () => false)
+        ..putIfAbsent('error', () => _friendlyError(e));
+    } catch (_) {
+      return {'success': false, 'error': _friendlyError(null)};
+    }
+  }
+
   static Future<Map<String, dynamic>> post(
     String path,
     Map<String, dynamic> body, {
@@ -157,6 +188,19 @@ class ApiService {
       );
 
   /// Investor dashboard: portfolio + open opportunities.
+  static Future<Map<String, dynamic>> getKycStatus(String email) async {
+    if (email.trim().isEmpty) {
+      return {'success': false, 'error': 'Email required'};
+    }
+    return get('/api/kyc/status/${Uri.encodeComponent(email.trim().toLowerCase())}');
+  }
+
+  static Future<Map<String, dynamic>> submitInvestorKyc(
+    Map<String, dynamic> body,
+  ) async {
+    return post('/api/kyc/submit', body);
+  }
+
   static Future<Map<String, dynamic>> getInvestorPortal(
     String token, {
     String? email,

@@ -9,6 +9,11 @@ import GovernmentAdmin from '../models/GovernmentAdmin.js';
 import Processor from '../models/Processor.js';
 import DeviceSession from '../models/DeviceSession.js';
 import { normalizePhone, farmerTelephoneQuery } from '../utils/phone.js';
+import {
+  codeEmailHtml,
+  codeEmailSubject,
+  normalizeLang,
+} from '../utils/authEmailTemplates.js';
 
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
@@ -22,49 +27,6 @@ function generateCode() {
 
 function expiresIn(minutes = 15) {
   return new Date(Date.now() + minutes * 60 * 1000);
-}
-
-function codeEmail(code, purpose, name = '', email = '') {
-  const labels = {
-    farmer_verify: { fr: 'Vérifiez votre compte agriculteur' },
-    login: { fr: 'Votre code de connexion' },
-  };
-  const label = labels[purpose] || labels.login;
-
-  // Magic link: embeds the code in a URL so the user can click instead of type.
-  // Works on web; on mobile with app installed, the deep link opens the app directly.
-  const webBase = process.env.WEB_APP_URL || 'https://sahelagriconnect.com';
-  const magicUrl = `${webBase}/auth/magic?c=${encodeURIComponent(code)}&e=${encodeURIComponent(email)}&p=${encodeURIComponent(purpose)}`;
-
-  return `
-  <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;">
-    <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
-      <h1 style="color:#B5850A;margin:0;font-size:22px;">Sahel AgriConnect</h1>
-      <p style="color:white;margin:4px 0 0;font-size:13px;">${label.fr}</p>
-    </div>
-    <div style="padding:32px;background:white;border:1px solid #e0e0e0;border-radius:0 0 8px 8px;text-align:center;">
-      ${name ? `<p style="color:#333;margin-bottom:8px;">Bonjour <strong>${name}</strong>,</p>` : ''}
-      <p style="color:#555;margin-bottom:24px;font-size:15px;">
-        Cliquez sur le bouton ci-dessous pour vous connecter.<br>
-        <span style="font-size:13px;color:#999;">Si l'application est installée sur votre téléphone, elle s'ouvrira automatiquement.</span>
-      </p>
-      <a href="${magicUrl}"
-         style="display:inline-block;background:#B5850A;color:white;text-decoration:none;
-                padding:16px 40px;border-radius:12px;font-size:16px;font-weight:bold;
-                margin-bottom:28px;letter-spacing:0.5px;">
-        ✓ Se connecter à Sahel AgriConnect
-      </a>
-      <div style="border-top:1px solid #eee;padding-top:20px;margin-top:4px;">
-        <p style="color:#aaa;font-size:12px;margin-bottom:12px;">
-          Bouton bloqué ? Entrez ce code manuellement :
-        </p>
-        <div style="background:#f0f9f4;border:2px solid #1a3c2e;border-radius:12px;padding:16px;display:inline-block;margin-bottom:12px;">
-          <span style="font-size:32px;font-weight:bold;color:#1a3c2e;letter-spacing:8px;font-family:monospace;">${code}</span>
-        </div>
-        <p style="color:#999;font-size:12px;">Ce lien expire dans <strong>15 minutes</strong>.</p>
-      </div>
-    </div>
-  </div>`;
 }
 
 function farmerSummary(farmer) {
@@ -89,7 +51,8 @@ async function findFarmerByContact(email, phone) {
 /**
  * Mobile-compatible OTP send (returns verificationId).
  */
-export async function sendOtp({ purpose, email, phone, name, role }) {
+export async function sendOtp({ purpose, email, phone, name, role, lang }) {
+  const langNorm = normalizeLang(lang);
   const purposeNorm = String(purpose || 'login').trim();
   const emailRaw = email ? String(email).toLowerCase().trim() : '';
   const phoneRaw = phone ? normalizePhone(phone) : '';
@@ -127,8 +90,13 @@ export async function sendOtp({ purpose, email, phone, name, role }) {
       const sendResult = await resend.emails.send({
         from: FROM,
         to: emailRaw,
-        subject: `${code} — Code de vérification Sahel AgriConnect`,
-        html: codeEmail(code, purposeNorm, name, emailRaw),
+        subject: codeEmailSubject(code, purposeNorm, langNorm),
+        html: codeEmailHtml(code, purposeNorm, {
+          name,
+          email: emailRaw,
+          lang: langNorm,
+          role: role || '',
+        }),
       });
       console.log('[Resend] Email sent (send-otp):', sendResult);
     } catch (sendErr) {
@@ -257,6 +225,7 @@ export async function verifyOtp({ verificationId, otp, role, deviceHint = '' }) 
       success: true,
       verified: true,
       isNewUser: false,
+      role: 'farmer',
       token,
       sessionSeed,
       user: farmerSummary(farmer),
@@ -271,7 +240,145 @@ export async function verifyOtp({ verificationId, otp, role, deviceHint = '' }) 
   return { success: true, verified: true };
 }
 
-async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
+function registerPathForRole(role) {
+  const paths = {
+    farmer: '/inscription',
+    investor: '/afri-yield/register',
+    cooperative: '/cooperative-registration',
+    government: '/platform-licensing',
+    ngo: '/platform-licensing',
+    processor: '/transformation-registration',
+  };
+  return paths[role] || '/';
+}
+
+/**
+ * Magic-link / email-button confirmation (code + email + purpose).
+ */
+export async function confirmMagicCode({
+  code,
+  email,
+  phone,
+  purpose,
+  role,
+  deviceHint = '',
+}) {
+  const purposeNorm = String(purpose || '').trim();
+  const emailNorm = email ? String(email).toLowerCase().trim() : '';
+  const phoneNorm = phone ? normalizePhone(phone) : '';
+  const codeNorm = String(code ?? '').trim();
+  const roleNorm = String(role || 'farmer').toLowerCase();
+
+  if (!purposeNorm || !codeNorm) {
+    throw Object.assign(new Error('purpose and code required'), { status: 400 });
+  }
+  if (!emailNorm && !phoneNorm) {
+    throw Object.assign(new Error('Email or phone required'), { status: 400 });
+  }
+
+  const q = {
+    code: codeNorm,
+    purpose: purposeNorm,
+    used: false,
+    expiresAt: { $gt: new Date() },
+  };
+  if (emailNorm) q.email = emailNorm;
+  if (phoneNorm) q.phone = phoneNorm;
+
+  const record = await VerificationCode.findOne(q);
+  if (!record) {
+    throw Object.assign(
+      new Error('Invalid or expired code. Please request a new one.'),
+      { status: 400 },
+    );
+  }
+
+  record.used = true;
+  await record.save();
+
+  const recEmail = record.email || emailNorm;
+  const recPhone = record.phone || phoneNorm;
+
+  if (purposeNorm === 'farmer_verify') {
+    const farmer = await findFarmerByContact(recEmail, recPhone);
+    if (recEmail) {
+      await Farmer.findOneAndUpdate(
+        { email: recEmail },
+        { emailVerified: true, verifiedAt: new Date() },
+      );
+    }
+    if (!farmer) {
+      return {
+        success: true,
+        verified: true,
+        isNewUser: true,
+        role: 'farmer',
+        pendingRegistrationId: record._id.toString(),
+      };
+    }
+    const token = jwt.sign(
+      {
+        role: 'farmer',
+        id: farmer._id.toString(),
+        email: farmer.email || recEmail,
+        nom: farmer.nom,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '90d' },
+    );
+    const sessionSeed = await DeviceSession.issue(
+      farmer._id.toString(),
+      'farmer',
+      deviceHint,
+    );
+    return {
+      success: true,
+      verified: true,
+      isNewUser: false,
+      role: 'farmer',
+      token,
+      sessionSeed,
+      user: farmerSummary(farmer),
+      accountStatus: farmer.statut === 'Actif' ? 'active' : 'pending_vetting',
+    };
+  }
+
+  if (purposeNorm === 'login') {
+    try {
+      const result = await issueRoleLoginToken(
+        roleNorm,
+        recEmail,
+        recPhone,
+        deviceHint,
+      );
+      const appRole =
+        roleNorm === 'cooperative' ? 'cooperative' : roleNorm;
+      return { ...result, role: appRole };
+    } catch (e) {
+      if (e.code === 'not_registered') {
+        return {
+          success: true,
+          isNewUser: true,
+          role: roleNorm,
+          registerPath: registerPathForRole(roleNorm),
+          message: e.message,
+        };
+      }
+      throw e;
+    }
+  }
+
+  if (purposeNorm === 'coop_verify' && recEmail) {
+    await CooperativePlatformRegistration.findOneAndUpdate(
+      { email: recEmail },
+      { emailVerified: true, verifiedAt: new Date() },
+    );
+  }
+
+  return { success: true, verified: true };
+}
+
+export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
   if (role === 'investor') {
     if (!email) throw Object.assign(new Error('Email required for investor login'), { status: 400 });
     const investor = await Investor.findOne({ email }).lean();
@@ -293,6 +400,7 @@ async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
     );
     return {
       success: true,
+      role: 'investor',
       token,
       sessionSeed,
       accountStatus: 'active',
@@ -335,6 +443,7 @@ async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
     );
     return {
       success: true,
+      role: 'cooperative',
       token,
       sessionSeed,
       accountStatus: 'active',
@@ -376,6 +485,7 @@ async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
     );
     return {
       success: true,
+      role: deviceRole,
       token,
       sessionSeed,
       accountStatus: 'active',
@@ -410,6 +520,7 @@ async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
     );
     return {
       success: true,
+      role: 'processor',
       token,
       sessionSeed,
       accountStatus: 'active',

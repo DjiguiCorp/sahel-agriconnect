@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
@@ -16,11 +18,15 @@ class MagicLinkScreen extends StatefulWidget {
     required this.code,
     required this.email,
     required this.purpose,
+    this.role,
+    this.lang,
   });
 
   final String code;
   final String email;
   final String purpose;
+  final String? role;
+  final String? lang;
 
   @override
   State<MagicLinkScreen> createState() => _MagicLinkScreenState();
@@ -38,6 +44,9 @@ class _MagicLinkScreenState extends State<MagicLinkScreen> {
 
   Future<void> _verify() async {
     final lp = context.read<LanguageProvider>();
+    if (widget.lang == 'en' || widget.lang == 'fr') {
+      lp.setLang(widget.lang!);
+    }
     if (widget.code.isEmpty || widget.email.isEmpty) {
       setState(() {
         _status = 'error';
@@ -46,23 +55,39 @@ class _MagicLinkScreenState extends State<MagicLinkScreen> {
       return;
     }
     try {
+      final roleHint = widget.role ?? 'farmer';
       final res = await ApiService.post('/api/verify/confirm', {
         'code': widget.code,
         'email': widget.email,
         'purpose':
             widget.purpose.isNotEmpty ? widget.purpose : 'farmer_verify',
+        'role': roleHint,
       });
 
       if (res['isNewUser'] == true) {
-        final pending = res['pendingRegistrationId']?.toString() ?? '';
         if (!mounted) return;
         setState(() => _status = 'success');
         await Future.delayed(const Duration(milliseconds: 600));
         if (!mounted) return;
-        context.go(
-          '/login/farmer?pending=${Uri.encodeComponent(pending)}'
-          '&email=${Uri.encodeComponent(widget.email)}',
-        );
+        final pending = res['pendingRegistrationId']?.toString() ?? '';
+        final appRole = res['role']?.toString() ?? roleHint;
+        if (appRole == 'farmer' && pending.isNotEmpty) {
+          context.go(
+            '/login/farmer?pending=${Uri.encodeComponent(pending)}'
+            '&email=${Uri.encodeComponent(widget.email)}',
+          );
+          return;
+        }
+        final path = res['registerPath']?.toString() ?? '/cooperative-registration';
+        final lang = lp.lang;
+        final webUrl =
+            'https://sahelagriconnect.com$path?lang=$lang&from=app';
+        final uri = Uri.parse(webUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+        if (!mounted) return;
+        context.go('/login/$appRole');
         return;
       }
 

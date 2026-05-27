@@ -22,20 +22,46 @@ import 'services/notification_service.dart';
 import 'services/offline_queue.dart';
 
 void _handleDeepLink(Uri uri) {
-  // Magic link deep link format:
-  // sahelagriconnect://auth/magic?c=123456&e=email@example.com&p=farmer_verify
-  // OR https://sahelagriconnect.com/auth/magic?c=...&e=...&p=...
+  // Payment return: sahelagriconnect://payment/success?role=cooperative&lang=en
+  if (uri.host == 'payment' ||
+      uri.pathSegments.contains('payment') ||
+      uri.queryParameters['payment'] == 'success') {
+    final role = uri.queryParameters['role'] ?? 'cooperative';
+    final lang = uri.queryParameters['lang'];
+    if (lang == 'en' || lang == 'fr') {
+      // LanguageProvider may not be mounted yet on cold start; route carries hint.
+    }
+    final loginRoutes = {
+      'cooperative': '/login/cooperative',
+      'investor': '/login/investor',
+      'processor': '/login/processor',
+      'farmer': '/login/farmer',
+      'government': '/login/government',
+      'ngo': '/login/ngo',
+    };
+    final dest = loginRoutes[role] ?? '/home';
+    final q = lang != null ? '?lang=$lang&payment=success' : '?payment=success';
+    appRouter.go('$dest$q');
+    return;
+  }
+
+  // Magic link: sahelagriconnect://auth/magic?c=...&e=...&p=...&r=cooperative&lang=en
   if (uri.pathSegments.contains('magic') ||
       (uri.host == 'auth' && uri.path.contains('magic'))) {
     final code = uri.queryParameters['c'] ?? '';
     final email = uri.queryParameters['e'] ?? '';
     final purpose = uri.queryParameters['p'] ?? '';
+    final role = uri.queryParameters['r'] ?? '';
+    final lang = uri.queryParameters['lang'] ?? '';
     if (code.isNotEmpty && email.isNotEmpty) {
-      // Navigate to the magic link handler route with the params
-      final path = '/auth/magic?c=${Uri.encodeComponent(code)}'
-          '&e=${Uri.encodeComponent(email)}'
-          '&p=${Uri.encodeComponent(purpose)}';
-      appRouter.go(path);
+      final parts = <String>[
+        'c=${Uri.encodeComponent(code)}',
+        'e=${Uri.encodeComponent(email)}',
+        'p=${Uri.encodeComponent(purpose)}',
+      ];
+      if (role.isNotEmpty) parts.add('r=${Uri.encodeComponent(role)}');
+      if (lang.isNotEmpty) parts.add('lang=${Uri.encodeComponent(lang)}');
+      appRouter.go('/auth/magic?${parts.join('&')}');
     }
   }
 }
