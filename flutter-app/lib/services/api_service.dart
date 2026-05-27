@@ -12,7 +12,7 @@ class ApiService {
   /// Production default. Override at compile time, e.g.:
   /// `flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3001`
   /// Android emulator → host machine: `http://10.0.2.2:3001`
-  static const String _defaultBaseUrl = 'https://sahelagriconnect.onrender.com';
+  static const String _defaultBaseUrl = 'https://sahel-agriconnect.onrender.com';
 
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('API_BASE_URL', defaultValue: '');
