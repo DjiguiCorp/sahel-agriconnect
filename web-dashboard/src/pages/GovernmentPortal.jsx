@@ -38,15 +38,7 @@ function LoginScreen({ onLogin, isFr }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const orgTypeHint = urlParams.get('type') || 'government';
-
-  const portalLabels = {
-    government: { en: 'Government Portal', fr: 'Portail Gouvernemental', emoji: '🏛️' },
-    ngo: { en: 'NGO / Partner Portal', fr: 'Portail ONG / Partenaire', emoji: '🤝' },
-    enterprise: { en: 'Enterprise Portal', fr: 'Portail Entreprise', emoji: '🏢' },
-  };
-  const label = portalLabels[orgTypeHint] || portalLabels.government;
+  const label = { en: 'Government Portal', fr: 'Portail Gouvernemental', emoji: '🏛️' };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -145,26 +137,28 @@ function LoginScreen({ onLogin, isFr }) {
               )}
             </button>
           </form>
-          <div className="mt-6 rounded-xl p-4 border border-white/10" style={{ background: 'rgba(255,255,255,0.08)' }}>
-            <p className="text-white/50 text-xs text-center mb-3">
+          <div className="mt-6 rounded-xl p-4 border border-blue-500/25" style={{ background: 'rgba(24,95,165,0.15)' }}>
+            <p className="text-white/60 text-xs text-center mb-3">
               {isFr
-                ? 'Première connexion? Votre mot de passe vous a été envoyé par notre équipe.'
-                : 'First time? Your password was sent by our team.'}
+                ? 'Première connexion ministère / agence ? Votre mot de passe officiel vous est envoyé après validation du contrat.'
+                : 'First ministry / agency login? Your official password is sent after contract validation.'}
             </p>
-            <div className="flex gap-2">
-              <Link
-                to="/platform-licensing?type=government"
-                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-white/60 hover:text-white border border-white/15 hover:border-white/30 transition"
-              >
-                🏛️ {isFr ? 'Demander accès gouvernemental' : 'Request gov access'}
+            <Link
+              to="/platform-licensing?type=government"
+              className="block w-full text-center py-3 rounded-xl text-sm font-bold text-white transition hover:opacity-90"
+              style={{ background: '#185FA5' }}
+            >
+              🏛️ {isFr ? 'Demander un accès gouvernemental' : 'Request government access'}
+            </Link>
+            <p className="text-white/40 text-[11px] text-center mt-3">
+              {isFr
+                ? 'Les ONG et partenaires internationaux utilisent le '
+                : 'NGOs and international partners use the '}
+              <Link to="/ngo-portal" className="text-emerald-400 hover:underline">
+                {isFr ? 'portail ONG dédié' : 'dedicated NGO portal'}
               </Link>
-              <Link
-                to="/platform-licensing?type=ngo"
-                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-white/60 hover:text-white border border-white/15 hover:border-white/30 transition"
-              >
-                🤝 {isFr ? 'Demander accès ONG' : 'Request NGO access'}
-              </Link>
-            </div>
+              .
+            </p>
           </div>
         </div>
       </div>

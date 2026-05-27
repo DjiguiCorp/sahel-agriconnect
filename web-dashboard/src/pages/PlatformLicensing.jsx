@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { Check, Loader2, ChevronRight } from 'lucide-react';
 import LocationSelector from '../components/LocationSelector';
+import { ROLE_THEMES, INSTITUTIONAL_PAYMENT } from '../lib/portalThemes';
 
 const ORG_TYPES = [
   {
@@ -16,8 +17,9 @@ const ORG_TYPES = [
       'Ministère national ou régional, agence agricole ou organisme gouvernemental cherchant un accès plateforme au niveau pays.',
     requirement: 'Requires official .gov / .gouv email',
     requirementFr: 'Nécessite un email officiel .gov / .gouv',
-    color: '#1a3c2e',
-    price: '$999/month',
+    color: '#185FA5',
+    cardGradient: ROLE_THEMES.government.gradient,
+    price: '$999/mo',
     features: [
       'Country-scoped data access',
       'National project broadcasts',
@@ -36,8 +38,9 @@ const ORG_TYPES = [
       "ONG, agence ONU, organisation de développement ou organisme international soutenant l'agriculture africaine.",
     requirement: 'Requires .org / .ngo or institutional email',
     requirementFr: 'Nécessite un email .org / .ngo ou institutionnel',
-    color: '#3b82f6',
-    price: '$499/month',
+    color: '#16A34A',
+    cardGradient: ROLE_THEMES.ngo.gradient,
+    price: '$499/mo',
     features: [
       'Multi-country program access',
       'Training program management',
@@ -107,8 +110,15 @@ export default function PlatformLicensing() {
     }
   };
 
+  const pageBackground =
+    step >= 2 && selectedType
+      ? selectedType.key === 'government'
+        ? ROLE_THEMES.government.pageBg
+        : ROLE_THEMES.ngo.pageBg
+      : 'linear-gradient(180deg, #0a1628 0%, #0d2818 40%, #1a3c2e 100%)';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a1628] via-[#0d2818] to-[#1a3c2e]">
+    <div className="min-h-screen" style={{ background: pageBackground }}>
       <section className="relative overflow-hidden text-white">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(181,133,10,0.15),_transparent_50%)]" />
         <div className="section-container relative py-16 md:py-20 text-center">
@@ -120,8 +130,8 @@ export default function PlatformLicensing() {
           </h1>
           <p className="text-white/75 text-lg max-w-2xl mx-auto mb-6">
             {isFr
-              ? 'Gouvernements et ONG — accédez aux données agricoles de votre territoire avec isolation complète et portail dédié.'
-              : 'Governments and NGOs — access agricultural data for your territory with complete data isolation and a dedicated portal.'}
+              ? 'Deux parcours distincts : portail gouvernemental (bleu) et portail ONG (vert). La demande est gratuite — le paiement intervient après approbation.'
+              : 'Two separate paths: government portal (blue) and NGO portal (green). Applying is free — payment comes after approval.'}
           </p>
           <Link
             to="/pricing"
@@ -149,11 +159,22 @@ export default function PlatformLicensing() {
                   key={type.key}
                   onClick={() => selectType(type)}
                   type="button"
-                  className="rounded-2xl border border-white/15 backdrop-blur-xl bg-white/10 p-6 text-left hover:border-[#B5850A]/50 hover:bg-white/15 hover:shadow-[0_8px_32px_rgba(181,133,10,0.15)] transition-all group"
+                  className="rounded-2xl border-2 p-6 text-left transition-all group hover:scale-[1.02] shadow-xl"
+                  style={{
+                    background: type.cardGradient,
+                    borderColor: type.key === 'government' ? 'rgba(59,130,246,0.5)' : 'rgba(46,204,113,0.5)',
+                    boxShadow:
+                      type.key === 'government'
+                        ? '0 16px 48px rgba(24,95,165,0.35)'
+                        : '0 16px 48px rgba(46,204,113,0.25)',
+                  }}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-4xl">{type.icon}</span>
-                    <span className="text-xs font-bold px-2 py-1 rounded-full text-white" style={{ background: type.color }}>
+                    <span
+                      className="text-xs font-bold px-3 py-1 rounded-full text-white"
+                      style={{ background: type.color }}
+                    >
                       {type.price}
                     </span>
                   </div>
@@ -223,19 +244,61 @@ export default function PlatformLicensing() {
             </button>
 
             <div
-              className="rounded-2xl p-6 mb-6 text-white"
-              style={{ background: `linear-gradient(135deg, ${selectedType.color}, ${selectedType.color}cc)` }}
+              className="rounded-2xl p-6 mb-6 text-white border-2"
+              style={{
+                background: selectedType.cardGradient,
+                borderColor: selectedType.key === 'government' ? 'rgba(59,130,246,0.45)' : 'rgba(46,204,113,0.45)',
+              }}
             >
               <div className="flex items-center gap-3">
                 <span className="text-3xl">{selectedType.icon}</span>
                 <div>
                   <h2 className="text-xl font-bold">{isFr ? selectedType.titleFr : selectedType.title}</h2>
                   <p className="text-white/70 text-sm">{isFr ? selectedType.requirementFr : selectedType.requirement}</p>
+                  <p className="text-white/50 text-xs mt-1 font-semibold">
+                    {INSTITUTIONAL_PAYMENT[selectedType.key].price}
+                    {isFr
+                      ? INSTITUTIONAL_PAYMENT[selectedType.key].periodFr
+                      : INSTITUTIONAL_PAYMENT[selectedType.key].periodEn}
+                    {' · '}
+                    {isFr ? 'Facturation après approbation' : 'Billed after approval'}
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div
+              className="rounded-2xl border p-5 mb-6"
+              style={{
+                background: selectedType.key === 'government' ? 'rgba(24,95,165,0.12)' : 'rgba(46,204,113,0.1)',
+                borderColor: selectedType.key === 'government' ? 'rgba(59,130,246,0.3)' : 'rgba(46,204,113,0.3)',
+              }}
+            >
+              <p className="text-white font-bold text-sm mb-3">
+                {isFr ? '💳 Comment le paiement fonctionne' : '💳 How payment works'}
+              </p>
+              <ol className="space-y-2">
+                {(isFr
+                  ? INSTITUTIONAL_PAYMENT[selectedType.key].stepsFr
+                  : INSTITUTIONAL_PAYMENT[selectedType.key].stepsEn
+                ).map((line, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-white/75">
+                    <span className="font-bold shrink-0" style={{ color: selectedType.color }}>
+                      {i + 1}.
+                    </span>
+                    {line}
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <div
+              className="rounded-2xl border shadow-sm p-6"
+              style={{
+                background: 'rgba(255,255,255,0.96)',
+                borderColor: selectedType.key === 'government' ? 'rgba(24,95,165,0.25)' : 'rgba(22,120,80,0.25)',
+              }}
+            >
               <form onSubmit={submit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
@@ -421,10 +484,10 @@ export default function PlatformLicensing() {
                       : 'Submit access request'}
                 </button>
 
-                <p className="text-xs text-gray-400 text-center">
+                <p className="text-xs text-gray-500 text-center">
                   {isFr
-                    ? 'Notre équipe examinera votre demande sous 48 heures et vous contactera par email pour configurer votre accès.'
-                    : 'Our team will review your request within 48 hours and contact you by email to set up your access.'}
+                    ? 'Aucun paiement n\'est collecté sur ce formulaire. Vous recevrez les instructions de facturation par email après approbation.'
+                    : 'No payment is collected on this form. You will receive billing instructions by email after approval.'}
                 </p>
               </form>
             </div>
@@ -432,51 +495,60 @@ export default function PlatformLicensing() {
         )}
 
         {step === 3 && selectedType && (
-          <div className="max-w-lg mx-auto text-center py-10">
-            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-              <Check className="w-10 h-10 text-green-600" />
+          <div className="max-w-xl mx-auto text-center py-10">
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+              style={{ background: `${selectedType.color}22` }}
+            >
+              <Check className="w-10 h-10" style={{ color: selectedType.color }} />
             </div>
-            <h2 className="text-2xl font-bold text-[#1a3c2e] mb-3">{isFr ? 'Demande reçue !' : 'Request received!'}</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-bold text-white mb-3">{isFr ? 'Demande reçue !' : 'Request received!'}</h2>
+            <p className="text-white/70 mb-6 text-sm">
               {isFr
-                ? `Nous avons reçu votre demande d'accès pour ${form.organizationName}. Notre équipe vous contactera à ${form.email} dans les 48 heures pour finaliser votre accès et vous envoyer vos identifiants de connexion.`
-                : `We received your access request for ${form.organizationName}. Our team will contact you at ${form.email} within 48 hours to finalize your access and send your login credentials.`}
+                ? `Demande pour ${form.organizationName}. Contact à ${form.email} sous 48 h ouvrées.`
+                : `Request for ${form.organizationName}. We will contact ${form.email} within 48 business hours.`}
             </p>
-            <div className="bg-[#F5F0E8] rounded-2xl p-5 text-left mb-6 border border-[#B5850A]/20">
-              <p className="font-bold text-[#1a3c2e] mb-3 text-sm">{isFr ? '📋 Prochaines étapes :' : '📋 Next steps:'}</p>
-              {[
-                isFr
-                  ? 'Vérification de votre email institutionnel par notre équipe'
-                  : 'Verification of your institutional email by our team',
-                isFr
-                  ? 'Validation de votre organisation et de votre rôle'
-                  : 'Validation of your organization and role',
-                isFr
-                  ? 'Configuration de votre compte portail avec accès pays'
-                  : 'Configuration of your portal account with country access',
-                isFr
-                  ? 'Envoi de vos identifiants sécurisés par email'
-                  : 'Sending of your secure credentials by email',
-                isFr
-                  ? 'Appel de présentation de 30 minutes avec notre équipe'
-                  : '30-minute onboarding call with our team',
-              ].map((s, i) => (
-                <div key={i} className="flex items-start gap-2 mb-2 text-sm text-gray-600">
-                  <span className="font-bold text-[#B5850A] flex-shrink-0">{i + 1}.</span>
-                  {s}
-                </div>
-              ))}
+            <div
+              className="rounded-2xl p-5 text-left mb-6 border text-sm"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                borderColor: selectedType.key === 'government' ? 'rgba(59,130,246,0.35)' : 'rgba(46,204,113,0.35)',
+              }}
+            >
+              <p className="font-bold text-white mb-3">{isFr ? '💳 Paiement & activation' : '💳 Payment & activation'}</p>
+              <ol className="space-y-2">
+                {(isFr
+                  ? INSTITUTIONAL_PAYMENT[selectedType.key].stepsFr
+                  : INSTITUTIONAL_PAYMENT[selectedType.key].stepsEn
+                ).map((line, i) => (
+                  <li key={i} className="flex gap-2 text-white/75 text-xs">
+                    <span className="font-bold shrink-0" style={{ color: selectedType.color }}>
+                      {i + 1}.
+                    </span>
+                    {line}
+                  </li>
+                ))}
+              </ol>
             </div>
-            <div className="flex gap-3 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 to="/"
-                className="px-6 py-2.5 rounded-xl font-bold text-white text-sm"
-                style={{ background: '#1a3c2e' }}
+                className="px-6 py-2.5 rounded-xl font-bold text-white text-sm border border-white/20"
               >
                 {isFr ? "Retour à l'accueil" : 'Back to home'}
               </Link>
-              <Link to="/government-portal" className="px-6 py-2.5 rounded-xl font-bold text-sm border-2 border-[#1a3c2e] text-[#1a3c2e]">
-                {isFr ? 'Connexion portail (compte existant)' : 'Portal sign-in (existing account)'}
+              <Link
+                to={selectedType.key === 'government' ? '/government-portal' : '/ngo-portal'}
+                className="px-6 py-2.5 rounded-xl font-bold text-sm text-white"
+                style={{ background: selectedType.color }}
+              >
+                {selectedType.key === 'government'
+                  ? isFr
+                    ? '🏛️ Portail gouvernement (déjà actif)'
+                    : '🏛️ Government portal (already active)'
+                  : isFr
+                    ? '🤝 Portail ONG (déjà actif)'
+                    : '🤝 NGO portal (already active)'}
               </Link>
             </div>
           </div>
