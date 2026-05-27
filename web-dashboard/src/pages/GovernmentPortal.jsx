@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LogOut, Send, Plus, Search, Loader2, Check, X } from 'lucide-react';
 import GovernmentDirectiveModal from '../components/government/GovernmentDirectiveModal';
 import { GovernmentTerritoryTab, GovernmentDirectivesTab } from '../components/government/GovernmentPortalTabs';
+import { API_ENDPOINTS } from '../config/api';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -34,28 +35,66 @@ const GOV_LABEL = 'block text-sm font-medium text-white/70 mb-1';
 
 function LoginScreen({ onLogin, isFr }) {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [verificationId, setVerificationId] = useState('');
+  const [step, setStep] = useState('email'); // email | code
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const label = { en: 'Government Portal', fr: 'Portail Gouvernemental', emoji: '🏛️' };
 
-  const submit = async (e) => {
+  const submitEmail = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      const r = await fetch(`${API}/api/government/login`, {
+      const r = await fetch(API_ENDPOINTS.VERIFY.SEND, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          purpose: 'login',
+          email: email.trim().toLowerCase(),
+          role: 'government',
+          lang: isFr ? 'fr' : 'en',
+        }),
       });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Login failed');
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Send failed');
+      setVerificationId(d.verificationId || '');
+      setStep('code');
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
+  const submitCode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const r = await fetch(API_ENDPOINTS.VERIFY.CONFIRM, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purpose: 'login',
+          email: email.trim().toLowerCase(),
+          code,
+          role: 'government',
+          verificationId,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Login failed');
+      if (!d.token) throw new Error(isFr ? 'Compte non activé.' : 'Account not active yet.');
+      const admin = { ...(d.user || {}), orgType: 'government' };
       localStorage.setItem('gov_token', d.token);
-      localStorage.setItem('gov_admin', JSON.stringify(d.admin));
+      localStorage.setItem('gov_admin', JSON.stringify(admin));
+      localStorage.setItem('auth_token_government', d.token);
+      localStorage.setItem('auth_role', 'government');
       window.dispatchEvent(new Event('storage'));
-      onLogin(d.token, d.admin);
+      window.dispatchEvent(new Event('web_session_updated'));
+      onLogin(d.token, admin);
     } catch (err) {
       setError(err.message);
     }
@@ -97,46 +136,84 @@ function LoginScreen({ onLogin, isFr }) {
           <h2 className="font-bold text-white text-lg mb-5 text-center">
             {isFr ? 'Connexion sécurisée' : 'Secure Login'}
           </h2>
-          <form onSubmit={submit} className="space-y-4">
-            <div>
-              <label className={GOV_LABEL}>{isFr ? 'Email officiel' : 'Official email'}</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={GOV_INPUT}
-              />
-            </div>
-            <div>
-              <label className={GOV_LABEL}>{isFr ? 'Mot de passe' : 'Password'}</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={GOV_INPUT}
-              />
-            </div>
-            {error && <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 p-2 rounded-lg">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-white text-sm mt-4 hover:opacity-90 transition-opacity disabled:opacity-50"
-              style={{ background: '#185FA5' }}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {isFr ? 'Connexion...' : 'Logging in...'}
-                </span>
-              ) : isFr ? (
-                'Se connecter'
-              ) : (
-                'Log in'
-              )}
-            </button>
-          </form>
+          {step === 'email' ? (
+            <form onSubmit={submitEmail} className="space-y-4">
+              <div>
+                <label className={GOV_LABEL}>{isFr ? 'Email officiel' : 'Official email'}</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={GOV_INPUT}
+                />
+              </div>
+              {error && <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 p-2 rounded-lg">{error}</p>}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl font-bold text-white text-sm mt-4 hover:opacity-90 transition-opacity disabled:opacity-50"
+                style={{ background: '#185FA5' }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {isFr ? 'Envoi...' : 'Sending...'}
+                  </span>
+                ) : isFr ? (
+                  'Recevoir mon code'
+                ) : (
+                  'Send me a code'
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={submitCode} className="space-y-4">
+              <p className="text-white/55 text-xs text-center">
+                {isFr ? 'Code envoyé à ' : 'Code sent to '} <span className="text-white font-semibold">{email}</span>
+              </p>
+              <div>
+                <label className={GOV_LABEL}>{isFr ? 'Code (6 chiffres)' : 'Code (6 digits)'}</label>
+                <input
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className={`${GOV_INPUT} tracking-widest text-center font-mono`}
+                />
+              </div>
+              {error && <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 p-2 rounded-lg">{error}</p>}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl font-bold text-white text-sm mt-4 hover:opacity-90 transition-opacity disabled:opacity-50"
+                style={{ background: '#185FA5' }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {isFr ? 'Connexion...' : 'Signing in...'}
+                  </span>
+                ) : isFr ? (
+                  'Se connecter'
+                ) : (
+                  'Sign in'
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('email');
+                  setCode('');
+                  setError('');
+                }}
+                className="w-full text-xs text-white/45 hover:text-white/70"
+              >
+                {isFr ? '← Changer d’email' : '← Change email'}
+              </button>
+            </form>
+          )}
           <div className="mt-6 rounded-xl p-4 border border-blue-500/25" style={{ background: 'rgba(24,95,165,0.15)' }}>
             <p className="text-white/60 text-xs text-center mb-3">
               {isFr

@@ -18,8 +18,7 @@ export const PORTAL_META = {
     icon: '🌾',
     portalPath: '/my-dashboard',
     registerPath: '/inscription',
-    // Farmers sign in via the mobile-style flow on the farmer registration page.
-    signInPath: '/inscription',
+    signInPath: '/farmer-signin',
     labelFr: 'Portail agriculteur',
     labelEn: 'Farmer portal',
     descFr: 'Superficie, cultures, besoins et marketplace',

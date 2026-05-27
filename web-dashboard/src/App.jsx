@@ -36,6 +36,7 @@ const ProducerProRegistration = lazy(() => import('./pages/ProducerProRegistrati
 const TransformationRegistration = lazy(() => import('./pages/TransformationRegistration'));
 const ProducerDashboard = lazy(() => import('./pages/ProducerDashboard'));
 const FarmerRegistrationPage = lazy(() => import('./pages/FarmerRegistrationPage'));
+const FarmerSignIn = lazy(() => import('./pages/FarmerSignIn'));
 const ImpactReport = lazy(() => import('./pages/ImpactReport'));
 const TraceabilityLookup = lazy(() => import('./pages/TraceabilityLookup'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
@@ -114,6 +115,14 @@ function App() {
                     element={
                       <ApiSection>
                         <FarmerRegistrationPage />
+                      </ApiSection>
+                    }
+                  />
+                  <Route
+                    path="farmer-signin"
+                    element={
+                      <ApiSection>
+                        <FarmerSignIn />
                       </ApiSection>
                     }
                   />

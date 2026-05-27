@@ -43,20 +43,8 @@ export default function MagicLinkVerify() {
       cooperative: '/cooperative-portal',
       government: '/government-portal',
       ngo: '/ngo-portal',
-      processor: '/transformation-registration',
+      processor: '/processor-portal',
     };
-
-    if (role === 'investor' && email) {
-      localStorage.setItem('afriyield_investor_email', email);
-      localStorage.removeItem('sac_user_email');
-      localStorage.removeItem('sac_user_name');
-      localStorage.removeItem('sac_user_phone');
-    }
-    if (role === 'farmer' && email) {
-      localStorage.setItem('sac_user_email', email);
-      localStorage.removeItem('afriyield_investor_email');
-      localStorage.removeItem('afriyield_investor_name');
-    }
     const target = dest ? decodeURIComponent(dest) : (dashboardRoutes[role] || '/');
 
     setTimeout(() => navigate(target, { replace: true }), 1200);

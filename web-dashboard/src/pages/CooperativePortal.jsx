@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LogOut, Loader2, Check, X, Plus } from 'lucide-react';
+import { API_ENDPOINTS } from '../config/api';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -23,7 +24,10 @@ export default function CooperativePortal() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
-  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [loginStep, setLoginStep] = useState('email'); // email | code
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginCode, setLoginCode] = useState('');
+  const [verificationId, setVerificationId] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
@@ -60,17 +64,56 @@ export default function CooperativePortal() {
     setLoggingIn(true);
     setLoginError('');
     try {
-      const r = await fetch(`${API}/api/cooperatives/login`, {
+      const r = await fetch(API_ENDPOINTS.VERIFY.SEND, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginForm),
+        body: JSON.stringify({
+          purpose: 'login',
+          email: loginEmail.trim().toLowerCase(),
+          role: 'cooperative',
+          lang: isFr ? 'fr' : 'en',
+        }),
       });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Login failed');
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Send failed');
+      setVerificationId(d.verificationId || '');
+      setLoginStep('code');
+    } catch (err) {
+      setLoginError(err.message);
+    }
+    setLoggingIn(false);
+  };
+
+  const confirmLoginCode = async (e) => {
+    e.preventDefault();
+    setLoggingIn(true);
+    setLoginError('');
+    try {
+      const r = await fetch(API_ENDPOINTS.VERIFY.CONFIRM, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purpose: 'login',
+          email: loginEmail.trim().toLowerCase(),
+          code: loginCode,
+          role: 'cooperative',
+          verificationId,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Login failed');
+      if (!d.token) throw new Error(isFr ? 'Compte non activé.' : 'Account not active yet.');
+      const coopObj = d.user ? { email: d.user.email, cooperativeName: d.user.name } : null;
       sessionStorage.setItem(COOP_TOKEN, d.token);
-      sessionStorage.setItem(COOP_DATA, JSON.stringify(d.cooperative));
+      if (coopObj) sessionStorage.setItem(COOP_DATA, JSON.stringify(coopObj));
       setToken(d.token);
-      setCoop(d.cooperative);
+      setCoop(coopObj);
+      if (d.user?.email) localStorage.setItem('sac_coop_email', d.user.email);
+      if (d.user?.name) localStorage.setItem('sac_coop_name', d.user.name);
+      localStorage.setItem('auth_token_cooperative', d.token);
+      localStorage.setItem('auth_role', 'cooperative');
+      window.dispatchEvent(new Event('sac_user_updated'));
+      window.dispatchEvent(new Event('web_session_updated'));
     } catch (err) {
       setLoginError(err.message);
     }
@@ -83,6 +126,10 @@ export default function CooperativePortal() {
     setToken(null);
     setCoop(null);
     setData(null);
+    setLoginStep('email');
+    setLoginEmail('');
+    setLoginCode('');
+    setVerificationId('');
   };
 
   const changePassword = async () => {
@@ -161,54 +208,93 @@ export default function CooperativePortal() {
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-2xl">
             <h2 className="font-bold text-[#1a3c2e] text-lg mb-5 text-center">
-              {isFr ? 'Connexion coopérative' : 'Cooperative login'}
+              {isFr ? 'Connexion par code' : 'Sign in with code'}
             </h2>
-            <form onSubmit={login} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {isFr ? 'Email de la coopérative' : 'Cooperative email'}
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={loginForm.email}
-                  onChange={(e) => setLoginForm((f) => ({ ...f, email: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Mot de passe' : 'Password'}</label>
-                <input
-                  type="password"
-                  required
-                  value={loginForm.password}
-                  onChange={(e) => setLoginForm((f) => ({ ...f, password: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
-                />
-              </div>
-              {loginError && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{loginError}</p>}
-              <button
-                type="submit"
-                disabled={loggingIn}
-                className="w-full py-3.5 rounded-xl font-bold text-white disabled:opacity-50"
-                style={{ background: '#1a3c2e' }}
-              >
-                {loggingIn ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" /> {isFr ? 'Connexion...' : 'Logging in...'}
-                  </span>
-                ) : isFr ? (
-                  'Se connecter'
-                ) : (
-                  'Log in'
-                )}
-              </button>
-            </form>
+            {loginStep === 'email' ? (
+              <form onSubmit={login} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {isFr ? 'Email de la coopérative' : 'Cooperative email'}
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                  />
+                </div>
+                {loginError && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{loginError}</p>}
+                <button
+                  type="submit"
+                  disabled={loggingIn}
+                  className="w-full py-3.5 rounded-xl font-bold text-white disabled:opacity-50"
+                  style={{ background: '#1a3c2e' }}
+                >
+                  {loggingIn ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> {isFr ? 'Envoi...' : 'Sending...'}
+                    </span>
+                  ) : isFr ? (
+                    'Recevoir mon code'
+                  ) : (
+                    'Send me a code'
+                  )}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={confirmLoginCode} className="space-y-4">
+                <p className="text-xs text-gray-500 text-center">
+                  {isFr ? 'Code envoyé à ' : 'Code sent to '} <span className="text-gray-900 font-semibold">{loginEmail}</span>
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {isFr ? 'Code (6 chiffres)' : 'Code (6 digits)'}
+                  </label>
+                  <input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    required
+                    value={loginCode}
+                    onChange={(e) => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] tracking-widest text-center font-mono"
+                  />
+                </div>
+                {loginError && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{loginError}</p>}
+                <button
+                  type="submit"
+                  disabled={loggingIn}
+                  className="w-full py-3.5 rounded-xl font-bold text-white disabled:opacity-50"
+                  style={{ background: '#1a3c2e' }}
+                >
+                  {loggingIn ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> {isFr ? 'Connexion...' : 'Signing in...'}
+                    </span>
+                  ) : isFr ? (
+                    'Se connecter'
+                  ) : (
+                    'Sign in'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginStep('email');
+                    setLoginCode('');
+                    setLoginError('');
+                  }}
+                  className="w-full text-xs text-gray-400 hover:text-gray-700"
+                >
+                  {isFr ? '← Changer d’email' : '← Change email'}
+                </button>
+              </form>
+            )}
             <div className="mt-4 text-center space-y-2">
               <p className="text-xs text-gray-400">
                 {isFr
-                  ? "Votre mot de passe vous a été envoyé par email lors de l'activation."
-                  : 'Your password was emailed when your account was activated.'}
+                  ? "Aucun mot de passe — connexion sécurisée par code email."
+                  : 'No password — secure sign-in via email code.'}
               </p>
               <p className="text-xs text-gray-400">
                 {isFr ? 'Pas encore inscrit ?' : 'Not registered yet?'}{' '}
