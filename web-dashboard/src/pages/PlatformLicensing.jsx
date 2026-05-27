@@ -46,26 +46,6 @@ const ORG_TYPES = [
       'Partnership with cooperatives',
     ],
   },
-  {
-    key: 'enterprise',
-    icon: '🏢',
-    title: 'Enterprise / Corporate',
-    titleFr: 'Entreprise / Corporatif',
-    desc: 'Large buyer, processor group, commodities trader, or corporate sourcing team seeking verified supply chain access.',
-    descFr:
-      "Grand acheteur, groupe de transformation, négociant en matières premières ou équipe d'approvisionnement d'entreprise.",
-    requirement: 'Requires professional business email',
-    requirementFr: "Nécessite un email professionnel d'entreprise",
-    color: '#B5850A',
-    price: '$1,499/month',
-    features: [
-      'Verified supply chain access',
-      'Direct cooperative sourcing',
-      'AfriYield Exchange priority access',
-      'Bulk commodity intelligence',
-      'Dedicated account manager',
-    ],
-  },
 ];
 
 export default function PlatformLicensing() {
@@ -128,41 +108,48 @@ export default function PlatformLicensing() {
   };
 
   return (
-    <div>
-      <section style={{ background: 'linear-gradient(135deg, #1a3c2e, #2d5a3d)' }} className="text-white">
-        <div className="section-container py-16 md:py-20 text-center">
-          <span className="inline-block bg-[#B5850A]/20 text-[#B5850A] text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a1628] via-[#0d2818] to-[#1a3c2e]">
+      <section className="relative overflow-hidden text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(181,133,10,0.15),_transparent_50%)]" />
+        <div className="section-container relative py-16 md:py-20 text-center">
+          <span className="inline-block backdrop-blur-md bg-white/10 border border-white/20 text-[#B5850A] text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">
             {isFr ? 'Accès institutionnel' : 'Institutional Access'}
           </span>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             {isFr ? 'Licences Institutionnelles' : 'Institutional Licenses'}
           </h1>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">
+          <p className="text-white/75 text-lg max-w-2xl mx-auto mb-6">
             {isFr
-              ? 'Gouvernements, ONG et entreprises — accédez aux données agricoles de votre territoire avec isolation complète des données et portail dédié.'
-              : 'Governments, NGOs, and enterprises — access agricultural data for your territory with complete data isolation and dedicated portal.'}
+              ? 'Gouvernements et ONG — accédez aux données agricoles de votre territoire avec isolation complète et portail dédié.'
+              : 'Governments and NGOs — access agricultural data for your territory with complete data isolation and a dedicated portal.'}
           </p>
+          <Link
+            to="/pricing"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#B5850A] hover:text-[#d4a017] transition-colors"
+          >
+            {isFr ? 'Voir tous les tarifs' : 'View full pricing'} <ChevronRight className="w-4 h-4" />
+          </Link>
         </div>
       </section>
 
       <div className="section-container py-12 pb-20">
         {step === 1 && (
           <div>
-            <h2 className="text-2xl font-bold text-[#1a3c2e] text-center mb-3">
+            <h2 className="text-2xl font-bold text-white text-center mb-3">
               {isFr ? 'Quelle est votre organisation?' : 'What is your organization?'}
             </h2>
-            <p className="text-gray-500 text-center mb-10">
+            <p className="text-white/60 text-center mb-10">
               {isFr
                 ? "Choisissez le type d'accès qui correspond à votre organisation."
                 : 'Choose the access type that matches your organization.'}
             </p>
-            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {ORG_TYPES.map((type) => (
                 <button
                   key={type.key}
                   onClick={() => selectType(type)}
                   type="button"
-                  className="rounded-2xl border-2 border-gray-200 p-6 text-left hover:border-[#1a3c2e] hover:shadow-lg transition-all bg-white group"
+                  className="rounded-2xl border border-white/15 backdrop-blur-xl bg-white/10 p-6 text-left hover:border-[#B5850A]/50 hover:bg-white/15 hover:shadow-[0_8px_32px_rgba(181,133,10,0.15)] transition-all group"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-4xl">{type.icon}</span>
@@ -170,14 +157,14 @@ export default function PlatformLicensing() {
                       {type.price}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-[#1a3c2e] mb-2">{isFr ? type.titleFr : type.title}</h3>
-                  <p className="text-gray-500 text-sm mb-4 leading-relaxed">{isFr ? type.descFr : type.desc}</p>
+                  <h3 className="text-lg font-bold text-white mb-2">{isFr ? type.titleFr : type.title}</h3>
+                  <p className="text-white/65 text-sm mb-4 leading-relaxed">{isFr ? type.descFr : type.desc}</p>
                   <p className="text-xs font-semibold mb-4" style={{ color: type.color }}>
                     🔒 {isFr ? type.requirementFr : type.requirement}
                   </p>
                   <div className="space-y-1.5">
                     {type.features.map((f) => (
-                      <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
+                      <div key={f} className="flex items-center gap-2 text-xs text-white/70">
                         <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: type.color }} />
                         {f}
                       </div>
@@ -193,11 +180,30 @@ export default function PlatformLicensing() {
               ))}
             </div>
 
+            <div className="max-w-4xl mx-auto mt-8 rounded-2xl border border-[#F59E0B]/30 backdrop-blur-xl bg-gradient-to-r from-[#F59E0B]/10 to-transparent p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p className="text-white font-bold text-lg mb-1">
+                  {isFr ? 'Centre de transformation ?' : 'Transformation center?'}
+                </p>
+                <p className="text-white/65 text-sm">
+                  {isFr
+                    ? 'Inscrivez votre centre en ligne — à partir de 109 $/mois. Paiement sur le web.'
+                    : 'Register your center online — from $109/month. Payment completed on the web.'}
+                </p>
+              </div>
+              <Link
+                to="/transformation-registration"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F59E0B] text-[#0d2818] font-bold px-6 py-3 text-sm hover:bg-[#d97706] transition-colors shrink-0"
+              >
+                {isFr ? "S'inscrire (centre)" : 'Register center'} <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
             <div className="text-center mt-10">
-              <p className="text-gray-500 text-sm mb-2">
+              <p className="text-white/50 text-sm mb-2">
                 {isFr ? 'Vous avez déjà un accès institutionnel?' : 'Already have institutional access?'}
               </p>
-              <p className="text-[#1a3c2e] font-semibold text-sm">
+              <p className="text-[#B5850A] font-semibold text-sm">
                 {isFr
                   ? 'Après validation, vos identifiants officiels vous donnent accès au portail pays (connexion sécurisée).'
                   : 'After approval, your official credentials unlock the country portal (secure sign-in only).'}

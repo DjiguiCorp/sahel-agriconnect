@@ -149,13 +149,22 @@ export async function sendOtp({ purpose, email, phone, name, role }) {
     );
   }
 
+  const emailDelivery = emailRaw
+    ? resend
+      ? 'sent'
+      : 'dev_logged'
+    : null;
+
   return {
     success: true,
     verificationId: record._id.toString(),
     message: emailRaw
-      ? 'Verification code sent to email'
+      ? resend
+        ? 'Verification code sent to email'
+        : 'Verification code created (email delivery not configured on server)'
       : 'Account registered — phone verification pending SMS activation',
     isNewUser,
+    emailDelivery,
     smsStatus: phoneRaw && !emailRaw ? (smsSent ? 'sent' : 'pending_provider') : null,
   };
 }

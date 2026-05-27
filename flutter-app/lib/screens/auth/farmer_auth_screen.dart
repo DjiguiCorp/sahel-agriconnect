@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import '../../core/safe_insets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
+import '../../widgets/auth_form_theme.dart';
 import '../../widgets/country_picker.dart';
 import '../../widgets/otp_code_row.dart';
 
@@ -37,6 +39,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   String _selectedCrop = 'Shea Butter';
   String _selectedCountry = '';
   String? _pendingRegistrationId;
+  double? _latitude;
+  double? _longitude;
+  bool _locating = false;
 
   bool _loading = false;
   String _error = '';
@@ -369,19 +374,6 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         return;
       }
       if (res['success'] == false) {
-        final code = res['code'] ?? '';
-        // If account not found, route to registration instead of showing an error
-        if (code == 'USER_NOT_FOUND' ||
-            res['error']?.toString().toLowerCase().contains('not found') ==
-                true ||
-            res['error']?.toString().toLowerCase().contains('introuvable') ==
-                true) {
-          setState(() {
-            _loading = false;
-            _step = FarmerAuthStep.register;
-          });
-          return;
-        }
         setState(() {
           _error = res['error'] ??
               lp.t(
@@ -403,6 +395,20 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       _clearOtpFields();
       _startResendCountdown();
       _showOtpSentSnackBar();
+      if (res['emailDelivery'] == 'dev_logged' && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              lp.t(
+                'Email delivery is not configured on the server. Check server logs for the code, or ask admin to set RESEND_API_KEY.',
+                'L\'envoi d\'email n\'est pas configuré sur le serveur. Vérifiez les logs serveur pour le code, ou configurez RESEND_API_KEY.',
+              ),
+            ),
+            duration: const Duration(seconds: 6),
+            backgroundColor: AppColors.gold,
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -542,6 +548,62 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     await _sendCode();
   }
 
+  Future<void> _captureLocation(LanguageProvider lp) async {
+    setState(() {
+      _locating = true;
+      _error = '';
+    });
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        setState(() {
+          _locating = false;
+          _error = lp.t(
+            'Location permission is required for GPS. Enable it in settings.',
+            'La localisation est requise pour le GPS. Activez-la dans les paramètres.',
+          );
+        });
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _latitude = pos.latitude;
+        _longitude = pos.longitude;
+        _locating = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            lp.t(
+              'Location captured',
+              'Position enregistrée',
+            ),
+          ),
+          backgroundColor: AppColors.gold,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _locating = false;
+        _error = lp.t(
+          'Could not get GPS location. Enter your region manually.',
+          'Impossible d\'obtenir le GPS. Entrez votre région manuellement.',
+        );
+      });
+    }
+  }
+
   Future<void> _register() async {
     if (_nameCtrl.text.trim().isEmpty) {
       setState(() => _error = 'Please enter your name');
@@ -551,8 +613,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       setState(() => _error = 'Please select your country');
       return;
     }
+    final lp = context.read<LanguageProvider>();
     if (_pendingRegistrationId == null || _pendingRegistrationId!.isEmpty) {
-      setState(() => _error = 'Session expired. Please start again.');
+      setState(() => _error = lp.t(
+            'Please verify your email first. Go back and tap Send Code, then enter the 6-digit code.',
+            'Vérifiez d\'abord votre email. Revenez en arrière, appuyez sur Envoyer le code, puis entrez le code à 6 chiffres.',
+          ));
       return;
     }
     setState(() {
@@ -570,6 +636,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
             : null,
         'country': _selectedCountry,
         'region': _regionCtrl.text.trim(),
+        if (_latitude != null) 'latitude': _latitude,
+        if (_longitude != null) 'longitude': _longitude,
         'cultures': [_selectedCrop],
         'statut': 'Actif',
       });
@@ -788,12 +856,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                                     horizontal: 20,
                                   ),
                                   padding: const EdgeInsets.all(24),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(28),
-                                    ),
-                                  ),
+                                  decoration: AuthFormTheme.glassPanelDecoration(),
                                   child: AnimatedSwitcher(
                                     duration:
                                         const Duration(milliseconds: 300),
@@ -961,41 +1024,22 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
               keyboardType: _keyboardType,
               autocorrect: false,
               enableSuggestions: false,
-              style: const TextStyle(fontSize: 15, color: Color(0xFF1a3c2e)),
+              style: AuthFormTheme.fieldTextStyle(),
               textInputAction: TextInputAction.done,
               onFieldSubmitted: (_) {
                 if (_isValidContact && !_loading) _sendCode();
               },
-              decoration: InputDecoration(
-                hintText: _isEmail
+              decoration: AuthFormTheme.decoration(
+                hint: _isEmail
                     ? lp.t('email@example.com', 'email@exemple.com')
                     : '$_countryPrefix  •  ${lp.t('phone number', 'numéro de téléphone')}',
                 labelText: lp.t(
                   'Email or phone number',
                   'Email ou numéro de téléphone',
                 ),
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                labelStyle: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF8F4E3),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF1a3c2e),
-                    width: 1.5,
-                  ),
-                ),
                 suffixIcon: value.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        icon: const Icon(Icons.clear, color: AuthFormTheme.hintColor),
                         onPressed: () {
                           _contactController.clear();
                           setState(() {
@@ -1005,10 +1049,6 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                         },
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
               ),
               onChanged: (val) {
                 setState(() {
@@ -1096,10 +1136,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8F4E3),
-            borderRadius: BorderRadius.circular(14),
-          ),
+          decoration: AuthFormTheme.footerDecoration(),
           child: Row(
             children: [
               Expanded(
@@ -1108,16 +1145,16 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                     'New farmer? Create your account',
                     'Nouvel agriculteur ? Créez votre compte',
                   ),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[600],
+                    color: AuthFormTheme.hintColor,
                   ),
                 ),
               ),
               TextButton(
-                onPressed: () => setState(() {
-                  _step = FarmerAuthStep.register;
-                }),
+                onPressed: _loading
+                    ? null
+                    : _sendCode,
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -1427,21 +1464,58 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
             Icons.location_on_outlined,
             lp.t('Region / Village', 'Région / Village'),
           ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _locating ? null : () => _captureLocation(lp),
+              icon: _locating
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location, size: 18),
+              label: Text(
+                lp.t('Use my location (GPS)', 'Utiliser ma position (GPS)'),
+                style: const TextStyle(fontSize: 13),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AuthFormTheme.labelColor,
+                side: BorderSide(
+                  color: AppColors.forestGreen.withValues(alpha: 0.25),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+          if (_latitude != null && _longitude != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'GPS: ${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AuthFormTheme.hintColor,
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           Text(
             lp.t('Main crop', 'Culture principale'),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-            ),
+            style: AuthFormTheme.labelStyle(),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F4E3),
-              borderRadius: BorderRadius.circular(14),
+              color: AuthFormTheme.fillColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.forestGreen.withValues(alpha: 0.12),
+              ),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -1512,37 +1586,14 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-            ),
-          ),
+          Text(label, style: AuthFormTheme.labelStyle()),
           const SizedBox(height: 8),
           TextField(
             controller: ctrl,
-            style: const TextStyle(fontSize: 15, color: Color(0xFF1a3c2e)),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-              filled: true,
-              fillColor: const Color(0xFFF8F4E3),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide:
-                    const BorderSide(color: Color(0xFF1a3c2e), width: 1.5),
-              ),
-              prefixIcon: Icon(icon, color: Colors.grey[400]),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+            style: AuthFormTheme.fieldTextStyle(),
+            decoration: AuthFormTheme.decoration(
+              hint: hint,
+              prefixIcon: Icon(icon, color: AuthFormTheme.hintColor, size: 20),
             ),
           ),
         ],

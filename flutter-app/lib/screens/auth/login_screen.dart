@@ -15,6 +15,7 @@ import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/auth_form_theme.dart';
 import '../../widgets/country_picker.dart';
 import '../../widgets/otp_code_row.dart';
 
@@ -121,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
       bg: const [Color(0xFF1a3c2e), Color(0xFF0d1f17)],
       loginEndpoint: '/api/processors/login',
       canSelfRegister: true,
-      registerUrl: 'https://sahelagriconnect.com/platform-licensing',
+      registerUrl: 'https://sahelagriconnect.com/transformation-registration',
       hint: 'processor@email.com or +223...',
     ),
   };
@@ -806,44 +807,22 @@ class _LoginScreenState extends State<LoginScreen> {
               keyboardType: _keyboardType,
               autocorrect: false,
               enableSuggestions: false,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Color(0xFF1a3c2e),
-              ),
+              style: AuthFormTheme.fieldTextStyle(),
               textInputAction: TextInputAction.done,
               onFieldSubmitted: (_) {
                 if (_isValidContact && !_loading) _sendCode();
               },
-              decoration: InputDecoration(
-                hintText: _isEmail
+              decoration: AuthFormTheme.decoration(
+                hint: _isEmail
                     ? lp.t('email@example.com', 'email@exemple.com')
                     : '$_countryPrefix  •  ${lp.t('phone number', 'numéro de téléphone')}',
                 labelText: lp.t(
                   'Email or phone number',
                   'Email ou numéro de téléphone',
                 ),
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                labelStyle: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF8F4E3),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF1a3c2e),
-                    width: 1.5,
-                  ),
-                ),
                 suffixIcon: value.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        icon: const Icon(Icons.clear, color: AuthFormTheme.hintColor),
                         onPressed: () {
                           _contactCtrl.clear();
                           setState(() {
@@ -1171,10 +1150,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _registerFooter(LanguageProvider lp) => Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F4E3),
-          borderRadius: BorderRadius.circular(14),
-        ),
+        decoration: AuthFormTheme.footerDecoration(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

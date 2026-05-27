@@ -58,6 +58,7 @@ dependencies:
   connectivity_plus: ^6.0.3
   flutter_secure_storage: ^9.0.0
   jwt_decoder: ^2.0.1
+  geolocator: ^13.0.2
 
 dev_dependencies:
   flutter_test:
