@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import '../../core/safe_insets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:app_links/app_links.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
@@ -19,7 +21,15 @@ import '../../widgets/otp_code_row.dart';
 enum FarmerAuthStep { identity, otp, register }
 
 class FarmerAuthScreen extends StatefulWidget {
-  const FarmerAuthScreen({super.key});
+  const FarmerAuthScreen({
+    super.key,
+    this.pendingRegistrationId,
+    this.initialEmail,
+  });
+
+  /// Set when returning from magic-link verification (new farmer).
+  final String? pendingRegistrationId;
+  final String? initialEmail;
 
   @override
   State<FarmerAuthScreen> createState() => _FarmerAuthScreenState();
@@ -58,7 +68,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   String _savedEmail = '';
   String _savedName = '';
   bool _checkingSession = true;
-  bool _showManualCode = false;
+  bool _isNewFarmer = false;
+  StreamSubscription<Uri>? _magicLinkSub;
 
   static const _crops = [
     'Shea Butter',
@@ -78,6 +89,40 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     _contactController.addListener(_onContactChanged);
     _detectCountry();
     _checkSavedSession();
+    _applyRouteParams();
+    _magicLinkSub = AppLinks().uriLinkStream.listen(_onMagicLinkUri);
+  }
+
+  void _applyRouteParams() {
+    final pending = widget.pendingRegistrationId;
+    final email = widget.initialEmail;
+    if (pending != null && pending.isNotEmpty) {
+      _pendingRegistrationId = pending;
+      _step = FarmerAuthStep.register;
+      _isNewFarmer = true;
+    }
+    if (email != null && email.isNotEmpty) {
+      _contactController.text = email;
+      _isEmail = true;
+      _keyboardType = TextInputType.emailAddress;
+    }
+  }
+
+  void _onMagicLinkUri(Uri uri) {
+    if (!uri.pathSegments.contains('magic') &&
+        !(uri.host == 'auth' && uri.path.contains('magic'))) {
+      return;
+    }
+    final code = uri.queryParameters['c'] ?? '';
+    final email = uri.queryParameters['e'] ?? '';
+    final purpose = uri.queryParameters['p'] ?? 'farmer_verify';
+    if (code.isEmpty || email.isEmpty) return;
+    if (!mounted) return;
+    context.go(
+      '/auth/magic?c=${Uri.encodeComponent(code)}'
+      '&e=${Uri.encodeComponent(email)}'
+      '&p=${Uri.encodeComponent(purpose)}',
+    );
   }
 
   Future<void> _detectCountry() async {

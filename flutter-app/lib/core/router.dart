@@ -196,7 +196,17 @@ GoRouter buildRouter(
         },
       ),
       GoRoute(
-          path: '/login/farmer', builder: (_, __) => const FarmerAuthScreen()),
+        path: '/login/farmer',
+        builder: (context, state) {
+          final q = state.uri.queryParameters;
+          return FarmerAuthScreen(
+            pendingRegistrationId: q['pending'],
+            initialEmail: q['email'] != null
+                ? Uri.decodeComponent(q['email']!)
+                : null,
+          );
+        },
+      ),
       GoRoute(
         path: '/login/investor',
         builder: (_, __) => const LoginScreen(role: AuthRole.investor),
