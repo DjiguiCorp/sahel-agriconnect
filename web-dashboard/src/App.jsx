@@ -49,6 +49,7 @@ const CooperativePortal = lazy(() => import('./pages/CooperativePortal'));
 const JoinCooperative = lazy(() => import('./pages/JoinCooperative'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const InvestmentSuccess = lazy(() => import('./pages/InvestmentSuccess'));
+const ProcessorPortal = lazy(() => import('./pages/ProcessorPortal'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -204,6 +205,14 @@ function App() {
                     element={
                       <ApiSection>
                         <CooperativePortal />
+                      </ApiSection>
+                    }
+                  />
+                  <Route
+                    path="processor-portal"
+                    element={
+                      <ApiSection>
+                        <ProcessorPortal />
                       </ApiSection>
                     }
                   />

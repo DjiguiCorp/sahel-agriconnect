@@ -147,7 +147,7 @@ export default function SignInHub() {
                 ) : (
                   <>
                     <Link
-                      to={meta.portalPath}
+                      to={meta.signInPath || meta.portalPath}
                       className="w-full block text-center py-3 rounded-xl font-bold text-sm mb-2"
                       style={{ background: theme.button, color: theme.buttonText }}
                     >

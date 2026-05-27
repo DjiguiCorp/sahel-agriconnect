@@ -12,6 +12,8 @@ const SYNC_KEYS = [
   'afriyield_investor_name',
   'gov_token',
   'gov_admin',
+  'ngo_token',
+  'ngo_admin',
 ];
 
 function readSessions() {
@@ -32,6 +34,8 @@ function readSessions() {
   const farmerEmailClean = localStorage.getItem('sac_user_email');
   const investorToken = sessionStorage.getItem('afriyield_token');
   const govToken = localStorage.getItem('gov_token');
+  const ngoToken = localStorage.getItem('ngo_token');
+  let ngoAdmin = null;
   let govOrgType = 'government';
   try {
     const admin = JSON.parse(localStorage.getItem('gov_admin') || '{}');
@@ -39,12 +43,18 @@ function readSessions() {
   } catch {
     /* ignore */
   }
+  try {
+    ngoAdmin = JSON.parse(localStorage.getItem('ngo_admin') || 'null');
+  } catch {
+    ngoAdmin = null;
+  }
 
   const cooperative = Boolean(coopEmail);
   const farmer = Boolean(farmerEmailClean) && !cooperative;
   const investor = Boolean(investorEmail);
   const government = Boolean(govToken) && govOrgType !== 'ngo';
-  const ngo = Boolean(govToken) && govOrgType === 'ngo';
+  // NGO portal uses dedicated storage (preferred). Legacy: gov_token with orgType ngo.
+  const ngo = Boolean(ngoToken) || (Boolean(govToken) && govOrgType === 'ngo');
 
   const sessions = {
     farmer: farmer
@@ -83,6 +93,7 @@ function readSessions() {
       ? {
           active: true,
           portalPath: PORTAL_META.ngo.portalPath,
+          name: ngoAdmin?.name || '',
         }
       : null,
     processor: null,

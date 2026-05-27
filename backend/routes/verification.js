@@ -7,6 +7,12 @@ import Farmer from '../models/Farmer.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import { farmerTelephoneQuery } from '../utils/phone.js';
 import DeviceSession from '../models/DeviceSession.js';
+import { confirmMagicCode } from '../services/otpAuthService.js';
+import {
+  codeEmailHtml,
+  codeEmailSubject,
+  normalizeLang,
+} from '../utils/authEmailTemplates.js';
 
 const router = express.Router();
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
@@ -25,54 +31,6 @@ function expiresIn(minutes = 15) {
 
 function normalizePhone(p) {
   return String(p || '').trim().replace(/\s+/g, '');
-}
-
-function codeEmail(code, purpose, name = '', email = '') {
-  const labels = {
-    farmer_verify: { title: 'Verify your farmer account', fr: 'Vérifiez votre compte agriculteur' },
-    coop_verify: { title: 'Verify your cooperative account', fr: 'Vérifiez votre compte coopérative' },
-    login: { title: 'Your sign-in link', fr: 'Votre lien de connexion' },
-    password_reset: { title: 'Reset your password', fr: 'Réinitialisez votre mot de passe' },
-  };
-  const label = labels[purpose] || labels.login;
-
-  // Magic link: embeds the code in a URL so the user can click instead of type.
-  // Works on web; on mobile with app installed, the deep link opens the app directly.
-  const webBase = process.env.WEB_APP_URL || 'https://sahelagriconnect.com';
-  const magicUrl = `${webBase}/auth/magic?c=${encodeURIComponent(code)}&e=${encodeURIComponent(email)}&p=${encodeURIComponent(purpose)}`;
-
-  return `
-  <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;">
-    <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
-      <h1 style="color:#B5850A;margin:0;font-size:22px;">Sahel AgriConnect</h1>
-      <p style="color:white;margin:4px 0 0;font-size:13px;">${label.fr}</p>
-    </div>
-    <div style="padding:32px;background:white;border:1px solid #e0e0e0;border-radius:0 0 8px 8px;text-align:center;">
-      ${name ? `<p style="color:#333;margin-bottom:8px;">Bonjour <strong>${name}</strong>,</p>` : ''}
-      <p style="color:#555;margin-bottom:24px;font-size:15px;">
-        Cliquez sur le bouton ci-dessous pour vous connecter.<br>
-        <span style="font-size:13px;color:#999;">Si l'application est installée sur votre téléphone, elle s'ouvrira automatiquement.</span>
-      </p>
-      <a href="${magicUrl}"
-         style="display:inline-block;background:#B5850A;color:white;text-decoration:none;
-                padding:16px 40px;border-radius:12px;font-size:16px;font-weight:bold;
-                margin-bottom:28px;letter-spacing:0.5px;">
-        ✓ Se connecter à Sahel AgriConnect
-      </a>
-      <div style="border-top:1px solid #eee;padding-top:20px;margin-top:4px;">
-        <p style="color:#aaa;font-size:12px;margin-bottom:12px;">
-          Bouton bloqué ? Entrez ce code manuellement :
-        </p>
-        <div style="background:#f0f9f4;border:2px solid #1a3c2e;border-radius:12px;padding:16px;display:inline-block;margin-bottom:12px;">
-          <span style="font-size:32px;font-weight:bold;color:#1a3c2e;letter-spacing:8px;font-family:monospace;">${code}</span>
-        </div>
-        <p style="color:#999;font-size:12px;">Ce lien expire dans <strong>15 minutes</strong>.</p>
-      </div>
-      <p style="color:#ccc;font-size:11px;margin-top:20px;">
-        Si vous n'avez pas demandé ce lien, ignorez cet email.
-      </p>
-    </div>
-  </div>`;
 }
 
 function farmerSummary(farmer) {
@@ -95,6 +53,8 @@ router.post('/send', async (req, res) => {
     const emailRaw = req.body?.email ? String(req.body.email).toLowerCase().trim() : '';
     const phoneRaw = req.body?.phone ? normalizePhone(req.body.phone) : '';
     const name = req.body?.name ? String(req.body.name).trim() : '';
+    const lang = normalizeLang(req.body?.lang);
+    const role = req.body?.role ? String(req.body.role).trim() : '';
 
     if (!purpose) return res.status(400).json({ error: 'purpose required' });
     if (!emailRaw && !phoneRaw) {
@@ -128,8 +88,13 @@ router.post('/send', async (req, res) => {
         const sendResult = await resend.emails.send({
           from: FROM,
           to: emailRaw,
-          subject: `${code} — Code de vérification Sahel AgriConnect`,
-          html: codeEmail(code, purpose, name, emailRaw),
+          subject: codeEmailSubject(code, purpose, lang),
+          html: codeEmailHtml(code, purpose, {
+            name,
+            email: emailRaw,
+            lang,
+            role,
+          }),
         });
         console.log('[Resend] Email sent:', sendResult);
       } catch (sendErr) {
@@ -158,101 +123,24 @@ router.post('/send', async (req, res) => {
   }
 });
 
-// POST /api/verify/confirm — validate OTP (farmer_verify issues JWT when farmer exists)
+// POST /api/verify/confirm — magic link + OTP (all roles)
 router.post('/confirm', async (req, res) => {
   try {
-    const purpose = String(req.body?.purpose || '').trim();
-    const email = req.body?.email ? String(req.body.email).toLowerCase().trim() : '';
-    const phone = req.body?.phone ? normalizePhone(req.body.phone) : '';
-    const code = String(req.body?.code ?? '').trim();
-
-    if (!purpose || !code) {
-      return res.status(400).json({ error: 'purpose and code required' });
-    }
-    if (!email && !phone) {
-      return res.status(400).json({ error: 'Email or phone required' });
-    }
-
-    const q = {
-      code,
-      purpose,
-      used: false,
-      expiresAt: { $gt: new Date() },
-    };
-    if (email) q.email = email;
-    if (phone) q.phone = phone;
-
-    const record = await VerificationCode.findOne(q);
-
-    if (!record) {
-      return res.status(400).json({
-        error: 'Invalid or expired code. Please request a new one.',
-      });
-    }
-
-    record.used = true;
-    await record.save();
-
-    if (purpose === 'farmer_verify') {
-      const farmerQuery = email ? { email } : farmerTelephoneQuery(phone);
-      const farmer = await Farmer.findOne(farmerQuery).lean();
-
-      if (email) {
-        await Farmer.findOneAndUpdate(
-          { email },
-          { emailVerified: true, verifiedAt: new Date() },
-        );
-      }
-
-      if (!farmer) {
-        return res.json({
-          success: true,
-          verified: true,
-          isNewUser: true,
-          pendingRegistrationId: record._id.toString(),
-        });
-      }
-
-      const token = jwt.sign(
-        {
-          role: 'farmer',
-          id: farmer._id.toString(),
-          email: farmer.email || email,
-          nom: farmer.nom,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '90d' },
-      );
-
-      // Issue a device session seed for biometric re-login (no OTP needed on same device)
-      const sessionSeed = await DeviceSession.issue(
-        farmer._id.toString(),
-        'farmer',
-        req.headers['user-agent']?.slice(0, 80) || '',
-      );
-      return res.json({
-        success: true,
-        verified: true,
-        isNewUser: false,
-        token,
-        role: 'farmer',
-        user: farmerSummary(farmer),
-        sessionSeed, // store this in flutter_secure_storage; never log it
-      });
-    }
-
-    if (purpose === 'coop_verify') {
-      if (email) {
-        await CooperativePlatformRegistration.findOneAndUpdate(
-          { email: email.toLowerCase().trim() },
-          { emailVerified: true, verifiedAt: new Date() },
-        );
-      }
-    }
-
-    return res.json({ success: true, verified: true });
+    const result = await confirmMagicCode({
+      code: req.body?.code,
+      email: req.body?.email,
+      phone: req.body?.phone,
+      purpose: req.body?.purpose,
+      role: req.body?.role,
+      deviceHint: req.headers['user-agent']?.slice(0, 80) || '',
+    });
+    res.json(result);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(e.status || 500).json({
+      success: false,
+      error: e.message,
+      ...(e.code ? { code: e.code } : {}),
+    });
   }
 });
 
@@ -286,10 +174,11 @@ router.get('/magic', async (req, res) => {
     // Call the confirm handler inline — find the POST /confirm handler
     // and run its logic here, or make a fetch to self:
     const selfUrl = `http://localhost:${process.env.PORT || 5000}/api/verify/confirm`;
+    const role = String(req.query.r || req.query.role || 'farmer').trim();
     const confirmResponse = await fetch(selfUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, email, purpose }),
+      body: JSON.stringify({ code, email, purpose, role }),
     });
     const confirmData = await confirmResponse.json();
 
@@ -304,11 +193,11 @@ router.get('/magic', async (req, res) => {
     const role = confirmData.role || 'farmer';
     const dashRoutes = {
       farmer: '/inscription',
-      investor: '/afri-yield',
-      cooperative: '/cooperative-registration',
-      government: '/dashboard',
-      ngo: '/dashboard',
-      processor: '/platform-licensing',
+      investor: '/afri-yield/portal',
+      cooperative: '/cooperative-portal',
+      government: '/government-portal',
+      ngo: '/ngo-portal',
+      processor: '/processor-portal',
     };
     const dest = dashRoutes[role] || '/';
     return res.redirect(`${webBase}/auth/magic#token=${confirmData.token}&role=${role}&dest=${encodeURIComponent(dest)}`);

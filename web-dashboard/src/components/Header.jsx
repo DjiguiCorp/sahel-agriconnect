@@ -60,11 +60,14 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [desktopPlatformOpen, setDesktopPlatformOpen] = useState(false);
   const [desktopToolsOpen, setDesktopToolsOpen] = useState(false);
+  const [desktopSignInOpen, setDesktopSignInOpen] = useState(false);
   const [mobilePlatformOpen, setMobilePlatformOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [mobileSignInOpen, setMobileSignInOpen] = useState(false);
   const [showJoinMenu, setShowJoinMenu] = useState(false);
   const desktopPlatformRef = useRef(null);
   const desktopToolsRef = useRef(null);
+  const desktopSignInRef = useRef(null);
   const joinMenuRef = useRef(null);
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -144,6 +147,7 @@ const Header = () => {
     setIsMenuOpen(false);
     setMobilePlatformOpen(false);
     setMobileToolsOpen(false);
+    setMobileSignInOpen(false);
     setShowJoinMenu(false);
   };
 
@@ -151,6 +155,7 @@ const Header = () => {
     closeMenu();
     setDesktopPlatformOpen(false);
     setDesktopToolsOpen(false);
+    setDesktopSignInOpen(false);
     setShowJoinMenu(false);
   };
 
@@ -180,6 +185,7 @@ const Header = () => {
   useEffect(() => {
     setDesktopPlatformOpen(false);
     setDesktopToolsOpen(false);
+    setDesktopSignInOpen(false);
     setShowJoinMenu(false);
   }, [location.pathname]);
 
@@ -216,9 +222,52 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [desktopToolsOpen]);
 
+  useEffect(() => {
+    if (!desktopSignInOpen) return;
+    const handleMouseDown = (e) => {
+      if (desktopSignInRef.current && !desktopSignInRef.current.contains(e.target)) {
+        setDesktopSignInOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [desktopSignInOpen]);
+
   const platformLabel = isFr ? 'Plateforme' : 'Platform';
   const toolsLabel = isFr ? 'Outils' : 'Tools';
   const mainNavLinks = useMemo(() => getMainNavLinks(isFr), [isFr]);
+
+  const signInItems = useMemo(() => {
+    const base = [
+      { to: '/connexion', label: isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals' },
+    ];
+    // Quick access to role portals when logged in.
+    const portalShortcuts = [];
+    Object.keys(PORTAL_META).forEach((role) => {
+      const meta = PORTAL_META[role];
+      if (!meta) return;
+      const session = sessions?.[role];
+      if (session?.active) {
+        portalShortcuts.push({
+          to: meta.portalPath,
+          label: `${meta.icon} ${isFr ? meta.labelFr : meta.labelEn}`,
+        });
+      }
+    });
+    if (portalShortcuts.length) {
+      base.push(...portalShortcuts);
+    }
+    // Always show direct sign-in entries (no burying under Platform).
+    base.push(
+      { to: PORTAL_META.farmer.signInPath, label: `${PORTAL_META.farmer.icon} ${isFr ? 'Agriculteur' : 'Farmer'}` },
+      { to: PORTAL_META.cooperative.signInPath, label: `${PORTAL_META.cooperative.icon} ${isFr ? 'Coopérative' : 'Cooperative'}` },
+      { to: PORTAL_META.processor.signInPath, label: `${PORTAL_META.processor.icon} ${isFr ? 'Transformation' : 'Processing'}` },
+      { to: PORTAL_META.investor.signInPath, label: `${PORTAL_META.investor.icon} ${isFr ? 'AfriYield' : 'AfriYield'}` },
+      { to: PORTAL_META.government.signInPath, label: `${PORTAL_META.government.icon} ${isFr ? 'Gouvernement' : 'Government'}` },
+      { to: PORTAL_META.ngo.signInPath, label: `${PORTAL_META.ngo.icon} ${isFr ? 'ONG' : 'NGO'}` },
+    );
+    return base;
+  }, [sessions, isFr]);
 
   const joinMenuDropdown = (
     <div ref={joinMenuRef} className="relative">
@@ -482,12 +531,49 @@ const Header = () => {
 
             <LanguageSelector />
 
-            <Link
-              to="/connexion"
-              className="hidden lg:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-white border border-white/20 hover:bg-white/10 transition whitespace-nowrap"
-            >
-              {isFr ? 'Connexion' : 'Sign in'}
-            </Link>
+            <div ref={desktopSignInRef} className="relative hidden lg:block">
+              <button
+                type="button"
+                onClick={() => setDesktopSignInOpen((o) => !o)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white border border-white/20 hover:bg-white/10 transition whitespace-nowrap"
+                aria-expanded={desktopSignInOpen}
+                aria-haspopup="true"
+              >
+                {isFr ? 'Connexion' : 'Sign in'}
+                <ChevronDown
+                  className={`w-4 h-4 shrink-0 transition-transform ${desktopSignInOpen ? 'rotate-180' : ''}`}
+                  aria-hidden
+                />
+              </button>
+              {desktopSignInOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-white/15 shadow-2xl z-50 overflow-hidden" style={dropdownPanelStyle} role="menu">
+                  {signInItems.map((item) => (
+                    <Link
+                      key={item.to + item.label}
+                      to={item.to}
+                      role="menuitem"
+                      onClick={() => setDesktopSignInOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors border-b border-white/5 last:border-0"
+                    >
+                      <span className="truncate">{item.label}</span>
+                    </Link>
+                  ))}
+                  {hasAnySession ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        signOutAll();
+                        setDesktopSignInOpen(false);
+                        navigate('/');
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-white/45 hover:text-white/70 hover:bg-white/5 transition"
+                    >
+                      {isFr ? 'Se déconnecter (tous les profils)' : 'Sign out (all profiles)'}
+                    </button>
+                  ) : null}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -617,6 +703,48 @@ const Header = () => {
               <Link to="/connexion" className={navLinkClass} onClick={closeAllNav}>
                 {isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals'}
               </Link>
+
+              <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-1">
+                <button
+                  type="button"
+                  className={`${navLinkClass} flex w-full items-center justify-between text-left`}
+                  aria-expanded={mobileSignInOpen}
+                  onClick={() => setMobileSignInOpen((o) => !o)}
+                >
+                  <span>{isFr ? 'Connexion (portails)' : 'Sign in (portals)'}</span>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 transition-transform ${mobileSignInOpen ? 'rotate-180' : ''}`}
+                    aria-hidden
+                  />
+                </button>
+                {mobileSignInOpen && (
+                  <div className="mt-2 flex flex-col space-y-1 border-l border-white/15 pl-3 ml-1">
+                    {signInItems.map(({ to, label }) => (
+                      <Link
+                        key={to + label}
+                        to={to}
+                        className="py-2 text-lg text-white/80 hover:text-white"
+                        onClick={closeAllNav}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                    {hasAnySession ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          signOutAll();
+                          closeAllNav();
+                          navigate('/');
+                        }}
+                        className="text-left text-sm text-white/50 hover:text-white/80 transition pt-3"
+                      >
+                        {isFr ? 'Se déconnecter (tous les profils)' : 'Sign out (all profiles)'}
+                      </button>
+                    ) : null}
+                  </div>
+                )}
+              </div>
 
               <div className="pt-4">
                 <LanguageSelector />
