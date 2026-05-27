@@ -83,53 +83,13 @@ const Header = () => {
     '';
 
   const platformItems = useMemo(() => {
-    const items = [
+    // Keep Platform menu focused on public product pages.
+    return [
       { to: '/dashboard', label: isFr ? '📊 Statistiques publiques' : '📊 Public stats' },
-      { to: '/connexion', label: isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals' },
-    ];
-    if (sessions.farmer?.active) {
-      items.push({
-        to: PORTAL_META.farmer.portalPath,
-        label: isFr ? '🌾 Mon portail agriculteur' : '🌾 My farmer portal',
-      });
-    }
-    if (sessions.cooperative?.active) {
-      const pending = sessions.cooperative.status === 'pending_payment';
-      items.push({
-        to: PORTAL_META.cooperative.portalPath,
-        label: pending
-          ? isFr
-            ? '⏳ Coopérative · paiement'
-            : '⏳ Cooperative · payment'
-          : isFr
-            ? '🤝 Portail coopérative'
-            : '🤝 Cooperative portal',
-      });
-    }
-    if (sessions.investor?.active) {
-      items.push({
-        to: PORTAL_META.investor.portalPath,
-        label: isFr ? '💰 Portail AfriYield' : '💰 AfriYield portal',
-      });
-    }
-    if (sessions.government?.active) {
-      items.push({
-        to: PORTAL_META.government.portalPath,
-        label: isFr ? '🏛️ Portail gouvernement' : '🏛️ Government portal',
-      });
-    }
-    if (sessions.ngo?.active) {
-      items.push({
-        to: PORTAL_META.ngo.portalPath,
-        label: isFr ? '🌍 Portail ONG' : '🌍 NGO portal',
-      });
-    }
-    items.push(
       { to: '/afri-yield/marketplace', label: 'Marketplace' },
       { to: '/trace', label: isFr ? 'Traçabilité' : 'Traceability' },
-    );
-    return items;
-  }, [sessions, isFr]);
+    ];
+  }, [isFr]);
 
   const navLinkClass =
     'text-base text-white/80 hover:text-white transition-colors font-medium px-2 py-2 lg:px-3 whitespace-nowrap';
@@ -338,10 +298,6 @@ const Header = () => {
             className="hidden lg:flex flex-1 items-center justify-center gap-0.5 xl:gap-1 min-w-0 px-6"
             aria-label={isFr ? 'Navigation principale' : 'Main navigation'}
           >
-            <Link to="/" className={navLinkClass} onClick={closeAllNav}>
-              {t('nav.home')}
-            </Link>
-
             <div
               ref={desktopPlatformRef}
               className="relative"

@@ -174,11 +174,11 @@ router.get('/magic', async (req, res) => {
     // Call the confirm handler inline — find the POST /confirm handler
     // and run its logic here, or make a fetch to self:
     const selfUrl = `http://localhost:${process.env.PORT || 5000}/api/verify/confirm`;
-    const role = String(req.query.r || req.query.role || 'farmer').trim();
+    const roleParam = String(req.query.r || req.query.role || 'farmer').trim();
     const confirmResponse = await fetch(selfUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, email, purpose, role }),
+      body: JSON.stringify({ code, email, purpose, role: roleParam }),
     });
     const confirmData = await confirmResponse.json();
 
@@ -190,7 +190,7 @@ router.get('/magic', async (req, res) => {
 
     // Redirect to web dashboard with token in URL fragment (not query param — stays client-side)
     // The MagicLinkVerify page reads this fragment and stores the JWT.
-    const role = confirmData.role || 'farmer';
+    const role = confirmData.role || roleParam || 'farmer';
     const dashRoutes = {
       farmer: '/inscription',
       investor: '/afri-yield/portal',
