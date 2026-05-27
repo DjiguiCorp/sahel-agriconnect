@@ -1,3 +1,5 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,7 +35,12 @@ class LanguageProvider extends ChangeNotifier {
         notifyListeners();
         SahelApp.updateLocale(Locale(_lang));
       } else {
-        SahelApp.updateLocale(const Locale('fr'));
+        final deviceLocale =
+            PlatformDispatcher.instance.locale.languageCode;
+        final defaultLang = (deviceLocale == 'fr') ? 'fr' : 'en';
+        _lang = defaultLang;
+        notifyListeners();
+        SahelApp.updateLocale(Locale(_lang));
       }
     } catch (_) {
       // Keep default 'fr' if storage fails.

@@ -14,6 +14,11 @@ const resources = {
 
 // Détecter la langue depuis la géolocalisation
 const getInitialLanguage = async () => {
+  const urlLang = new URLSearchParams(window.location.search).get('lang');
+  if (urlLang === 'en' || urlLang === 'fr') {
+    return urlLang;
+  }
+
   const raw = localStorage.getItem('i18nextLng');
   const savedLanguage = raw ? String(raw).split('-')[0] : null;
   if (savedLanguage === 'fr' || savedLanguage === 'en') {
@@ -76,6 +81,14 @@ i18n
     returnNull: false,
     returnObjects: true
   });
+
+// Read lang param from URL — used when mobile app opens web pages with ?lang=en
+const urlParams = new URLSearchParams(window.location.search);
+const langParam = urlParams.get('lang');
+if (langParam === 'en' || langParam === 'fr') {
+  i18n.changeLanguage(langParam);
+  localStorage.setItem('i18nextLng', langParam);
+}
 
 // Détecter et appliquer la langue depuis la géolocalisation après l'initialisation
 getInitialLanguage().then((detectedLang) => {

@@ -368,8 +368,29 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         });
         return;
       }
-      if (res['success'] == false && res['verificationId'] == null) {
-        throw Exception(res['error']?.toString() ?? 'Request failed');
+      if (res['success'] == false) {
+        final code = res['code'] ?? '';
+        // If account not found, route to registration instead of showing an error
+        if (code == 'USER_NOT_FOUND' ||
+            res['error']?.toString().toLowerCase().contains('not found') ==
+                true ||
+            res['error']?.toString().toLowerCase().contains('introuvable') ==
+                true) {
+          setState(() {
+            _loading = false;
+            _step = FarmerAuthStep.register;
+          });
+          return;
+        }
+        setState(() {
+          _error = res['error'] ??
+              lp.t(
+                'Something went wrong. Try again.',
+                'Une erreur est survenue. Réessayez.',
+              );
+          _loading = false;
+        });
+        return;
       }
       final vid = res['verificationId']?.toString();
       if (!mounted) return;
@@ -1070,6 +1091,53 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
               fontSize: 12,
               height: 1.6,
             ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F4E3),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  lp.t(
+                    'New farmer? Create your account',
+                    'Nouvel agriculteur ? Créez votre compte',
+                  ),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => setState(() {
+                  _step = FarmerAuthStep.register;
+                }),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  backgroundColor: const Color(0xFF1a3c2e),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  lp.t('Register', "S'inscrire"),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

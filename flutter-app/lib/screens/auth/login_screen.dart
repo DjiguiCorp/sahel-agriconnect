@@ -110,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
       bg: const [Color(0xFF0d2e1a), Color(0xFF1a3c2e)],
       loginEndpoint: '/api/government/login',
       canSelfRegister: false,
-      registerUrl: 'https://sahelagriconnect.com/contact',
+      registerUrl: 'https://sahelagriconnect.com/platform-licensing',
       hint: 'contact@ngo.org',
     ),
     AuthRole.processor: (
@@ -355,7 +355,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
+    // Pass current app language to web pages so they open in EN or FR correctly
+    final lang = context.read<LanguageProvider>().lang;
+
+    final separator = url.contains('?') ? '&' : '?';
+    final localizedUrl = '$url${separator}lang=$lang';
+
+    final uri = Uri.parse(localizedUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -1151,13 +1157,16 @@ class _LoginScreenState extends State<LoginScreen> {
       widget.role == AuthRole.processor;
 
   String _registerButtonLabel(LanguageProvider lp) {
-    if (!_config.canSelfRegister) {
-      return lp.t('Request access', "Demander l'accès");
+    if (widget.role == AuthRole.investor) {
+      return lp.t('Register', "S'inscrire");
     }
     if (widget.role == AuthRole.cooperative) {
       return lp.t('Register (web)', "S'inscrire (web)");
     }
-    return lp.t('Register', "S'inscrire");
+    if (widget.role == AuthRole.processor) {
+      return lp.t('Register (web)', "S'inscrire (web)");
+    }
+    return lp.t('Request access', "Demander l'accès");
   }
 
   Widget _registerFooter(LanguageProvider lp) => Container(
@@ -1173,15 +1182,25 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    _config.canSelfRegister
+                    widget.role == AuthRole.investor
                         ? lp.t(
                             'New to AfriYield Exchange?',
                             'Nouveau sur AfriYield Exchange ?',
                           )
-                        : lp.t(
-                            "Don't have access yet?",
-                            'Pas encore accès ?',
-                          ),
+                        : widget.role == AuthRole.cooperative
+                            ? lp.t(
+                                'New cooperative?',
+                                'Nouvelle coopérative ?',
+                              )
+                            : widget.role == AuthRole.processor
+                                ? lp.t(
+                                    'New transformation center?',
+                                    'Nouveau centre de transformation ?',
+                                  )
+                                : lp.t(
+                                    "Don't have access yet?",
+                                    'Pas encore accès ?',
+                                  ),
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey[600],
