@@ -19,6 +19,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { API_ENDPOINTS } from '../config/api';
 import TransactionTracker from '../components/TransactionTracker';
 import InvestorAccountStatus from '../components/InvestorAccountStatus';
 
@@ -109,37 +110,78 @@ function getInitials(fullName) {
 /* ─── IDENTIFICATION SCREEN ─────────────────────────────────────────── */
 function AccessScreen({ onAccess, t }) {
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [step, setStep] = useState('email'); // email | code
+  const [verificationId, setVerificationId] = useState('');
   const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState('');
+  const { i18n } = useTranslation();
+  const isFr = i18n.language === 'fr';
 
-  const handleSubmit = async (e) => {
+  const sendCode = async (e) => {
     e.preventDefault();
     setLoading(true);
     setNotFound(false);
+    setError('');
     try {
-      const res = await fetch(`${API}/api/investors/login`, {
+      const res = await fetch(API_ENDPOINTS.VERIFY.SEND, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          purpose: 'login',
+          email: email.trim().toLowerCase(),
+          role: 'investor',
+          lang: isFr ? 'fr' : 'en',
+        }),
       });
-      const data = await res.json();
-      const investor = data?.investor ?? null;
-      const token = data?.token;
-      if (investor && investor.email && token) {
-        sessionStorage.setItem('afriyield_token', token);
-        sessionStorage.setItem('afriyield_investor_email', investor.email);
-        sessionStorage.setItem('afriyield_investor_name', investor.fullName || '');
-        localStorage.setItem('afriyield_investor_email', investor.email);
-        localStorage.setItem('afriyield_investor_name', investor.fullName || '');
-        localStorage.removeItem('sac_user_email');
-        localStorage.removeItem('sac_user_name');
-        window.dispatchEvent(new Event('web_session_updated'));
-        onAccess(investor);
-      } else {
-        setNotFound(true);
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Send failed');
+      setVerificationId(data.verificationId || '');
+      setStep('code');
     } catch {
       setNotFound(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmCode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setNotFound(false);
+    try {
+      const res = await fetch(API_ENDPOINTS.VERIFY.CONFIRM, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purpose: 'login',
+          email: email.trim().toLowerCase(),
+          code,
+          role: 'investor',
+          verificationId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Login failed');
+      if (!data.token) throw new Error(isFr ? 'Compte non activé.' : 'Account not active yet.');
+      const investor = {
+        email: data.user?.email || email.trim().toLowerCase(),
+        fullName: data.user?.name || '',
+        status: data.user?.status,
+      };
+      sessionStorage.setItem('afriyield_token', data.token);
+      sessionStorage.setItem('afriyield_investor_email', investor.email);
+      sessionStorage.setItem('afriyield_investor_name', investor.fullName || '');
+      localStorage.setItem('afriyield_investor_email', investor.email);
+      localStorage.setItem('afriyield_investor_name', investor.fullName || '');
+      localStorage.removeItem('sac_user_email');
+      localStorage.removeItem('sac_user_name');
+      window.dispatchEvent(new Event('web_session_updated'));
+      onAccess(investor);
+    } catch (e2) {
+      setError(e2.message || (isFr ? 'Échec de connexion' : 'Sign-in failed'));
     } finally {
       setLoading(false);
     }
@@ -192,27 +234,77 @@ function AccessScreen({ onAccess, t }) {
         </div>
 
         {!notFound ? (
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('investorPortal.access.placeholder')}
-              className="w-full rounded-2xl px-5 py-4 text-gray-900 text-base outline-none focus:ring-2 focus:ring-[#B5850A] bg-[#F5F0E8]"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-2xl py-4 font-bold text-base transition"
-              style={{
-                background: loading ? '#8a6508' : '#B5850A',
-                color: '#0d1f17',
-              }}
-            >
-              {loading ? t('investorPortal.access.loading') : t('investorPortal.access.submit')}
-            </button>
-          </form>
+          step === 'email' ? (
+            <form onSubmit={sendCode} className="space-y-3">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t('investorPortal.access.placeholder')}
+                className="w-full rounded-2xl px-5 py-4 text-gray-900 text-base outline-none focus:ring-2 focus:ring-[#B5850A] bg-[#F5F0E8]"
+              />
+              {error ? (
+                <p className="text-xs rounded-xl px-3 py-2 border" style={{ color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.10)' }}>
+                  {error}
+                </p>
+              ) : null}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-2xl py-4 font-bold text-base transition"
+                style={{
+                  background: loading ? '#8a6508' : '#B5850A',
+                  color: '#0d1f17',
+                }}
+              >
+                {loading ? (isFr ? 'Envoi du code…' : 'Sending code…') : (isFr ? 'Recevoir mon code' : 'Send me a code')}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={confirmCode} className="space-y-3">
+              <p className="text-xs text-center" style={{ color: 'rgba(245,240,232,0.55)' }}>
+                {isFr ? 'Code envoyé à ' : 'Code sent to '} <span style={{ color: '#F5F0E8', fontWeight: 700 }}>{email}</span>
+              </p>
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder={isFr ? 'Code (6 chiffres)' : '6-digit code'}
+                className="w-full rounded-2xl px-5 py-4 text-gray-900 text-base outline-none focus:ring-2 focus:ring-[#B5850A] bg-[#F5F0E8] tracking-widest text-center font-mono"
+              />
+              {error ? (
+                <p className="text-xs rounded-xl px-3 py-2 border" style={{ color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.10)' }}>
+                  {error}
+                </p>
+              ) : null}
+              <button
+                type="submit"
+                disabled={loading || code.length !== 6}
+                className="w-full rounded-2xl py-4 font-bold text-base transition disabled:opacity-60"
+                style={{
+                  background: loading ? '#8a6508' : '#B5850A',
+                  color: '#0d1f17',
+                }}
+              >
+                {loading ? (isFr ? 'Connexion…' : 'Signing in…') : (isFr ? 'Accéder à mon portail' : 'Access my portal')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('email');
+                  setCode('');
+                  setError('');
+                }}
+                className="w-full text-xs hover:underline"
+                style={{ color: 'rgba(245,240,232,0.55)' }}
+              >
+                {isFr ? '← Changer d’email' : '← Change email'}
+              </button>
+            </form>
+          )
         ) : (
           <div
             className="rounded-2xl p-6 text-center space-y-4"
@@ -1289,6 +1381,7 @@ function PremiumModal({ t, onClose }) {
 export default function InvestorPortal() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const isFr = i18n.language === 'fr';
   const [investor, setInvestor] = useState(null);
   const [investments, setInvestments] = useState([]);
   const [notifications, setNotifications] = useState([]);
