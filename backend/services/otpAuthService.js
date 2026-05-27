@@ -155,6 +155,9 @@ export async function sendOtp({ purpose, email, phone, name, role }) {
       : 'dev_logged'
     : null;
 
+  const otpCode =
+    emailRaw && !resend ? code : null;
+
   return {
     success: true,
     verificationId: record._id.toString(),
@@ -165,6 +168,7 @@ export async function sendOtp({ purpose, email, phone, name, role }) {
       : 'Account registered — phone verification pending SMS activation',
     isNewUser,
     emailDelivery,
+    otpCode,
     smsStatus: phoneRaw && !emailRaw ? (smsSent ? 'sent' : 'pending_provider') : null,
   };
 }

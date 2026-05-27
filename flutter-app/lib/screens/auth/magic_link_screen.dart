@@ -91,6 +91,7 @@ class _MagicLinkScreenState extends State<MagicLinkScreen> {
         'role': roleStr,
       };
 
+      // ignore: use_build_context_synchronously
       final auth = context.read<AuthState>();
       await auth.setSession(roleEnum, token, userData);
 

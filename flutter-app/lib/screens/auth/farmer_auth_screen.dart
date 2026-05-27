@@ -8,7 +8,6 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:app_links/app_links.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
@@ -58,6 +57,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   String _countryPrefix = '+223';
   String? _verificationId;
   String? _accountStatusMessage;
+  bool _showManualCode = false;
 
   Timer? _resendTimer;
   int _resendSeconds = 45;
@@ -68,7 +68,6 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   String _savedEmail = '';
   String _savedName = '';
   bool _checkingSession = true;
-  bool _isNewFarmer = false;
   StreamSubscription<Uri>? _magicLinkSub;
 
   static const _crops = [
@@ -99,7 +98,6 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     if (pending != null && pending.isNotEmpty) {
       _pendingRegistrationId = pending;
       _step = FarmerAuthStep.register;
-      _isNewFarmer = true;
     }
     if (email != null && email.isNotEmpty) {
       _contactController.text = email;
@@ -181,6 +179,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
 
   @override
   void dispose() {
+    _magicLinkSub?.cancel();
     _resendTimer?.cancel();
     _contactController.removeListener(_onContactChanged);
     _contactController.dispose();
@@ -440,13 +439,18 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       _clearOtpFields();
       _startResendCountdown();
       _showOtpSentSnackBar();
-      if (res['emailDelivery'] == 'dev_logged' && mounted) {
+      if (mounted && res['emailDelivery'] == 'dev_logged') {
+        final devCode = res['otpCode']?.toString() ?? '';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               lp.t(
-                'Email delivery is not configured on the server. Check server logs for the code, or ask admin to set RESEND_API_KEY.',
-                'L\'envoi d\'email n\'est pas configuré sur le serveur. Vérifiez les logs serveur pour le code, ou configurez RESEND_API_KEY.',
+                devCode.isNotEmpty
+                    ? 'Email delivery is not configured. Dev OTP code: $devCode'
+                    : 'Email delivery is not configured on the server. Check server logs for the code, or ask admin to set RESEND_API_KEY.',
+                devCode.isNotEmpty
+                    ? 'Envoi email non configuré. Code OTP (dev): $devCode'
+                    : 'L\'envoi d\'email n\'est pas configuré sur le serveur. Vérifiez les logs serveur pour le code, ou configurez RESEND_API_KEY.',
               ),
             ),
             duration: const Duration(seconds: 6),
