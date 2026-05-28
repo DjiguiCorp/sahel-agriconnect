@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
@@ -196,6 +197,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
               highlightColor: _accent.withValues(alpha: 0.08),
             ),
             child: Scaffold(
+              extendBody: true,
               backgroundColor: _bg,
               body: Column(
                 children: [
@@ -241,13 +243,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                   ),
                 ],
               ),
-              bottomNavigationBar: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF091510),
-                  border: Border(top: BorderSide(color: _border, width: 1)),
-                ),
-                child: SafeArea(
-                  top: false,
+              bottomNavigationBar: GlassBottomNav(
                   child: NavigationBarTheme(
                     data: NavigationBarThemeData(
                       backgroundColor: Colors.transparent,
@@ -266,7 +262,9 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                     ),
                     child: NavigationBar(
                       backgroundColor: Colors.transparent,
+                      surfaceTintColor: Colors.transparent,
                       elevation: 0,
+                      height: 64,
                       selectedIndex: _tab,
                       onDestinationSelected: _goTab,
                       indicatorColor: _accent.withValues(alpha: 0.15),
@@ -310,7 +308,6 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                       ],
                     ),
                   ),
-                ),
               ),
             ),
           ),

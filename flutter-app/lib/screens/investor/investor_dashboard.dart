@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
@@ -194,6 +195,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Scaffold(
+            extendBody: true,
             resizeToAvoidBottomInset: true,
             backgroundColor: _bg,
             body: Column(
@@ -240,16 +242,12 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                 ),
               ],
             ),
-            bottomNavigationBar: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF080f1e),
-                border: Border(top: BorderSide(color: _border, width: 1)),
-              ),
-              child: SafeArea(
-                top: false,
+            bottomNavigationBar: GlassBottomNav(
                 child: NavigationBar(
                   backgroundColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
                   elevation: 0,
+                  height: 64,
                   selectedIndex: _tab,
                   onDestinationSelected: _goTab,
                   indicatorColor: _gold.withValues(alpha: 0.15),
@@ -299,7 +297,6 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                     ),
                   ],
                 ),
-              ),
             ),
           ),
         ),

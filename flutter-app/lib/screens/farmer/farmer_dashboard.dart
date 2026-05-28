@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/platform_navigation.dart';
 import '../../core/safe_insets.dart';
@@ -140,6 +141,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Scaffold(
+        extendBody: true,
         backgroundColor: _bg,
         body: Column(
           children: [
@@ -187,16 +189,12 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
           ],
         ),
         // ── PERSISTENT BOTTOM NAV ─────────────────────────────
-        bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0d1f17),
-            border: Border(top: BorderSide(color: _border, width: 1)),
-          ),
-          child: SafeArea(
-            top: false,
+        bottomNavigationBar: GlassBottomNav(
             child: NavigationBar(
               backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
               elevation: 0,
+              height: 64,
               selectedIndex: _tab,
               onDestinationSelected: _goTab,
               indicatorColor: _gold.withValues(alpha: 0.15),
@@ -229,7 +227,6 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 ),
               ],
             ),
-          ),
         ),
           ),
         ),

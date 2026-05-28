@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
+/// Extra scroll padding when using [GlassBottomNav] with [Scaffold.extendBody].
+const double kGlassNavBottomInset = 88;
+
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets? padding;
@@ -106,6 +109,62 @@ class GlassButton extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Floating liquid-glass shell for bottom navigation (YouVersion-style).
+///
+/// Wrap a transparent [NavigationBar] (or similar) as [child].
+/// Pair with [Scaffold.extendBody] = true so content scrolls behind the bar.
+class GlassBottomNav extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets margin;
+  final double blurSigma;
+  final double borderRadius;
+
+  const GlassBottomNav({
+    super.key,
+    required this.child,
+    this.margin = const EdgeInsets.fromLTRB(16, 0, 16, 10),
+    this.blurSigma = 18,
+    this.borderRadius = 28,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(borderRadius);
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: margin,
+        child: RepaintBoundary(
+          child: ClipRRect(
+            borderRadius: radius,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  borderRadius: radius,
+                  border: Border.all(
+                    color: AppColors.glassBorder,
+                    width: 0.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.32),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: child,
+              ),
             ),
           ),
         ),

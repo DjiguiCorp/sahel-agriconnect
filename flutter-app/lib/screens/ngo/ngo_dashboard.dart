@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth_state.dart';
+import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
@@ -281,6 +282,7 @@ class _NgoDashboardState extends State<NgoDashboard> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Scaffold(
+        extendBody: true,
         backgroundColor: _bg,
         body: Column(children: [
           const OfflineBanner(),
@@ -352,13 +354,12 @@ class _NgoDashboardState extends State<NgoDashboard> {
               ),
             ),
         ]),
-        bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF060e09),
-            border: Border(top: BorderSide(color: _border, width: 1))),
-          child: SafeArea(top: false,
+        bottomNavigationBar: GlassBottomNav(
             child: NavigationBar(
-              backgroundColor: Colors.transparent, elevation: 0,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              height: 64,
               selectedIndex: _tab,
               onDestinationSelected: _goTab,
               indicatorColor: _lime.withValues(alpha: 0.15),
@@ -389,7 +390,8 @@ class _NgoDashboardState extends State<NgoDashboard> {
                   selectedIcon: const Icon(Icons.manage_accounts,
                     color: _lime),
                   label: isFr ? 'Compte' : 'Account'),
-              ])),
+              ],
+            ),
         ),
       ),
         ),

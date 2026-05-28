@@ -691,59 +691,61 @@ class _HomeScreenState extends State<HomeScreen> {
         resizeToAvoidBottomInset: true,
         extendBody: true,
         backgroundColor: const Color(0xFF0C0E12),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xFF161B22),
-          selectedItemColor: AppColors.gold,
-          unselectedItemColor: Colors.white38,
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _currentIndex,
-          elevation: 0,
-          onTap: (index) {
-            if (index == 3) {
-              final a = context.read<AuthState>();
-              if (a.isLoggedIn) {
-                _goRoleDashboard(a);
-                return;
-              }
-            }
-            setState(() => _currentIndex = index);
-            switch (index) {
-              case 0:
-                break;
-              case 1:
-                break;
-              case 2:
+        bottomNavigationBar: GlassBottomNav(
+          child: NavigationBar(
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            height: 64,
+            selectedIndex: _currentIndex,
+            indicatorColor: AppColors.gold.withValues(alpha: 0.18),
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            onDestinationSelected: (index) {
+              if (index == 3) {
                 final a = context.read<AuthState>();
-                if (a.isGuest) {
-                  _showGuestAlertsSheet();
+                if (a.isLoggedIn) {
+                  _goRoleDashboard(a);
+                  return;
                 }
-                break;
-              case 3:
-                break;
-            }
-          },
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
-              activeIcon: const Icon(Icons.home),
-              label: lp.t('Home', 'Accueil'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.explore_outlined),
-              activeIcon: const Icon(Icons.explore),
-              label: lp.t('Explore', 'Explorer'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.notifications_outlined),
-              activeIcon: const Icon(Icons.notifications),
-              label: lp.t('Alerts', 'Alertes'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline),
-              activeIcon: const Icon(Icons.person),
-              label: lp.t('Profile', 'Profil'),
-            ),
-          ],
+              }
+              setState(() => _currentIndex = index);
+              switch (index) {
+                case 0:
+                case 1:
+                  break;
+                case 2:
+                  final a = context.read<AuthState>();
+                  if (a.isGuest) {
+                    _showGuestAlertsSheet();
+                  }
+                  break;
+                case 3:
+                  break;
+              }
+            },
+            destinations: [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined, color: Colors.white.withValues(alpha: 0.45)),
+                selectedIcon: const Icon(Icons.home, color: AppColors.gold),
+                label: lp.t('Home', 'Accueil'),
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.explore_outlined, color: Colors.white.withValues(alpha: 0.45)),
+                selectedIcon: const Icon(Icons.explore, color: AppColors.gold),
+                label: lp.t('Explore', 'Explorer'),
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.notifications_outlined, color: Colors.white.withValues(alpha: 0.45)),
+                selectedIcon: const Icon(Icons.notifications, color: AppColors.gold),
+                label: lp.t('Alerts', 'Alertes'),
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline, color: Colors.white.withValues(alpha: 0.45)),
+                selectedIcon: const Icon(Icons.person, color: AppColors.gold),
+                label: lp.t('Profile', 'Profil'),
+              ),
+            ],
+          ),
         ),
         body: IndexedStack(
           index: _currentIndex,
