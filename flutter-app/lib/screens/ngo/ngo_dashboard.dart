@@ -282,7 +282,7 @@ class _NgoDashboardState extends State<NgoDashboard> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Scaffold(
-        extendBody: true,
+        extendBody: false,
         backgroundColor: _bg,
         body: Column(children: [
           const OfflineBanner(),

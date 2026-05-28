@@ -195,7 +195,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Scaffold(
-            extendBody: true,
+            extendBody: false,
             resizeToAvoidBottomInset: true,
             backgroundColor: _bg,
             body: Column(

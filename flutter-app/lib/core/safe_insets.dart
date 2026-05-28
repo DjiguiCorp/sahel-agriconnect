@@ -23,19 +23,24 @@ abstract final class SafeInsets {
     );
   }
 
-  /// Scroll padding for lists above a floating [GlassBottomNav].
+  /// Height of [GlassBottomNav] + system inset (for [Scaffold.extendBody]).
+  static double glassBottomNavExtent(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    // SafeArea bottom + margin(10) + NavigationBar with labels (~80) + buffer.
+    return mq.padding.bottom + 10 + 80 + 24;
+  }
+
+  /// Scroll padding for lists. Set [glassNav] true only when using
+  /// [Scaffold.extendBody] with a floating [GlassBottomNav].
   static EdgeInsets listBottom(
     BuildContext context, {
     double extra = 24,
-    bool glassNav = true,
+    bool glassNav = false,
   }) {
     final mq = MediaQuery.of(context);
-    final navClearance = glassNav ? kGlassNavBottomInset : 0.0;
-    return EdgeInsets.fromLTRB(
-      16,
-      16,
-      16,
-      mq.padding.bottom + extra + navClearance,
-    );
+    final bottom = glassNav
+        ? glassBottomNavExtent(context)
+        : mq.padding.bottom + extra;
+    return EdgeInsets.fromLTRB(16, 16, 16, bottom);
   }
 }

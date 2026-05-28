@@ -132,10 +132,12 @@ GoRouter buildRouter(
         }
       }
 
+      final otpRelogin = state.uri.queryParameters['otp'] == '1';
       if (loggedIn &&
           (loc == '/' ||
               loc.startsWith('/login') ||
-              loc.startsWith('/register'))) {
+              loc.startsWith('/register')) &&
+          !otpRelogin) {
         return _dashboardRoute(authState.role);
       }
 

@@ -99,9 +99,14 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   }
 
   Future<void> _maybeAutoSendOtp() async {
-    if (!mounted || _step != FarmerAuthStep.identity || _loading) return;
-    if (!_isValidContact) return;
-    await _sendCode();
+    for (var attempt = 0; attempt < 8; attempt++) {
+      await Future<void>.delayed(Duration(milliseconds: 80 * (attempt + 1)));
+      if (!mounted) return;
+      if (_step != FarmerAuthStep.identity || _loading) continue;
+      if (!_isValidContact) continue;
+      await _sendCode();
+      return;
+    }
   }
 
   void _applyRouteParams() {

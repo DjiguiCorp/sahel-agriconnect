@@ -39,7 +39,8 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
 
   Future<void> _loadIdentity() async {
     final auth = context.read<AuthState>();
-    final email = await auth.getSavedFarmerEmail() ?? '';
+    final email =
+        await auth.getSavedFarmerEmail() ?? await auth.getFarmerEmail() ?? '';
     final name = await auth.getSavedFarmerName() ?? '';
     final role = await auth.getSavedRole() ?? '';
     if (!mounted) return;
@@ -52,6 +53,14 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
 
   void _stopLoading() {
     if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _navigateAfterLogin(String roleStr) async {
+    if (!mounted) return;
+    _stopLoading();
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+    context.go(_portalRoutes[roleStr] ?? '/home');
   }
 
   Future<void> _biometricLogin() async {
@@ -68,7 +77,11 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
           'Confirm your identity to sign in',
           'Confirmez votre identité pour vous connecter',
         ),
+      ).timeout(
+        const Duration(seconds: 90),
+        onTimeout: () => false,
       );
+
       if (!passed) {
         if (!mounted) return;
         setState(() {
@@ -121,8 +134,8 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
       }
 
       if (res['success'] != true) {
+        _stopLoading();
         setState(() {
-          _loading = false;
           _error = res['error']?.toString() ??
               lp.t('Sign-in failed. Try OTP instead.', 'Échec. Essayez OTP.');
         });
@@ -131,8 +144,8 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
 
       final token = res['token']?.toString();
       if (token == null || token.isEmpty) {
+        _stopLoading();
         setState(() {
-          _loading = false;
           _error = lp.t(
             'Invalid server response. Try OTP sign-in.',
             'Réponse serveur invalide. Essayez OTP.',
@@ -141,7 +154,7 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
         return;
       }
 
-      final roleStr = res['role']?.toString() ?? _savedRole;
+      final roleStr = (res['role']?.toString() ?? _savedRole).toLowerCase();
       final roleEnum = AuthRole.values.firstWhere(
         (r) => r.name == roleStr,
         orElse: () => AuthRole.farmer,
@@ -153,10 +166,7 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
         'role': roleStr,
       };
       await auth.setSession(roleEnum, token, userData);
-
-      if (!mounted) return;
-      _stopLoading();
-      context.go(_portalRoutes[roleStr] ?? '/home');
+      await _navigateAfterLogin(roleStr);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -169,16 +179,22 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
   Future<void> _goToOtpLogin({bool clearIdentity = false}) async {
     _stopLoading();
     final auth = context.read<AuthState>();
+    // Clear stale JWT so router does not bounce us away from /login/*.
+    await auth.logout();
     auth.exitGuestMode();
     if (clearIdentity) {
       await auth.clearSeed();
       await auth.clearSavedFarmerIdentity();
     }
+
+    var email = _savedEmail.trim();
+    if (email.isEmpty) {
+      email = (await auth.getSavedFarmerEmail())?.trim() ?? '';
+    }
     if (!mounted) return;
 
     final role = _savedRole.isNotEmpty ? _savedRole : 'farmer';
     if (role == 'farmer') {
-      final email = _savedEmail.trim();
       final params = <String, String>{'otp': '1'};
       if (email.isNotEmpty) {
         params['email'] = email;
@@ -189,159 +205,169 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
       context.go('/login/farmer?$q');
       return;
     }
-    context.go('/login/$role');
+    context.go('/login/$role?otp=1');
   }
 
   void _goHome() {
     _stopLoading();
-    context.read<AuthState>().continueAsGuest();
+    final auth = context.read<AuthState>();
+    auth.continueAsGuest();
     context.go('/home');
+  }
+
+  Future<bool> _handleSystemBack() async {
+    _goHome();
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _goHome();
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.forestGreen,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    size: 44,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  lp.t('Welcome back', 'Bon retour'),
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                if (_savedName.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _savedName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
-                    ),
-                  ),
-                ],
-                if (_savedEmail.isNotEmpty) ...[
-                  const SizedBox(height: 6),
+    return BackButtonListener(
+      onBackButtonPressed: _handleSystemBack,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _goHome();
+        },
+        child: Scaffold(
+          backgroundColor: AppColors.forestGreen,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
                     ),
-                    child: Text(
-                      _savedEmail,
-                      style: const TextStyle(fontSize: 13, color: Colors.white70),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 48),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _loading ? null : _biometricLogin,
-                    icon: _loading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.lock_rounded, size: 24),
-                    label: Text(
-                      _loading
-                          ? lp.t('Signing in…', 'Connexion…')
-                          : lp.t(
-                              'Sign in with Face/biometrics',
-                              'Connexion Face/biométrie',
-                            ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.gold,
-                      foregroundColor: AppColors.forestGreen,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      size: 44,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () => _goToOtpLogin(),
-                  child: Text(
-                    lp.t('Use OTP code instead', 'Utiliser un code OTP'),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (_error.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   Text(
-                    _error,
-                    textAlign: TextAlign.center,
+                    lp.t('Welcome back', 'Bon retour'),
                     style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 13,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (_savedName.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _savedName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                  ],
+                  if (_savedEmail.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _savedEmail,
+                        style:
+                            const TextStyle(fontSize: 13, color: Colors.white70),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 48),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _loading ? null : _biometricLogin,
+                      icon: _loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.lock_rounded, size: 24),
+                      label: Text(
+                        _loading
+                            ? lp.t('Signing in…', 'Connexion…')
+                            : lp.t(
+                                'Sign in with Face/biometrics',
+                                'Connexion Face/biométrie',
+                              ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: AppColors.forestGreen,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: _goToOtpLogin,
+                    child: Text(
+                      lp.t('Use OTP code instead', 'Utiliser un code OTP'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (_error.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      _error,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => _goToOtpLogin(clearIdentity: true),
+                    child: Text(
+                      lp.t(
+                        'Not you? Use a different email',
+                        'Pas vous ? Utiliser un autre email',
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => _goToOtpLogin(clearIdentity: true),
-                  child: Text(
-                    lp.t(
-                      'Not you? Use a different email',
-                      'Pas vous ? Utiliser un autre email',
-                    ),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

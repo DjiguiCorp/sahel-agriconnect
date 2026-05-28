@@ -197,7 +197,7 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
               highlightColor: _accent.withValues(alpha: 0.08),
             ),
             child: Scaffold(
-              extendBody: true,
+              extendBody: false,
               backgroundColor: _bg,
               body: Column(
                 children: [

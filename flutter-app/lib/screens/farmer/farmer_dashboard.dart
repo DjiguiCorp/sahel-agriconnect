@@ -141,7 +141,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Scaffold(
-        extendBody: true,
+        extendBody: false,
         backgroundColor: _bg,
         body: Column(
           children: [
@@ -2351,7 +2351,7 @@ class _ThinkTankScreenState extends State<_ThinkTankScreen> {
             16,
             8,
             16,
-            SafeInsets.bottom(context, extra: kGlassNavBottomInset + 8),
+            SafeInsets.bottom(context, extra: 16),
           ),
           color: _bg,
           child: Column(

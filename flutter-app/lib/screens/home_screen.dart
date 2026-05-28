@@ -88,8 +88,8 @@ class _MockNotification {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  double _glassNavScrollPadding(BuildContext context) =>
-      kGlassNavBottomInset + MediaQuery.paddingOf(context).bottom + 20;
+  double _scrollBottomPadding(BuildContext context) =>
+      MediaQuery.paddingOf(context).bottom + 32;
 
   static const List<String> _guestPaths = <String>[
     '/guest/farmer',
@@ -692,7 +692,7 @@ class _HomeScreenState extends State<HomeScreen> {
           constraints: const BoxConstraints(maxWidth: 480),
           child: Scaffold(
         resizeToAvoidBottomInset: true,
-        extendBody: true,
+        extendBody: false,
         backgroundColor: const Color(0xFF0C0E12),
         bottomNavigationBar: GlassBottomNav(
           child: NavigationBar(
@@ -871,11 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(child: _buildCategoryCarousel(lp)),
               SliverToBoxAdapter(child: _buildPreviewPanel(lp, auth)),
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: kGlassNavBottomInset +
-                      MediaQuery.paddingOf(context).bottom +
-                      20,
-                ),
+                child: SizedBox(height: _scrollBottomPadding(context)),
               ),
             ],
           ),
@@ -1546,11 +1542,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: kGlassNavBottomInset +
-                  MediaQuery.paddingOf(context).bottom +
-                  20,
-            ),
+            child: SizedBox(height: _scrollBottomPadding(context)),
           ),
         ],
       ),
@@ -1584,7 +1576,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, _glassNavScrollPadding(context)),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, _scrollBottomPadding(context)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1675,7 +1667,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(32, 0, 32, _glassNavScrollPadding(context)),
+                padding: EdgeInsets.fromLTRB(32, 0, 32, _scrollBottomPadding(context)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1716,7 +1708,7 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           else
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, _glassNavScrollPadding(context)),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, _scrollBottomPadding(context)),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
@@ -1931,7 +1923,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, _glassNavScrollPadding(context)),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, _scrollBottomPadding(context)),
             sliver: SliverToBoxAdapter(
               child: GlassCard(
                 child: Column(

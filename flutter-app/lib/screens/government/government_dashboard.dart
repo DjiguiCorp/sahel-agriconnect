@@ -156,7 +156,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
               ),
             ),
             child: Scaffold(
-        extendBody: true,
+        extendBody: false,
         backgroundColor: _bg,
         body: Column(children: [
           const OfflineBanner(),
