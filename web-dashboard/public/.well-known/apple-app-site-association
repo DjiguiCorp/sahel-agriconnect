@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "REPLACE_TEAM_ID.com.djiguicorporation.sahel_agriconnect",
+        "paths": [
+          "/auth/magic*"
+        ]
+      }
+    ]
+  }
+}
+

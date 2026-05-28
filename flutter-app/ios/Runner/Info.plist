@@ -81,5 +81,11 @@
 	</array>
 	<key>FlutterDeepLinkingEnabled</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera to capture photos for KYC verification, crop diagnostics, and profile updates.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your photo library to upload documents and select images for KYC verification.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app uses your location to suggest nearby cooperatives and provide localized services.</string>
 </dict>
 </plist>

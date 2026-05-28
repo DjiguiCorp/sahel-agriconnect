@@ -8,8 +8,7 @@ plugins {
 }
 
 // Load android/key.properties (kept out of VCS — see android/.gitignore).
-// When absent (e.g. CI without a keystore), release builds fall back to debug
-// signing so `flutter run --release` still works.
+// For store submission you MUST provide a real keystore in key.properties.
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
@@ -51,15 +50,20 @@ android {
 
     buildTypes {
         release {
-            // Use the release signing config when key.properties is filled in;
-            // otherwise fall back to debug signing so dev builds still run.
-            val hasRealKeystore = keystoreProperties["storePassword"]?.toString()
-                ?.takeIf { it.isNotEmpty() && it != "FILL_IN" } != null
-            signingConfig = if (hasRealKeystore) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            val hasRealKeystore =
+                keystorePropertiesFile.exists() &&
+                (keystoreProperties["storeFile"]?.toString()?.isNotBlank() == true) &&
+                (keystoreProperties["storePassword"]?.toString()?.isNotBlank() == true) &&
+                (keystoreProperties["keyAlias"]?.toString()?.isNotBlank() == true) &&
+                (keystoreProperties["keyPassword"]?.toString()?.isNotBlank() == true)
+
+            if (!hasRealKeystore) {
+                throw GradleException(
+                    "Missing Android release signing config. Create android/key.properties with storeFile, storePassword, keyAlias, keyPassword."
+                )
             }
+
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
         }
