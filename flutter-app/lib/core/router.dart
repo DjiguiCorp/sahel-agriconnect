@@ -205,6 +205,7 @@ GoRouter buildRouter(
             initialEmail: q['email'] != null
                 ? Uri.decodeComponent(q['email']!)
                 : null,
+            autoSendOtp: q['otp'] == '1',
           );
         },
       ),

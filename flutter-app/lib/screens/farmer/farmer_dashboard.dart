@@ -358,7 +358,7 @@ class _FarmerHomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: SafeInsets.listBottom(context),
       children: [
 
         // ── QUICK ACTIONS GRID ─────────────────────────────────
@@ -1337,9 +1337,7 @@ class _FarmerAccountTab extends StatelessWidget {
     final initial = name[0].toUpperCase();
 
     return ListView(
-      padding: EdgeInsets.only(
-        left: 16, right: 16, top: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 100),
+      padding: SafeInsets.listBottom(context),
       children: [
         // Profile card
         Container(
@@ -2350,7 +2348,10 @@ class _ThinkTankScreenState extends State<_ThinkTankScreen> {
         // Input
         Container(
           padding: EdgeInsets.fromLTRB(
-            16, 8, 16, SafeInsets.bottom(context, extra: 8),
+            16,
+            8,
+            16,
+            SafeInsets.bottom(context, extra: kGlassNavBottomInset + 8),
           ),
           color: _bg,
           child: Column(

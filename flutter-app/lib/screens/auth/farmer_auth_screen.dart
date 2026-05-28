@@ -24,11 +24,14 @@ class FarmerAuthScreen extends StatefulWidget {
     super.key,
     this.pendingRegistrationId,
     this.initialEmail,
+    this.autoSendOtp = false,
   });
 
   /// Set when returning from magic-link verification (new farmer).
   final String? pendingRegistrationId;
   final String? initialEmail;
+  /// When true (e.g. from biometric relogin), sends OTP and opens the code step.
+  final bool autoSendOtp;
 
   @override
   State<FarmerAuthScreen> createState() => _FarmerAuthScreenState();
@@ -90,6 +93,15 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     _checkSavedSession();
     _applyRouteParams();
     _magicLinkSub = AppLinks().uriLinkStream.listen(_onMagicLinkUri);
+    if (widget.autoSendOtp) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAutoSendOtp());
+    }
+  }
+
+  Future<void> _maybeAutoSendOtp() async {
+    if (!mounted || _step != FarmerAuthStep.identity || _loading) return;
+    if (!_isValidContact) return;
+    await _sendCode();
   }
 
   void _applyRouteParams() {

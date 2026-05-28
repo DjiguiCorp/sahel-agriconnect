@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
+import '../../core/safe_insets.dart';
 import '../../core/theme.dart';
 
 class HelpScreen extends StatefulWidget {
@@ -154,7 +155,7 @@ class _HelpScreenState extends State<HelpScreen> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: SafeInsets.listBottom(context, glassNav: false),
         children: [
           TextField(
             controller: _searchCtrl,
