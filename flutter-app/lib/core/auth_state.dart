@@ -238,6 +238,11 @@ class AuthState extends ChangeNotifier {
   Future<String?> getSavedFarmerName() async =>
       _storage.read(key: 'farmer_name');
 
+  Future<void> clearSavedFarmerIdentity() async {
+    await _storage.delete(key: 'farmer_email');
+    await _storage.delete(key: 'farmer_name');
+  }
+
   void startGuestSession() {
     _isGuest = true;
     _role = AuthRole.none;

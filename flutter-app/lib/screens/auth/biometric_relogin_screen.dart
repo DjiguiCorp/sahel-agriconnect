@@ -42,23 +42,38 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
 
   Future<void> _biometricLogin() async {
     final lp = context.read<LanguageProvider>();
-    setState(() { _loading = true; _error = ''; });
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
 
     // Step 1 — biometric gate
     final passed = await AuthService.authenticateWithBiometrics(
       reason: lp.t('Confirm your identity to sign in', 'Confirmez votre identité pour vous connecter'),
     );
     if (!passed) {
-      setState(() { _loading = false; _error = lp.t('Biometric verification failed', 'Échec de la vérification biométrique'); });
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = lp.t(
+          'Biometric verification failed. You can sign in with an OTP code instead.',
+          'Échec de la vérification biométrique. Vous pouvez vous connecter avec un code OTP.',
+        );
+      });
       return;
     }
 
     // Step 2 — silent refresh with stored seed
     try {
+      if (!mounted) return;
       final auth = context.read<AuthState>();
       final seed = await auth.getSavedSeed();
       if (seed == null) {
-        setState(() { _loading = false; _error = lp.t('Session not found. Please log in.', 'Session introuvable. Veuillez vous connecter.'); });
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = lp.t('Session not found. Please log in.', 'Session introuvable. Veuillez vous connecter.');
+        });
         return;
       }
 
@@ -68,10 +83,15 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
         final code = res['code'] ?? '';
         if (code == 'SESSION_EXPIRED' || code == 'ACCOUNT_NOT_FOUND') {
           await auth.clearSeed();
-          if (mounted) context.go('/farmer-auth');
+          if (!mounted) return;
+          _goToOtpLogin();
           return;
         }
-        setState(() { _loading = false; _error = res['error'] ?? lp.t('Sign-in failed', 'Échec de la connexion'); });
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = res['error'] ?? lp.t('Sign-in failed', 'Échec de la connexion');
+        });
         return;
       }
 
@@ -93,8 +113,30 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
         context.go(routes[roleStr] ?? '/home');
       }
     } catch (e) {
-      setState(() { _loading = false; _error = e.toString(); });
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
+  }
+
+  Future<void> _goToOtpLogin({bool clearIdentity = false}) async {
+    final auth = context.read<AuthState>();
+    if (clearIdentity) {
+      await auth.clearSeed();
+      await auth.clearSavedFarmerIdentity();
+    }
+    if (!mounted) return;
+
+    final role = _savedRole.isNotEmpty ? _savedRole : 'farmer';
+    if (role == 'farmer') {
+      final email = _savedEmail.trim();
+      final q = email.isNotEmpty ? '?email=${Uri.encodeComponent(email)}' : '';
+      context.go('/login/farmer$q');
+      return;
+    }
+    context.go('/login/$role');
   }
 
   @override
@@ -151,11 +193,11 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
                   onPressed: _loading ? null : _biometricLogin,
                   icon: _loading
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.fingerprint_rounded, size: 24),
+                      : const Icon(Icons.lock_rounded, size: 24),
                   label: Text(
                     _loading
                         ? lp.t('Signing in…', 'Connexion…')
-                        : lp.t('Sign in with biometrics', 'Connexion biométrique'),
+                        : lp.t('Sign in with Face/biometrics', 'Connexion Face/biométrie'),
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   style: FilledButton.styleFrom(
@@ -166,20 +208,27 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: _loading ? null : () => _goToOtpLogin(),
+                child: Text(
+                  lp.t('Use OTP code instead', 'Utiliser un code OTP'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13),
+                ),
+              ),
               if (_error.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(_error, textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
               ],
               const SizedBox(height: 16),
-              // Fallback — use a different account
+              // Fallback — use a different email/account (clears stored identity)
               TextButton(
                 onPressed: () async {
-                  final auth = context.read<AuthState>();
-                  await auth.clearSeed();
-                  if (mounted) context.go('/home');
+                  await _goToOtpLogin(clearIdentity: true);
                 },
                 child: Text(
-                  lp.t('Not you? Sign in with a different account', "Pas vous ? Utiliser un autre compte"),
+                  lp.t('Not you? Use a different email', 'Pas vous ? Utiliser un autre email'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
                 ),
