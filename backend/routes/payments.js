@@ -43,6 +43,24 @@ const ORANGE_BASE = process.env.ORANGE_BASE_URL || 'https://api.orange.com';
 const MTN_BASE = process.env.MTN_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
 const MTN_ENV = process.env.MTN_ENVIRONMENT || 'sandbox';
 
+function isAllowedReturnUrl(url) {
+  if (!url) return false;
+  try {
+    const u = new URL(String(url));
+    if (u.protocol !== 'https:') return false;
+    const host = u.hostname.toLowerCase();
+    const allowed = new Set(['sahelagriconnect.com', 'www.sahelagriconnect.com', 'afriyieldexchange.com', 'www.afriyieldexchange.com']);
+    return allowed.has(host);
+  } catch {
+    return false;
+  }
+}
+
+function safeReturnUrl(maybeUrl, fallbackUrl) {
+  if (isAllowedReturnUrl(maybeUrl)) return maybeUrl;
+  return fallbackUrl;
+}
+
 function addMonths(date, months) {
   const d = new Date(date);
   d.setMonth(d.getMonth() + months);
@@ -90,6 +108,12 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
     const isAnnualCoop =
       tierKey === 'cooperative' || billingInterval === 'year';
 
+    const baseFront = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
+    const coopSuccessFallback = `${baseFront}/cooperative-registration?payment=success`;
+    const coopCancelFallback = `${baseFront}/cooperative-registration?payment=cancelled`;
+    const pricingSuccessFallback = `${baseFront}/pricing?success=true`;
+    const pricingCancelFallback = `${baseFront}/pricing?cancelled=true`;
+
     const session = await stripe.checkout.sessions.create(
       isAnnualCoop
         ? {
@@ -116,11 +140,9 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
             },
             metadata: { tierKey: tierKey || 'cooperative', email },
             success_url:
-              successUrl
-              || `${process.env.FRONTEND_URL || ''}/cooperative-registration?payment=success`,
+              safeReturnUrl(successUrl, coopSuccessFallback),
             cancel_url:
-              cancelUrl
-              || `${process.env.FRONTEND_URL || ''}/cooperative-registration?payment=cancelled`,
+              safeReturnUrl(cancelUrl, coopCancelFallback),
           }
         : {
             payment_method_types: ['card'],
@@ -149,9 +171,9 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
             },
             metadata: { tierKey: tierKey || '', email },
             success_url:
-              successUrl || `${process.env.FRONTEND_URL || ''}/pricing?success=true`,
+              safeReturnUrl(successUrl, pricingSuccessFallback),
             cancel_url:
-              cancelUrl || `${process.env.FRONTEND_URL || ''}/pricing?cancelled=true`,
+              safeReturnUrl(cancelUrl, pricingCancelFallback),
           }
     );
     return res.json({ success: true, url: session.url, sessionId: session.id });
@@ -446,11 +468,15 @@ router.post('/stripe/create-investment-session', checkoutLimiter, async (req, re
         capture_method: 'automatic',
       },
       success_url:
-        process.env.STRIPE_INVESTMENT_SUCCESS_URL ||
-        `${process.env.FRONTEND_URL}/invest/success?session_id={CHECKOUT_SESSION_ID}&opp=${opportunityId}`,
+        safeReturnUrl(
+          process.env.STRIPE_INVESTMENT_SUCCESS_URL,
+          `${(process.env.FRONTEND_URL || 'https://sahelagriconnect.com')}/invest/success?session_id={CHECKOUT_SESSION_ID}&opp=${opportunityId}`,
+        ),
       cancel_url:
-        process.env.STRIPE_INVESTMENT_CANCEL_URL ||
-        `${process.env.FRONTEND_URL}/invest/${opportunityId}?cancelled=true`,
+        safeReturnUrl(
+          process.env.STRIPE_INVESTMENT_CANCEL_URL,
+          `${(process.env.FRONTEND_URL || 'https://sahelagriconnect.com')}/invest/${opportunityId}?cancelled=true`,
+        ),
     });
 
     return res.json({
