@@ -252,109 +252,90 @@ class _GovHeader extends StatelessWidget {
     final coops = data?['totalCooperatives']?.toString() ?? '—';
     final area = _formatHectares(data?['totalHectares']);
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [Color(0xFF0e1d3a), Color(0xFF1a2f52),
-            Color(0xFF0e1d3a)],
-          stops: [0.0, 0.5, 1.0])),
-      child: Stack(children: [
-        Positioned(top: -30, right: -30,
-          child: Container(width: 180, height: 180,
-            decoration: BoxDecoration(shape: BoxShape.circle,
-              color: _blue.withValues(alpha: 0.07)))),
-        Positioned(top: 40, right: 60,
-          child: Container(width: 80, height: 80,
-            decoration: BoxDecoration(shape: BoxShape.circle,
-              color: _gold.withValues(alpha: 0.04)))),
-        SafeArea(bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+    return GlassPortalHeader(
+      gradientColors: const [
+        Color(0xFF0e1d3a),
+        Color(0xFF1a2f52),
+        Color(0xFF0e1d3a),
+      ],
+      accentColor: _blue,
+      secondaryAccent: _gold,
+      titleRow: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(children: [
-                          const Icon(Icons.account_balance_outlined,
-                            color: _blue, size: 14),
-                          const SizedBox(width: 4),
-                          Text(isFr ? 'Portail gouvernemental'
-                            : 'Government Portal',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 12, fontWeight: FontWeight.w600,
-                              letterSpacing: 0.8)),
-                        ]),
-                        const SizedBox(height: 4),
-                        Text(isFr ? 'Tableau de bord national'
-                          : 'National Dashboard',
-                          style: const TextStyle(color: _text,
-                            fontSize: 22, fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5)),
-                        Text(country, style: const TextStyle(
-                          color: _muted, fontSize: 12)),
-                      ]),
-                    // Home button
-                    GestureDetector(
-                      onTap: () => context.go('/home'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2))),
-                        child: Row(mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.home_outlined,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              size: 15),
-                            const SizedBox(width: 4),
-                            Text(isFr ? 'Accueil' : 'Home',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 13)),
-                          ]))),
-                  ]),
-                const SizedBox(height: 14),
-                Row(children: [
-                  _stat(farmers, isFr ? 'Agriculteurs' : 'Farmers',
-                    Icons.person_outline),
-                  const SizedBox(width: 8),
-                  _stat(coops, isFr ? 'Coopératives' : 'Cooperatives',
-                    Icons.groups_outlined),
-                  const SizedBox(width: 8),
-                  _stat(area,
-                    isFr ? 'Superficie' : 'Area',
-                    Icons.landscape_outlined),
-                ]),
-              ]))),
-      ]),
+                    const Icon(Icons.account_balance_outlined,
+                        color: _blue, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      isFr ? 'Portail gouvernemental' : 'Government Portal',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isFr ? 'Tableau de bord national' : 'National Dashboard',
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Text(country,
+                    style: const TextStyle(color: _muted, fontSize: 12)),
+              ],
+            ),
+          ),
+          GlassHeaderIconButton(
+            icon: Icons.home_outlined,
+            accentColor: _blue,
+            circular: false,
+            label: isFr ? 'Accueil' : 'Home',
+            onTap: () => context.go('/home'),
+          ),
+        ],
+      ),
+      statsRow: Row(
+        children: [
+          GlassStatTile(
+            value: farmers,
+            label: isFr ? 'Agriculteurs' : 'Farmers',
+            accentColor: _blue,
+            valueColor: _gold,
+            icon: Icons.person_outline,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: coops,
+            label: isFr ? 'Coopératives' : 'Cooperatives',
+            accentColor: _blue,
+            valueColor: _gold,
+            icon: Icons.groups_outlined,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: area,
+            label: isFr ? 'Superficie' : 'Area',
+            accentColor: _blue,
+            valueColor: _gold,
+            icon: Icons.landscape_outlined,
+          ),
+        ],
+      ),
     );
   }
-
-  Widget _stat(String val, String label, IconData icon) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: _blue, size: 16),
-          const SizedBox(height: 4),
-          Text(val, style: const TextStyle(color: _gold, fontSize: 15,
-            fontWeight: FontWeight.bold)),
-          Text(label, style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55), fontSize: 9)),
-        ])));
 }
 
 // ══════════════════════════════════════════════════════════════

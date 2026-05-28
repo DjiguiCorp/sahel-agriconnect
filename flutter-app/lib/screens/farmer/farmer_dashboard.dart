@@ -255,147 +255,85 @@ class _FarmerHeader extends StatelessWidget {
             ? (isFr ? 'Bon après-midi' : 'Good afternoon')
             : (isFr ? 'Bonsoir' : 'Good evening');
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1a3c2e), Color(0xFF2d6a4f), Color(0xFF1a3c2e)],
-          stops: [0.0, 0.5, 1.0],
-        ),
-      ),
-      child: Stack(
+    return GlassPortalHeader(
+      gradientColors: const [
+        Color(0xFF1a3c2e),
+        Color(0xFF2d6a4f),
+        Color(0xFF1a3c2e),
+      ],
+      accentColor: _gold,
+      titleRow: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Decorative circle
-          Positioned(
-            top: -30, right: -30,
-            child: Container(
-              width: 160, height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _gold.withValues(alpha: 0.06),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                greeting,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontSize: 13,
+                ),
               ),
-            ),
+              Text(
+                name.isNotEmpty ? name : (isFr ? 'Agriculteur' : 'Farmer'),
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(greeting,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 13)),
-                          Text(
-                            name.isNotEmpty ? name : (isFr ? 'Agriculteur' : 'Farmer'),
-                            style: const TextStyle(
-                              color: _text, fontSize: 24,
-                              fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Tooltip(
-                            message: isFr
-                                ? 'Retour à l\'accueil principal'
-                                : 'Back to main platform',
-                            child: GestureDetector(
-                              onTap: () => goPlatformHome(context),
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: _gold.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: _gold.withValues(alpha: 0.45),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.home_outlined,
-                                  color: _gold,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () =>
-                                context.push('/profile/notifications'),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.notifications_outlined,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ).animate().fadeIn(duration: 600.ms),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  // Stats row
-                  Row(
-                    children: [
-                      _statCard(
-                        farmer?['surface']?.toString() ?? '—',
-                        isFr ? 'Superficie' : 'Total area'),
-                      const SizedBox(width: 8),
-                      _statCard(
-                        loading ? '...' : '${(farmer?['cultures'] as List?)?.length ?? 0}',
-                        isFr ? 'Cultures' : 'Crops listed'),
-                      const SizedBox(width: 8),
-                      _statCard(
-                        farmer?['statut'] == 'Actif' ? (isFr ? 'Actif' : 'Active') : '—',
-                        isFr ? 'Statut' : 'Status'),
-                    ],
-                  ),
-                ],
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GlassHeaderIconButton(
+                icon: Icons.home_outlined,
+                accentColor: _gold,
+                tooltip: isFr
+                    ? 'Retour à l\'accueil principal'
+                    : 'Back to main platform',
+                onTap: () => goPlatformHome(context),
               ),
-            ),
+              const SizedBox(width: 8),
+              GlassHeaderIconButton(
+                icon: Icons.notifications_outlined,
+                accentColor: Colors.white,
+                onTap: () => context.push('/profile/notifications'),
+              ),
+            ],
+          ).animate().fadeIn(duration: 600.ms),
+        ],
+      ),
+      statsRow: Row(
+        children: [
+          GlassStatTile(
+            value: farmer?['surface']?.toString() ?? '—',
+            label: isFr ? 'Superficie' : 'Total area',
+            accentColor: _gold,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: loading
+                ? '...'
+                : '${(farmer?['cultures'] as List?)?.length ?? 0}',
+            label: isFr ? 'Cultures' : 'Crops listed',
+            accentColor: _gold,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: farmer?['statut'] == 'Actif'
+                ? (isFr ? 'Actif' : 'Active')
+                : '—',
+            label: isFr ? 'Statut' : 'Status',
+            accentColor: _gold,
           ),
         ],
       ),
     );
   }
-
-  Widget _statCard(String val, String label) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(val, style: const TextStyle(
-            color: _gold, fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55), fontSize: 9)),
-        ],
-      ),
-    ),
-  );
 }
 
 // ══════════════════════════════════════════════════════════════

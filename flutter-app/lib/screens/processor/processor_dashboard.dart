@@ -256,105 +256,86 @@ class _ProcessorHeader extends StatelessWidget {
     final location = auth.displayCountry.isNotEmpty
       ? auth.displayCountry : (data?['location']?.toString() ?? '—');
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [Color(0xFF2d1f00), Color(0xFF3d2800),
-            Color(0xFF2d1f00)],
-          stops: [0.0, 0.5, 1.0])),
-      child: Stack(children: [
-        Positioned(top: -30, right: -30,
-          child: Container(width: 160, height: 160,
-            decoration: BoxDecoration(shape: BoxShape.circle,
-              color: _amber.withValues(alpha: 0.08)))),
-        SafeArea(bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+    return GlassPortalHeader(
+      gradientColors: const [
+        Color(0xFF2d1f00),
+        Color(0xFF3d2800),
+        Color(0xFF2d1f00),
+      ],
+      accentColor: _amber,
+      titleRow: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(children: [
-                          const Icon(Icons.factory_outlined,
-                            color: _amber, size: 14),
-                          const SizedBox(width: 4),
-                          Text(isFr ? 'Centre de traitement'
-                            : 'Processing Center',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 12, fontWeight: FontWeight.w600,
-                              letterSpacing: 0.8)),
-                        ]),
-                        const SizedBox(height: 4),
-                        Text(name, style: const TextStyle(
-                          color: _text, fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5)),
-                        Text(location, style: const TextStyle(
-                          color: _muted, fontSize: 12)),
-                      ]),
-                    GestureDetector(
-                      onTap: () => context.go('/home'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2))),
-                        child: Row(mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.home_outlined,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              size: 15),
-                            const SizedBox(width: 4),
-                            Text(isFr ? 'Accueil' : 'Home',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 13)),
-                          ]))),
-                  ]),
-                const SizedBox(height: 14),
-                Row(children: [
-                  _stat('$activeBatches',
-                    isFr ? 'Lots actifs' : 'Active Lots',
-                    Icons.factory_outlined),
-                  const SizedBox(width: 8),
-                  _stat('$certifiedBatches',
-                    isFr ? 'Certifiés' : 'Certified',
-                    Icons.verified_outlined),
-                  const SizedBox(width: 8),
-                  _stat('${totalOutput.toStringAsFixed(0)} kg',
-                    isFr ? 'Production' : 'Output',
-                    Icons.scale_outlined),
-                ]),
-              ]))),
-      ]),
+                    const Icon(Icons.factory_outlined,
+                        color: _amber, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      isFr ? 'Centre de traitement' : 'Processing Center',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Text(location,
+                    style: const TextStyle(color: _muted, fontSize: 12)),
+              ],
+            ),
+          ),
+          GlassHeaderIconButton(
+            icon: Icons.home_outlined,
+            accentColor: _amber,
+            circular: false,
+            label: isFr ? 'Accueil' : 'Home',
+            onTap: () => context.go('/home'),
+          ),
+        ],
+      ),
+      statsRow: Row(
+        children: [
+          GlassStatTile(
+            value: '$activeBatches',
+            label: isFr ? 'Lots actifs' : 'Active Lots',
+            accentColor: _amber,
+            icon: Icons.factory_outlined,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: '$certifiedBatches',
+            label: isFr ? 'Certifiés' : 'Certified',
+            accentColor: _amber,
+            icon: Icons.verified_outlined,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: '${totalOutput.toStringAsFixed(0)} kg',
+            label: isFr ? 'Production' : 'Output',
+            accentColor: _amber,
+            icon: Icons.scale_outlined,
+          ),
+        ],
+      ),
     );
   }
-
-  Widget _stat(String val, String label, IconData icon) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: _amber, size: 16),
-          const SizedBox(height: 4),
-          Text(val, style: const TextStyle(color: _amber, fontSize: 15,
-            fontWeight: FontWeight.bold)),
-          Text(label, style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55), fontSize: 9)),
-        ])));
 }
 
 // ══════════════════════════════════════════════════════════════

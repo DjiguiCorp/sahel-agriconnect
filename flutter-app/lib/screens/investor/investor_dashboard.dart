@@ -323,147 +323,72 @@ class _InvestorHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1a2744), Color(0xFF243358), Color(0xFF1a2744)],
-          stops: [0.0, 0.5, 1.0],
-        ),
-      ),
-      child: Stack(
+    return GlassPortalHeader(
+      gradientColors: const [
+        Color(0xFF1a2744),
+        Color(0xFF243358),
+        Color(0xFF1a2744),
+      ],
+      accentColor: _gold,
+      titleRow: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _gold.withValues(alpha: 0.06),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'AfriYield Exchange',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                ),
               ),
-            ),
+              Text(
+                isFr ? 'Portail investisseur' : 'Investor Portal',
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'AfriYield Exchange',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          Text(
-                            isFr ? 'Portail investisseur' : 'Investor Portal',
-                            style: const TextStyle(
-                              color: _text,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Tooltip(
-                        message: isFr
-                            ? 'Retour à l\'accueil principal'
-                            : 'Back to main platform',
-                        child: GestureDetector(
-                          onTap: () => context.go('/home'),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: _gold.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: _gold.withValues(alpha: 0.45),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.home_outlined,
-                              color: _gold,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _stat(
-                        '\$${totalDeployed.toStringAsFixed(0)}',
-                        isFr ? 'Investi' : 'Deployed',
-                      ),
-                      const SizedBox(width: 8),
-                      _stat(
-                        '${avgRoi.toStringAsFixed(1)}%',
-                        isFr ? 'Retour moy.' : 'Avg return',
-                      ),
-                      const SizedBox(width: 8),
-                      _stat(
-                        '$investmentCount',
-                        isFr ? 'Positions' : 'Positions',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          GlassHeaderIconButton(
+            icon: Icons.home_outlined,
+            accentColor: _gold,
+            tooltip: isFr
+                ? 'Retour à l\'accueil principal'
+                : 'Back to main platform',
+            onTap: () => context.go('/home'),
+          ),
+        ],
+      ),
+      statsRow: Row(
+        children: [
+          GlassStatTile(
+            value: '\$${totalDeployed.toStringAsFixed(0)}',
+            label: isFr ? 'Investi' : 'Deployed',
+            accentColor: _gold,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: '${avgRoi.toStringAsFixed(1)}%',
+            label: isFr ? 'Retour moy.' : 'Avg return',
+            accentColor: _gold,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: '$investmentCount',
+            label: isFr ? 'Positions' : 'Positions',
+            accentColor: _gold,
           ),
         ],
       ),
     );
   }
-
-  Widget _stat(String val, String label) => Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                val,
-                style: const TextStyle(
-                  color: _gold,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 9,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 }
 
 // ══════════════════════════════════════════════════════════════

@@ -412,104 +412,85 @@ class _NgoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [Color(0xFF0d2a18), Color(0xFF1a4a2e),
-            Color(0xFF0d2a18)],
-          stops: [0.0, 0.5, 1.0])),
-      child: Stack(children: [
-        Positioned(top: -30, right: -30,
-          child: Container(width: 180, height: 180,
-            decoration: BoxDecoration(shape: BoxShape.circle,
-              color: _lime.withValues(alpha: 0.06)))),
-        SafeArea(bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+    return GlassPortalHeader(
+      gradientColors: const [
+        Color(0xFF0d2a18),
+        Color(0xFF1a4a2e),
+        Color(0xFF0d2a18),
+      ],
+      accentColor: _lime,
+      titleRow: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(children: [
-                          const Icon(Icons.volunteer_activism_outlined,
-                            color: _lime, size: 14),
-                          const SizedBox(width: 4),
-                          Text(isFr ? 'Portail ONG & Partenaires'
-                            : 'NGO & Partners Portal',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 12, fontWeight: FontWeight.w600,
-                              letterSpacing: 0.8)),
-                        ]),
-                        const SizedBox(height: 4),
-                        Text(isFr ? 'Impact & programmes'
-                          : 'Impact & Programs',
-                          style: const TextStyle(color: _text,
-                            fontSize: 22, fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5)),
-                      ]),
-                    GestureDetector(
-                      onTap: () => context.go('/home'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2))),
-                        child: Row(mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.home_outlined,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              size: 15),
-                            const SizedBox(width: 4),
-                            Text(isFr ? 'Accueil' : 'Home',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 13)),
-                          ]))),
-                  ]),
-                const SizedBox(height: 14),
-                Row(children: [
-                  _stat('$totalBeneficiaries',
-                    isFr ? 'Bénéficiaires' : 'Beneficiaries',
-                    Icons.people_outline),
-                  const SizedBox(width: 8),
-                  _stat('$activePrograms',
-                    isFr ? 'Programmes actifs' : 'Active Programs',
-                    Icons.volunteer_activism_outlined),
-                  const SizedBox(width: 8),
-                  _stat('$coopCount',
-                    isFr ? 'Coopératives' : 'Cooperatives',
-                    Icons.groups_outlined),
-                ]),
-              ]))),
-      ]),
+                    const Icon(Icons.volunteer_activism_outlined,
+                        color: _lime, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      isFr ? 'Portail ONG & Partenaires'
+                          : 'NGO & Partners Portal',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isFr ? 'Impact & programmes' : 'Impact & Programs',
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GlassHeaderIconButton(
+            icon: Icons.home_outlined,
+            accentColor: _lime,
+            circular: false,
+            label: isFr ? 'Accueil' : 'Home',
+            onTap: () => context.go('/home'),
+          ),
+        ],
+      ),
+      statsRow: Row(
+        children: [
+          GlassStatTile(
+            value: '$totalBeneficiaries',
+            label: isFr ? 'Bénéficiaires' : 'Beneficiaries',
+            accentColor: _lime,
+            icon: Icons.people_outline,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: '$activePrograms',
+            label: isFr ? 'Programmes actifs' : 'Active Programs',
+            accentColor: _lime,
+            icon: Icons.volunteer_activism_outlined,
+          ),
+          const SizedBox(width: 8),
+          GlassStatTile(
+            value: '$coopCount',
+            label: isFr ? 'Coopératives' : 'Cooperatives',
+            accentColor: _lime,
+            icon: Icons.groups_outlined,
+          ),
+        ],
+      ),
     );
   }
-
-  Widget _stat(String val, String label, IconData icon) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: _lime, size: 16),
-          const SizedBox(height: 4),
-          Text(val, style: const TextStyle(color: _lime, fontSize: 15,
-            fontWeight: FontWeight.bold)),
-          Text(label, style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55), fontSize: 9)),
-        ])));
 }
 
 // ══════════════════════════════════════════════════════════════
