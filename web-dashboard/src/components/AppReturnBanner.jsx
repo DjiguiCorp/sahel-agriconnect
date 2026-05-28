@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { PORTAL_META } from '../lib/portalConfig';
 
 const WEB_BASE = 'https://sahelagriconnect.com';
 
@@ -25,13 +26,12 @@ export default function AppReturnBanner({ role }) {
 
   if (!fromApp) return null;
 
-  const loginPaths = {
-    cooperative: '/login/cooperative',
-    investor: '/login/investor',
-    processor: '/login/processor',
-    farmer: '/login/farmer',
-  };
-  const loginPath = loginPaths[role] || '/home';
+  const loginPath = (() => {
+    if (!role) return '/connexion';
+    const meta = PORTAL_META[role];
+    if (meta?.signInPath) return meta.signInPath;
+    return '/connexion';
+  })();
 
   return (
     <div
