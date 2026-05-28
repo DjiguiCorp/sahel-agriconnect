@@ -190,20 +190,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  String _maskedDestination(String contact) {
-    if (_contactIsEmail) {
-      final parts = contact.split('@');
-      if (parts.length != 2) return contact;
-      final local = parts[0];
-      final masked = local.length <= 1
-          ? '*'
-          : '${local[0]}${'*' * (local.length - 1).clamp(1, 3)}';
-      return '$masked@${parts[1]}';
-    }
-    if (contact.length <= 8) return contact;
-    return '${contact.substring(0, 4)}...${contact.substring(contact.length - 4)}';
-  }
-
   void _startResendCountdown() {
     _resendTimer?.cancel();
     setState(() => _resendSeconds = 45);

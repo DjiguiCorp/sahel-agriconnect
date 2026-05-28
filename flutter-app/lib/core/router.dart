@@ -326,9 +326,30 @@ GoRouter buildRouter(
         builder: (context, state) {
           final uri = state.uri;
           final title = uri.queryParameters['title'] ?? 'Web';
-          final url =
-              uri.queryParameters['url'] ?? 'https://sahelagriconnect.com';
-          return InAppWebViewScreen(title: title, url: url);
+          final url = uri.queryParameters['url'] ?? 'https://sahelagriconnect.com';
+          final safeUrl = () {
+            try {
+              final parsed = Uri.parse(url);
+              final host = parsed.host.toLowerCase();
+              const allowedHosts = {
+                'sahelagriconnect.com',
+                'www.sahelagriconnect.com',
+                'afriyieldexchange.com',
+                'www.afriyieldexchange.com',
+                'djiguicorporation.org',
+                'www.djiguicorporation.org',
+                'isacoultess.com',
+                'www.isacoultess.com',
+              };
+              if (parsed.scheme != 'https' || !allowedHosts.contains(host)) {
+                return 'https://sahelagriconnect.com';
+              }
+              return url;
+            } catch (_) {
+              return 'https://sahelagriconnect.com';
+            }
+          }();
+          return InAppWebViewScreen(title: title, url: safeUrl);
         },
       ),
       GoRoute(path: '/about-app', builder: (_, __) => const AboutAppScreen()),
