@@ -87,9 +87,9 @@ const Header = () => {
     return [
       { to: '/dashboard', label: isFr ? '📊 Statistiques publiques' : '📊 Public stats' },
       { to: '/afri-yield/marketplace', label: 'Marketplace' },
-      { to: '/trace', label: isFr ? 'Traçabilité' : 'Traceability' },
+      { to: '/trace', label: t('footer.toolsLinks.traceability') },
     ];
-  }, [isFr]);
+  }, [isFr, t]);
 
   const navLinkClass =
     'text-base text-white/80 hover:text-white transition-colors font-medium px-2 py-2 lg:px-3 whitespace-nowrap';
@@ -193,8 +193,8 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [desktopSignInOpen]);
 
-  const platformLabel = isFr ? 'Plateforme' : 'Platform';
-  const toolsLabel = isFr ? 'Outils' : 'Tools';
+  const platformLabel = t('header.platform');
+  const toolsLabel = t('header.tools');
   const mainNavLinks = useMemo(() => getMainNavLinks(isFr), [isFr]);
 
   const signInItems = useMemo(() => {
@@ -212,7 +212,7 @@ const Header = () => {
       };
     };
     return [
-      { kind: 'hub', to: '/connexion', label: isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals' },
+      { kind: 'hub', to: '/connexion', label: t('header.signInPortals') },
       { kind: 'role', ...make('farmer') },
       { kind: 'role', ...make('cooperative') },
       { kind: 'role', ...make('processor') },
@@ -220,7 +220,7 @@ const Header = () => {
       { kind: 'role', ...make('government') },
       { kind: 'role', ...make('ngo') },
     ];
-  }, [sessions, isFr]);
+  }, [sessions, isFr, t]);
 
   const joinMenuDropdown = (
     <div ref={joinMenuRef} className="relative">
@@ -232,7 +232,7 @@ const Header = () => {
         aria-expanded={showJoinMenu}
         aria-haspopup="true"
       >
-        {isFr ? 'Rejoindre' : 'Join'}
+        {t('header.join')}
         <ChevronDown
           className={`w-3 h-3 shrink-0 transition-transform ${showJoinMenu ? 'rotate-180' : ''}`}
           aria-hidden
@@ -289,7 +289,7 @@ const Header = () => {
           <div
             role="navigation"
             className="hidden lg:flex flex-1 items-center justify-center gap-0.5 xl:gap-1 min-w-0 px-6"
-            aria-label={isFr ? 'Navigation principale' : 'Main navigation'}
+            aria-label={t('header.mainNavAria')}
           >
             <div
               ref={desktopPlatformRef}
@@ -446,7 +446,7 @@ const Header = () => {
               to="/afri-yield"
               className={`${navLinkClass} font-semibold text-[#B5850A] hover:text-[#9a7109]`}
             >
-              {isFr ? 'Investir' : 'Invest'}
+              {t('header.invest')}
             </Link>
           </div>
 
@@ -461,7 +461,7 @@ const Header = () => {
                 aria-expanded={desktopSignInOpen}
                 aria-haspopup="true"
               >
-                {isFr ? 'Connexion' : 'Sign in'}
+                {t('header.signIn')}
                 <ChevronDown
                   className={`w-4 h-4 shrink-0 transition-transform ${desktopSignInOpen ? 'rotate-180' : ''}`}
                   aria-hidden
@@ -476,9 +476,9 @@ const Header = () => {
                           to={primaryRole && PORTAL_META[primaryRole] ? PORTAL_META[primaryRole].portalPath : '/connexion'}
                           onClick={() => setDesktopSignInOpen(false)}
                           className="text-sm text-white/85 hover:text-white font-semibold truncate"
-                          title={isFr ? 'Ouvrir mon portail' : 'Open my portal'}
+                          title={t('header.openPortalTitle')}
                         >
-                          {isFr ? 'Bonjour' : 'Hi'} {displayName.split(' ')[0]}
+                          {t('header.hello')} {displayName.split(' ')[0]}
                         </Link>
                         <button
                           type="button"
@@ -489,11 +489,11 @@ const Header = () => {
                           }}
                           className="text-xs text-white/45 hover:text-white/80 transition shrink-0"
                         >
-                          {isFr ? 'Déconnexion' : 'Sign out'}
+                          {t('header.signOut')}
                         </button>
                       </div>
                       <p className="text-[11px] mt-1 text-white/45">
-                        {isFr ? 'Votre session apparaît à côté du portail.' : 'Your session appears next to the portal.'}
+                        {t('header.sessionHint')}
                       </p>
                     </div>
                   ) : null}
@@ -523,13 +523,13 @@ const Header = () => {
                           role="menuitem"
                           onClick={() => setDesktopSignInOpen(false)}
                           className="text-white/80 hover:text-white transition-colors truncate"
-                          title={item.active ? (isFr ? 'Ouvrir mon portail' : 'Open my portal') : undefined}
+                          title={item.active ? t('header.openPortalTitle') : undefined}
                         >
                           {label}
                         </Link>
                         {item.active ? (
                           <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/25">
-                            {isFr ? 'Connecté' : 'Signed in'}
+                            {t('header.signedIn')}
                           </span>
                         ) : null}
                       </div>
@@ -545,7 +545,7 @@ const Header = () => {
                       }}
                       className="w-full text-left px-4 py-3 text-sm text-white/45 hover:text-white/70 hover:bg-white/5 transition"
                     >
-                      {isFr ? 'Se déconnecter (tous les profils)' : 'Sign out (all profiles)'}
+                      {t('header.signOutAll')}
                     </button>
                   ) : null}
                 </div>

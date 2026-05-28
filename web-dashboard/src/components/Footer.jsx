@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 export default function Footer() {
-  const { t, i18n } = useTranslation();
-  const isFr = (i18n.resolvedLanguage || i18n.language || '').startsWith('fr');
+  const { t } = useTranslation();
 
   return (
     <footer className="bg-[#1a3c2e] text-white">
@@ -13,9 +12,7 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             <h3 className="text-xl font-bold mb-3">Sahel AgriConnect</h3>
             <p className="text-gray-300 text-sm leading-relaxed mb-3">
-              {isFr
-                ? "Infrastructure numérique souveraine pour l'agriculture africaine. Conçu et opéré par Djigui Corporation."
-                : 'Sovereign digital infrastructure for African agriculture. Designed and operated by Djigui Corporation.'}
+              {t('footer.brandDescription')}
             </p>
             <div className="flex flex-col gap-1">
               <a
@@ -39,38 +36,22 @@ export default function Footer() {
 
           {/* Platform links */}
           <div>
-            <h4 className="font-semibold mb-4 text-white">{isFr ? 'Plateforme' : 'Platform'}</h4>
+            <h4 className="font-semibold mb-4 text-white">{t('footer.platformTitle')}</h4>
             <ul className="space-y-2 text-sm">
-              {(isFr
-                ? [
-                    [t('nav.home'), '/'],
-                    ['À propos', '/about'],
-                    ['Comment ça marche', '/how-it-works'],
-                    ['Impact', '/impact'],
-                    ['Dashboard', '/dashboard'],
-                    ['Connexion & portails', '/connexion'],
-                    ['Portail agriculteur', '/my-dashboard'],
-                    ['Portail coopérative', '/cooperative-portal'],
-                    ['Accès gouvernemental', '/platform-licensing?type=government'],
-                    ['Licences institutionnelles', '/platform-licensing'],
-                    ['Contact', '/contact'],
-                    ['Tarifs', '/pricing'],
-                  ]
-                : [
-                    [t('nav.home'), '/'],
-                    ['About', '/about'],
-                    ['How it works', '/how-it-works'],
-                    ['Impact', '/impact'],
-                    ['Dashboard', '/dashboard'],
-                    ['Sign in & portals', '/connexion'],
-                    ['Farmer portal', '/my-dashboard'],
-                    ['Cooperative portal', '/cooperative-portal'],
-                    ['Government access', '/platform-licensing?type=government'],
-                    ['Institutional licenses', '/platform-licensing'],
-                    ['Contact', '/contact'],
-                    ['Prices', '/pricing'],
-                  ]
-              ).map(([label, to]) => (
+              {[
+                [t('nav.home'), '/'],
+                [t('footer.platformLinks.about'), '/about'],
+                [t('footer.platformLinks.howItWorks'), '/how-it-works'],
+                [t('footer.platformLinks.impact'), '/impact'],
+                [t('nav.dashboard'), '/dashboard'],
+                [t('footer.platformLinks.signInPortals'), '/connexion'],
+                [t('footer.platformLinks.farmerPortal'), '/my-dashboard'],
+                [t('footer.platformLinks.cooperativePortal'), '/cooperative-portal'],
+                [t('footer.platformLinks.governmentAccess'), '/platform-licensing?type=government'],
+                [t('footer.platformLinks.institutionalLicenses'), '/platform-licensing'],
+                [t('nav.contact'), '/contact'],
+                [t('footer.platformLinks.prices'), '/pricing'],
+              ].map(([label, to]) => (
                 <li key={to}>
                   <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
                     {label}
@@ -89,13 +70,13 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2 text-sm">
               {[
-                [isFr ? 'Opportunités' : 'Opportunities', '/afri-yield/opportunities'],
-                [isFr ? 'Marketplace' : 'Marketplace', '/afri-yield/marketplace'],
-                [isFr ? "S'inscrire investisseur" : 'Register as Investor', '/afri-yield/register'],
-                [isFr ? 'Mon portail' : 'My Portal', '/afri-yield/portal'],
-                [isFr ? 'Mises à jour' : 'Investor Updates', '/afri-yield/updates'],
-                [isFr ? 'Relations investisseurs' : 'Investor Relations', '/investor-relations'],
-                [isFr ? 'Comment ça marche' : 'How It Works', '/how-it-works'],
+                [t('footer.afriYieldLinks.opportunities'), '/afri-yield/opportunities'],
+                [t('footer.afriYieldLinks.marketplace'), '/afri-yield/marketplace'],
+                [t('footer.afriYieldLinks.registerInvestor'), '/afri-yield/register'],
+                [t('footer.afriYieldLinks.myPortal'), '/afri-yield/portal'],
+                [t('footer.afriYieldLinks.updates'), '/afri-yield/updates'],
+                [t('footer.afriYieldLinks.investorRelations'), '/investor-relations'],
+                [t('footer.afriYieldLinks.howItWorks'), '/how-it-works'],
               ].map(([label, to]) => (
                 <li key={to}>
                   <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
@@ -108,17 +89,17 @@ export default function Footer() {
 
           {/* Tools & Legal */}
           <div>
-            <h4 className="font-semibold mb-4 text-white">{isFr ? 'Outils & Légal' : 'Tools & Legal'}</h4>
+            <h4 className="font-semibold mb-4 text-white">{t('footer.toolsLegalTitle')}</h4>
             <ul className="space-y-2 text-sm">
               {[
-                [isFr ? 'Diagnostic Sol' : 'Soil Diagnosis', '/diagnostic-sol'],
-                [isFr ? 'Détection Maladies' : 'Disease Detection', '/detection-maladies'],
+                [t('footer.toolsLinks.soilDiagnosis'), '/diagnostic-sol'],
+                [t('footer.toolsLinks.diseaseDetection'), '/detection-maladies'],
                 ['Think Tank', '/think-tank'],
-                [isFr ? 'Traçabilité' : 'Traceability', '/trace'],
-                [isFr ? 'Gouvernance' : 'Governance', '/governance'],
-                [isFr ? "Conditions d'utilisation" : 'Terms of Service', '/terms-of-service'],
-                [isFr ? 'Confidentialité' : 'Privacy Policy', '/privacy-policy'],
-                [isFr ? 'Supprimer mon compte' : 'Delete Account', '/delete-account'],
+                [t('footer.toolsLinks.traceability'), '/trace'],
+                [t('footer.toolsLinks.governance'), '/governance'],
+                [t('footer.toolsLinks.terms'), '/terms-of-service'],
+                [t('footer.toolsLinks.privacy'), '/privacy-policy'],
+                [t('footer.toolsLinks.deleteAccount'), '/delete-account'],
               ].map(([label, to]) => (
                 <li key={to}>
                   <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
@@ -134,17 +115,17 @@ export default function Footer() {
         <div className="border-t border-white/10 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-gray-400 text-xs">
             © {new Date().getFullYear()} Djigui Corporation.{' '}
-            {isFr ? 'Tous droits réservés.' : 'All rights reserved.'}
+            {t('footer.rights')}
           </p>
           <div className="flex flex-wrap gap-4 items-center">
             <Link to="/terms-of-service" className="text-xs text-gray-500 hover:text-white transition">
-              {isFr ? 'Conditions' : 'Terms'}
+              {t('footer.termsShort')}
             </Link>
             <Link to="/privacy-policy" className="text-xs text-gray-500 hover:text-white transition">
-              {isFr ? 'Confidentialité' : 'Privacy'}
+              {t('footer.privacyShort')}
             </Link>
             <Link to="/investor-relations" className="text-xs text-gray-500 hover:text-white transition">
-              {isFr ? 'Relations investisseurs' : 'Investor Relations'}
+              {t('footer.afriYieldLinks.investorRelations')}
             </Link>
           </div>
         </div>
@@ -155,7 +136,7 @@ export default function Footer() {
             to="/admin/login"
             className="text-xs text-gray-600 hover:text-gray-400 transition"
           >
-            {isFr ? 'Accès administrateur' : 'Administrator access'}
+            {t('footer.adminAccess')}
           </Link>
         </div>
       </div>

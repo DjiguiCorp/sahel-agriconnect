@@ -44,6 +44,60 @@
     "decline": "Decline",
     "accept": "Accept"
   },
+  "footer": {
+    "brandDescription": "Sovereign digital infrastructure for African agriculture. Designed and operated by Djigui Corporation.",
+    "platformTitle": "Platform",
+    "toolsLegalTitle": "Tools & Legal",
+    "platformLinks": {
+      "about": "About",
+      "howItWorks": "How it works",
+      "impact": "Impact",
+      "signInPortals": "Sign in & portals",
+      "farmerPortal": "Farmer portal",
+      "cooperativePortal": "Cooperative portal",
+      "governmentAccess": "Government access",
+      "institutionalLicenses": "Institutional licenses",
+      "prices": "Pricing"
+    },
+    "afriYieldLinks": {
+      "opportunities": "Opportunities",
+      "marketplace": "Marketplace",
+      "registerInvestor": "Register as investor",
+      "myPortal": "My Portal",
+      "updates": "Investor updates",
+      "investorRelations": "Investor relations",
+      "howItWorks": "How it works"
+    },
+    "toolsLinks": {
+      "soilDiagnosis": "Soil Diagnosis",
+      "diseaseDetection": "Disease Detection",
+      "traceability": "Traceability",
+      "governance": "Governance",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "deleteAccount": "Delete account"
+    },
+    "rights": "All rights reserved.",
+    "termsShort": "Terms",
+    "privacyShort": "Privacy",
+    "adminAccess": "Administrator access"
+  },
+  "header": {
+    "platform": "Platform",
+    "tools": "Tools",
+    "join": "Join",
+    "invest": "Invest",
+    "signIn": "Sign in",
+    "signInPortals": "🔐 Sign in & portals",
+    "mainNavAria": "Main navigation",
+    "aiToolsLabel": "🛠️ AI Agricultural Tools",
+    "hello": "Hi",
+    "signedIn": "Signed in",
+    "signOut": "Sign out",
+    "signOutAll": "Sign out (all profiles)",
+    "sessionHint": "Your session appears next to the portal.",
+    "openPortalTitle": "Open my portal"
+  },
   "home": {
     "title": "Sahel AgriConnect",
     "hero": {

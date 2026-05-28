@@ -44,6 +44,60 @@
     "decline": "Refuser",
     "accept": "Accepter"
   },
+  "footer": {
+    "brandDescription": "Infrastructure numérique souveraine pour l'agriculture africaine. Conçu et opéré par Djigui Corporation.",
+    "platformTitle": "Plateforme",
+    "toolsLegalTitle": "Outils & Légal",
+    "platformLinks": {
+      "about": "À propos",
+      "howItWorks": "Comment ça marche",
+      "impact": "Impact",
+      "signInPortals": "Connexion & portails",
+      "farmerPortal": "Portail agriculteur",
+      "cooperativePortal": "Portail coopérative",
+      "governmentAccess": "Accès gouvernemental",
+      "institutionalLicenses": "Licences institutionnelles",
+      "prices": "Tarifs"
+    },
+    "afriYieldLinks": {
+      "opportunities": "Opportunités",
+      "marketplace": "Marketplace",
+      "registerInvestor": "S'inscrire investisseur",
+      "myPortal": "Mon portail",
+      "updates": "Mises à jour",
+      "investorRelations": "Relations investisseurs",
+      "howItWorks": "Comment ça marche"
+    },
+    "toolsLinks": {
+      "soilDiagnosis": "Diagnostic Sol",
+      "diseaseDetection": "Détection Maladies",
+      "traceability": "Traçabilité",
+      "governance": "Gouvernance",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Confidentialité",
+      "deleteAccount": "Supprimer mon compte"
+    },
+    "rights": "Tous droits réservés.",
+    "termsShort": "Conditions",
+    "privacyShort": "Confidentialité",
+    "adminAccess": "Accès administrateur"
+  },
+  "header": {
+    "platform": "Plateforme",
+    "tools": "Outils",
+    "join": "Rejoindre",
+    "invest": "Investir",
+    "signIn": "Connexion",
+    "signInPortals": "🔐 Connexion & portails",
+    "mainNavAria": "Navigation principale",
+    "aiToolsLabel": "🛠️ Outils agricoles IA",
+    "hello": "Bonjour",
+    "signedIn": "Connecté",
+    "signOut": "Déconnexion",
+    "signOutAll": "Se déconnecter (tous les profils)",
+    "sessionHint": "Votre session apparaît à côté du portail.",
+    "openPortalTitle": "Ouvrir mon portail"
+  },
   "home": {
     "title": "Sahel AgriConnect",
     "hero": {
