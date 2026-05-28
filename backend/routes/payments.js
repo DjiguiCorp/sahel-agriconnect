@@ -340,11 +340,16 @@ router.post('/stripe/webhook', async (req, res) => {
           if (cat === 'african') {
             // Mark payment verified for African investor
             await fetch(
-              `${process.env.BACKEND_URL || 'http://localhost:3001'}`
+              `${String(process.env.BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '')}`
                 + '/api/kyc/mark-payment-verified',
               {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(process.env.INTERNAL_API_TOKEN
+                    ? { 'x-internal-token': process.env.INTERNAL_API_TOKEN }
+                    : {}),
+                },
                 body: JSON.stringify({
                   investorEmail: investorEmailLower,
                   stripeSessionId: session.id,

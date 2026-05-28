@@ -159,21 +159,11 @@ router.get('/magic', async (req, res) => {
       return res.redirect(`${webBase}/auth/magic?error=invalid_link`);
     }
 
-    // Delegate to the existing /confirm logic by forwarding as a POST internally
-    // (avoids duplicating the verification and JWT-issuance logic)
-    const confirmReq = {
-      body: { code, email, purpose },
-      headers: req.headers,
-    };
-    let confirmResult = null;
-    const mockRes = {
-      status: (code) => ({ json: (data) => { confirmResult = { status: code, data }; } }),
-      json: (data) => { confirmResult = { status: 200, data }; },
-    };
-
-    // Call the confirm handler inline — find the POST /confirm handler
-    // and run its logic here, or make a fetch to self:
-    const selfUrl = `http://localhost:${process.env.PORT || 5000}/api/verify/confirm`;
+    // Call the existing confirm endpoint using a configurable backend base URL
+    // (do NOT call localhost — this must work on Render)
+    const backendBase = String(process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3001}`)
+      .replace(/\/$/, '');
+    const selfUrl = `${backendBase}/api/verify/confirm`;
     const roleParam = String(req.query.r || req.query.role || 'farmer').trim();
     const confirmResponse = await fetch(selfUrl, {
       method: 'POST',

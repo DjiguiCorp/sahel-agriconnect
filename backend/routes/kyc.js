@@ -8,6 +8,7 @@ import {
   sendKYCAdditionalDocs,
   notifyAdminKYCSubmission,
 } from '../services/kycEmailService.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -234,7 +235,7 @@ router.get('/status/:email', async (req, res) => {
 });
 
 // ── GET /api/kyc/admin/pending ───────────────────────────────
-router.get('/admin/pending', async (req, res) => {
+router.get('/admin/pending', authenticateToken, async (req, res) => {
   try {
     const filter = req.query.category
       ? { status: { $in: ['african_pending_review',
@@ -265,7 +266,7 @@ router.get('/admin/pending', async (req, res) => {
 });
 
 // ── GET /api/kyc/admin/detail/:email ─────────────────────────
-router.get('/admin/detail/:email', async (req, res) => {
+router.get('/admin/detail/:email', authenticateToken, async (req, res) => {
   try {
     const kyc = await InvestorKYC.findOne({
       investorEmail: req.params.email.toLowerCase(),
@@ -285,7 +286,7 @@ router.get('/admin/detail/:email', async (req, res) => {
 });
 
 // ── POST /api/kyc/admin/review ───────────────────────────────
-router.post('/admin/review', async (req, res) => {
+router.post('/admin/review', authenticateToken, async (req, res) => {
   try {
     const {
       investorEmail, decision, reviewNotes,
@@ -392,6 +393,11 @@ router.post('/admin/review', async (req, res) => {
 // Called by Stripe webhook when African investor pays
 router.post('/mark-payment-verified', async (req, res) => {
   try {
+    const provided = String(req.headers['x-internal-token'] || '').trim();
+    const expected = String(process.env.INTERNAL_API_TOKEN || '').trim();
+    if (!expected || provided !== expected) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
     const { investorEmail, stripeSessionId } = req.body;
     await InvestorKYC.findOneAndUpdate(
       { investorEmail: investorEmail.toLowerCase() },
