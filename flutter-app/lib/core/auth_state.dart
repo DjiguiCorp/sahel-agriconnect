@@ -4,6 +4,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
+import '../services/biometric_service.dart';
 import '../services/guest_content_service.dart';
 
 enum AuthRole { none, farmer, investor, cooperative, government, ngo, processor }
@@ -153,10 +154,22 @@ class AuthState extends ChangeNotifier {
   /// Returns the role associated with the saved seed.
   Future<String?> getSavedRole() => _storage.read(key: _savedRoleKey);
 
-  /// True if a biometric re-login shortcut is available.
+  /// True if the user opted in and a device seed exists for biometric re-login.
   Future<bool> hasSavedSession() async {
+    if (!await BiometricService.isOptedIn()) return false;
     final seed = await getSavedSeed();
     return seed != null && seed.isNotEmpty;
+  }
+
+  /// Saves seed and marks biometric quick sign-in as enabled (after OS prompt).
+  Future<void> enableBiometricRelogin(String seed, String role) async {
+    await storeSeed(seed, role);
+    await BiometricService.setOptedIn(true);
+  }
+
+  /// Disables biometric re-login and removes the stored device seed.
+  Future<void> disableBiometricRelogin() async {
+    await clearSeed();
   }
 
   /// Clears the device seed (called only when user explicitly asks to
@@ -164,6 +177,7 @@ class AuthState extends ChangeNotifier {
   Future<void> clearSeed() async {
     await _storage.delete(key: _seedKey);
     await _storage.delete(key: _savedRoleKey);
+    await BiometricService.setOptedIn(false);
   }
 
   /// Marks the user as a guest, allowing read-only browsing of the public

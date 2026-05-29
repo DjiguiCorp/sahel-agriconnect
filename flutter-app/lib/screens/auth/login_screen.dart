@@ -14,8 +14,9 @@ import 'investor_kyc_screen.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
+import '../../services/biometric_service.dart';
 import '../../widgets/auth_form_theme.dart';
+import '../../widgets/biometric_setup_sheet.dart';
 import '../../widgets/country_picker.dart';
 import '../../widgets/otp_code_row.dart';
 
@@ -468,29 +469,42 @@ class _LoginScreenState extends State<LoginScreen> {
         mergeObj('processor');
         final merged = _sessionUserFrom(token, userMap);
         if (!mounted) return;
-        await context.read<AuthState>().setSession(widget.role, token, merged);
+        final auth = context.read<AuthState>();
+        await auth.setSession(widget.role, token, merged);
         final seed = res['sessionSeed'] as String?;
-        if (seed != null && seed.isNotEmpty) {
-          await context.read<AuthState>().storeSeed(seed, widget.role.name);
-        }
         if (!mounted) return;
         if (widget.role == AuthRole.investor) {
-          final bioPassed = await AuthService.authenticateWithBiometrics(
-            reason: 'Verify your identity to access AfriYield Exchange',
-          );
-          if (!bioPassed) {
-            if (!mounted) return;
-            await context.read<AuthState>().logout();
-            if (!mounted) return;
-            setState(() {
-              _loading = false;
-              _error = lp.t(
-                'Biometric verification failed. Please try again.',
-                'Vérification biométrique échouée. Veuillez réessayer.',
-              );
-            });
-            return;
+          final cap = await BiometricService.getCapability();
+          if (cap.isAvailable) {
+            final bioPassed = await BiometricService.authenticate(
+              reason: lp.t(
+                'Verify your identity to access AfriYield Exchange',
+                'Vérifiez votre identité pour accéder à AfriYield Exchange',
+              ),
+            );
+            if (!bioPassed) {
+              if (!mounted) return;
+              await auth.logout();
+              if (!mounted) return;
+              setState(() {
+                _loading = false;
+                _error = lp.t(
+                  'Biometric verification failed. Please try again.',
+                  'Vérification biométrique échouée. Veuillez réessayer.',
+                );
+              });
+              return;
+            }
+            if (seed != null && seed.isNotEmpty) {
+              await auth.enableBiometricRelogin(seed, widget.role.name);
+            }
           }
+        } else {
+          await offerBiometricSetupIfAvailable(
+            context,
+            sessionSeed: seed,
+            role: widget.role.name,
+          );
         }
         if (!mounted) return;
         if (widget.role == AuthRole.investor) {

@@ -6,7 +6,7 @@ import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
+import '../../services/biometric_service.dart';
 
 class BiometricReLoginScreen extends StatefulWidget {
   const BiometricReLoginScreen({super.key});
@@ -21,6 +21,7 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
   String _savedName = '';
   String _savedEmail = '';
   String _savedRole = '';
+  BiometricCapability? _biometricCap;
 
   static const _portalRoutes = {
     'farmer': '/farmer',
@@ -35,6 +36,13 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
   void initState() {
     super.initState();
     _loadIdentity();
+    _loadBiometricCapability();
+  }
+
+  Future<void> _loadBiometricCapability() async {
+    final cap = await BiometricService.getCapability();
+    if (!mounted) return;
+    setState(() => _biometricCap = cap);
   }
 
   Future<void> _loadIdentity() async {
@@ -72,7 +80,7 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
     });
 
     try {
-      final passed = await AuthService.authenticateWithBiometrics(
+      final passed = await BiometricService.authenticate(
         reason: lp.t(
           'Confirm your identity to sign in',
           'Confirmez votre identité pour vous connecter',
@@ -223,6 +231,13 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
   @override
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
+    final cap = _biometricCap;
+    final methodLabel = cap != null
+        ? BiometricService.methodLabel(cap, lp.t)
+        : lp.t('Face or fingerprint', 'Face ou empreinte');
+    final signInIcon = cap != null
+        ? BiometricService.methodIcon(cap)
+        : Icons.lock_rounded;
 
     return BackButtonListener(
       onBackButtonPressed: _handleSystemBack,
@@ -304,14 +319,14 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.lock_rounded, size: 24),
-                      label: Text(
-                        _loading
-                            ? lp.t('Signing in…', 'Connexion…')
-                            : lp.t(
-                                'Sign in with Face/biometrics',
-                                'Connexion Face/biométrie',
-                              ),
+                        : Icon(signInIcon, size: 24),
+                    label: Text(
+                      _loading
+                          ? lp.t('Signing in…', 'Connexion…')
+                          : lp.t(
+                              'Sign in with $methodLabel',
+                              'Connexion $methodLabel',
+                            ),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,

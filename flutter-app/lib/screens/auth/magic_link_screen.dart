@@ -11,6 +11,7 @@ import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/auth_form_theme.dart';
+import '../../widgets/biometric_setup_sheet.dart';
 
 class MagicLinkScreen extends StatefulWidget {
   const MagicLinkScreen({
@@ -121,9 +122,6 @@ class _MagicLinkScreenState extends State<MagicLinkScreen> {
       await auth.setSession(roleEnum, token, userData);
 
       final seed = res['sessionSeed'] as String?;
-      if (seed != null && seed.isNotEmpty) {
-        await auth.storeSeed(seed, roleStr);
-      }
 
       if (roleEnum == AuthRole.farmer) {
         await auth.saveFarmerIdentity(
@@ -136,6 +134,13 @@ class _MagicLinkScreenState extends State<MagicLinkScreen> {
 
       if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 800));
+
+      if (!mounted) return;
+      await offerBiometricSetupIfAvailable(
+        context,
+        sessionSeed: seed,
+        role: roleStr,
+      );
 
       const routes = {
         'farmer': '/farmer',

@@ -14,6 +14,7 @@ import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/auth_form_theme.dart';
+import '../../widgets/biometric_setup_sheet.dart';
 import '../../widgets/country_picker.dart';
 import '../../widgets/otp_code_row.dart';
 
@@ -527,11 +528,13 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       userMap['nom']?.toString() ?? userMap['name']?.toString() ?? '',
     );
     await auth.setSession(AuthRole.farmer, token, merged);
-    // Store sessionSeed for biometric re-login (seed comes from OTP verify response)
     final seed = res['sessionSeed'] as String?;
-    if (seed != null && seed.isNotEmpty) {
-      await auth.storeSeed(seed, 'farmer');
-    }
+    if (!mounted) return;
+    await offerBiometricSetupIfAvailable(
+      context,
+      sessionSeed: seed,
+      role: 'farmer',
+    );
     if (!mounted) return;
     context.go('/farmer/onboarding');
   }
@@ -730,9 +733,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         );
         await auth.setSession(AuthRole.farmer, token, merged);
         final seed = res['sessionSeed'] as String?;
-        if (seed != null && seed.isNotEmpty) {
-          await auth.storeSeed(seed, 'farmer');
-        }
+        if (!mounted) return;
+        await offerBiometricSetupIfAvailable(
+          context,
+          sessionSeed: seed,
+          role: 'farmer',
+        );
         if (!mounted) return;
         context.go('/farmer/onboarding');
         return;

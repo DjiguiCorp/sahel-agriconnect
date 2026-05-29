@@ -1,7 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
 
 import 'api_service.dart';
+import 'biometric_service.dart';
 
 class AuthService {
   static const _storage = FlutterSecureStorage(
@@ -11,7 +11,6 @@ class AuthService {
     ),
   );
 
-  static final _localAuth = LocalAuthentication();
   static Future<void> saveToken(String role, String token) async {
     await _storage.write(key: 'token_$role', value: token);
   }
@@ -43,23 +42,12 @@ class AuthService {
 
   static Future<bool> authenticateWithBiometrics({
     String reason = 'Verify your identity',
-  }) async {
-    try {
-      final supported = await _localAuth.isDeviceSupported();
-      if (!supported) return true;
-      final biometrics = await _localAuth.getAvailableBiometrics();
-      if (biometrics.isEmpty) return true;
-      return _localAuth.authenticate(
-        localizedReason: reason,
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
+    bool biometricOnly = false,
+  }) =>
+      BiometricService.authenticate(
+        reason: reason,
+        biometricOnly: biometricOnly,
       );
-    } catch (_) {
-      return false;
-    }
-  }
 
   /// Sessions persist until explicit sign-out or JWT expiry on restore.
   static void resetActivity() {}
