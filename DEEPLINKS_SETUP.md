@@ -47,11 +47,11 @@ Copy the **SHA256** line and replace the placeholder in:
 
 For this project the bundle id is expected to be:
 
-- `com.djiguicorporation.sahel_agriconnect`
+- `com.sahelagriconnect.app`
 
 So the final value should look like:
 
-- `ABCDE12345.com.djiguicorporation.sahel_agriconnect`
+- `ABCDE12345.com.sahelagriconnect.app`
 
 Replace the placeholder in:
 
@@ -63,6 +63,6 @@ Replace the placeholder in:
 
 - `https://sahelagriconnect.com/.well-known/assetlinks.json` returns **200** and valid JSON.
 - `https://sahelagriconnect.com/.well-known/apple-app-site-association` returns **200** with **no** `.json` extension.
-- Android: `adb shell pm get-app-links com.djiguicorporation.sahel_agriconnect` shows the domain verified.
+- Android: `adb shell pm get-app-links com.sahelagriconnect.app` shows the domain verified.
 - iOS: `swcutil dl -d sahelagriconnect.com` (macOS) shows the domain associated.
 

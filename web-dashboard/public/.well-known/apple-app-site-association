@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "REPLACE_TEAM_ID.com.djiguicorporation.sahel_agriconnect",
+        "appID": "REPLACE_TEAM_ID.com.sahelagriconnect.app",
         "paths": [
           "/auth/magic*"
         ]
