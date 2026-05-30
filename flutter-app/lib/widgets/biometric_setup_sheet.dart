@@ -82,23 +82,11 @@ class _BiometricSetupSheetState extends State<_BiometricSetupSheet> {
       _error = null;
     });
 
-    if (!widget.capability.canCheckBiometrics) {
-      setState(() {
-        _enrolling = false;
-        _error = lp.t(
-          'No biometrics are set up on this phone yet. Open your phone Settings and add a fingerprint or Face ID, then try again.',
-          'Aucune biométrie n\'est configurée sur ce téléphone. Ouvrez les Réglages, ajoutez une empreinte ou Face ID, puis réessayez.',
-        );
-      });
-      return;
-    }
-
     final passed = await BiometricService.authenticate(
       reason: lp.t(
         'Allow Sahel AgriConnect to use biometrics for faster sign-in',
         'Autoriser Sahel AgriConnect à utiliser la biométrie pour une connexion plus rapide',
       ),
-      biometricOnly: false,
     );
 
     if (!mounted) return;

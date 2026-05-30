@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,7 +27,9 @@ class BiometricCapability {
   final bool canCheckBiometrics;
   final List<BiometricType> availableTypes;
 
-  bool get isAvailable => deviceSupported && canCheckBiometrics;
+  /// True when the device can show a biometric or device-credential prompt.
+  bool get isAvailable =>
+      deviceSupported && (canCheckBiometrics || availableTypes.isNotEmpty);
 
   bool get hasFace =>
       kind == BiometricKind.face ||
@@ -40,19 +45,45 @@ class BiometricCapability {
 }
 
 /// Biometric opt-in, capability checks, and system enrollment prompts.
+///
+/// On Android, native [BiometricBridge] uses
+/// `BiometricManager.canAuthenticate(BIOMETRIC_STRONG | BIOMETRIC_WEAK)` and
+/// prompts with device PIN/pattern as fallback (`biometricOnly: false`).
 abstract final class BiometricService {
   static const _optInKey = 'biometric_relogin_opt_in';
   static const _promptedKey = 'biometric_setup_prompt_shown';
+  static const _androidChannel =
+      MethodChannel('com.sahelagriconnect.app/biometric');
 
   static final LocalAuthentication _auth = LocalAuthentication();
 
   static Future<BiometricCapability> getCapability() async {
     try {
       final deviceSupported = await _auth.isDeviceSupported();
-      final canCheck = await _auth.canCheckBiometrics;
-      final types = deviceSupported
+      var canCheck = await _auth.canCheckBiometrics;
+      var types = deviceSupported
           ? await _auth.getAvailableBiometrics()
           : <BiometricType>[];
+
+      if (Platform.isAndroid && deviceSupported) {
+        final nativeCan =
+            await _androidChannel.invokeMethod<bool>('canAuthenticate') ?? false;
+        canCheck = canCheck || nativeCan;
+
+        final hasWeak =
+            await _androidChannel.invokeMethod<bool>('hasWeakBiometric') ??
+                false;
+        final hasStrong =
+            await _androidChannel.invokeMethod<bool>('hasStrongBiometric') ??
+                false;
+        types = [
+          ...types,
+          if (hasWeak && !types.contains(BiometricType.weak))
+            BiometricType.weak,
+          if (hasStrong && !types.contains(BiometricType.strong))
+            BiometricType.strong,
+        ];
+      }
 
       return BiometricCapability(
         deviceSupported: deviceSupported,
@@ -72,13 +103,17 @@ abstract final class BiometricService {
 
   static BiometricKind _kindFromTypes(List<BiometricType> types) {
     if (types.isEmpty) return BiometricKind.none;
+
     final hasFace = types.contains(BiometricType.face);
     final hasFinger = types.contains(BiometricType.fingerprint) ||
-        types.contains(BiometricType.strong) ||
-        types.contains(BiometricType.weak);
-    if (hasFace && hasFinger) return BiometricKind.multiple;
+        types.contains(BiometricType.strong);
+    final hasWeak = types.contains(BiometricType.weak);
+
+    if (hasFace && (hasFinger || hasWeak)) return BiometricKind.multiple;
     if (hasFace) return BiometricKind.face;
     if (hasFinger) return BiometricKind.fingerprint;
+    // Android class-2 (weak) biometrics are often face unlock on Samsung devices.
+    if (hasWeak) return BiometricKind.face;
     if (types.contains(BiometricType.iris)) return BiometricKind.iris;
     return BiometricKind.multiple;
   }
@@ -107,21 +142,29 @@ abstract final class BiometricService {
   }
 
   /// Shows the OS biometric sheet (Face ID / fingerprint / device PIN).
+  /// Always allows device credential fallback (`biometricOnly: false`).
   static Future<bool> authenticate({
     required String reason,
-    bool biometricOnly = false,
   }) async {
     try {
+      if (Platform.isAndroid) {
+        final deviceSupported = await _auth.isDeviceSupported();
+        if (!deviceSupported) return false;
+        return await _androidChannel.invokeMethod<bool>(
+              'authenticate',
+              {'reason': reason},
+            ) ??
+            false;
+      }
+
       final cap = await getCapability();
       if (!cap.deviceSupported) return false;
-      if (!cap.canCheckBiometrics) return false;
-      if (cap.availableTypes.isEmpty) return false;
 
       return _auth.authenticate(
         localizedReason: reason,
-        options: AuthenticationOptions(
+        options: const AuthenticationOptions(
           stickyAuth: true,
-          biometricOnly: biometricOnly,
+          biometricOnly: false,
           useErrorDialogs: true,
           sensitiveTransaction: true,
         ),

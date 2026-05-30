@@ -42,12 +42,8 @@ class AuthService {
 
   static Future<bool> authenticateWithBiometrics({
     String reason = 'Verify your identity',
-    bool biometricOnly = false,
   }) =>
-      BiometricService.authenticate(
-        reason: reason,
-        biometricOnly: biometricOnly,
-      );
+      BiometricService.authenticate(reason: reason);
 
   /// Sessions persist until explicit sign-out or JWT expiry on restore.
   static void resetActivity() {}
