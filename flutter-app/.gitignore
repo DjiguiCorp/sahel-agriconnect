@@ -55,7 +55,7 @@ android/key.properties
 *.jks
 *.keystore
 android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
+**/GoogleService-Info.plist
 
 # macOS and Linux builds not needed for mobile store
 linux/
