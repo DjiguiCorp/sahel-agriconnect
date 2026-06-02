@@ -1728,7 +1728,7 @@ class _PolicyTabState extends State<_PolicyTab> {
           key: ValueKey(_audience),
           isExpanded: true,
           isDense: true,
-          initialValue: _audience,
+          value: _audience,
           dropdownColor: _surface,
           style: const TextStyle(color: _text),
           decoration: _dec(isFr ? 'Choisir les destinataires'
@@ -2181,7 +2181,7 @@ class _GovEditProfileScreenState extends State<_GovEditProfileScreen> {
               key: ValueKey(_accessLevel),
               isExpanded: true,
               isDense: true,
-              initialValue: _accessLevel,
+              value: _accessLevel,
               dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: _dec(''),
@@ -2763,7 +2763,7 @@ class _AlertBroadcastSheetState extends State<_AlertBroadcastSheet> {
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               key: ValueKey(_audience),
-              initialValue: _audience,
+              value: _audience,
               dropdownColor: _surface,
               style: const TextStyle(color: _text),
               decoration: InputDecoration(

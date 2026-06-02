@@ -3085,7 +3085,7 @@ Email: **${_emailCtrl.text}**
                   DropdownButtonFormField<String>(
                     isExpanded: true,
                     isDense: true,
-                    initialValue: _filterRegion,
+                    value: _filterRegion,
                     dropdownColor: _surface,
                     style: const TextStyle(color: _text),
                     decoration: _inputDecoration(
@@ -3256,7 +3256,7 @@ Email: **${_emailCtrl.text}**
                         DropdownButtonFormField<String>(
                           isExpanded: true,
                           isDense: true,
-                          initialValue: _country,
+                          value: _country,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
                           decoration: _inputDecoration(isFr ? 'Pays' : 'Country'),
@@ -3275,7 +3275,7 @@ Email: **${_emailCtrl.text}**
                         DropdownButtonFormField<String>(
                           isExpanded: true,
                           isDense: true,
-                          initialValue: _farmRegion,
+                          value: _farmRegion,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
                           decoration: _inputDecoration(isFr ? 'Région' : 'Region'),
@@ -3356,7 +3356,7 @@ Email: **${_emailCtrl.text}**
                               child: DropdownButtonFormField<String>(
                                 isExpanded: true,
                                 isDense: true,
-                                initialValue: _areaUnit,
+                                value: _areaUnit,
                                 dropdownColor: _surface,
                                 style: const TextStyle(color: _text, fontSize: 13),
                                 decoration: _inputDecoration(''),
@@ -3387,7 +3387,7 @@ Email: **${_emailCtrl.text}**
                         DropdownButtonFormField<String>(
                           isExpanded: true,
                           isDense: true,
-                          initialValue: _irrigation,
+                          value: _irrigation,
                           dropdownColor: _surface,
                           style: const TextStyle(color: _text),
                           decoration: _inputDecoration(''),

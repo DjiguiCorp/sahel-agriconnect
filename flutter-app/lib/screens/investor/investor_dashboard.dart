@@ -1835,7 +1835,9 @@ class _UpdatesTabState extends State<_UpdatesTab> {
                   Switch(
                     value: _alertsEnabled,
                     activeTrackColor: _gold.withValues(alpha: 0.5),
-                    activeThumbColor: _gold,
+                    thumbColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected) ? _gold : null,
+                    ),
                     onChanged: (v) => setState(() => _alertsEnabled = v),
                   ),
                 ],
@@ -1844,7 +1846,7 @@ class _UpdatesTabState extends State<_UpdatesTab> {
                 const Divider(color: _border),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  initialValue: _alertCrop,
+                  value: _alertCrop,
                   dropdownColor: _surface,
                   style: const TextStyle(color: _text),
                   decoration: InputDecoration(
