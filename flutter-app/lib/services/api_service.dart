@@ -69,6 +69,35 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> delete(
+    String path, {
+    String? token,
+    int retries = 1,
+  }) async {
+    try {
+      final res = await _dio.delete(
+        path,
+        options: Options(
+          headers: {if (token != null) 'Authorization': 'Bearer $token'},
+        ),
+      );
+      return _decode(res.data);
+    } on DioException catch (e) {
+      if (retries > 0 &&
+          (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.connectionError)) {
+        await Future.delayed(const Duration(seconds: 3));
+        return delete(path, token: token, retries: retries - 1);
+      }
+      return _decode(e.response?.data)
+        ..putIfAbsent('success', () => false)
+        ..putIfAbsent('error', () => _friendlyError(e));
+    } catch (_) {
+      return {'success': false, 'error': _friendlyError(null)};
+    }
+  }
+
   static Future<Map<String, dynamic>> patch(
     String path,
     Map<String, dynamic> body, {

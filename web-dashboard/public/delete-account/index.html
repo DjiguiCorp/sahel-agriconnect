@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Request deletion of your Sahel AgriConnect account and personal data." />
+  <title>Delete Your Account — Sahel AgriConnect</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      color: #e8f5e9;
+      background: linear-gradient(165deg, #060f0a 0%, #0d1f17 28%, #1a3c2e 52%, #0a1610 78%, #060f0a 100%);
+    }
+    .header {
+      background: rgba(26, 60, 46, 0.92);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .logo {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #2d6a4f, #1a3c2e);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #d4af37; font-size: 14px;
+    }
+    .brand { font-weight: 700; font-size: 1.1rem; color: #fff; }
+    main { max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+    h1 {
+      font-size: 1.75rem;
+      text-align: center;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+    .subtitle { text-align: center; color: rgba(255,255,255,0.65); font-size: 0.95rem; margin-bottom: 2rem; }
+    .glass {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .glass h2 { font-size: 1rem; color: #d4af37; margin-bottom: 0.75rem; }
+    .glass p, .glass li { font-size: 0.9rem; line-height: 1.6; color: rgba(255,255,255,0.85); }
+    .glass ul { margin: 0.5rem 0 0 1.25rem; }
+    .lang-block { margin-bottom: 1rem; }
+    .lang-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(212,175,55,0.9); margin-bottom: 0.35rem; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      margin-top: 1.25rem;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, #b5850a, #d4af37);
+      color: #1a3c2e;
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 4px 20px rgba(181,133,10,0.35);
+    }
+    .btn:hover { filter: brightness(1.08); }
+    .deleted h2 { color: #f87171; }
+    .retained h2 { color: #93c5fd; }
+    .app-note { font-size: 0.85rem; color: rgba(255,255,255,0.55); text-align: center; margin-top: 1.5rem; }
+    a.inline { color: #d4af37; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo" aria-hidden="true">SA</div>
+    <span class="brand">Sahel AgriConnect</span>
+  </header>
+  <main>
+    <h1>Delete Your Account / Supprimer votre compte</h1>
+    <p class="subtitle">Account &amp; data deletion request · Demande de suppression</p>
+
+    <section class="glass">
+      <div class="lang-block">
+        <div class="lang-label">English</div>
+        <p>To request deletion of your account and data, send an email to:
+          <strong><a class="inline" href="mailto:privacy@sahelagriconnect.com">privacy@sahelagriconnect.com</a></strong>.
+          Include your registered email address.
+          Your account and all associated data will be deleted within 30 days of your request.</p>
+      </div>
+      <div class="lang-block">
+        <div class="lang-label">Français</div>
+        <p>Pour demander la suppression de votre compte et de vos données, envoyez un e-mail à :
+          <strong><a class="inline" href="mailto:privacy@sahelagriconnect.com">privacy@sahelagriconnect.com</a></strong>.
+          Indiquez votre adresse e-mail enregistrée.
+          Votre compte et toutes les données associées seront supprimés dans les 30 jours suivant votre demande.</p>
+      </div>
+      <a class="btn" href="mailto:privacy@sahelagriconnect.com?subject=Account%20Deletion%20Request&amp;body=Please%20delete%20my%20Sahel%20AgriConnect%20account.%0A%0ARegistered%20email%3A%20">Request account deletion by email</a>
+    </section>
+
+    <section class="glass deleted">
+      <h2>Data that will be deleted / Données supprimées</h2>
+      <ul>
+        <li>Profile information / Informations de profil</li>
+        <li>Production records / Données de production</li>
+        <li>Cooperative membership data / Données d'adhésion coopérative</li>
+      </ul>
+    </section>
+
+    <section class="glass retained">
+      <h2>Data we retain / Données conservées</h2>
+      <ul>
+        <li>Financial transaction records (required by law, retained 7 years) /
+          Registres de transactions financières (obligation légale, conservation 7 ans)</li>
+      </ul>
+    </section>
+
+    <p class="app-note">Mobile app users (Android &amp; iOS): open Farmer portal → Account → &quot;Delete my account and data&quot; for instant in-app deletion when signed in.</p>
+  </main>
+</body>
+</html>

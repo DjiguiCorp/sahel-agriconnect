@@ -437,7 +437,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              "A verification code will be sent to your phone or email. You'll then be redirected to our secure web platform to complete the deletion.",
+              'You can request deletion by email or complete it in the app (farmers). Data is removed within 30 days.',
               style: TextStyle(fontSize: 13, height: 1.5),
             ),
           ],

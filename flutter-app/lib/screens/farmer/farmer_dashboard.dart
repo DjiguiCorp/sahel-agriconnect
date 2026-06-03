@@ -1325,14 +1325,85 @@ class _BenefitCardState extends State<_BenefitCard> {
 // ══════════════════════════════════════════════════════════════
 // TAB 4: ACCOUNT (with proper navigation)
 // ══════════════════════════════════════════════════════════════
-class _FarmerAccountTab extends StatelessWidget {
+class _FarmerAccountTab extends StatefulWidget {
   final bool isFr;
   final Function(int) onTabChange;
   const _FarmerAccountTab({required this.isFr, required this.onTabChange});
 
   @override
+  State<_FarmerAccountTab> createState() => _FarmerAccountTabState();
+}
+
+class _FarmerAccountTabState extends State<_FarmerAccountTab> {
+  bool _deletingAccount = false;
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    final isFr = widget.isFr;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isFr ? 'Supprimer mon compte et mes données ?' : 'Delete my account and data?',
+          style: const TextStyle(color: _text),
+        ),
+        content: Text(
+          isFr
+              ? 'Cette action est définitive. Votre profil et vos données personnelles seront supprimés.'
+              : 'This action is permanent. Your profile and personal data will be removed.',
+          style: const TextStyle(color: _textMuted, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(isFr ? 'Annuler' : 'Cancel',
+                style: const TextStyle(color: _textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(isFr ? 'Supprimer' : 'Delete',
+                style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    setState(() => _deletingAccount = true);
+    try {
+      final auth = context.read<AuthState>();
+      final token = auth.token;
+      if (token == null || token.isEmpty) {
+        throw Exception(isFr ? 'Session expirée' : 'Session expired');
+      }
+      final res = await ApiService.delete('/api/farmers/account', token: token);
+      if (res['success'] != true) {
+        throw Exception(
+          res['error']?.toString() ??
+              (isFr ? 'Échec de la suppression' : 'Deletion failed'),
+        );
+      }
+      await auth.clearSavedFarmerIdentity();
+      await auth.logout();
+      if (context.mounted) context.go('/home');
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _deletingAccount = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
+    final isFr = widget.isFr;
     final name = auth.displayName.isNotEmpty ? auth.displayName : (isFr ? 'Agriculteur' : 'Farmer');
     final initial = name[0].toUpperCase();
 
@@ -1398,7 +1469,7 @@ class _FarmerAccountTab extends StatelessWidget {
               icon: Icons.home_outlined, iconColor: _green,
               title: isFr ? 'Retour au tableau de bord' : 'Back to Dashboard',
               subtitle: isFr ? 'Vue principale agriculteur' : 'Main farmer overview',
-              onTap: () => onTabChange(0)),
+              onTap: () => widget.onTabChange(0)),
             _accountTile(context,
               icon: Icons.exit_to_app_outlined, iconColor: _textMuted,
               title: isFr ? 'Quitter vers l\'accueil' : 'Exit to Main Home',
@@ -1482,6 +1553,33 @@ class _FarmerAccountTab extends StatelessWidget {
               fontSize: 11, fontStyle: FontStyle.italic)),
         ])),
         const SizedBox(height: 16),
+
+        // DELETE ACCOUNT
+        SizedBox(
+          width: double.infinity,
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red.shade300,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            icon: _deletingAccount
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.red,
+                    ),
+                  )
+                : const Icon(Icons.delete_forever_outlined, size: 18),
+            label: Text(
+              isFr ? 'Supprimer mon compte et mes données' : 'Delete my account and data',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            onPressed: _deletingAccount ? null : () => _deleteAccount(context),
+          ),
+        ),
+        const SizedBox(height: 8),
 
         // SIGN OUT
         SizedBox(

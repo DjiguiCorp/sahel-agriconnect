@@ -167,6 +167,7 @@ const farmerSchema = new mongoose.Schema({
   }],
   fcmToken: { type: String },
   fcmUpdatedAt: Date,
+  deletedAt: { type: Date, default: null, index: true },
 }, {
   timestamps: true
 });

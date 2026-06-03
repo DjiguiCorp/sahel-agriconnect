@@ -56,6 +56,9 @@ router.post('/session', async (req, res) => {
       : await Farmer.findOne(farmerTelephoneQuery(phone)).lean();
 
     if (!farmer) return res.status(404).json({ success: false, error: 'Not found' });
+    if (farmer.deletedAt) {
+      return res.status(410).json({ success: false, error: 'Account deleted' });
+    }
 
     const token = jwt.sign(
       {
@@ -100,6 +103,9 @@ router.get('/me', authenticateAnyUser, async (req, res) => {
     const farmer = await Farmer.findById(req.mobileUser.id).lean();
     if (!farmer) {
       return res.status(404).json({ success: false, error: 'Farmer not found' });
+    }
+    if (farmer.deletedAt) {
+      return res.status(410).json({ success: false, error: 'Account deleted' });
     }
     const profileComplete =
       Number(farmer.superficie) > 0 &&
@@ -196,6 +202,82 @@ router.patch('/complete-profile', authenticateAnyUser, async (req, res) => {
     });
   } catch (err) {
     console.error('complete-profile:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/farmers/account — authenticated farmer soft-delete (mobile)
+router.delete('/account', authenticateAnyUser, async (req, res) => {
+  try {
+    if (req.mobileUser?.role !== 'farmer') {
+      return res.status(403).json({ success: false, error: 'Farmer access only' });
+    }
+    const farmerId = req.mobileUser.id;
+    const farmer = await Farmer.findById(farmerId);
+    if (!farmer) {
+      return res.status(404).json({ success: false, error: 'Farmer not found' });
+    }
+    if (farmer.deletedAt) {
+      return res.json({ success: true, message: 'Account already deleted' });
+    }
+
+    const id = farmer._id.toString();
+    await Farmer.findByIdAndUpdate(
+      farmerId,
+      {
+        $set: {
+          deletedAt: new Date(),
+          nom: 'Deleted Account',
+          telephone: `deleted-${id}`,
+          email: '',
+          emailVerified: false,
+          region: 'Deleted',
+          country: '',
+          countryCode: '',
+          latitude: '0',
+          longitude: '0',
+          superficie: 0,
+          cultures: ['Other'],
+          autresCultures: '',
+          autresElevage: '',
+          elevage: [],
+          elevageAutres: '',
+          nomCooperative: '',
+          roleCooperative: '',
+          soutienCooperative: [],
+          objectifsProduction: [],
+          defis: [],
+          solutions: [],
+          fcmToken: '',
+          fientesFertilisant: '',
+          fientesBiogaz: '',
+          besoinSolaire: '',
+          besoinCollecte: '',
+          investissementCooperative: 'Non',
+          lienCooperative: 'Non',
+          connexionTransformation: false,
+          qualityLevel: 'Non spécifié',
+          statut: 'Inactif',
+          typeExploitation: 'Familiale',
+          accesElectricite: 'Non',
+          accesStockage: 'Non',
+        },
+        $unset: {
+          verifiedAt: 1,
+          fcmUpdatedAt: 1,
+          cooperativeId: 1,
+          diseaseDetection: 1,
+          landDetection: 1,
+        },
+      },
+      { runValidators: true },
+    );
+
+    await DeviceSession.deleteMany({ userId: id, role: 'farmer' });
+
+    res.json({ success: true, message: 'Account deleted' });
+  } catch (err) {
+    console.error('farmers/account DELETE:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
