@@ -1,5 +1,5 @@
-// Run `dart pub global activate flutterfire_cli` then `flutterfire configure`
-// to replace placeholders with your Firebase project values.
+// Generated from ios/Runner/GoogleService-Info.plist via FlutterFire.
+// Re-run `flutterfire configure` if you rotate Firebase credentials.
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
@@ -42,20 +42,20 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: '1:000000000000:ios:0000000000000000000000',
-    messagingSenderId: '000000000000',
+    apiKey: 'AIzaSyCx1F_2p7YzjBXSLOf18zonmzwvAH4ukZA',
+    appId: '1:1072783610602:ios:cd76e261f6699e51be3d93',
+    messagingSenderId: '1072783610602',
     projectId: 'sahel-agriconnect',
-    storageBucket: 'sahel-agriconnect.appspot.com',
-    iosBundleId: 'com.sahel.sahelAgriconnect',
+    storageBucket: 'sahel-agriconnect.firebasestorage.app',
+    iosBundleId: 'com.sahelagriconnect.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: '1:000000000000:ios:0000000000000000000000',
-    messagingSenderId: '000000000000',
+    apiKey: 'AIzaSyCx1F_2p7YzjBXSLOf18zonmzwvAH4ukZA',
+    appId: '1:1072783610602:ios:cd76e261f6699e51be3d93',
+    messagingSenderId: '1072783610602',
     projectId: 'sahel-agriconnect',
-    storageBucket: 'sahel-agriconnect.appspot.com',
-    iosBundleId: 'com.sahel.sahelAgriconnect',
+    storageBucket: 'sahel-agriconnect.firebasestorage.app',
+    iosBundleId: 'com.sahelagriconnect.app',
   );
 }
