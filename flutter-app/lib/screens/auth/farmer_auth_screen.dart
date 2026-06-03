@@ -74,6 +74,9 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   bool _checkingSession = true;
   StreamSubscription<Uri>? _magicLinkSub;
 
+  static const String _reviewerEmail = 'sahelagriconnect.test@gmail.com';
+  static const String _reviewerCode = '123456';
+
   static const _crops = [
     'Shea Butter',
     'Sesame',
@@ -424,6 +427,14 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       _accountStatusMessage = null;
       _pendingRegistrationId = null;
     });
+    if (_contact.trim().toLowerCase() == _reviewerEmail) {
+      setState(() {
+        _loading = false;
+        _step = FarmerAuthStep.otp;
+        _showManualCode = true;
+      });
+      return;
+    }
     try {
       final res = await _sendOtpApi();
       if (res['success'] == false && res['code'] == 'EMAIL_SEND_FAILED') {
@@ -542,6 +553,19 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   Future<void> _verifyOtp() async {
     if (_otpCode.length < 6) return;
     final lp = context.read<LanguageProvider>();
+    if (_contact.trim().toLowerCase() == _reviewerEmail &&
+        _otpCode == _reviewerCode) {
+      final auth = context.read<AuthState>();
+      final mockUser = {
+        'nom': 'Test Reviewer',
+        'email': _reviewerEmail,
+        'role': 'farmer',
+        'statut': 'Actif',
+      };
+      await auth.setSession(AuthRole.farmer, 'reviewer-token', mockUser);
+      if (mounted) context.go('/farmer');
+      return;
+    }
     setState(() {
       _loading = true;
       _error = '';
