@@ -65,6 +65,14 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
+
+flutter_native_splash:
+  color: "#1a3c2e"
+  color_dark: "#1a3c2e"
+  image: assets/icon/app_icon.png
+  ios: true
+  android: false
 
 flutter_launcher_icons:
   android: true
