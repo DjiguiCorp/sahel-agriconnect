@@ -102,17 +102,17 @@ export default function Hero() {
             : 'Cooperatives at the core. Farmers at the base. Investors at the end.'}
         </p>
 
-        <p className="text-base font-semibold mb-12" style={{ color: '#B5850A' }}>
+        <p className="text-base font-semibold mb-8" style={{ color: '#B5850A' }}>
           {isFr
             ? 'Produire ensemble. Vendre plus loin. Gagner plus.'
             : 'Produce together. Sell further. Earn more.'}
         </p>
 
         {/* Primary CTA: mobile app + AfriYield */}
-        <div className="mx-auto mb-8 max-w-3xl">
+        <div className="mx-auto mb-6 max-w-2xl">
           <DownloadAppBanner isFr={isFr} />
         </div>
-        <div className="mb-14 flex justify-center">
+        <div className="mb-10 flex justify-center">
           <Link
             to="/afri-yield"
             className="inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-4 text-base font-bold transition-all duration-200 hover:scale-105"

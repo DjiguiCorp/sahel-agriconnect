@@ -8,9 +8,6 @@ import {
   ChevronDown,
   ExternalLink,
 } from 'lucide-react';
-import DownloadAppBanner from '../components/DownloadAppBanner';
-import { useTranslation } from 'react-i18next';
-
 const WHATSAPP = 'https://wa.me/12152175381';
 
 const FAQS = [
@@ -99,8 +96,6 @@ function ContactCard({ icon: Icon, title, subtitle, button, href, glow, accent }
 }
 
 export default function HelpCenter() {
-  const { i18n } = useTranslation();
-  const isFr = (i18n.resolvedLanguage || i18n.language || 'fr').startsWith('fr');
   const [search, setSearch] = useState('');
   const [openFaq, setOpenFaq] = useState(null);
 
@@ -191,11 +186,6 @@ export default function HelpCenter() {
               />
             </div>
           </div>
-        </section>
-
-        {/* Download */}
-        <section className="help-fade-in mb-14">
-          <DownloadAppBanner isFr={isFr} />
         </section>
 
         {/* Contact */}
