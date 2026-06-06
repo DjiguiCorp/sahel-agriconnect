@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/terms_refresh.dart';
 import '../../core/theme.dart';
+
+const _termsUrl = 'https://sahelagriconnect.com/terms-of-service';
+const _privacyUrl = 'https://sahelagriconnect.com/privacy-policy';
+const _agreementUrl = 'https://sahelagriconnect.com/user-agreement';
 
 /// Terms of Service, Privacy Policy, and User Agreement.
 class TermsScreen extends StatefulWidget {
@@ -74,13 +80,13 @@ class _TermsScreenState extends State<TermsScreen>
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: const Color(0xFF0a1f14),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.forestGreen, AppColors.sage, AppColors.darkBg],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0a1f14), Color(0xFF1a3c2e)],
           ),
         ),
         child: SafeArea(
@@ -182,12 +188,18 @@ class _TermsScreenState extends State<TermsScreen>
                   children: [
                     _LegalScroll(
                       sections: _termsOfServiceSections(lp),
+                      webUrl: _termsUrl,
+                      lp: lp,
                     ),
                     _LegalScroll(
                       sections: _privacyPolicySections(lp),
+                      webUrl: _privacyUrl,
+                      lp: lp,
                     ),
                     _LegalScroll(
                       sections: _userAgreementSections(lp),
+                      webUrl: _agreementUrl,
+                      lp: lp,
                     ),
                   ],
                 ),
@@ -404,9 +416,8 @@ class _TermsScreenState extends State<TermsScreen>
           title: lp.t('Your rights', 'Vos droits'),
           bullets: [
             lp.t(
-              'You may request data deletion at support@sahelagriconnect.com.',
-              'Vous pouvez demander la suppression des données à '
-                  'support@sahelagriconnect.com.',
+              'You may request data deletion at privacy@sahelagriconnect.com or sahelagriconnect.com/delete-account.',
+              'Suppression des données : privacy@sahelagriconnect.com ou sahelagriconnect.com/delete-account.',
             ),
             lp.t(
               'Cookies are used for session management only.',
@@ -467,57 +478,123 @@ class _TermsScreenState extends State<TermsScreen>
 }
 
 class _LegalScroll extends StatelessWidget {
-  const _LegalScroll({required this.sections});
+  const _LegalScroll({
+    required this.sections,
+    required this.webUrl,
+    required this.lp,
+  });
 
   final List<({String title, List<String> bullets})> sections;
+  final String webUrl;
+  final LanguageProvider lp;
+
+  Future<void> _openFull() async {
+    final uri = Uri.parse(webUrl);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      // ignore: avoid_print
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final section in sections) ...[
-            Text(
-              section.title,
-              style: const TextStyle(
-                color: AppColors.gold,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
+          GlassCard(
+            borderColor: AppColors.gold.withValues(alpha: 0.35),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  lp.t(
+                    'Full legal document on the web',
+                    'Document juridique complet en ligne',
+                  ),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  webUrl,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    onPressed: _openFull,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: AppColors.forestGreen,
+                    ),
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: Text(
+                      lp.t('View full document', 'Voir le document complet'),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            for (final bullet in section.bullets)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
+          ),
+          const SizedBox(height: 16),
+          for (final section in sections)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GlassCard(
+                borderColor: const Color(0xFF1D9E75).withValues(alpha: 0.25),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '•  ',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 14,
-                        height: 1.55,
+                      section.title,
+                      style: const TextStyle(
+                        color: AppColors.gold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Expanded(
-                      child: Text(
-                        bullet,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          fontSize: 14,
-                          height: 1.55,
+                    const SizedBox(height: 10),
+                    for (final bullet in section.bullets)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '•  ',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 14,
+                                height: 1.55,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                bullet,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.82),
+                                  fontSize: 14,
+                                  height: 1.55,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
-            const SizedBox(height: 16),
-          ],
+            ),
         ],
       ),
     );

@@ -216,7 +216,7 @@ class ProfileScreen extends StatelessWidget {
               subtitle: 'Chat with our team',
               isExternal: true,
               onTap: () => launchUrl(
-                Uri.parse('https://wa.me/message/sahelagriconnect'),
+                Uri.parse('https://wa.me/12152175381'),
                 mode: LaunchMode.externalApplication,
               ),
             ),

@@ -44,6 +44,8 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
 const InvestorRelations = lazy(() => import('./pages/InvestorRelations'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
+const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const UserAgreement = lazy(() => import('./pages/UserAgreement'));
 const GovernmentPortal = lazy(() => import('./pages/GovernmentPortal'));
 const NgoPortal = lazy(() => import('./pages/NgoPortal'));
 const CooperativePortal = lazy(() => import('./pages/CooperativePortal'));
@@ -135,6 +137,9 @@ function App() {
                     }
                   />
                   <Route path="delete-account" element={<DeleteAccount />} />
+                  <Route path="help-center" element={<HelpCenter />} />
+                  <Route path="help" element={<Navigate to="/help-center" replace />} />
+                  <Route path="user-agreement" element={<UserAgreement />} />
                   <Route
                     path="trace/:batchNumber?"
                     element={
