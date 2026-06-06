@@ -8,6 +8,7 @@ import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/terms_refresh.dart';
 import '../../core/theme.dart';
+import '../../data/legal_content.dart';
 
 const _termsUrl = 'https://sahelagriconnect.com/terms-of-service';
 const _privacyUrl = 'https://sahelagriconnect.com/privacy-policy';
@@ -187,17 +188,17 @@ class _TermsScreenState extends State<TermsScreen>
                   controller: _tabController,
                   children: [
                     _LegalScroll(
-                      sections: _termsOfServiceSections(lp),
+                      sections: termsSections(lp.isFr),
                       webUrl: _termsUrl,
                       lp: lp,
                     ),
                     _LegalScroll(
-                      sections: _privacyPolicySections(lp),
+                      sections: privacySections(lp.isFr),
                       webUrl: _privacyUrl,
                       lp: lp,
                     ),
                     _LegalScroll(
-                      sections: _userAgreementSections(lp),
+                      sections: userAgreementSections(lp.isFr),
                       webUrl: _agreementUrl,
                       lp: lp,
                     ),
@@ -315,166 +316,6 @@ class _TermsScreenState extends State<TermsScreen>
     );
   }
 
-  List<({String title, List<String> bullets})> _termsOfServiceSections(
-    LanguageProvider lp,
-  ) =>
-      [
-        (
-          title: lp.t('Overview', 'Aperçu'),
-          bullets: [
-            lp.t(
-              'Sahel AgriConnect is a platform for agricultural commerce '
-                  'connecting producers, cooperatives, and investors across '
-                  'West Africa and the diaspora.',
-              'Sahel AgriConnect est une plateforme de commerce agricole '
-                  'reliant producteurs, coopératives et investisseurs en Afrique '
-                  'de l\'Ouest et dans la diaspora.',
-            ),
-          ],
-        ),
-        (
-          title: lp.t('Your responsibilities', 'Vos responsabilités'),
-          bullets: [
-            lp.t(
-              'You must provide accurate and up-to-date information when '
-                  'registering and using the platform.',
-              'Vous devez fournir des informations exactes et à jour lors '
-                  'de l\'inscription et de l\'utilisation de la plateforme.',
-            ),
-            lp.t(
-              'Account vetting is required before full access to platform '
-                  'features is granted.',
-              'Un examen de compte est requis avant l\'accès complet aux '
-                  'fonctionnalités.',
-            ),
-            lp.t(
-              'You must be at least 18 years old to use this platform.',
-              'Vous devez avoir au moins 18 ans pour utiliser cette plateforme.',
-            ),
-          ],
-        ),
-        (
-          title: lp.t('Liability & disputes', 'Responsabilité et litiges'),
-          bullets: [
-            lp.t(
-              'The platform is not liable for commercial transactions '
-                  'conducted between users.',
-              'La plateforme n\'est pas responsable des transactions '
-                  'commerciales entre utilisateurs.',
-            ),
-            lp.t(
-              'Disputes are resolved under applicable local law.',
-              'Les litiges sont résolus selon le droit local applicable.',
-            ),
-            lp.t(
-              'Accounts may be terminated for violations of these policies.',
-              'Les comptes peuvent être résiliés en cas de violation de '
-                  'ces politiques.',
-            ),
-          ],
-        ),
-      ];
-
-  List<({String title, List<String> bullets})> _privacyPolicySections(
-    LanguageProvider lp,
-  ) =>
-      [
-        (
-          title: lp.t('Data we collect', 'Données collectées'),
-          bullets: [
-            lp.t(
-              'Name, phone number, email address, location, and crop '
-                  'information.',
-              'Nom, téléphone, email, localisation et informations sur les cultures.',
-            ),
-          ],
-        ),
-        (
-          title: lp.t('How we use data', 'Utilisation des données'),
-          bullets: [
-            lp.t(
-              'Platform matching between farmers, cooperatives, and investors.',
-              'Mise en relation entre agriculteurs, coopératives et investisseurs.',
-            ),
-            lp.t(
-              'Market price information and notifications.',
-              'Informations sur les prix du marché et notifications.',
-            ),
-            lp.t(
-              'Data is shared with cooperatives and investors you choose to '
-                  'engage with.',
-              'Les données sont partagées avec les coopératives et investisseurs '
-                  'avec lesquels vous interagissez.',
-            ),
-            lp.t(
-              'We do NOT sell your data to third parties.',
-              'Nous ne vendons PAS vos données à des tiers.',
-            ),
-          ],
-        ),
-        (
-          title: lp.t('Your rights', 'Vos droits'),
-          bullets: [
-            lp.t(
-              'You may request data deletion at privacy@sahelagriconnect.com or sahelagriconnect.com/delete-account.',
-              'Suppression des données : privacy@sahelagriconnect.com ou sahelagriconnect.com/delete-account.',
-            ),
-            lp.t(
-              'Cookies are used for session management only.',
-              'Les cookies sont utilisés uniquement pour la gestion de session.',
-            ),
-            lp.t(
-              'Our practices are GDPR compliant for EU and diaspora users.',
-              'Nos pratiques sont conformes au RGPD pour les utilisateurs UE '
-                  'et de la diaspora.',
-            ),
-          ],
-        ),
-      ];
-
-  List<({String title, List<String> bullets})> _userAgreementSections(
-    LanguageProvider lp,
-  ) =>
-      [
-        (
-          title: lp.t('Your commitments', 'Vos engagements'),
-          bullets: [
-            lp.t(
-              'You agree to make truthful declarations of produce and '
-                  'production data.',
-              'Vous acceptez de déclarer honnêtement vos produits et données '
-                  'de production.',
-            ),
-            lp.t(
-              'You agree not to manipulate market prices or misrepresent '
-                  'supply or demand.',
-              'Vous acceptez de ne pas manipuler les prix du marché ni de '
-                  'fausser l\'offre ou la demande.',
-            ),
-            lp.t(
-              'You agree to the platform\'s account vetting process.',
-              'Vous acceptez le processus d\'examen de compte de la plateforme.',
-            ),
-          ],
-        ),
-        (
-          title: lp.t('Communications', 'Communications'),
-          bullets: [
-            lp.t(
-              'You agree to receive SMS and email notifications related to '
-                  'your account and platform activity.',
-              'Vous acceptez de recevoir des notifications SMS et email '
-                  'liées à votre compte et à l\'activité de la plateforme.',
-            ),
-            lp.t(
-              'You may withdraw consent at any time via your profile settings '
-                  'or by contacting support.',
-              'Vous pouvez retirer votre consentement à tout moment via les '
-                  'paramètres du profil ou en contactant le support.',
-            ),
-          ],
-        ),
-      ];
 }
 
 class _LegalScroll extends StatelessWidget {
@@ -484,7 +325,7 @@ class _LegalScroll extends StatelessWidget {
     required this.lp,
   });
 
-  final List<({String title, List<String> bullets})> sections;
+  final List<LegalSection> sections;
   final String webUrl;
   final LanguageProvider lp;
 
@@ -564,31 +405,16 @@ class _LegalScroll extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    for (final bullet in section.bullets)
+                    for (final paragraph in section.paragraphs)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '•  ',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: 14,
-                                height: 1.55,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                bullet,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.82),
-                                  fontSize: 14,
-                                  height: 1.55,
-                                ),
-                              ),
-                            ),
-                          ],
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text(
+                          paragraph,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.82),
+                            fontSize: 14,
+                            height: 1.6,
+                          ),
                         ),
                       ),
                   ],

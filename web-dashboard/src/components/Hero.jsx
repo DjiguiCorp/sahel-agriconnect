@@ -1,10 +1,10 @@
 ﻿import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight } from 'lucide-react';
+import DownloadAppBanner from './DownloadAppBanner';
 
 export default function Hero() {
   const { i18n } = useTranslation();
-  const isFr = i18n.language === 'fr';
+  const isFr = (i18n.resolvedLanguage || i18n.language || 'fr').startsWith('fr');
 
   return (
     <section
@@ -108,23 +108,14 @@ export default function Hero() {
             : 'Produce together. Sell further. Earn more.'}
         </p>
 
-        {/* Single clear CTA group */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14 flex-wrap">
-          <Link
-            to="/inscription"
-            className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl font-bold text-base transition-all duration-200 hover:scale-105 active:scale-95"
-            style={{
-              background: '#4CAF50',
-              color: '#060f0a',
-              boxShadow: '0 0 28px rgba(76,175,80,0.3)',
-            }}
-          >
-            🌾 {isFr ? 'Rejoindre gratuitement' : 'Join Free'}
-            <ArrowRight size={17} />
-          </Link>
+        {/* Primary CTA: mobile app + AfriYield */}
+        <div className="mx-auto mb-8 max-w-3xl">
+          <DownloadAppBanner isFr={isFr} />
+        </div>
+        <div className="mb-14 flex justify-center">
           <Link
             to="/afri-yield"
-            className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl font-bold text-base transition-all duration-200 hover:scale-105"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-4 text-base font-bold transition-all duration-200 hover:scale-105"
             style={{
               background: 'rgba(181,133,10,0.14)',
               border: '1px solid rgba(181,133,10,0.38)',
@@ -132,17 +123,6 @@ export default function Hero() {
             }}
           >
             💰 AfriYield Exchange
-          </Link>
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl font-semibold text-base transition-all duration-200 hover:scale-105"
-            style={{
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.14)',
-              color: 'rgba(255,255,255,0.85)',
-            }}
-          >
-            {isFr ? 'Explorer la plateforme' : 'Explore Platform'}
           </Link>
         </div>
 
