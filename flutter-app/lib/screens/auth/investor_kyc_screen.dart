@@ -530,8 +530,8 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
                         Expanded(
                           child: Text(
                             isFr
-                                ? 'Je confirme que je ne suis PAS une "US Person" au sens de la réglementation SEC. (Ressortissants américains, résidents permanents aux États-Unis ou entités américaines doivent contacter compliance@sahelagriconnect.com avant d\'investir.)'
-                                : 'I confirm I am NOT a "US Person" under SEC regulations. (US citizens, US permanent residents, or US entities must contact compliance@sahelagriconnect.com before investing.)',
+                                ? 'Je confirme que je ne suis PAS une "US Person" au sens de la réglementation SEC. (Ressortissants américains, résidents permanents aux États-Unis ou entités américaines doivent contacter support@woneapp.com avant d\'investir.)'
+                                : 'I confirm I am NOT a "US Person" under SEC regulations. (US citizens, US permanent residents, or US entities must contact support@woneapp.com before investing.)',
                             style: const TextStyle(
                               color: _muted,
                               fontSize: 11,

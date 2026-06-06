@@ -11,9 +11,6 @@ import '../../core/safe_insets.dart';
 import '../../core/theme.dart';
 
 const _bg = Color(0xFF0a1f14);
-const _playStore =
-    'https://play.google.com/store/apps/details?id=com.sahelagriconnect.app';
-const _appStore = 'https://apps.apple.com/us/search?term=Sahel%20AgriConnect';
 const _whatsapp = 'https://wa.me/12152175381';
 const _helpWeb = 'https://sahelagriconnect.com/help-center';
 
@@ -33,8 +30,8 @@ class _HelpScreenState extends State<HelpScreen> {
     (
       'Comment créer un compte agriculteur?',
       'How do I create a farmer account?',
-      'Téléchargez l\'application, sélectionnez Agriculteur et entrez votre email ou téléphone pour recevoir un lien de connexion.',
-      'Download the app, select Farmer, and enter your email or phone for a magic sign-in link.',
+      'Depuis l\'application, sélectionnez Agriculteur et entrez votre email ou téléphone pour recevoir un lien de connexion.',
+      'In the app, select Farmer and enter your email or phone for a magic sign-in link.',
     ),
     (
       'Comment s\'inscrire en coopérative?',
@@ -57,8 +54,8 @@ class _HelpScreenState extends State<HelpScreen> {
     (
       'Comment supprimer mon compte?',
       'How do I delete my account?',
-      'Visitez sahelagriconnect.com/delete-account ou privacy@sahelagriconnect.com',
-      'Visit sahelagriconnect.com/delete-account or email privacy@sahelagriconnect.com',
+      'Visitez sahelagriconnect.com/delete-account ou support@woneapp.com',
+      'Visit sahelagriconnect.com/delete-account or email support@woneapp.com',
     ),
   ];
 
@@ -85,10 +82,10 @@ class _HelpScreenState extends State<HelpScreen> {
     final q = _search.toLowerCase();
     final faqs = _faqs.where((f) {
       if (q.isEmpty) return true;
-      return f.$1.toLowerCase().contains(q) ||
-          f.$2.toLowerCase().contains(q) ||
-          f.$3.toLowerCase().contains(q) ||
-          f.$4.toLowerCase().contains(q);
+      if (isFr) {
+        return f.$1.toLowerCase().contains(q) || f.$3.toLowerCase().contains(q);
+      }
+      return f.$2.toLowerCase().contains(q) || f.$4.toLowerCase().contains(q);
     }).toList();
 
     return Scaffold(
@@ -152,50 +149,20 @@ class _HelpScreenState extends State<HelpScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
-              lp.t('Download the app', 'Téléchargez l\'application'),
-              style: const TextStyle(
-                color: AppColors.gold,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _storeButton(
-                    label: 'Google Play',
-                    icon: Icons.android,
-                    onTap: () => _open(_playStore),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _storeButton(
-                    label: 'App Store',
-                    icon: Icons.apple,
-                    onTap: () => _open(_appStore),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
             _contactCard(
               icon: Icons.chat,
-              title: 'WhatsApp',
-              subtitle: lp.t('Response within 24h', 'Réponse sous 24h'),
+              title: lp.t('WhatsApp', 'WhatsApp'),
+              subtitle: lp.t('Response within 24h', 'Réponse sous 24 h'),
               color: const Color(0xFF25D366),
               onTap: () => _open(_whatsapp),
             ),
             const SizedBox(height: 10),
             _contactCard(
               icon: Icons.mail_outline,
-              title: 'Email',
-              subtitle: 'support@sahelagriconnect.com',
+              title: lp.t('Email', 'Courriel'),
+              subtitle: 'support@woneapp.com',
               color: const Color(0xFF60a5fa),
-              onTap: () => _open('mailto:support@sahelagriconnect.com'),
+              onTap: () => _open('mailto:support@woneapp.com'),
             ),
             const SizedBox(height: 10),
             _contactCard(
@@ -272,43 +239,6 @@ class _HelpScreenState extends State<HelpScreen> {
       ),
     );
   }
-
-  Widget _storeButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.gold.withValues(alpha: 0.2),
-                blurRadius: 12,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: const Color(0xFF1a3c2e), size: 22),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF1a3c2e),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 
   Widget _contactCard({
     required IconData icon,

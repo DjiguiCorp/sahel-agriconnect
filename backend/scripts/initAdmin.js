@@ -16,7 +16,7 @@ const initAdmin = async () => {
     console.log('✅ Connecté à MongoDB');
 
     // Vérifier si un admin existe déjà
-    const existingAdmin = await Admin.findOne({ email: process.env.ADMIN_EMAIL || 'admin@sahelagriconnect.org' });
+    const existingAdmin = await Admin.findOne({ email: process.env.ADMIN_EMAIL || 'support@woneapp.com' });
     
     if (existingAdmin) {
       console.log('ℹ️  Admin déjà existant:', existingAdmin.email);
@@ -25,7 +25,7 @@ const initAdmin = async () => {
 
     // Créer l'admin par défaut
     const admin = new Admin({
-      email: process.env.ADMIN_EMAIL || 'admin@sahelagriconnect.org',
+      email: process.env.ADMIN_EMAIL || 'support@woneapp.com',
       password: process.env.ADMIN_PASSWORD,
       name: 'Administrateur Central',
       role: 'admin'

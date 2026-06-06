@@ -14,7 +14,7 @@ if (Test-Path .env) {
 PORT=3001
 MONGO_URI=mongodb://localhost:27017/sahel-agriconnect
 JWT_SECRET=sahel-agriconnect-super-secret-key-2024-change-in-production
-ADMIN_EMAIL=admin@sahelagriconnect.org
+ADMIN_EMAIL=support@woneapp.com
 ADMIN_PASSWORD=admin123
 "@ | Out-File -FilePath .env -Encoding utf8
     Write-Host "[OK] Fichier .env créé" -ForegroundColor Green

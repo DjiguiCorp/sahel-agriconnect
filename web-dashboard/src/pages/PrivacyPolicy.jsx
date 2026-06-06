@@ -1,4 +1,5 @@
 import { LegalPageLayout } from '../components/LegalPageLayout';
+import { SUPPORT_EMAIL } from '../constants/contact';
 import { PRIVACY_SECTIONS } from '../data/legalSections';
 
 export default function PrivacyPolicy() {
@@ -7,7 +8,7 @@ export default function PrivacyPolicy() {
       titleEn="Privacy Policy"
       titleFr="Politique de confidentialité"
       sections={PRIVACY_SECTIONS}
-      contactEmail="privacy@sahelagriconnect.com"
+      contactEmail={SUPPORT_EMAIL}
     />
   );
 }

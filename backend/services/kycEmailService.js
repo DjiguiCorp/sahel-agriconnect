@@ -10,7 +10,7 @@ function getResend() {
 }
 
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
-const ADMIN = process.env.ADMIN_EMAIL || 'admin@sahelagriconnect.com';
+const ADMIN = process.env.ADMIN_EMAIL || 'support@woneapp.com';
 const FRONTEND = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
 
 // ── Investor: KYC submission confirmation ────────────────────
@@ -84,9 +84,9 @@ export async function sendKYCSubmissionConfirmation({
 
         <p style="color:#555;font-size:14px;margin-top:20px;">
           Questions? Reply to this email or contact us at
-          <a href="mailto:compliance@sahelagriconnect.com"
+          <a href="mailto:support@woneapp.com"
             style="color:#B5850A;">
-            compliance@sahelagriconnect.com
+            support@woneapp.com
           </a>
         </p>
 
@@ -202,9 +202,9 @@ export async function sendKYCRejected({ email, name, reason }) {
           </div>
           <p style="color:#555;font-size:14px;">
             Please contact our compliance team to resolve this:
-            <a href="mailto:compliance@sahelagriconnect.com"
+            <a href="mailto:support@woneapp.com"
               style="color:#B5850A;">
-              compliance@sahelagriconnect.com
+              support@woneapp.com
             </a>
           </p>
         </div>
@@ -248,9 +248,9 @@ export async function sendKYCAdditionalDocs({
           <p style="color:#555;font-size:14px;">
             Please reply to this email with the requested documents
             or send them to
-            <a href="mailto:compliance@sahelagriconnect.com"
+            <a href="mailto:support@woneapp.com"
               style="color:#B5850A;">
-              compliance@sahelagriconnect.com
+              support@woneapp.com
             </a>
           </p>
         </div>

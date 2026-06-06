@@ -5,7 +5,7 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-const ADMIN_EMAIL_FALLBACK = 'info@djiguicorporation.org';
+const ADMIN_EMAIL_FALLBACK = 'support@woneapp.com';
 
 // POST /api/farmer-needs — farmer submits a need (public)
 router.post('/', async (req, res) => {

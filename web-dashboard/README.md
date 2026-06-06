@@ -203,7 +203,7 @@ web-dashboard/
 **⚠️ Accès réservé aux administrateurs uniquement**
 
 - **Authentification** : Page de login admin (`/admin/login`)
-  - Email : `admin@sahelagriconnect.org`
+  - Email : `support@woneapp.com`
   - Mot de passe : `admin123` (démo)
   - Routes protégées avec authentification
 
@@ -302,7 +302,7 @@ La section "Central" est protégée par authentification. Pour y accéder :
 
 1. Naviguer vers `/admin/login`
 2. Utiliser les identifiants de démonstration :
-   - **Email** : `admin@sahelagriconnect.org`
+   - **Email** : `support@woneapp.com`
    - **Mot de passe** : `admin123`
 3. Une fois connecté, accéder à `/admin/central`
 
@@ -427,7 +427,7 @@ Ce projet fait partie du Projet PTASS (Projet de Transformation Agricole du Sahe
 
 ## 📧 Contact
 
-Pour toute question, contactez : contact@sahelagriconnect.org
+Pour toute question, contactez : support@woneapp.com
 
 ---
 

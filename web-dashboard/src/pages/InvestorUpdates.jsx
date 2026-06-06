@@ -107,8 +107,8 @@ export default function InvestorUpdates() {
 
         <p className="text-white/30 text-xs mt-6">
           {isFr ? 'Questions ? Contactez notre équipe à ' : 'Questions? Contact our team at '}
-          <a href="mailto:info@djiguicorporation.org" className="text-[#B5850A] hover:underline">
-            info@djiguicorporation.org
+          <a href="mailto:support@woneapp.com" className="text-[#B5850A] hover:underline">
+            support@woneapp.com
           </a>
         </p>
       </div>

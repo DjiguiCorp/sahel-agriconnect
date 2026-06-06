@@ -109,17 +109,10 @@ export default function Contact() {
               {[
                 {
                   icon: Mail,
-                  label: 'Email',
-                  value: 'info@djiguicorporation.org',
-                  href: 'mailto:info@djiguicorporation.org',
+                  label: isFr ? 'Support, juridique & conformité' : 'Support, legal & compliance',
+                  value: 'support@woneapp.com',
+                  href: 'mailto:support@woneapp.com',
                   color: '#B5850A',
-                },
-                {
-                  icon: Mail,
-                  label: isFr ? 'Conformité / KYC' : 'Compliance / KYC',
-                  value: 'compliance@sahelagriconnect.com',
-                  href: 'mailto:compliance@sahelagriconnect.com',
-                  color: '#3b82f6',
                 },
                 {
                   icon: MapPin,

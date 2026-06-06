@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Search,
   Mail,
@@ -8,6 +9,8 @@ import {
   ChevronDown,
   ExternalLink,
 } from 'lucide-react';
+import { SUPPORT_EMAIL } from '../constants/contact';
+
 const WHATSAPP = 'https://wa.me/12152175381';
 
 const FAQS = [
@@ -15,9 +18,9 @@ const FAQS = [
     qFr: 'Comment créer un compte agriculteur ?',
     qEn: 'How do I create a farmer account?',
     aFr:
-      'Téléchargez l\'application, sélectionnez « Agriculteur » et entrez votre email ou numéro de téléphone pour recevoir un lien de connexion.',
+      'Depuis l\'application mobile, sélectionnez « Agriculteur » et entrez votre email ou numéro de téléphone pour recevoir un lien de connexion.',
     aEn:
-      'Download the app, select Farmer, and enter your email or phone number to receive a magic sign-in link.',
+      'In the mobile app, select Farmer and enter your email or phone number to receive a magic sign-in link.',
   },
   {
     qFr: 'Comment s\'inscrire en tant que coopérative ?',
@@ -47,9 +50,9 @@ const FAQS = [
     qFr: 'Comment supprimer mon compte ?',
     qEn: 'How do I delete my account?',
     aFr:
-      'Visitez sahelagriconnect.com/delete-account ou contactez privacy@sahelagriconnect.com. Les agriculteurs peuvent aussi supprimer depuis l\'app → Compte.',
+      `Visitez sahelagriconnect.com/delete-account ou contactez ${SUPPORT_EMAIL}. Les agriculteurs peuvent aussi supprimer depuis l'app → Compte.`,
     aEn:
-      'Visit sahelagriconnect.com/delete-account or email privacy@sahelagriconnect.com. Farmers can also delete from the app Account tab.',
+      `Visit sahelagriconnect.com/delete-account or email ${SUPPORT_EMAIL}. Farmers can also delete from the app Account tab.`,
   },
 ];
 
@@ -96,27 +99,48 @@ function ContactCard({ icon: Icon, title, subtitle, button, href, glow, accent }
 }
 
 export default function HelpCenter() {
+  const { i18n } = useTranslation();
+  const isFr = (i18n.resolvedLanguage || i18n.language || 'fr').startsWith('fr');
   const [search, setSearch] = useState('');
   const [openFaq, setOpenFaq] = useState(null);
+
+  const copy = {
+    title: isFr ? "Centre d'aide" : 'Help Center',
+    subtitle: isFr
+      ? 'Assistance pour agriculteurs, coopératives et investisseurs'
+      : 'Support for farmers, cooperatives, and investors',
+    searchPlaceholder: isFr ? 'Rechercher dans l\'aide...' : 'Search help...',
+    contactTitle: isFr ? 'Contacter le support' : 'Contact Support',
+    whatsappTitle: 'WhatsApp',
+    whatsappSubtitle: isFr ? 'Réponse sous 24 h' : 'Response within 24h',
+    whatsappBtn: isFr ? 'Contacter via WhatsApp' : 'Contact via WhatsApp',
+    emailTitle: 'Email',
+    emailBtn: isFr ? 'Envoyer un email' : 'Send an email',
+    webTitle: isFr ? 'Site web' : 'Website',
+    webBtn: isFr ? 'Visiter sahelagriconnect.com' : 'Visit sahelagriconnect.com',
+    faqTitle: isFr ? 'Questions fréquentes' : 'Frequently asked questions',
+    noResults: isFr ? 'Aucun résultat' : 'No results',
+    privacy: isFr ? 'Politique de confidentialité' : 'Privacy Policy',
+    terms: isFr ? "Conditions d'utilisation" : 'Terms of Service',
+    agreement: isFr ? 'Accord utilisateur' : 'User Agreement',
+    deleteAccount: isFr ? 'Supprimer mon compte' : 'Delete Account',
+  };
 
   const filteredFaqs = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return FAQS;
-    return FAQS.filter(
-      (f) =>
-        f.qEn.toLowerCase().includes(q) ||
-        f.qFr.toLowerCase().includes(q) ||
-        f.aEn.toLowerCase().includes(q) ||
-        f.aFr.toLowerCase().includes(q),
-    );
-  }, [search]);
+    return FAQS.filter((f) => {
+      const question = isFr ? f.qFr : f.qEn;
+      const answer = isFr ? f.aFr : f.aEn;
+      return question.toLowerCase().includes(q) || answer.toLowerCase().includes(q);
+    });
+  }, [search, isFr]);
 
   return (
     <div
       className="relative min-h-screen overflow-hidden text-white"
       style={{ background: '#0a1f14' }}
     >
-      {/* Animated background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div
           className="help-hero-gradient absolute -left-1/4 top-0 h-[600px] w-[600px] rounded-full opacity-40 blur-3xl"
@@ -129,29 +153,10 @@ export default function HelpCenter() {
             animationDelay: '2s',
           }}
         />
-        <div
-          className="help-hero-gradient absolute bottom-0 left-1/3 h-[400px] w-[400px] rounded-full opacity-25 blur-3xl"
-          style={{
-            background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)',
-            animationDelay: '4s',
-          }}
-        />
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            className="help-particle absolute h-1 w-1 rounded-full bg-white/20"
-            style={{
-              left: `${(i * 17 + 5) % 100}%`,
-              top: `${(i * 23 + 10) % 60}%`,
-              animationDelay: `${i * 0.5}s`,
-            }}
-          />
-        ))}
       </div>
 
       <div className="relative z-10 mx-auto max-w-5xl px-4 py-12 sm:px-6">
-        {/* Hero */}
-        <section className="help-fade-in mb-14 text-center">
+        <section className="help-fade-in mb-12 text-center">
           <h1
             className="text-4xl font-bold md:text-5xl"
             style={{
@@ -162,11 +167,9 @@ export default function HelpCenter() {
               animation: 'help-gradient-shift 6s ease infinite',
             }}
           >
-            Centre d&apos;aide / Help Center
+            {copy.title}
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-white/70">
-            Assistance pour agriculteurs, coopératives et investisseurs — FR / EN
-          </p>
+          <p className="mx-auto mt-4 max-w-xl text-white/70">{copy.subtitle}</p>
           <div className="mx-auto mt-8 max-w-md">
             <div
               className="flex items-center gap-3 rounded-2xl px-4 py-3"
@@ -181,40 +184,39 @@ export default function HelpCenter() {
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher / Search help..."
+                placeholder={copy.searchPlaceholder}
                 className="w-full bg-transparent text-sm text-white placeholder:text-white/40 outline-none"
               />
             </div>
           </div>
         </section>
 
-        {/* Contact */}
-        <section className="help-fade-in mb-14">
-          <h2 className="mb-6 text-center text-xl font-bold">Contact Support</h2>
+        <section className="help-fade-in mb-12">
+          <h2 className="mb-6 text-center text-xl font-bold">{copy.contactTitle}</h2>
           <div className="grid gap-5 md:grid-cols-3">
             <ContactCard
               icon={MessageCircle}
-              title="WhatsApp Support"
-              subtitle="Réponse en moins de 24h / Response within 24h"
-              button="Contacter via WhatsApp"
+              title={copy.whatsappTitle}
+              subtitle={copy.whatsappSubtitle}
+              button={copy.whatsappBtn}
               href={WHATSAPP}
               glow="rgba(37,211,102,0.35)"
               accent="#25D366"
             />
             <ContactCard
               icon={Mail}
-              title="Email Support"
-              subtitle="support@sahelagriconnect.com"
-              button="Envoyer un email"
-              href="mailto:support@sahelagriconnect.com"
+              title={copy.emailTitle}
+              subtitle={SUPPORT_EMAIL}
+              button={copy.emailBtn}
+              href={`mailto:${SUPPORT_EMAIL}`}
               glow="rgba(96,165,250,0.35)"
               accent="#60a5fa"
             />
             <ContactCard
               icon={Globe}
-              title="Site Web"
+              title={copy.webTitle}
               subtitle="sahelagriconnect.com"
-              button="Visiter sahelagriconnect.com"
+              button={copy.webBtn}
               href="https://sahelagriconnect.com"
               glow="rgba(181,133,10,0.35)"
               accent="#B5850A"
@@ -222,27 +224,25 @@ export default function HelpCenter() {
           </div>
         </section>
 
-        {/* FAQ */}
-        <section className="help-fade-in mb-14">
-          <h2 className="mb-6 text-xl font-bold">FAQ / Questions fréquentes</h2>
+        <section className="help-fade-in mb-12">
+          <h2 className="mb-6 text-xl font-bold">{copy.faqTitle}</h2>
           <div className="space-y-3">
             {filteredFaqs.length === 0 ? (
-              <p className="text-center text-white/50">No results / Aucun résultat</p>
+              <p className="text-center text-white/50">{copy.noResults}</p>
             ) : (
               filteredFaqs.map((faq, i) => {
                 const open = openFaq === i;
+                const question = isFr ? faq.qFr : faq.qEn;
+                const answer = isFr ? faq.aFr : faq.aEn;
                 return (
-                  <GlassPanel key={faq.qEn} glow="rgba(29,158,117,0.25)">
+                  <GlassPanel key={question} glow="rgba(29,158,117,0.25)">
                     <button
                       type="button"
                       className="flex w-full items-start justify-between gap-4 text-left"
                       onClick={() => setOpenFaq(open ? null : i)}
                       aria-expanded={open}
                     >
-                      <div>
-                        <p className="font-semibold text-white">{faq.qFr}</p>
-                        <p className="mt-1 text-sm text-white/50">{faq.qEn}</p>
-                      </div>
+                      <p className="font-semibold text-white">{question}</p>
                       <ChevronDown
                         className={`h-5 w-5 shrink-0 text-[#1D9E75] transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
                       />
@@ -252,9 +252,8 @@ export default function HelpCenter() {
                       style={{ maxHeight: open ? '400px' : '0', opacity: open ? 1 : 0 }}
                     >
                       <p className="mt-4 border-t border-white/10 pt-4 text-sm leading-relaxed text-white/80">
-                        {faq.aFr}
+                        {answer}
                       </p>
-                      <p className="mt-2 text-sm leading-relaxed text-white/50">{faq.aEn}</p>
                     </div>
                   </GlassPanel>
                 );
@@ -263,20 +262,19 @@ export default function HelpCenter() {
           </div>
         </section>
 
-        {/* Footer links */}
         <footer className="help-fade-in border-t border-white/10 pt-8 text-center text-sm text-white/50">
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/privacy-policy" className="hover:text-[#B5850A]">
-              Privacy Policy
+              {copy.privacy}
             </Link>
             <Link to="/terms-of-service" className="hover:text-[#B5850A]">
-              Terms of Service
+              {copy.terms}
             </Link>
             <Link to="/user-agreement" className="hover:text-[#B5850A]">
-              User Agreement
+              {copy.agreement}
             </Link>
             <Link to="/delete-account" className="hover:text-[#B5850A]">
-              Delete Account
+              {copy.deleteAccount}
             </Link>
           </div>
           <p className="mt-4">© {new Date().getFullYear()} Djigui Corporation</p>

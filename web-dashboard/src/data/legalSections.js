@@ -200,8 +200,8 @@ export const PRIVACY_SECTIONS = [
       'Portabilité des données',
       'Retirer votre consentement à tout moment',
     ],
-    noticeEn: 'To exercise these rights contact: privacy@sahelagriconnect.com',
-    noticeFr: 'Pour exercer ces droits : privacy@sahelagriconnect.com',
+    noticeEn: 'To exercise these rights contact: support@woneapp.com',
+    noticeFr: 'Pour exercer ces droits : support@woneapp.com',
   },
   {
     id: 'security',
@@ -279,10 +279,10 @@ export const PRIVACY_SECTIONS = [
     titleEn: '12. Contact Us',
     titleFr: '12. Nous contacter',
     paragraphsEn: [
-      'Djigui Corporation — Email: privacy@sahelagriconnect.com — WhatsApp: +1 (215) 217-5381 — Website: sahelagriconnect.com',
+      'Djigui Corporation — Email: support@woneapp.com — WhatsApp: +1 (215) 217-5381 — Website: sahelagriconnect.com',
     ],
     paragraphsFr: [
-      'Djigui Corporation — E-mail : privacy@sahelagriconnect.com — WhatsApp : +1 (215) 217-5381 — Site : sahelagriconnect.com',
+      'Djigui Corporation — E-mail : support@woneapp.com — WhatsApp : +1 (215) 217-5381 — Site : sahelagriconnect.com',
     ],
   },
 ];
@@ -576,10 +576,10 @@ export const TERMS_SECTIONS = [
     titleEn: '14. Contact',
     titleFr: '14. Contact',
     paragraphsEn: [
-      'Djigui Corporation — Email: legal@sahelagriconnect.com — Website: sahelagriconnect.com',
+      'Djigui Corporation — Email: support@woneapp.com — Website: sahelagriconnect.com',
     ],
     paragraphsFr: [
-      'Djigui Corporation — E-mail : legal@sahelagriconnect.com — Site : sahelagriconnect.com',
+      'Djigui Corporation — E-mail : support@woneapp.com — Site : sahelagriconnect.com',
     ],
   },
 ];

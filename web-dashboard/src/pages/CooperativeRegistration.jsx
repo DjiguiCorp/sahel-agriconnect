@@ -396,14 +396,14 @@ export default function CooperativeRegistration() {
                 </p>
                 <p className="text-xs text-white/40 mt-3">
                   {i18n.language === 'fr' ? 'Contact : ' : 'Contact: '}
-                  <a href="mailto:info@djiguicorporation.org" className="text-teal-400 font-semibold hover:underline">
-                    info@djiguicorporation.org
+                  <a href="mailto:support@woneapp.com" className="text-teal-400 font-semibold hover:underline">
+                    support@woneapp.com
                   </a>
                 </p>
               </div>
 
               <a
-                href="mailto:info@djiguicorporation.org?subject=Paiement adhésion coopérative — Sahel AgriConnect"
+                href="mailto:support@woneapp.com?subject=Paiement adhésion coopérative — Sahel AgriConnect"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm"
                 style={{ background: '#B5850A' }}
               >
@@ -927,10 +927,10 @@ export default function CooperativeRegistration() {
                       <p className="text-xs text-white/40 mt-2">
                         {isFr ? 'Contact : ' : 'Contact: '}
                         <a
-                          href="mailto:info@djiguicorporation.org"
+                          href="mailto:support@woneapp.com"
                           className="text-teal-400 font-semibold hover:underline"
                         >
-                          info@djiguicorporation.org
+                          support@woneapp.com
                         </a>
                       </p>
                     </div>

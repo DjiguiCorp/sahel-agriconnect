@@ -108,8 +108,8 @@ export default function GovernanceTab({ isFr }) {
       icon: '⚖️',
       title: isFr ? 'Résolution des Conflits' : 'Dispute Resolution',
       content: isFr
-        ? 'Tout différend entre une coopérative et la plateforme est d\'abord soumis à une médiation directe via email à info@djiguicorporation.org. Si non résolu en 30 jours, les parties peuvent faire appel à un médiateur indépendant agréé. Les litiges financiers liés à AfriYield Exchange suivent les termes du contrat d\'investissement signé. Aucune action légale ne peut être initiée sans médiation préalable.'
-        : 'Any dispute between a cooperative and the platform is first submitted to direct mediation via email at info@djiguicorporation.org. If unresolved within 30 days, parties may call on an accredited independent mediator. Financial disputes related to AfriYield Exchange follow the terms of the signed investment agreement. No legal action may be initiated without prior mediation.',
+        ? 'Tout différend entre une coopérative et la plateforme est d\'abord soumis à une médiation directe via email à support@woneapp.com. Si non résolu en 30 jours, les parties peuvent faire appel à un médiateur indépendant agréé. Les litiges financiers liés à AfriYield Exchange suivent les termes du contrat d\'investissement signé. Aucune action légale ne peut être initiée sans médiation préalable.'
+        : 'Any dispute between a cooperative and the platform is first submitted to direct mediation via email at support@woneapp.com. If unresolved within 30 days, parties may call on an accredited independent mediator. Financial disputes related to AfriYield Exchange follow the terms of the signed investment agreement. No legal action may be initiated without prior mediation.',
     },
     {
       key: 'fees',
@@ -227,10 +227,10 @@ export default function GovernanceTab({ isFr }) {
             : 'For any questions about governance, rights, or responsibilities:'}
         </p>
         <a
-          href="mailto:info@djiguicorporation.org?subject=Gouvernance — Sahel AgriConnect"
+          href="mailto:support@woneapp.com?subject=Gouvernance — Sahel AgriConnect"
           className="inline-flex items-center gap-2 bg-[#B5850A] text-[#1a3c2e] px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#9a7109] transition"
         >
-          📧 info@djiguicorporation.org
+          📧 support@woneapp.com
         </a>
       </div>
     </div>

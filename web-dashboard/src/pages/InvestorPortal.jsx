@@ -548,7 +548,7 @@ function HomeTab({ investor, investments, notifications, kyc, t, navigate, onOpe
               </p>
             </button>
             <a
-              href={`mailto:info@djiguicorporation.org?subject=Free Intro Call Request - AfriYield Exchange&body=Name: ${encodeURIComponent(
+              href={`mailto:support@woneapp.com?subject=Free Intro Call Request - AfriYield Exchange&body=Name: ${encodeURIComponent(
                 investor?.fullName || ''
               )}%0AEmail: ${encodeURIComponent(investor?.email || '')}%0AInterest: `}
               className="rounded-2xl p-4 text-left block"
@@ -1176,12 +1176,12 @@ function HelpTab({ investor, t }) {
                 {
                   icon: '📧',
                   label: t('investorPortal.help.email'),
-                  href: `mailto:info@djiguicorporation.org?subject=${encodeURIComponent('Investor Question')}&body=${encodeURIComponent(`From: ${investor?.email || ''}`)}`,
+                  href: `mailto:support@woneapp.com?subject=${encodeURIComponent('Investor Question')}&body=${encodeURIComponent(`From: ${investor?.email || ''}`)}`,
                 },
                 {
                   icon: '📞',
                   label: t('investorPortal.advisory.cta'),
-                  href: `mailto:info@djiguicorporation.org?subject=Free Intro Call Request - AfriYield Exchange&body=Hello! I would like to book my free 30-minute intro call.%0A%0AName: ${encodeURIComponent(
+                  href: `mailto:support@woneapp.com?subject=Free Intro Call Request - AfriYield Exchange&body=Hello! I would like to book my free 30-minute intro call.%0A%0AName: ${encodeURIComponent(
                     investor?.fullName || ''
                   )}%0AEmail: ${encodeURIComponent(investor?.email || '')}%0APreferred time (timezone): %0AInvestment interest: `,
                 },
@@ -1243,14 +1243,14 @@ function HelpTab({ investor, t }) {
             <p className="text-white/30 text-xs mb-4">{t('investorPortal.advisory.followUp')}</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <a
-                href={`mailto:info@djiguicorporation.org?subject=Free Intro Call Request - AfriYield Exchange&body=Hello! I would like to book my free 30-minute intro call.%0A%0AName: %0AEmail: %0APreferred time (timezone): %0AInvestment interest: `}
+                href={`mailto:support@woneapp.com?subject=Free Intro Call Request - AfriYield Exchange&body=Hello! I would like to book my free 30-minute intro call.%0A%0AName: %0AEmail: %0APreferred time (timezone): %0AInvestment interest: `}
                 className="flex-1 rounded-xl py-3 font-bold text-center text-[#0d1f17] text-sm"
                 style={{ background: '#B5850A' }}
               >
                 📞 {t('investorPortal.advisory.cta')}
               </a>
               <a
-                href={`mailto:info@djiguicorporation.org?subject=Follow-up Advisory Call - $99 - AfriYield Exchange&body=I would like to book a follow-up advisory call ($99).%0A%0AName: %0AEmail: %0APreferred time: `}
+                href={`mailto:support@woneapp.com?subject=Follow-up Advisory Call - $99 - AfriYield Exchange&body=I would like to book a follow-up advisory call ($99).%0A%0AName: %0AEmail: %0APreferred time: `}
                 className="flex-1 rounded-xl py-3 font-medium text-center text-white/60 text-sm hover:text-white transition"
                 style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
               >
@@ -1350,7 +1350,7 @@ function PremiumModal({ t, onClose }) {
         <p className="text-white/30 text-xs mb-4">{t('investorPortal.premium.nofees')}</p>
 
         <a
-          href={`mailto:info@djiguicorporation.org?subject=AfriYield Premium - ${
+          href={`mailto:support@woneapp.com?subject=AfriYield Premium - ${
             billing === 'annual' ? 'Annual $299' : 'Monthly $29.99'
           }&body=I would like to subscribe to AfriYield Premium (${
             billing === 'annual' ? 'Annual plan - $299/year' : 'Monthly plan - $29.99/month'

@@ -219,7 +219,7 @@ router.post('/inquiry', async (req, res) => {
     const name = cooperativeName || '—';
     await PendingNotification.create({
       recipientName: 'Admin',
-      recipientEmail: process.env.ADMIN_EMAIL || 'info@djiguicorporation.org',
+      recipientEmail: process.env.ADMIN_EMAIL || 'support@woneapp.com',
       message: `🤝 DEMANDE ADHÉSION COOPÉRATIVE\nCoopérative: ${name}\nCoop ID: ${cooperativeId || '—'}\nDemandeur: ${applicantName}\nTél: ${phone}\nEmail: ${email || 'non fourni'}\nMessage: ${message || 'aucun'}`,
       source: 'cooperative_inquiry',
       status: 'pending',

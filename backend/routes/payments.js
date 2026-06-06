@@ -303,7 +303,7 @@ router.post('/stripe/webhook', async (req, res) => {
         if (investmentCreated && investment) {
           await PendingNotification.create({
             recipientName: 'Admin',
-            recipientEmail: process.env.ADMIN_EMAIL || 'contact@djiguicorporation.org',
+            recipientEmail: process.env.ADMIN_EMAIL || 'support@woneapp.com',
             message:
               `✅ AfriYield investment paid (Stripe): ${investment.investorName || investorEmailLower} `
               + `(${investorEmailLower}) — $${amountDeployed.toLocaleString()} USD in `

@@ -9,7 +9,7 @@ import '../../core/theme.dart';
 import '../../services/api_service.dart';
 
 const _deleteMailto =
-    'mailto:privacy@sahelagriconnect.com?subject=Account%20Deletion%20Request&body=Please%20delete%20my%20Sahel%20AgriConnect%20account.%0A%0ARegistered%20email%3A%20';
+    'mailto:support@woneapp.com?subject=Account%20Deletion%20Request&body=Please%20delete%20my%20Sahel%20AgriConnect%20account.%0A%0ARegistered%20email%3A%20';
 
 const _webDeleteUrl = 'https://sahelagriconnect.com/delete-account';
 
@@ -146,8 +146,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 const SizedBox(height: 12),
                 Text(
                   lp.t(
-                    'To request deletion of your account and data, send an email to privacy@sahelagriconnect.com. Include your registered email address. Your account and all associated data will be deleted within 30 days of your request.',
-                    'Pour demander la suppression de votre compte et de vos données, envoyez un e-mail à privacy@sahelagriconnect.com avec votre adresse enregistrée. Suppression sous 30 jours.',
+                    'To request deletion of your account and data, send an email to support@woneapp.com. Include your registered email address. Your account and all associated data will be deleted within 30 days of your request.',
+                    'Pour demander la suppression de votre compte et de vos données, envoyez un e-mail à support@woneapp.com avec votre adresse enregistrée. Suppression sous 30 jours.',
                   ),
                   style: const TextStyle(
                     fontSize: 14,

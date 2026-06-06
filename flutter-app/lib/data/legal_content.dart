@@ -40,7 +40,7 @@ const _termsEn = [
     title: '4. Termination and contact',
     paragraphs: [
       'We may suspend accounts that violate these Terms. You may delete your account at sahelagriconnect.com/delete-account.',
-      'Questions: legal@sahelagriconnect.com · WhatsApp +1 (215) 217-5381',
+      'Questions: support@woneapp.com · WhatsApp +1 (215) 217-5381',
     ],
   ),
 ];
@@ -71,7 +71,7 @@ const _termsFr = [
     title: '4. Résiliation et contact',
     paragraphs: [
       'Nous pouvons suspendre les comptes qui violent ces conditions. Vous pouvez supprimer votre compte sur sahelagriconnect.com/delete-account.',
-      'Questions : legal@sahelagriconnect.com · WhatsApp +1 (215) 217-5381',
+      'Questions : support@woneapp.com · WhatsApp +1 (215) 217-5381',
     ],
   ),
 ];
@@ -102,7 +102,7 @@ const _privacyEn = [
     title: '4. Retention and your rights',
     paragraphs: [
       'Account data is kept while your account is active. Financial records are retained for seven years. Deleted accounts are cleared within thirty days.',
-      'You may access, correct, delete, or port your data. Contact privacy@sahelagriconnect.com or visit sahelagriconnect.com/delete-account. WhatsApp: +1 (215) 217-5381.',
+      'You may access, correct, delete, or port your data. Contact support@woneapp.com or visit sahelagriconnect.com/delete-account. WhatsApp: +1 (215) 217-5381.',
     ],
   ),
 ];
@@ -133,7 +133,7 @@ const _privacyFr = [
     title: '4. Conservation et vos droits',
     paragraphs: [
       'Les données de compte sont conservées tant que votre compte est actif. Les registres financiers sont conservés sept ans. Les comptes supprimés sont effacés sous trente jours.',
-      'Vous pouvez accéder à vos données, les corriger, les supprimer ou en demander la portabilité. Contactez privacy@sahelagriconnect.com ou visitez sahelagriconnect.com/delete-account. WhatsApp : +1 (215) 217-5381.',
+      'Vous pouvez accéder à vos données, les corriger, les supprimer ou en demander la portabilité. Contactez support@woneapp.com ou visitez sahelagriconnect.com/delete-account. WhatsApp : +1 (215) 217-5381.',
     ],
   ),
 ];

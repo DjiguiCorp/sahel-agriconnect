@@ -16,7 +16,7 @@ REST API for the Sahel AgriConnect platform and AfriYield Exchange.
 
 **Base URL (production):** https://your-backend.onrender.com
       `,
-      contact: { name: 'Sahel AgriConnect', email: 'contact@djiguicorporation.org' },
+      contact: { name: 'Sahel AgriConnect', email: 'support@woneapp.com' },
     },
     servers: [{ url: '/api', description: 'Current server' }],
     components: {
@@ -121,7 +121,7 @@ REST API for the Sahel AgriConnect platform and AfriYield Exchange.
                   type: 'object',
                   required: ['email', 'password'],
                   properties: {
-                    email: { type: 'string', example: 'admin@sahelagriconnect.com' },
+                    email: { type: 'string', example: 'support@woneapp.com' },
                     password: { type: 'string', example: '••••••••' },
                   },
                 },

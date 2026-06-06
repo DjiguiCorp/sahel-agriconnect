@@ -35,7 +35,7 @@ class PendingVettingScreen extends StatefulWidget {
 
 class _PendingVettingScreenState extends State<PendingVettingScreen> {
   static const _portalUrl = 'https://sahelagriconnect.com';
-  static const _supportEmail = 'support@sahelagriconnect.com';
+  static const _supportEmail = 'support@woneapp.com';
   static const _pollInterval = Duration(seconds: 10);
   static const _maxPolls = 6;
 

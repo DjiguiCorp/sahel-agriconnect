@@ -370,7 +370,7 @@ export default function OptimizationTab({ token, isFr }) {
               📋 {isFr ? 'Copier' : 'Copy'}
             </button>
             <a
-              href={`mailto:${selectedCoopData?.email || 'info@djiguicorporation.org'}?subject=${encodeURIComponent('Recommandations IA — Sahel AgriConnect')}&body=${emailBody()}`}
+              href={`mailto:${selectedCoopData?.email || 'support@woneapp.com'}?subject=${encodeURIComponent('Recommandations IA — Sahel AgriConnect')}&body=${emailBody()}`}
               className="text-xs text-white bg-brand-forest px-3 py-1.5 rounded-lg hover:bg-brand-forest/90 transition"
             >
               📧 {isFr ? 'Envoyer à la coopérative' : 'Send to Cooperative'}

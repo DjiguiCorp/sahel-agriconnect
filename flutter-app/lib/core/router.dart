@@ -77,22 +77,20 @@ GoRouter buildRouter(
       // SplashScreen owns navigation from `/` after its entrance/exit animation.
       if (loc == '/') return null;
 
-      if (!termsGate.accepted) {
+      final prefs = await SharedPreferences.getInstance();
+      final langSelected = prefs.getBool('language_selected') ?? false;
+
+      if (!langSelected && loc != '/language') {
+        return '/language';
+      }
+
+      if (langSelected && !termsGate.accepted) {
         if (isTermsView || isPrivacyRoute) {
           return null;
         }
         if (loc != '/terms') {
           return '/terms';
         }
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-      final langSelected = prefs.getBool('language_selected') ?? false;
-      if (termsGate.accepted && !langSelected && loc != '/language') {
-        if (isTermsView || isPrivacyRoute) {
-          return null;
-        }
-        return '/language';
       }
 
       // Age gate — investor routes only

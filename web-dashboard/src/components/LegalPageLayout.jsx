@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { SUPPORT_EMAIL } from '../constants/contact';
 
 function resolveLang(i18n) {
   const code = i18n.resolvedLanguage || i18n.language || 'fr';
@@ -42,7 +43,7 @@ export function LegalPageLayout({
   titleFr,
   lastUpdated = 'June 2026',
   sections,
-  contactEmail = 'privacy@sahelagriconnect.com',
+  contactEmail = SUPPORT_EMAIL,
 }) {
   const { i18n } = useTranslation();
   const [lang, setLang] = useState(() => resolveLang(i18n));

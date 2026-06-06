@@ -1,4 +1,5 @@
 import { LegalPageLayout } from '../components/LegalPageLayout';
+import { SUPPORT_EMAIL } from '../constants/contact';
 import { USER_AGREEMENT_SECTIONS } from '../data/legalSections';
 
 export default function UserAgreement() {
@@ -7,7 +8,7 @@ export default function UserAgreement() {
       titleEn="User Agreement"
       titleFr="Accord utilisateur"
       sections={USER_AGREEMENT_SECTIONS}
-      contactEmail="privacy@sahelagriconnect.com"
+      contactEmail={SUPPORT_EMAIL}
     />
   );
 }
