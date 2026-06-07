@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import '../../core/auth_state.dart';
 import '../../core/glass.dart';
 import '../../core/language_provider.dart';
+import '../../core/responsive.dart';
 import '../../core/theme.dart';
+import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
@@ -151,45 +153,44 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
     if (exit == true && mounted) context.go('/home');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isFr = context.watch<LanguageProvider>()
-      .locale.languageCode == 'fr';
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _onBackPressed();
-      },
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Scaffold(
-        extendBody: false,
-        backgroundColor: _bg,
-        body: Column(children: [
-          const OfflineBanner(),
-          _ProcessorHeader(
-            data: _data, loading: _loading,
-            activeBatches: _activeBatches,
-            certifiedBatches: _certifiedBatches,
-            totalOutput: _totalOutput,
-            isFr: isFr),
-          Expanded(
-            child: IndexedStack(index: _tab, children: [
-              _HomeTab(batches: _batches, schedule: _schedule,
-                isFr: isFr, onTabChange: _goTab),
-              _SupplyTab(requests: _supplyRequests,
-                isFr: isFr, onAdd: _addSupply),
-              _ProcessingTab(batches: _batches,
-                isFr: isFr, onAdd: _addBatch),
-              _ScheduleTab(schedule: _schedule,
-                isFr: isFr, onAdd: _addSchedule),
-              _ProcessorAccountTab(isFr: isFr, onTabChange: _goTab),
-            ]),
+  Widget _buildTabStack(bool isFr) => IndexedStack(
+        index: _tab,
+        children: [
+          _HomeTab(
+            batches: _batches,
+            schedule: _schedule,
+            isFr: isFr,
+            onTabChange: _goTab,
           ),
-        ]),
-        bottomNavigationBar: GlassBottomNav(
+          _SupplyTab(requests: _supplyRequests, isFr: isFr, onAdd: _addSupply),
+          _ProcessingTab(batches: _batches, isFr: isFr, onAdd: _addBatch),
+          _ScheduleTab(schedule: _schedule, isFr: isFr, onAdd: _addSchedule),
+          _ProcessorAccountTab(isFr: isFr, onTabChange: _goTab),
+        ],
+      );
+
+  Widget _buildPhoneLayout(bool isFr) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Scaffold(
+          extendBody: false,
+          backgroundColor: _bg,
+          body: Column(
+            children: [
+              const OfflineBanner(),
+              _ProcessorHeader(
+                data: _data,
+                loading: _loading,
+                activeBatches: _activeBatches,
+                certifiedBatches: _certifiedBatches,
+                totalOutput: _totalOutput,
+                isFr: isFr,
+              ),
+              Expanded(child: _buildTabStack(isFr)),
+            ],
+          ),
+          bottomNavigationBar: GlassBottomNav(
             child: NavigationBar(
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
@@ -198,38 +199,131 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
               selectedIndex: _tab,
               onDestinationSelected: _goTab,
               indicatorColor: _amber.withValues(alpha: 0.2),
-              labelBehavior:
-                NavigationDestinationLabelBehavior.alwaysShow,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               destinations: [
                 NavigationDestination(
                   icon: const Icon(Icons.home_outlined, color: _muted),
                   selectedIcon: const Icon(Icons.home, color: _amber),
-                  label: isFr ? 'Accueil' : 'Home'),
+                  label: isFr ? 'Accueil' : 'Home',
+                ),
                 NavigationDestination(
                   icon: const Icon(Icons.inventory_2_outlined, color: _muted),
                   selectedIcon: const Icon(Icons.inventory_2, color: _amber),
-                  label: isFr ? 'Approvisionnement' : 'Supply'),
+                  label: isFr ? 'Approvisionnement' : 'Supply',
+                ),
                 NavigationDestination(
                   icon: const Icon(Icons.factory_outlined, color: _muted),
                   selectedIcon: const Icon(Icons.factory, color: _amber),
-                  label: isFr ? 'Traitement' : 'Processing'),
+                  label: isFr ? 'Traitement' : 'Processing',
+                ),
                 NavigationDestination(
-                  icon: const Icon(Icons.calendar_month_outlined,
-                    color: _muted),
-                  selectedIcon: const Icon(Icons.calendar_month,
-                    color: _amber),
-                  label: isFr ? 'Planning' : 'Schedule'),
+                  icon: const Icon(Icons.calendar_month_outlined, color: _muted),
+                  selectedIcon: const Icon(Icons.calendar_month, color: _amber),
+                  label: isFr ? 'Planning' : 'Schedule',
+                ),
                 NavigationDestination(
-                  icon: const Icon(Icons.manage_accounts_outlined,
-                    color: _muted),
-                  selectedIcon: const Icon(Icons.manage_accounts,
-                    color: _amber),
-                  label: isFr ? 'Compte' : 'Account'),
+                  icon: const Icon(Icons.manage_accounts_outlined, color: _muted),
+                  selectedIcon: const Icon(Icons.manage_accounts, color: _amber),
+                  label: isFr ? 'Compte' : 'Account',
+                ),
               ],
             ),
-        ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTabletLayout(bool isFr) {
+    return PortalTabletShell(
+      backgroundColor: _bg,
+      sidebarColor: _surface2,
+      accentColor: _amber,
+      topBanner: const OfflineBanner(),
+      sidebarHeader: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isFr ? 'Centre de traitement' : 'Processing Center',
+            style: TextStyle(
+              color: _text,
+              fontSize: Responsive.fontSize(context, 18),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            'Sahel AgriConnect',
+            style: TextStyle(
+              color: _muted,
+              fontSize: Responsive.fontSize(context, 13),
+            ),
+          ),
+        ],
+      ),
+      stats: [
+        PortalSidebarStat(
+          label: isFr ? 'Lots actifs' : 'Active batches',
+          value: '$_activeBatches',
+          accentColor: _amber,
+        ),
+        PortalSidebarStat(
+          label: isFr ? 'Certifiés' : 'Certified',
+          value: '$_certifiedBatches',
+          accentColor: _green,
+        ),
+        PortalSidebarStat(
+          label: isFr ? 'Production (kg)' : 'Output (kg)',
+          value: _totalOutput.toStringAsFixed(0),
+          accentColor: _gold,
+        ),
+      ],
+      navItems: [
+        PortalSidebarNavItem(
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home,
+          label: isFr ? 'Accueil' : 'Home',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.inventory_2_outlined,
+          selectedIcon: Icons.inventory_2,
+          label: isFr ? 'Approvisionnement' : 'Supply',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.factory_outlined,
+          selectedIcon: Icons.factory,
+          label: isFr ? 'Traitement' : 'Processing',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.calendar_month_outlined,
+          selectedIcon: Icons.calendar_month,
+          label: isFr ? 'Planning' : 'Schedule',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.manage_accounts_outlined,
+          selectedIcon: Icons.manage_accounts,
+          label: isFr ? 'Compte' : 'Account',
+        ),
+      ],
+      selectedIndex: _tab,
+      onNavSelected: _goTab,
+      content: _buildTabStack(isFr),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr =
+        context.watch<LanguageProvider>().locale.languageCode == 'fr';
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onBackPressed();
+      },
+      child: Responsive.builder(
+        context: context,
+        phone: _buildPhoneLayout(isFr),
+        tablet: _buildTabletLayout(isFr),
       ),
     );
   }

@@ -9,7 +9,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/auth_state.dart';
 import '../../core/glass.dart';
 import '../../core/language_provider.dart';
+import '../../core/responsive.dart';
 import '../../core/theme.dart';
+import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
@@ -182,6 +184,212 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
     }
   }
 
+  Widget _buildTabStack(bool isFr) {
+    final displayName = context.watch<AuthState>().displayName;
+    return IndexedStack(
+      index: _tab,
+      children: [
+        _PortfolioTab(
+          investments: _investments,
+          opportunities: _opportunities,
+          loading: _loading,
+          isFr: isFr,
+          displayName: displayName,
+          onTabChange: _goTab,
+          onRefresh: _load,
+        ),
+        _ExchangeTab(
+          opportunities: _opportunities,
+          loading: _loading,
+          isFr: isFr,
+          onRefresh: _load,
+        ),
+        _ActivityTab(
+          investments: _investments,
+          isFr: isFr,
+        ),
+        _UpdatesTab(isFr: isFr),
+        _InvestorAccountTab(
+          isFr: isFr,
+          kycStatus: _kycStatus,
+          hasInvestments: _investments.isNotEmpty,
+          onTabChange: _goTab,
+        ),
+      ],
+    );
+  }
+
+  List<NavigationDestination> _navDestinations(bool isFr) => [
+        NavigationDestination(
+          icon: const Icon(Icons.account_balance_wallet_outlined, color: _muted),
+          selectedIcon: const Icon(Icons.account_balance_wallet, color: _gold),
+          label: isFr ? 'Portefeuille' : 'Portfolio',
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.trending_up_outlined, color: _muted),
+          selectedIcon: const Icon(Icons.trending_up, color: _gold),
+          label: isFr ? 'Marchés' : 'Markets',
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.receipt_long_outlined, color: _muted),
+          selectedIcon: const Icon(Icons.receipt_long, color: _gold),
+          label: isFr ? 'Activité' : 'Activity',
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.campaign_outlined, color: _muted),
+          selectedIcon: const Icon(Icons.campaign, color: _gold),
+          label: isFr ? 'Actualités' : 'News',
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.manage_accounts_outlined, color: _muted),
+          selectedIcon: const Icon(Icons.manage_accounts, color: _gold),
+          label: isFr ? 'Compte' : 'Account',
+        ),
+      ];
+
+  List<PortalSidebarNavItem> _sidebarNavItems(bool isFr) => [
+        PortalSidebarNavItem(
+          icon: Icons.account_balance_wallet_outlined,
+          selectedIcon: Icons.account_balance_wallet,
+          label: isFr ? 'Portefeuille' : 'Portfolio',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.trending_up_outlined,
+          selectedIcon: Icons.trending_up,
+          label: isFr ? 'Marchés' : 'Markets',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.receipt_long_outlined,
+          selectedIcon: Icons.receipt_long,
+          label: isFr ? 'Activité' : 'Activity',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.campaign_outlined,
+          selectedIcon: Icons.campaign,
+          label: isFr ? 'Actualités' : 'News',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.manage_accounts_outlined,
+          selectedIcon: Icons.manage_accounts,
+          label: isFr ? 'Compte' : 'Account',
+        ),
+      ];
+
+  Widget _buildPhoneLayout(bool isFr) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Scaffold(
+          extendBody: false,
+          resizeToAvoidBottomInset: true,
+          backgroundColor: _bg,
+          body: Column(
+            children: [
+              const OfflineBanner(),
+              _InvestorHeader(
+                totalDeployed: _totalDeployed,
+                avgRoi: _avgRoi,
+                investmentCount: _investments.length,
+                isFr: isFr,
+              ),
+              Expanded(child: _buildTabStack(isFr)),
+            ],
+          ),
+          bottomNavigationBar: GlassBottomNav(
+            child: NavigationBar(
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              height: 64,
+              selectedIndex: _tab,
+              onDestinationSelected: _goTab,
+              indicatorColor: _gold.withValues(alpha: 0.15),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: _navDestinations(isFr),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabletLayout(bool isFr) {
+    final auth = context.watch<AuthState>();
+    return PortalTabletShell(
+      backgroundColor: _bg,
+      sidebarColor: _surface2,
+      accentColor: _gold,
+      topBanner: const OfflineBanner(),
+      sidebarHeader: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'AfriYield Exchange',
+            style: TextStyle(
+              color: _text,
+              fontSize: Responsive.fontSize(context, 18),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            isFr ? 'Portail investisseur' : 'Investor Portal',
+            style: TextStyle(
+              color: _muted,
+              fontSize: Responsive.fontSize(context, 13),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            auth.displayName,
+            style: TextStyle(
+              color: _text,
+              fontSize: Responsive.fontSize(context, 16),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+      stats: [
+        PortalSidebarStat(
+          label: isFr ? 'Déployé' : 'Deployed',
+          value: '\$${_totalDeployed.toStringAsFixed(0)}',
+          accentColor: _gold,
+        ),
+        PortalSidebarStat(
+          label: isFr ? 'Rendement moy.' : 'Avg return',
+          value: '${_avgRoi.toStringAsFixed(1)}%',
+          accentColor: _gold,
+        ),
+        PortalSidebarStat(
+          label: isFr ? 'Positions' : 'Positions',
+          value: '${_investments.length}',
+          accentColor: _gold,
+        ),
+      ],
+      navItems: _sidebarNavItems(isFr),
+      selectedIndex: _tab,
+      onNavSelected: _goTab,
+      content: _tab == 0
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: _buildTabStack(isFr)),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 2,
+                  child: _ExchangeTab(
+                    opportunities: _opportunities,
+                    loading: _loading,
+                    isFr: isFr,
+                    onRefresh: _load,
+                  ),
+                ),
+              ],
+            )
+          : _buildTabStack(isFr),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFr = context.watch<LanguageProvider>().locale.languageCode == 'fr';
@@ -191,115 +399,10 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _onBackPressed();
       },
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Scaffold(
-            extendBody: false,
-            resizeToAvoidBottomInset: true,
-            backgroundColor: _bg,
-            body: Column(
-              children: [
-                const OfflineBanner(),
-                _InvestorHeader(
-                  totalDeployed: _totalDeployed,
-                  avgRoi: _avgRoi,
-                  investmentCount: _investments.length,
-                  isFr: isFr,
-                ),
-                Expanded(
-                  child: IndexedStack(
-                    index: _tab,
-                    children: [
-                      _PortfolioTab(
-                        investments: _investments,
-                        opportunities: _opportunities,
-                        loading: _loading,
-                        isFr: isFr,
-                        displayName: context.watch<AuthState>().displayName,
-                        onTabChange: _goTab,
-                        onRefresh: _load,
-                      ),
-                      _ExchangeTab(
-                        opportunities: _opportunities,
-                        loading: _loading,
-                        isFr: isFr,
-                        onRefresh: _load,
-                      ),
-                      _ActivityTab(
-                        investments: _investments,
-                        isFr: isFr,
-                      ),
-                      _UpdatesTab(isFr: isFr),
-                      _InvestorAccountTab(
-                        isFr: isFr,
-                        kycStatus: _kycStatus,
-                        hasInvestments: _investments.isNotEmpty,
-                        onTabChange: _goTab,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            bottomNavigationBar: GlassBottomNav(
-                child: NavigationBar(
-                  backgroundColor: Colors.transparent,
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  height: 64,
-                  selectedIndex: _tab,
-                  onDestinationSelected: _goTab,
-                  indicatorColor: _gold.withValues(alpha: 0.15),
-                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                  destinations: [
-                    NavigationDestination(
-                      icon: const Icon(
-                        Icons.account_balance_wallet_outlined,
-                        color: _muted,
-                      ),
-                      selectedIcon: const Icon(
-                        Icons.account_balance_wallet,
-                        color: _gold,
-                      ),
-                      label: isFr ? 'Portefeuille' : 'Portfolio',
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(
-                        Icons.trending_up_outlined,
-                        color: _muted,
-                      ),
-                      selectedIcon: const Icon(Icons.trending_up, color: _gold),
-                      label: isFr ? 'Marchés' : 'Markets',
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(
-                        Icons.receipt_long_outlined,
-                        color: _muted,
-                      ),
-                      selectedIcon:
-                          const Icon(Icons.receipt_long, color: _gold),
-                      label: isFr ? 'Activité' : 'Activity',
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.campaign_outlined, color: _muted),
-                      selectedIcon: const Icon(Icons.campaign, color: _gold),
-                      label: isFr ? 'Actualités' : 'News',
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(
-                        Icons.manage_accounts_outlined,
-                        color: _muted,
-                      ),
-                      selectedIcon:
-                          const Icon(Icons.manage_accounts, color: _gold),
-                      label: isFr ? 'Compte' : 'Account',
-                    ),
-                  ],
-                ),
-            ),
-          ),
-        ),
+      child: Responsive.builder(
+        context: context,
+        phone: _buildPhoneLayout(isFr),
+        tablet: _buildTabletLayout(isFr),
       ),
     );
   }

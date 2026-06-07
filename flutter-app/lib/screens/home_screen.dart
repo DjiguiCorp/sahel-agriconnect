@@ -706,12 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTabletMainScaffold(LanguageProvider lp, AuthState auth) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: _buildMainScaffold(lp, auth),
-      ),
-    );
+    return _buildMainScaffold(lp, auth);
   }
 
   Widget _buildMainScaffold(LanguageProvider lp, AuthState auth) {

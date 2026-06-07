@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import '../../core/auth_state.dart';
 import '../../core/glass.dart';
 import '../../core/language_provider.dart';
+import '../../core/responsive.dart';
 import '../../core/theme.dart';
+import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
@@ -268,93 +270,83 @@ class _NgoDashboardState extends State<NgoDashboard> {
     if (exit == true && mounted) context.go('/home');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isFr = context.watch<LanguageProvider>()
-      .locale.languageCode == 'fr';
+  int get _activeProgramCount =>
+      (_stats['activePrograms'] as num?)?.toInt() ??
+      _programs.where((p) => p['status'] == 'active').length;
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _onBackPressed();
-      },
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Scaffold(
-        extendBody: false,
-        backgroundColor: _bg,
-        body: Column(children: [
-          const OfflineBanner(),
-          _NgoHeader(
+  Widget _buildTabStack(bool isFr) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _lime));
+    }
+    return RefreshIndicator(
+      color: _lime,
+      onRefresh: _loadPortal,
+      child: IndexedStack(
+        index: _tab,
+        children: [
+          _OverviewTab(
+            programs: _programs,
+            coops: _cooperativeContacts,
             totalBeneficiaries: _totalBeneficiaries,
-            activePrograms: (_stats['activePrograms'] as num?)?.toInt() ??
-                _programs.where((p) => p['status'] == 'active').length,
-            coopCount: (_stats['cooperatives'] as num?)?.toInt() ??
-                _cooperativeContacts.length,
+            activePrograms: _activeProgramCount,
             isFr: isFr,
+            onTabChange: _goTab,
+            apiConnected: _apiConnected,
           ),
-          if (_loading)
-            const Expanded(
-              child: Center(
-                child: CircularProgressIndicator(color: _lime),
+          _ProgramsTab(
+            programs: _programs,
+            isFr: isFr,
+            onAdd: _addProgram,
+            token: _token,
+            apiConnected: _apiConnected,
+            onRefresh: _loadPortal,
+          ),
+          _NetworkTab(
+            coops: _cooperativeContacts,
+            beneficiaries: _beneficiaries,
+            programs: _programs,
+            isFr: isFr,
+            onAddBeneficiary: _addBeneficiary,
+            token: _token,
+            apiConnected: _apiConnected,
+          ),
+          _ReportsTab(
+            programs: _programs,
+            reports: _reports,
+            isFr: isFr,
+            onGenerate: _generateReport,
+          ),
+          _NgoAccountTab(
+            isFr: isFr,
+            onTabChange: _goTab,
+            apiConnected: _apiConnected,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhoneLayout(bool isFr) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Scaffold(
+          extendBody: false,
+          backgroundColor: _bg,
+          body: Column(
+            children: [
+              const OfflineBanner(),
+              _NgoHeader(
+                totalBeneficiaries: _totalBeneficiaries,
+                activePrograms: _activeProgramCount,
+                coopCount: (_stats['cooperatives'] as num?)?.toInt() ??
+                    _cooperativeContacts.length,
+                isFr: isFr,
               ),
-            )
-          else
-            Expanded(
-              child: RefreshIndicator(
-                color: _lime,
-                onRefresh: _loadPortal,
-                child: IndexedStack(
-                  index: _tab,
-                  children: [
-                    _OverviewTab(
-                      programs: _programs,
-                      coops: _cooperativeContacts,
-                      totalBeneficiaries: _totalBeneficiaries,
-                      activePrograms: (_stats['activePrograms'] as num?)
-                              ?.toInt() ??
-                          _programs
-                              .where((p) => p['status'] == 'active')
-                              .length,
-                      isFr: isFr,
-                      onTabChange: _goTab,
-                      apiConnected: _apiConnected,
-                    ),
-                    _ProgramsTab(
-                      programs: _programs,
-                      isFr: isFr,
-                      onAdd: _addProgram,
-                      token: _token,
-                      apiConnected: _apiConnected,
-                      onRefresh: _loadPortal,
-                    ),
-                    _NetworkTab(
-                      coops: _cooperativeContacts,
-                      beneficiaries: _beneficiaries,
-                      programs: _programs,
-                      isFr: isFr,
-                      onAddBeneficiary: _addBeneficiary,
-                      token: _token,
-                      apiConnected: _apiConnected,
-                    ),
-                    _ReportsTab(
-                      programs: _programs,
-                      reports: _reports,
-                      isFr: isFr,
-                      onGenerate: _generateReport,
-                    ),
-                    _NgoAccountTab(
-                      isFr: isFr,
-                      onTabChange: _goTab,
-                      apiConnected: _apiConnected,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ]),
-        bottomNavigationBar: GlassBottomNav(
+              Expanded(child: _buildTabStack(isFr)),
+            ],
+          ),
+          bottomNavigationBar: GlassBottomNav(
             child: NavigationBar(
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
@@ -363,38 +355,131 @@ class _NgoDashboardState extends State<NgoDashboard> {
               selectedIndex: _tab,
               onDestinationSelected: _goTab,
               indicatorColor: _lime.withValues(alpha: 0.15),
-              labelBehavior:
-                NavigationDestinationLabelBehavior.alwaysShow,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               destinations: [
                 NavigationDestination(
                   icon: const Icon(Icons.home_outlined, color: _muted),
                   selectedIcon: const Icon(Icons.home, color: _lime),
-                  label: isFr ? 'Accueil' : 'Home'),
+                  label: isFr ? 'Accueil' : 'Home',
+                ),
                 NavigationDestination(
-                  icon: const Icon(Icons.volunteer_activism_outlined,
-                    color: _muted),
-                  selectedIcon: const Icon(Icons.volunteer_activism,
-                    color: _lime),
-                  label: isFr ? 'Programmes' : 'Programs'),
+                  icon: const Icon(Icons.volunteer_activism_outlined, color: _muted),
+                  selectedIcon: const Icon(Icons.volunteer_activism, color: _lime),
+                  label: isFr ? 'Programmes' : 'Programs',
+                ),
                 NavigationDestination(
                   icon: const Icon(Icons.groups_outlined, color: _muted),
                   selectedIcon: const Icon(Icons.groups, color: _lime),
-                  label: isFr ? 'Réseau' : 'Network'),
+                  label: isFr ? 'Réseau' : 'Network',
+                ),
                 NavigationDestination(
                   icon: const Icon(Icons.assessment_outlined, color: _muted),
                   selectedIcon: const Icon(Icons.assessment, color: _lime),
-                  label: isFr ? 'Rapports' : 'Reports'),
+                  label: isFr ? 'Rapports' : 'Reports',
+                ),
                 NavigationDestination(
-                  icon: const Icon(Icons.manage_accounts_outlined,
-                    color: _muted),
-                  selectedIcon: const Icon(Icons.manage_accounts,
-                    color: _lime),
-                  label: isFr ? 'Compte' : 'Account'),
+                  icon: const Icon(Icons.manage_accounts_outlined, color: _muted),
+                  selectedIcon: const Icon(Icons.manage_accounts, color: _lime),
+                  label: isFr ? 'Compte' : 'Account',
+                ),
               ],
             ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTabletLayout(bool isFr) {
+    return PortalTabletShell(
+      backgroundColor: _bg,
+      sidebarColor: _surface2,
+      accentColor: _lime,
+      topBanner: const OfflineBanner(),
+      sidebarHeader: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isFr ? 'Portail ONG' : 'NGO Portal',
+            style: TextStyle(
+              color: _text,
+              fontSize: Responsive.fontSize(context, 18),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            'Sahel AgriConnect',
+            style: TextStyle(
+              color: _muted,
+              fontSize: Responsive.fontSize(context, 13),
+            ),
+          ),
+        ],
+      ),
+      stats: [
+        PortalSidebarStat(
+          label: isFr ? 'Bénéficiaires' : 'Beneficiaries',
+          value: '$_totalBeneficiaries',
+          accentColor: _lime,
         ),
+        PortalSidebarStat(
+          label: isFr ? 'Programmes actifs' : 'Active programs',
+          value: '$_activeProgramCount',
+          accentColor: _blue,
+        ),
+        PortalSidebarStat(
+          label: isFr ? 'Coopératives' : 'Cooperatives',
+          value: '${(_stats['cooperatives'] as num?)?.toInt() ?? _cooperativeContacts.length}',
+          accentColor: _gold,
+        ),
+      ],
+      navItems: [
+        PortalSidebarNavItem(
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home,
+          label: isFr ? 'Accueil' : 'Home',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.volunteer_activism_outlined,
+          selectedIcon: Icons.volunteer_activism,
+          label: isFr ? 'Programmes' : 'Programs',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.groups_outlined,
+          selectedIcon: Icons.groups,
+          label: isFr ? 'Réseau' : 'Network',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.assessment_outlined,
+          selectedIcon: Icons.assessment,
+          label: isFr ? 'Rapports' : 'Reports',
+        ),
+        PortalSidebarNavItem(
+          icon: Icons.manage_accounts_outlined,
+          selectedIcon: Icons.manage_accounts,
+          label: isFr ? 'Compte' : 'Account',
+        ),
+      ],
+      selectedIndex: _tab,
+      onNavSelected: _goTab,
+      content: _buildTabStack(isFr),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFr =
+        context.watch<LanguageProvider>().locale.languageCode == 'fr';
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onBackPressed();
+      },
+      child: Responsive.builder(
+        context: context,
+        phone: _buildPhoneLayout(isFr),
+        tablet: _buildTabletLayout(isFr),
       ),
     );
   }

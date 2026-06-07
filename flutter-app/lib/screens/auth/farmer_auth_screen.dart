@@ -1502,31 +1502,21 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 12),
+                      Text(
+                        lp.t('Enter your code', 'Entrez votre code'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       OtpCodeRow(
                         controllers: _otpCtrl,
                         focusNodes: _otpFocus,
                         enabled: !_loading,
                         onDigitChanged: _onOtpDigitChanged,
                       ),
-                      if (kDebugMode) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.orange.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: const Text(
-                            '🔧 Dev mode: Backend OTP not configured yet.\n'
-                            'Enter any 6 digits to continue testing.',
-                            style: TextStyle(color: Colors.orange, fontSize: 12),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

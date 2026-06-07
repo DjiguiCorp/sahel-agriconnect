@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import '../../core/auth_state.dart';
 import '../../core/glass.dart';
 import '../../core/language_provider.dart';
+import '../../core/responsive.dart';
 import '../../core/theme.dart';
+import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
@@ -134,101 +136,188 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
     setState(() => _tab = i);
   }
 
+  ThemeData _portalTheme(BuildContext context) =>
+      Theme.of(context).copyWith(
+        splashColor: _blue.withValues(alpha: 0.12),
+        highlightColor: _blue.withValues(alpha: 0.08),
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          surfaceTint: Colors.transparent,
+        ),
+      );
+
+  Widget _buildTabStack(bool isFr) => IndexedStack(
+        index: _tab,
+        children: [
+          _OverviewTab(
+            data: _data,
+            loading: _loading,
+            isFr: isFr,
+            onTabChange: _goTab,
+          ),
+          _AgriculturalTab(data: _data, isFr: isFr),
+          _StatisticsTab(data: _data, isFr: isFr),
+          _PolicyTab(isFr: isFr),
+          _GovAccountTab(isFr: isFr, onTabChange: _goTab),
+        ],
+      );
+
+  Widget _buildPhoneLayout(bool isFr) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Theme(
+          data: _portalTheme(context),
+          child: Scaffold(
+            extendBody: false,
+            backgroundColor: _bg,
+            body: Column(
+              children: [
+                const OfflineBanner(),
+                _GovHeader(data: _data, loading: _loading, isFr: isFr),
+                Expanded(child: _buildTabStack(isFr)),
+              ],
+            ),
+            bottomNavigationBar: GlassBottomNav(
+              child: NavigationBar(
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                height: 64,
+                selectedIndex: _tab,
+                onDestinationSelected: _goTab,
+                indicatorColor: _blue.withValues(alpha: 0.2),
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.dashboard_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.dashboard, color: _blue),
+                    label: isFr ? 'Vue' : 'Overview',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.agriculture_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.agriculture, color: _blue),
+                    label: isFr ? 'Agricole' : 'Agricultural',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.bar_chart_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.bar_chart, color: _blue),
+                    label: isFr ? 'Indicateurs' : 'Statistics',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.policy_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.policy, color: _blue),
+                    label: isFr ? 'Politique' : 'Policy',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.manage_accounts_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.manage_accounts, color: _blue),
+                    label: isFr ? 'Compte' : 'Account',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabletLayout(bool isFr) {
+    final farmers = _data?['totalFarmers']?.toString() ?? '—';
+    final coops = _data?['totalCooperatives']?.toString() ?? '—';
+    final hectares = _formatHectares(_data?['totalHectares']);
+    return Theme(
+      data: _portalTheme(context),
+      child: PortalTabletShell(
+        backgroundColor: _bg,
+        sidebarColor: _surface2,
+        accentColor: _blue,
+        topBanner: const OfflineBanner(),
+        sidebarHeader: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isFr ? 'Portail gouvernemental' : 'Government Portal',
+              style: TextStyle(
+                color: _text,
+                fontSize: Responsive.fontSize(context, 18),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'Sahel AgriConnect',
+              style: TextStyle(
+                color: _muted,
+                fontSize: Responsive.fontSize(context, 13),
+              ),
+            ),
+          ],
+        ),
+        stats: [
+          PortalSidebarStat(
+            label: isFr ? 'Agriculteurs' : 'Farmers',
+            value: farmers,
+            accentColor: _blue,
+          ),
+          PortalSidebarStat(
+            label: isFr ? 'Coopératives' : 'Cooperatives',
+            value: coops,
+            accentColor: _blue,
+          ),
+          PortalSidebarStat(
+            label: isFr ? 'Superficie' : 'Hectares',
+            value: hectares,
+            accentColor: _green,
+          ),
+        ],
+        navItems: [
+          PortalSidebarNavItem(
+            icon: Icons.dashboard_outlined,
+            selectedIcon: Icons.dashboard,
+            label: isFr ? 'Vue' : 'Overview',
+          ),
+          PortalSidebarNavItem(
+            icon: Icons.agriculture_outlined,
+            selectedIcon: Icons.agriculture,
+            label: isFr ? 'Agricole' : 'Agricultural',
+          ),
+          PortalSidebarNavItem(
+            icon: Icons.bar_chart_outlined,
+            selectedIcon: Icons.bar_chart,
+            label: isFr ? 'Indicateurs' : 'Statistics',
+          ),
+          PortalSidebarNavItem(
+            icon: Icons.policy_outlined,
+            selectedIcon: Icons.policy,
+            label: isFr ? 'Politique' : 'Policy',
+          ),
+          PortalSidebarNavItem(
+            icon: Icons.manage_accounts_outlined,
+            selectedIcon: Icons.manage_accounts,
+            label: isFr ? 'Compte' : 'Account',
+          ),
+        ],
+        selectedIndex: _tab,
+        onNavSelected: _goTab,
+        content: _buildTabStack(isFr),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isFr = context.watch<LanguageProvider>()
-      .locale.languageCode == 'fr';
+    final isFr =
+        context.watch<LanguageProvider>().locale.languageCode == 'fr';
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _onBackPressed();
       },
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              splashColor: _blue.withValues(alpha: 0.12),
-              highlightColor: _blue.withValues(alpha: 0.08),
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                surfaceTint: Colors.transparent,
-              ),
-            ),
-            child: Scaffold(
-        extendBody: false,
-        backgroundColor: _bg,
-        body: Column(children: [
-          const OfflineBanner(),
-          _GovHeader(data: _data, loading: _loading, isFr: isFr),
-          Expanded(
-            child: IndexedStack(index: _tab, children: [
-              _OverviewTab(data: _data, loading: _loading,
-                isFr: isFr, onTabChange: _goTab),
-              _AgriculturalTab(data: _data, isFr: isFr),
-              _StatisticsTab(data: _data, isFr: isFr),
-              _PolicyTab(isFr: isFr),
-              _GovAccountTab(isFr: isFr, onTabChange: _goTab),
-            ]),
-          ),
-        ]),
-        bottomNavigationBar: GlassBottomNav(
-            child: NavigationBarTheme(
-              data: NavigationBarThemeData(
-                backgroundColor: Colors.transparent,
-                indicatorColor: _blue.withValues(alpha: 0.15),
-                surfaceTintColor: Colors.transparent,
-                labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return const TextStyle(
-                      color: _blue,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    );
-                  }
-                  return const TextStyle(color: _muted, fontSize: 12);
-                }),
-              ),
-              child: NavigationBar(
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              height: 64,
-              selectedIndex: _tab,
-              onDestinationSelected: _goTab,
-              indicatorColor: _blue.withValues(alpha: 0.2),
-              labelBehavior:
-                NavigationDestinationLabelBehavior.alwaysShow,
-              destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.dashboard_outlined, color: _muted),
-                  selectedIcon: const Icon(Icons.dashboard, color: _blue),
-                  label: isFr ? 'Vue' : 'Overview'),
-                NavigationDestination(
-                  icon: const Icon(Icons.agriculture_outlined, color: _muted),
-                  selectedIcon: const Icon(Icons.agriculture, color: _blue),
-                  label: isFr ? 'Agricole' : 'Agricultural'),
-                NavigationDestination(
-                  icon: const Icon(Icons.bar_chart_outlined, color: _muted),
-                  selectedIcon: const Icon(Icons.bar_chart, color: _blue),
-                  label: isFr ? 'Indicateurs' : 'Statistics'),
-                NavigationDestination(
-                  icon: const Icon(Icons.policy_outlined, color: _muted),
-                  selectedIcon: const Icon(Icons.policy, color: _blue),
-                  label: isFr ? 'Politique' : 'Policy'),
-                NavigationDestination(
-                  icon: const Icon(Icons.manage_accounts_outlined,
-                    color: _muted),
-                  selectedIcon: const Icon(Icons.manage_accounts,
-                    color: _blue),
-                  label: isFr ? 'Compte' : 'Account'),
-              ],
-            ),
-          ),
-        ),
-            ),
-          ),
-        ),
+      child: Responsive.builder(
+        context: context,
+        phone: _buildPhoneLayout(isFr),
+        tablet: _buildTabletLayout(isFr),
       ),
     );
   }

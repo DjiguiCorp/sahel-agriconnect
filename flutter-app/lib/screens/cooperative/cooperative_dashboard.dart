@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import '../../core/auth_state.dart';
 import '../../core/glass.dart';
 import '../../core/language_provider.dart';
+import '../../core/responsive.dart';
 import '../../core/theme.dart';
+import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/offline_queue.dart';
@@ -179,6 +181,180 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
   void _addProduction(Map<String, dynamic> prod) =>
       setState(() => _productions.add(prod));
 
+  Widget _buildTabStack(bool isFr) => IndexedStack(
+        index: _tab,
+        children: [
+          _HomeTab(
+            data: _data,
+            members: _members,
+            productions: _productions,
+            loading: _loading,
+            isFr: isFr,
+            onTabChange: _goTab,
+          ),
+          _MembersTab(members: _members, isFr: isFr, onAdd: _addMember),
+          _ProductionTab(
+            productions: _productions,
+            isFr: isFr,
+            onAdd: _addProduction,
+          ),
+          _StatisticsTab(
+            data: _data,
+            members: _members,
+            productions: _productions,
+            isFr: isFr,
+          ),
+          _CoopAccountTab(isFr: isFr, onTabChange: _goTab),
+        ],
+      );
+
+  Widget _buildPhoneLayout(bool isFr) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            splashColor: _accent.withValues(alpha: 0.12),
+            highlightColor: _accent.withValues(alpha: 0.08),
+          ),
+          child: Scaffold(
+            extendBody: false,
+            backgroundColor: _bg,
+            body: Column(
+              children: [
+                const OfflineBanner(),
+                _CoopHeader(
+                  data: _data,
+                  members: _members,
+                  productions: _productions,
+                  loading: _loading,
+                  isFr: isFr,
+                ),
+                Expanded(child: _buildTabStack(isFr)),
+              ],
+            ),
+            bottomNavigationBar: GlassBottomNav(
+              child: NavigationBar(
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                height: 64,
+                selectedIndex: _tab,
+                onDestinationSelected: _goTab,
+                indicatorColor: _accent.withValues(alpha: 0.15),
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.home_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.home, color: _accent),
+                    label: isFr ? 'Accueil' : 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.groups_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.groups, color: _accent),
+                    label: isFr ? 'Membres' : 'Members',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.inventory_2_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.inventory_2, color: _accent),
+                    label: isFr ? 'Production' : 'Production',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.bar_chart_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.bar_chart, color: _accent),
+                    label: isFr ? 'Stats' : 'Stats',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.manage_accounts_outlined, color: _muted),
+                    selectedIcon: const Icon(Icons.manage_accounts, color: _accent),
+                    label: isFr ? 'Compte' : 'Account',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabletLayout(bool isFr) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        splashColor: _accent.withValues(alpha: 0.12),
+        highlightColor: _accent.withValues(alpha: 0.08),
+      ),
+      child: PortalTabletShell(
+        backgroundColor: _bg,
+        sidebarColor: _surface2,
+        accentColor: _accent,
+        topBanner: const OfflineBanner(),
+        sidebarHeader: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isFr ? 'Portail coopérative' : 'Cooperative Portal',
+              style: TextStyle(
+                color: _text,
+                fontSize: Responsive.fontSize(context, 18),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'Sahel AgriConnect',
+              style: TextStyle(
+                color: _muted,
+                fontSize: Responsive.fontSize(context, 13),
+              ),
+            ),
+          ],
+        ),
+        stats: [
+          PortalSidebarStat(
+            label: isFr ? 'Membres' : 'Members',
+            value: '${_members.length}',
+            accentColor: _accent,
+          ),
+          PortalSidebarStat(
+            label: isFr ? 'Productions' : 'Productions',
+            value: '${_productions.length}',
+            accentColor: _gold,
+          ),
+        ],
+        navItems: [
+          PortalSidebarNavItem(
+            icon: Icons.home_outlined,
+            selectedIcon: Icons.home,
+            label: isFr ? 'Accueil' : 'Home',
+          ),
+          PortalSidebarNavItem(
+            icon: Icons.groups_outlined,
+            selectedIcon: Icons.groups,
+            label: isFr ? 'Membres' : 'Members',
+          ),
+          PortalSidebarNavItem(
+            icon: Icons.inventory_2_outlined,
+            selectedIcon: Icons.inventory_2,
+            label: isFr ? 'Production' : 'Production',
+          ),
+          PortalSidebarNavItem(
+            icon: Icons.bar_chart_outlined,
+            selectedIcon: Icons.bar_chart,
+            label: isFr ? 'Stats' : 'Stats',
+          ),
+          PortalSidebarNavItem(
+            icon: Icons.manage_accounts_outlined,
+            selectedIcon: Icons.manage_accounts,
+            label: isFr ? 'Compte' : 'Account',
+          ),
+        ],
+        selectedIndex: _tab,
+        onNavSelected: _goTab,
+        content: _buildTabStack(isFr),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFr = context.watch<LanguageProvider>().locale.languageCode == 'fr';
@@ -188,130 +364,10 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _onBackPressed();
       },
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              splashColor: _accent.withValues(alpha: 0.12),
-              highlightColor: _accent.withValues(alpha: 0.08),
-            ),
-            child: Scaffold(
-              extendBody: false,
-              backgroundColor: _bg,
-              body: Column(
-                children: [
-                  const OfflineBanner(),
-                  _CoopHeader(
-                    data: _data,
-                    members: _members,
-                    productions: _productions,
-                    loading: _loading,
-                    isFr: isFr,
-                  ),
-                  Expanded(
-                    child: IndexedStack(
-                      index: _tab,
-                      children: [
-                        _HomeTab(
-                          data: _data,
-                          members: _members,
-                          productions: _productions,
-                          loading: _loading,
-                          isFr: isFr,
-                          onTabChange: _goTab,
-                        ),
-                        _MembersTab(
-                          members: _members,
-                          isFr: isFr,
-                          onAdd: _addMember,
-                        ),
-                        _ProductionTab(
-                          productions: _productions,
-                          isFr: isFr,
-                          onAdd: _addProduction,
-                        ),
-                        _StatisticsTab(
-                          data: _data,
-                          members: _members,
-                          productions: _productions,
-                          isFr: isFr,
-                        ),
-                        _CoopAccountTab(isFr: isFr, onTabChange: _goTab),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              bottomNavigationBar: GlassBottomNav(
-                  child: NavigationBarTheme(
-                    data: NavigationBarThemeData(
-                      backgroundColor: Colors.transparent,
-                      indicatorColor: _accent.withValues(alpha: 0.15),
-                      surfaceTintColor: Colors.transparent,
-                      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return const TextStyle(
-                            color: _accent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          );
-                        }
-                        return const TextStyle(color: _muted, fontSize: 12);
-                      }),
-                    ),
-                    child: NavigationBar(
-                      backgroundColor: Colors.transparent,
-                      surfaceTintColor: Colors.transparent,
-                      elevation: 0,
-                      height: 64,
-                      selectedIndex: _tab,
-                      onDestinationSelected: _goTab,
-                      indicatorColor: _accent.withValues(alpha: 0.15),
-                      labelBehavior:
-                          NavigationDestinationLabelBehavior.alwaysShow,
-                      destinations: [
-                        NavigationDestination(
-                          icon: const Icon(Icons.home_outlined, color: _muted),
-                          selectedIcon:
-                              const Icon(Icons.home, color: _accent),
-                          label: isFr ? 'Accueil' : 'Home',
-                        ),
-                        NavigationDestination(
-                          icon:
-                              const Icon(Icons.groups_outlined, color: _muted),
-                          selectedIcon:
-                              const Icon(Icons.groups, color: _accent),
-                          label: isFr ? 'Membres' : 'Members',
-                        ),
-                        NavigationDestination(
-                          icon: const Icon(Icons.inventory_2_outlined,
-                              color: _muted),
-                          selectedIcon: const Icon(Icons.inventory_2,
-                              color: _accent),
-                          label: isFr ? 'Production' : 'Production',
-                        ),
-                        NavigationDestination(
-                          icon: const Icon(Icons.bar_chart_outlined,
-                              color: _muted),
-                          selectedIcon:
-                              const Icon(Icons.bar_chart, color: _accent),
-                          label: isFr ? 'Stats' : 'Stats',
-                        ),
-                        NavigationDestination(
-                          icon: const Icon(Icons.manage_accounts_outlined,
-                              color: _muted),
-                          selectedIcon: const Icon(Icons.manage_accounts,
-                              color: _accent),
-                          label: isFr ? 'Compte' : 'Account',
-                        ),
-                      ],
-                    ),
-                  ),
-              ),
-            ),
-          ),
-        ),
+      child: Responsive.builder(
+        context: context,
+        phone: _buildPhoneLayout(isFr),
+        tablet: _buildTabletLayout(isFr),
       ),
     );
   }

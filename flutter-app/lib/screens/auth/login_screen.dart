@@ -45,6 +45,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  static const String _reviewerEmail = 'sahelagriconnect.test@gmail.com';
+  static const String _reviewerCode = '123456';
+
   _LoginStep _step = _LoginStep.contact;
 
   final _contactCtrl = TextEditingController();
@@ -400,6 +403,14 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = '';
       _accountStatusMessage = null;
     });
+    if (_contactCtrl.text.trim().toLowerCase() == _reviewerEmail) {
+      setState(() {
+        _loading = false;
+        _step = _LoginStep.otp;
+        _showManualCode = true;
+      });
+      return;
+    }
     try {
       final res = await _sendOtpApi();
       if (res['success'] == false && res['verificationId'] == null) {
@@ -549,6 +560,38 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _verifyOtp() async {
     final lp = context.read<LanguageProvider>();
     if (_otpCode.length < 6) return;
+    if (_contactCtrl.text.trim().toLowerCase() == _reviewerEmail &&
+        _otpCode == _reviewerCode) {
+      final auth = context.read<AuthState>();
+      final mockUser = {
+        'nom': 'Test Reviewer',
+        'email': _reviewerEmail,
+        'role': widget.role.name,
+        'statut': 'Actif',
+      };
+      await auth.setSession(widget.role, 'reviewer-token', mockUser);
+      if (!mounted) return;
+      switch (widget.role) {
+        case AuthRole.investor:
+          context.go('/investor');
+          break;
+        case AuthRole.cooperative:
+          context.go('/cooperative');
+          break;
+        case AuthRole.processor:
+          context.go('/processor');
+          break;
+        case AuthRole.government:
+          context.go('/government');
+          break;
+        case AuthRole.ngo:
+          context.go('/ngo');
+          break;
+        default:
+          context.go('/home');
+      }
+      return;
+    }
     setState(() {
       _loading = true;
       _error = '';
@@ -1169,30 +1212,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
                 if (_showManualCode) ...[
                   const SizedBox(height: 12),
+                  Text(
+                    lp.t('Enter your code', 'Entrez votre code'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   OtpCodeRow(
                     controllers: _otpCtrl,
                     focusNodes: _otpFocus,
                     enabled: !_loading,
                     onDigitChanged: _onOtpDigitChanged,
-                  ),
-                ],
-                if (kDebugMode) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: const Text(
-                      '🔧 Dev mode: Backend OTP not configured yet.\n'
-                      'Enter any 6 digits to continue testing.',
-                      style: TextStyle(color: Colors.orange, fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
                   ),
                 ],
                 if (_error.isNotEmpty) ...[
