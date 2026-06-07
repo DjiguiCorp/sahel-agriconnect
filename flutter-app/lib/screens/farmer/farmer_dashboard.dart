@@ -16,6 +16,7 @@ import '../../services/api_service.dart';
 import '../../services/offline_queue.dart';
 import '../../widgets/country_picker.dart';
 import '../../widgets/offline_banner.dart';
+import '../../widgets/portal_dashboard_nav.dart';
 
 // ── COLOR CONSTANTS ────────────────────────────────────────────
 const _bg = Color(0xFF0f2318);
@@ -197,6 +198,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
             loading: _loadingFarmer,
             isFr: isFr,
           ),
+          PortalDashboardToolbar(dialogBackground: _surface2),
           Expanded(child: _buildDashboardTabs(isFr)),
         ],
       ),
@@ -238,7 +240,13 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 16, 32, 24),
-                    child: _buildDashboardTabs(isFr),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        PortalDashboardToolbar(dialogBackground: _surface2),
+                        Expanded(child: _buildDashboardTabs(isFr)),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -379,10 +387,13 @@ class _FarmerTabletSidebar extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                 children: [
+                  PortalSidebarHomeTile(onTap: onGoHome),
+                  const Divider(color: _border, height: 1),
+                  const SizedBox(height: 4),
                   _SidebarNavItem(
-                    icon: Icons.home_outlined,
-                    selectedIcon: Icons.home,
-                    label: isFr ? 'Accueil' : 'Home',
+                    icon: Icons.dashboard_outlined,
+                    selectedIcon: Icons.dashboard,
+                    label: isFr ? 'Tableau de bord' : 'Dashboard',
                     selected: tab == 0,
                     onTap: () => onTabChange(0),
                   ),
@@ -419,14 +430,9 @@ class _FarmerTabletSidebar extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: OutlinedButton.icon(
-                onPressed: onGoHome,
-                icon: const Icon(Icons.arrow_back, size: 18),
-                label: Text(isFr ? 'Retour accueil' : 'Back to home'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _text,
-                  side: const BorderSide(color: _border),
-                ),
+              child: PortalSidebarSignOutButton(
+                dialogBackground: _surface2,
+                borderColor: _border,
               ),
             ),
           ],

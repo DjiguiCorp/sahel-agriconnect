@@ -9,6 +9,7 @@ import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/responsive.dart';
 import '../../core/theme.dart';
+import '../../widgets/portal_dashboard_nav.dart';
 import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -187,6 +188,7 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
                 totalOutput: _totalOutput,
                 isFr: isFr,
               ),
+              PortalDashboardToolbar(dialogBackground: _surface),
               Expanded(child: _buildTabStack(isFr)),
             ],
           ),
@@ -306,6 +308,8 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
       ],
       selectedIndex: _tab,
       onNavSelected: _goTab,
+      onHomeTap: () => context.go('/home'),
+      signOutDialogColor: _surface,
       content: _buildTabStack(isFr),
     );
   }

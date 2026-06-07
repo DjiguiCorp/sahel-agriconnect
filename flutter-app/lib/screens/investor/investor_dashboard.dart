@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/safe_insets.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +10,7 @@ import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/responsive.dart';
 import '../../core/theme.dart';
+import '../../widgets/portal_dashboard_nav.dart';
 import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -179,9 +179,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
         ],
       ),
     );
-    if (exit == true) {
-      SystemNavigator.pop();
-    }
+    if (exit == true && mounted) context.go('/home');
   }
 
   Widget _buildTabStack(bool isFr) {
@@ -292,6 +290,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                 investmentCount: _investments.length,
                 isFr: isFr,
               ),
+              PortalDashboardToolbar(dialogBackground: _surface),
               Expanded(child: _buildTabStack(isFr)),
             ],
           ),
@@ -369,6 +368,8 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
       navItems: _sidebarNavItems(isFr),
       selectedIndex: _tab,
       onNavSelected: _goTab,
+      onHomeTap: () => context.go('/home'),
+      signOutDialogColor: _surface,
       content: _tab == 0
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,

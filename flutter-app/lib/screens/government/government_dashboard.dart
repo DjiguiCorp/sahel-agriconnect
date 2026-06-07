@@ -9,6 +9,7 @@ import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/responsive.dart';
 import '../../core/theme.dart';
+import '../../widgets/portal_dashboard_nav.dart';
 import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -174,6 +175,7 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
               children: [
                 const OfflineBanner(),
                 _GovHeader(data: _data, loading: _loading, isFr: isFr),
+                PortalDashboardToolbar(dialogBackground: _surface),
                 Expanded(child: _buildTabStack(isFr)),
               ],
             ),
@@ -299,6 +301,8 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
         ],
         selectedIndex: _tab,
         onNavSelected: _goTab,
+        onHomeTap: () => context.go('/home'),
+        signOutDialogColor: _surface,
         content: _buildTabStack(isFr),
       ),
     );
