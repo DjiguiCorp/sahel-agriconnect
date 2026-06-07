@@ -7,7 +7,7 @@ import '../core/language_provider.dart';
 import '../core/theme.dart';
 import 'sign_out_dialog.dart';
 
-/// Glass-style home + sign-out actions for portal phone headers.
+/// Glass-style switch-portal + sign-out actions for portal phone headers.
 class PortalGlassHeaderActions extends StatelessWidget {
   const PortalGlassHeaderActions({
     super.key,
@@ -23,9 +23,9 @@ class PortalGlassHeaderActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         GlassHeaderIconButton(
-          icon: Icons.home_rounded,
+          icon: Icons.grid_view_rounded,
           accentColor: AppColors.gold,
-          tooltip: lp.t('Home', 'Accueil'),
+          tooltip: lp.t('Switch portal', 'Changer de portail'),
           onTap: () => context.go('/home'),
         ),
         const SizedBox(width: 8),
@@ -40,83 +40,44 @@ class PortalGlassHeaderActions extends StatelessWidget {
   }
 }
 
-/// Icon-only home + sign-out toolbar for tablet portal content areas.
+/// Top app bar actions for tablet portal layouts (switch portal + sign out).
+class PortalTopActionsBar extends StatelessWidget implements PreferredSizeWidget {
+  const PortalTopActionsBar({super.key});
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    final lp = context.watch<LanguageProvider>();
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.grid_view_rounded, color: AppColors.gold),
+          onPressed: () => context.go('/home'),
+          tooltip: lp.t('Switch portal', 'Changer de portail'),
+        ),
+        IconButton(
+          icon: Icon(
+            Icons.logout_rounded,
+            color: Colors.white.withValues(alpha: 0.7),
+          ),
+          onPressed: () => showSignOutDialog(context),
+          tooltip: lp.t('Sign out', 'Se déconnecter'),
+        ),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+}
+
+/// @deprecated Use [PortalTopActionsBar] on tablet. Kept for farmer custom layout.
 class PortalDashboardToolbar extends StatelessWidget {
   const PortalDashboardToolbar({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.home_rounded, color: AppColors.gold),
-            onPressed: () => context.go('/home'),
-            tooltip: lp.t('Home', 'Accueil'),
-          ),
-          const Spacer(),
-          IconButton(
-            icon: Icon(Icons.logout_rounded, color: Colors.white.withValues(alpha: 0.7)),
-            onPressed: () => showSignOutDialog(context),
-            tooltip: lp.t('Sign out', 'Se déconnecter'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Platform home entry at the top of tablet sidebars.
-class PortalSidebarHomeTile extends StatelessWidget {
-  const PortalSidebarHomeTile({super.key, required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return Material(
-      color: Colors.transparent,
-      child: ListTile(
-        leading: const Icon(Icons.home_rounded, color: AppColors.gold),
-        title: Text(
-          lp.t('Home', 'Accueil'),
-          style: const TextStyle(color: Colors.white),
-        ),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-      ),
-    );
-  }
-}
-
-/// Sign-out control for tablet sidebar footers.
-class PortalSidebarSignOutButton extends StatelessWidget {
-  const PortalSidebarSignOutButton({
-    super.key,
-    this.borderColor,
-  });
-
-  final Color? borderColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = context.watch<LanguageProvider>();
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () => showSignOutDialog(context),
-        icon: const Icon(Icons.logout_rounded, size: 18),
-        label: Text(lp.t('Sign Out', 'Se déconnecter')),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.red.withValues(alpha: 0.9),
-          side: BorderSide(color: borderColor ?? Colors.white24),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const PortalTopActionsBar();
 }

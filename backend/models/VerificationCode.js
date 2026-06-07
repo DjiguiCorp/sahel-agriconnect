@@ -12,6 +12,7 @@ const schema = new mongoose.Schema({
   used: { type: Boolean, default: false },
   registrationUsed: { type: Boolean, default: false },
   expiresAt: { type: Date, required: true },
+  country: { type: String, trim: true, default: '' },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -98,6 +98,7 @@ router.post('/login', async (req, res) => {
         id: p._id.toString(),
         email: p.email || email,
         name: p.nom,
+        country: p.country || req.body?.country || null,
       },
       process.env.JWT_SECRET,
       { expiresIn: '90d' },
@@ -116,7 +117,7 @@ router.post('/login', async (req, res) => {
       processor: {
         nom: p.nom,
         email: p.email,
-        country: p.country,
+        country: p.country || req.body?.country || null,
         region: p.region,
       },
     });
@@ -135,12 +136,15 @@ router.get('/my-portal', authenticateAnyUser, async (req, res) => {
     if (!p) {
       return res.status(404).json({ success: false, error: 'Not found' });
     }
-    const location = [p.region, p.country].filter(Boolean).join(', ');
+    const sessionCountry = req.mobileUser?.country;
+    const effectiveCountry = sessionCountry || p.country;
+    const location = [p.region, effectiveCountry].filter(Boolean).join(', ');
     res.json({
       success: true,
       processor: {
         name: p.nom,
         location: location || p.localisation || '',
+        country: effectiveCountry || '',
         activeLots: 0,
         certifiedBatches: 0,
         capacity: p.capaciteMax != null ? `${p.capaciteMax} t` : '—',

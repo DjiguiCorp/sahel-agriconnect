@@ -300,7 +300,6 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
         ],
         selectedIndex: _tab,
         onNavSelected: _goTab,
-        onHomeTap: () => context.go('/home'),
         content: _buildTabStack(isFr),
       ),
     );

@@ -51,7 +51,7 @@ async function findFarmerByContact(email, phone) {
 /**
  * Mobile-compatible OTP send (returns verificationId).
  */
-export async function sendOtp({ purpose, email, phone, name, role, lang }) {
+export async function sendOtp({ purpose, email, phone, name, role, lang, country }) {
   const langNorm = normalizeLang(lang);
   const purposeNorm = String(purpose || 'login').trim();
   const emailRaw = email ? String(email).toLowerCase().trim() : '';
@@ -82,6 +82,7 @@ export async function sendOtp({ purpose, email, phone, name, role, lang }) {
     code,
     purpose: purposeNorm,
     expiresAt: expiresIn(15),
+    ...(country ? { country: String(country).trim() } : {}),
   });
 
   const resend = getResend();
@@ -413,7 +414,9 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
     const coop = await CooperativePlatformRegistration.findOne({ email }).lean();
     if (!coop) {
       throw Object.assign(
-        new Error('No cooperative account found. Register on the web first.'),
+        new Error(
+          'No active cooperative account found. Complete registration at sahelagriconnect.com/cooperative-registration',
+        ),
         { status: 404, code: 'not_registered' },
       );
     }
@@ -499,7 +502,9 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
       : await Processor.findOne(farmerTelephoneQuery(phone)).lean();
     if (!p) {
       throw Object.assign(
-        new Error('No processor account found. Register on the web first.'),
+        new Error(
+          'No processor account found. Complete registration at sahelagriconnect.com/platform-licensing',
+        ),
         { status: 404, code: 'not_registered' },
       );
     }
@@ -509,6 +514,7 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
         id: p._id.toString(),
         email: p.email || email,
         name: p.nom,
+        country: p.country || null,
       },
       process.env.JWT_SECRET,
       { expiresIn: '90d' },

@@ -367,7 +367,6 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
       navItems: _sidebarNavItems(isFr),
       selectedIndex: _tab,
       onNavSelected: _goTab,
-      onHomeTap: () => context.go('/home'),
       content: _tab == 0
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,

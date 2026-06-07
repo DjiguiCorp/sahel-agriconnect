@@ -111,6 +111,7 @@ router.post('/send-otp', async (req, res) => {
       name: req.body?.name,
       role: req.body?.role,
       lang: req.body?.lang,
+      country: req.body?.country,
     });
     res.json(result);
   } catch (e) {

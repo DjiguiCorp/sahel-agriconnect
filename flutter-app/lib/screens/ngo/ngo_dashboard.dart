@@ -464,7 +464,6 @@ class _NgoDashboardState extends State<NgoDashboard> {
       ],
       selectedIndex: _tab,
       onNavSelected: _goTab,
-      onHomeTap: () => context.go('/home'),
       content: _buildTabStack(isFr),
     );
   }

@@ -308,7 +308,6 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
       ],
       selectedIndex: _tab,
       onNavSelected: _goTab,
-      onHomeTap: () => context.go('/home'),
       content: _buildTabStack(isFr),
     );
   }

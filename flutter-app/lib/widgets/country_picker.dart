@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme.dart';
+
 /// ISO country code → international dial prefix (auth OTP / phone entry).
 /// Scoped to all African countries + investor-residence diaspora (US, CA, FR, GB) only.
 Map<String, String> get countryCodePrefixMap => {
@@ -239,43 +241,88 @@ class CountryDropdown extends StatelessWidget {
     this.hint,
     List<String>? countries,
     this.fillColor = const Color(0xFFF8F4E3),
+    this.darkStyle = false,
   }) : countries = countries ?? allCountries;
 
-  /// Currently selected country name. Empty string means "no selection",
-  /// in which case the [hint] is shown.
+  /// Currently selected country name. Empty string means "no selection".
   final String value;
 
-  /// Called with the new country name (or null when the dropdown is
-  /// cleared by the framework — rare but possible).
   final ValueChanged<String?> onChanged;
 
-  /// Placeholder text shown when [value] is empty.
   final String? hint;
 
-  /// Override the list of countries (defaults to [appCountryNames]).
   final List<String> countries;
 
-  /// Background color of the dropdown container.
   final Color fillColor;
+
+  /// When true, uses high-contrast dark-green styling for dark auth backgrounds.
+  final bool darkStyle;
+
+  static const _itemStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: FontWeight.w500,
+  );
+
+  static const _lightItemStyle = TextStyle(
+    color: Color(0xFF1a3c2e),
+    fontSize: 15,
+    fontWeight: FontWeight.w500,
+  );
 
   @override
   Widget build(BuildContext context) {
+    final itemStyle = darkStyle ? _itemStyle : _lightItemStyle;
+    final fieldFill = darkStyle ? const Color(0xFF1a3c2e) : fillColor;
+    final borderColor = darkStyle
+        ? AppColors.gold.withValues(alpha: 0.5)
+        : (value.isEmpty ? Colors.orange.shade300 : Colors.transparent);
+
+    if (darkStyle) {
+      return DropdownButtonFormField<String>(
+        value: value.isEmpty ? null : value,
+        isExpanded: true,
+        style: _itemStyle,
+        dropdownColor: const Color(0xFF1a3c2e),
+        iconEnabledColor: AppColors.gold,
+        decoration: InputDecoration(
+          labelText: hint,
+          labelStyle: const TextStyle(color: Colors.white70),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: AppColors.gold),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        items: countries
+            .map(
+              (c) => DropdownMenuItem<String>(
+                value: c,
+                child: Text(c, style: _itemStyle),
+              ),
+            )
+            .toList(),
+        onChanged: onChanged,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: fillColor,
+        color: fieldFill,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: value.isEmpty
-              ? Colors.orange.shade300
-              : Colors.transparent,
-          width: 0.5,
-        ),
+        border: Border.all(color: borderColor, width: 0.5),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value.isEmpty ? null : value,
           isExpanded: true,
+          style: itemStyle,
+          dropdownColor: const Color(0xFF1a3c2e),
+          iconEnabledColor: AppColors.gold,
           icon: const Icon(Icons.keyboard_arrow_down_rounded),
           hint: hint == null
               ? null
@@ -283,14 +330,14 @@ class CountryDropdown extends StatelessWidget {
                   hint!,
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFFAAAAAA),
+                    color: Color(0xFF888780),
                   ),
                 ),
           items: [
             ...africanCountries.map(
               (c) => DropdownMenuItem<String>(
                 value: c,
-                child: Text(c, style: const TextStyle(fontSize: 14)),
+                child: Text(c, style: itemStyle),
               ),
             ),
             const DropdownMenuItem<String>(
@@ -314,7 +361,7 @@ class CountryDropdown extends StatelessWidget {
             ...diasporaCountries.map(
               (c) => DropdownMenuItem<String>(
                 value: c,
-                child: Text(c, style: const TextStyle(fontSize: 14)),
+                child: Text(c, style: itemStyle),
               ),
             ),
           ],

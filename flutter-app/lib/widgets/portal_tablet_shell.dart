@@ -67,8 +67,7 @@ class PortalTabletShell extends StatelessWidget {
     required this.content,
     this.footer,
     this.topBanner,
-    this.onHomeTap,
-    this.showSignOutFooter = true,
+    this.showTopBarActions = true,
   });
 
   final Color backgroundColor;
@@ -82,8 +81,7 @@ class PortalTabletShell extends StatelessWidget {
   final Widget content;
   final Widget? footer;
   final Widget? topBanner;
-  final VoidCallback? onHomeTap;
-  final bool showSignOutFooter;
+  final bool showTopBarActions;
 
   @override
   Widget build(BuildContext context) {
@@ -126,13 +124,7 @@ class PortalTabletShell extends StatelessWidget {
                         vertical: 12,
                         horizontal: 12,
                       ),
-                      children: [
-                        if (onHomeTap != null) ...[
-                          PortalSidebarHomeTile(onTap: onHomeTap!),
-                          const Divider(height: 1, color: Color(0x14FFFFFF)),
-                          const SizedBox(height: 4),
-                        ],
-                        ...List.generate(navItems.length, (i) {
+                      children: List.generate(navItems.length, (i) {
                         final item = navItems[i];
                         final selected = i == selectedIndex;
                         return Padding(
@@ -179,16 +171,8 @@ class PortalTabletShell extends StatelessWidget {
                           ),
                         );
                       }),
-                      ],
                     ),
                   ),
-                  if (onHomeTap != null && showSignOutFooter)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: PortalSidebarSignOutButton(
-                        borderColor: Colors.white.withValues(alpha: 0.12),
-                      ),
-                    ),
                   if (footer != null)
                     Padding(padding: const EdgeInsets.all(16), child: footer),
                 ],
@@ -199,17 +183,11 @@ class PortalTabletShell extends StatelessWidget {
             child: Column(
               children: [
                 if (topBanner != null) topBanner!,
+                if (showTopBarActions) const PortalTopActionsBar(),
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(pad * 0.5, 16, pad, pad * 0.5),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (onHomeTap != null)
-                          const PortalDashboardToolbar(),
-                        Expanded(child: content),
-                      ],
-                    ),
+                    padding: EdgeInsets.fromLTRB(pad * 0.5, 0, pad, pad * 0.5),
+                    child: content,
                   ),
                 ),
               ],

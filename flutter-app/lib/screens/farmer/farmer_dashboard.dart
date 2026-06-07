@@ -236,16 +236,11 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
             child: Column(
               children: [
                 const OfflineBanner(),
+                const PortalTopActionsBar(),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 32, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const PortalDashboardToolbar(),
-                        Expanded(child: _buildDashboardTabs(isFr)),
-                      ],
-                    ),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 32, 24),
+                    child: _buildDashboardTabs(isFr),
                   ),
                 ),
               ],
@@ -386,13 +381,10 @@ class _FarmerTabletSidebar extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                 children: [
-                  PortalSidebarHomeTile(onTap: onGoHome),
-                  const Divider(color: _border, height: 1),
-                  const SizedBox(height: 4),
                   _SidebarNavItem(
-                    icon: Icons.dashboard_outlined,
-                    selectedIcon: Icons.dashboard,
-                    label: isFr ? 'Tableau de bord' : 'Dashboard',
+                    icon: Icons.home_outlined,
+                    selectedIcon: Icons.home,
+                    label: isFr ? 'Accueil' : 'Home',
                     selected: tab == 0,
                     onTap: () => onTabChange(0),
                   ),
@@ -426,10 +418,6 @@ class _FarmerTabletSidebar extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: PortalSidebarSignOutButton(borderColor: _border),
             ),
           ],
         ),

@@ -351,7 +351,6 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
         ],
         selectedIndex: _tab,
         onNavSelected: _goTab,
-        onHomeTap: () => context.go('/home'),
         content: _buildTabStack(isFr),
       ),
     );

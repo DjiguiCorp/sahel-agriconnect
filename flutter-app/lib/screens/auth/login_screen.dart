@@ -48,6 +48,16 @@ class _LoginScreenState extends State<LoginScreen> {
   static const String _reviewerEmail = 'sahelagriconnect.test@gmail.com';
   static const String _reviewerCode = '123456';
 
+  static const List<String> _adminWhitelist = [
+    'coulibalyisabelle12@gmail.com',
+    'info@djiguicorporation.org',
+    'sahelagriconnect.test@gmail.com',
+    'traore.pec@gmail.com',
+    'ptessougue56@gmail.com',
+    'elisabethtessougue@gmail.com',
+    'coultessprince1@gmail.com',
+  ];
+
   _LoginStep _step = _LoginStep.contact;
 
   final _contactCtrl = TextEditingController();
@@ -70,7 +80,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isEmail = false;
 
   bool get _needsCountry =>
-      widget.role == AuthRole.government || widget.role == AuthRole.cooperative;
+      widget.role == AuthRole.government ||
+      widget.role == AuthRole.cooperative ||
+      widget.role == AuthRole.processor ||
+      widget.role == AuthRole.ngo;
 
   late final _LoginRoleConfig _config = _roleConfig[widget.role]!;
 
@@ -155,6 +168,64 @@ class _LoginScreenState extends State<LoginScreen> {
     _detectCountry();
   }
 
+  String? _mapCodeToCountry(String code) {
+    const map = {
+      'ML': 'Mali',
+      'SN': 'Senegal',
+      'BF': 'Burkina Faso',
+      'CI': "Côte d'Ivoire",
+      'GN': 'Guinea',
+      'TG': 'Togo',
+      'BJ': 'Benin',
+      'NE': 'Niger',
+      'MR': 'Mauritania',
+      'GM': 'Gambia',
+      'GW': 'Guinea-Bissau',
+      'LR': 'Liberia',
+      'SL': 'Sierra Leone',
+      'GH': 'Ghana',
+      'NG': 'Nigeria',
+      'CM': 'Cameroon',
+      'TD': 'Chad',
+      'US': 'United States',
+      'FR': 'France',
+      'CA': 'Canada',
+      'GB': 'United Kingdom',
+    };
+    return map[code.toUpperCase()];
+  }
+
+  bool _isOnAdminWhitelist(String email) =>
+      _adminWhitelist.contains(email.toLowerCase().trim());
+
+  bool _isValidGovEmail(String email) {
+    final e = email.toLowerCase().trim();
+    if (_isOnAdminWhitelist(e)) return true;
+    const govDomains = [
+      '.gov',
+      '.gouv',
+      '.gov.ml',
+      '.gov.sn',
+      '.gov.bf',
+      '.gov.gn',
+      '.gouv.ml',
+      '.gouv.sn',
+      '.gouv.bf',
+      '.gouv.ci',
+      '.gouv.tg',
+      '.gouv.bj',
+      '.gouv.ne',
+      '.gouv.mr',
+    ];
+    return govDomains.any((d) => e.endsWith(d));
+  }
+
+  bool _isValidNgoEmail(String email) {
+    final e = email.toLowerCase().trim();
+    if (_isOnAdminWhitelist(e)) return true;
+    return e.endsWith('.org') || _isValidGovEmail(e);
+  }
+
   Future<void> _detectCountry() async {
     try {
       final locale = WidgetsBinding.instance.platformDispatcher.locale;
@@ -162,10 +233,16 @@ class _LoginScreenState extends State<LoginScreen> {
       final option = countryCodePrefixMap.containsKey(countryCode)
           ? phonePrefixForCountryCode(countryCode)
           : phonePrefixForCountryCode('ML');
+      final mapped = _mapCodeToCountry(countryCode);
+      if (!mounted) return;
       setState(() {
         _countryPrefix = option.prefix;
+        if (_needsCountry && mapped != null) {
+          _selectedCountry = mapped;
+        }
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _countryPrefix = '+223';
       });
@@ -253,6 +330,8 @@ class _LoginScreenState extends State<LoginScreen> {
       'lang': lang,
       if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
       if (!contact.contains('@')) 'phone': formattedContact,
+      if (_needsCountry && _selectedCountry.isNotEmpty)
+        'country': _selectedCountry,
     };
     try {
       final res = await ApiService.post('/api/auth/send-otp', body);
@@ -303,6 +382,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String _friendlyError(Object? raw, LanguageProvider lp) {
     final msg = raw?.toString().toLowerCase() ?? '';
+    if (msg.contains('not found') ||
+        msg.contains('no cooperative') ||
+        msg.contains('no processor') ||
+        msg.contains('no account') ||
+        msg.contains('not_registered')) {
+      switch (widget.role) {
+        case AuthRole.cooperative:
+          return lp.t(
+            'No active cooperative account found. Complete registration at sahelagriconnect.com/cooperative-registration',
+            'Aucun compte coopérative actif trouvé. Complétez l\'inscription sur sahelagriconnect.com',
+          );
+        case AuthRole.processor:
+          return lp.t(
+            'No processor account found. Complete registration at sahelagriconnect.com/platform-licensing',
+            'Aucun compte processeur trouvé.',
+          );
+        case AuthRole.government:
+        case AuthRole.ngo:
+          return lp.t(
+            'No account found. Request access on the web first.',
+            'Aucun compte trouvé. Demandez l\'accès sur le site web.',
+          );
+        case AuthRole.investor:
+          return lp.t(
+            'No investor account found. Register at sahelagriconnect.com/afri-yield/register',
+            'Aucun compte investisseur trouvé. Inscrivez-vous sur sahelagriconnect.com',
+          );
+        default:
+          break;
+      }
+    }
     if (msg.contains('expir')) {
       return lp.t(
         'Code expired. Request a new one',
@@ -397,6 +507,23 @@ class _LoginScreenState extends State<LoginScreen> {
             'Veuillez sélectionner votre pays',
           ));
       return;
+    }
+    if (_contactIsEmail) {
+      final email = _contact.toLowerCase();
+      if (widget.role == AuthRole.government && !_isValidGovEmail(email)) {
+        setState(() => _error = lp.t(
+              'Government portal requires an official .gov or .gouv email address.',
+              'Le portail gouvernemental nécessite une adresse email officielle .gov ou .gouv.',
+            ));
+        return;
+      }
+      if (widget.role == AuthRole.ngo && !_isValidNgoEmail(email)) {
+        setState(() => _error = lp.t(
+              'NGO portal requires an official organizational email (.org, .gov, .gouv).',
+              'Le portail ONG nécessite une adresse email organisationnelle (.org, .gov, .gouv).',
+            ));
+        return;
+      }
     }
     setState(() {
       _loading = true;
@@ -1034,7 +1161,7 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           },
         ),
-        if (widget.role == AuthRole.government) ...[
+        if (widget.role == AuthRole.government && _contactIsEmail) ...[
           const SizedBox(height: 6),
           Text(
             lp.t(
@@ -1044,13 +1171,19 @@ class _LoginScreenState extends State<LoginScreen> {
             style: TextStyle(fontSize: 11, color: Colors.grey[400]),
           ),
         ],
+        if (widget.role == AuthRole.ngo && _contactIsEmail) ...[
+          const SizedBox(height: 6),
+          Text(
+            lp.t(
+              'Requires .org, .gov, or .gouv email',
+              'Email .org, .gov ou .gouv requis',
+            ),
+            style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+          ),
+        ],
         if (_needsCountry) ...[
           const SizedBox(height: 14),
-          _label(
-            widget.role == AuthRole.government
-                ? lp.t('Country', 'Pays')
-                : lp.t('Cooperative country', 'Pays de la coopérative'),
-          ),
+          _label(_countryFieldLabel(lp)),
           const SizedBox(height: 8),
           CountryDropdown(
             value: _selectedCountry,
@@ -1295,6 +1428,19 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_error.isNotEmpty) setState(() => _error = '');
     if (_otpCode.length == 6 && !_loading) {
       _verifyOtp();
+    }
+  }
+
+  String _countryFieldLabel(LanguageProvider lp) {
+    switch (widget.role) {
+      case AuthRole.cooperative:
+        return lp.t('Cooperative country', 'Pays de la coopérative');
+      case AuthRole.processor:
+        return lp.t('Processing country', 'Pays de traitement');
+      case AuthRole.ngo:
+        return lp.t('Organization country', 'Pays de l\'organisation');
+      default:
+        return lp.t('Country', 'Pays');
     }
   }
 
