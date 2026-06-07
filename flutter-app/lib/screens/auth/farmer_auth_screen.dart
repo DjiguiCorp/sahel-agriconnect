@@ -788,22 +788,22 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     final lp = context.watch<LanguageProvider>();
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1a3c2e),
-              Color(0xFF2d5a3d),
-              Color(0xFF0d1f17),
-            ],
+      body: Responsive.builder(
+        context: context,
+        phone: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF1a3c2e),
+                Color(0xFF2d5a3d),
+                Color(0xFF0d1f17),
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Responsive.builder(
-            context: context,
-            phone: LayoutBuilder(
+          child: SafeArea(
+            child: LayoutBuilder(
               builder: (context, constraints) {
                 return Column(
                   children: [
@@ -971,8 +971,21 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                 );
               },
             ),
-            tablet: _buildTabletAuthLayout(lp),
           ),
+        ),
+        tablet: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF1a3c2e),
+                Color(0xFF2d5a3d),
+                Color(0xFF0d1f17),
+              ],
+            ),
+          ),
+          child: SafeArea(child: _buildTabletAuthLayout(lp)),
         ),
       ),
     );

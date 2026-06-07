@@ -693,15 +693,23 @@ class _HomeScreenState extends State<HomeScreen> {
         phone: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: _buildMainScaffold(lp, auth),
+            child: _buildPhoneMainScaffold(lp, auth),
           ),
         ),
-        tablet: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: _buildMainScaffold(lp, auth),
-          ),
-        ),
+        tablet: _buildTabletMainScaffold(lp, auth),
+      ),
+    );
+  }
+
+  Widget _buildPhoneMainScaffold(LanguageProvider lp, AuthState auth) {
+    return _buildMainScaffold(lp, auth);
+  }
+
+  Widget _buildTabletMainScaffold(LanguageProvider lp, AuthState auth) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: _buildMainScaffold(lp, auth),
       ),
     );
   }
@@ -1045,11 +1053,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryCarousel(LanguageProvider lp) {
-    return Responsive.builder(
-      context: context,
-      phone: _buildCategoryCarouselPhone(lp),
-      tablet: _buildCategoryCarouselTablet(lp),
-    );
+    if (Responsive.isTablet(context)) {
+      return _buildCategoryCarouselTablet(lp);
+    }
+    return _buildCategoryCarouselPhone(lp);
   }
 
   Widget _buildCategoryCarouselPhone(LanguageProvider lp) {

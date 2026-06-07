@@ -140,7 +140,12 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       },
       child: Responsive.builder(
         context: context,
-        phone: _buildPhoneLayout(isFr),
+        phone: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: _buildPhoneLayout(isFr),
+          ),
+        ),
         tablet: _buildTabletLayout(isFr),
       ),
     );
@@ -181,36 +186,31 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   }
 
   Widget _buildPhoneLayout(bool isFr) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: Scaffold(
-          extendBody: false,
-          backgroundColor: _bg,
-          body: Column(
-            children: [
-              const OfflineBanner(),
-              _FarmerHeader(
-                farmer: _farmer,
-                loading: _loadingFarmer,
-                isFr: isFr,
-              ),
-              Expanded(child: _buildDashboardTabs(isFr)),
-            ],
+    return Scaffold(
+      extendBody: false,
+      backgroundColor: _bg,
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          _FarmerHeader(
+            farmer: _farmer,
+            loading: _loadingFarmer,
+            isFr: isFr,
           ),
-          bottomNavigationBar: GlassBottomNav(
-            child: NavigationBar(
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              height: 64,
-              selectedIndex: _tab,
-              onDestinationSelected: _goTab,
-              indicatorColor: _gold.withValues(alpha: 0.15),
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              destinations: _farmerNavDestinations(isFr),
-            ),
-          ),
+          Expanded(child: _buildDashboardTabs(isFr)),
+        ],
+      ),
+      bottomNavigationBar: GlassBottomNav(
+        child: NavigationBar(
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          height: 64,
+          selectedIndex: _tab,
+          onDestinationSelected: _goTab,
+          indicatorColor: _gold.withValues(alpha: 0.15),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: _farmerNavDestinations(isFr),
         ),
       ),
     );

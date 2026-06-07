@@ -3,8 +3,18 @@ import 'package:flutter/material.dart';
 enum DeviceType { phone, tablet }
 
 class Responsive {
+  /// Logical screen width from the platform [View], not the current widget's
+  /// layout constraints (avoids false phone detection inside ConstrainedBox).
+  static double screenWidth(BuildContext context) {
+    final view = View.maybeOf(context);
+    if (view != null) {
+      return MediaQueryData.fromView(view).size.width;
+    }
+    return MediaQuery.sizeOf(context).width;
+  }
+
   static DeviceType getDeviceType(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final width = screenWidth(context);
     return width >= 768 ? DeviceType.tablet : DeviceType.phone;
   }
 

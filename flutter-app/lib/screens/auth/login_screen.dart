@@ -585,18 +585,18 @@ class _LoginScreenState extends State<LoginScreen> {
     final lp = context.watch<LanguageProvider>();
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: _config.bg,
+      body: Responsive.builder(
+        context: context,
+        phone: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _config.bg,
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Responsive.builder(
-            context: context,
-            phone: LayoutBuilder(
+          child: SafeArea(
+            child: LayoutBuilder(
               builder: (context, constraints) {
                 return Column(
                   children: [
@@ -736,8 +736,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               },
             ),
-            tablet: _buildTabletAuthLayout(lp),
           ),
+        ),
+        tablet: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _config.bg,
+            ),
+          ),
+          child: SafeArea(child: _buildTabletAuthLayout(lp)),
         ),
       ),
     );
