@@ -9,6 +9,7 @@ import '../../core/auth_state.dart';
 import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/platform_navigation.dart';
+import '../../core/responsive.dart';
 import '../../core/safe_insets.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
@@ -131,65 +132,73 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   @override
   Widget build(BuildContext context) {
     final isFr = context.watch<LanguageProvider>().locale.languageCode == 'fr';
-    
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) context.go('/home');
       },
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Scaffold(
-        extendBody: false,
-        backgroundColor: _bg,
-        body: Column(
-          children: [
-            const OfflineBanner(),
-            // ── HEADER ────────────────────────────────────────
-            _FarmerHeader(
-              farmer: _farmer,
-              loading: _loadingFarmer,
-              isFr: isFr,
-            ),
-            // ── CONTENT ───────────────────────────────────────
-            Expanded(
-              child: IndexedStack(
-                index: _tab,
-                children: [
-                  _FarmerHomeTab(
-                    farmer: _farmer,
-                    loading: _loadingFarmer,
-                    cultures: _cultures,
-                    prices: _prices,
-                    isFr: isFr,
-                    onTabChange: _goTab,
-                    onPushTool: _pushFarmerTool,
-                  ),
-                  _FarmerProduceTab(
-                    farmer: _farmer,
-                    cultures: _cultures,
-                    loading: _loadingFarmer,
-                    isFr: isFr,
-                    onGoHome: _returnToDashboardHome,
-                  ),
-                  _FarmerAIToolsTab(
-                    isFr: isFr,
-                    farmer: _farmer,
-                    onPushTool: _pushFarmerTool,
-                  ),
-                  _FarmerBenefitsTab(
-                    isFr: isFr,
-                    onPushTool: _pushFarmerTool,
-                  ),
-                  _FarmerAccountTab(isFr: isFr, onTabChange: _goTab),
-                ],
-              ),
-            ),
-          ],
+      child: Responsive.builder(
+        context: context,
+        phone: _buildPhoneLayout(isFr),
+        tablet: _buildTabletLayout(isFr),
+      ),
+    );
+  }
+
+  Widget _buildDashboardTabs(bool isFr) {
+    return IndexedStack(
+      index: _tab,
+      children: [
+        _FarmerHomeTab(
+          farmer: _farmer,
+          loading: _loadingFarmer,
+          cultures: _cultures,
+          prices: _prices,
+          isFr: isFr,
+          onTabChange: _goTab,
+          onPushTool: _pushFarmerTool,
         ),
-        // ── PERSISTENT BOTTOM NAV ─────────────────────────────
-        bottomNavigationBar: GlassBottomNav(
+        _FarmerProduceTab(
+          farmer: _farmer,
+          cultures: _cultures,
+          loading: _loadingFarmer,
+          isFr: isFr,
+          onGoHome: _returnToDashboardHome,
+        ),
+        _FarmerAIToolsTab(
+          isFr: isFr,
+          farmer: _farmer,
+          onPushTool: _pushFarmerTool,
+        ),
+        _FarmerBenefitsTab(
+          isFr: isFr,
+          onPushTool: _pushFarmerTool,
+        ),
+        _FarmerAccountTab(isFr: isFr, onTabChange: _goTab),
+      ],
+    );
+  }
+
+  Widget _buildPhoneLayout(bool isFr) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Scaffold(
+          extendBody: false,
+          backgroundColor: _bg,
+          body: Column(
+            children: [
+              const OfflineBanner(),
+              _FarmerHeader(
+                farmer: _farmer,
+                loading: _loadingFarmer,
+                isFr: isFr,
+              ),
+              Expanded(child: _buildDashboardTabs(isFr)),
+            ],
+          ),
+          bottomNavigationBar: GlassBottomNav(
             child: NavigationBar(
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
@@ -199,35 +208,304 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
               onDestinationSelected: _goTab,
               indicatorColor: _gold.withValues(alpha: 0.15),
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.home_outlined, color: _textMuted),
-                  selectedIcon: const Icon(Icons.home, color: _gold),
-                  label: isFr ? 'Accueil' : 'Home',
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.grass_outlined, color: _textMuted),
-                  selectedIcon: const Icon(Icons.grass, color: _gold),
-                  label: isFr ? 'Production' : 'Produce',
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.psychology_outlined, color: _textMuted),
-                  selectedIcon: const Icon(Icons.psychology, color: _gold),
-                  label: isFr ? 'Outils IA' : 'AI Tools',
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.card_giftcard_outlined, color: _textMuted),
-                  selectedIcon: const Icon(Icons.card_giftcard, color: _gold),
-                  label: isFr ? 'Avantages' : 'Benefits',
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.manage_accounts_outlined, color: _textMuted),
-                  selectedIcon: const Icon(Icons.manage_accounts, color: _gold),
-                  label: isFr ? 'Compte' : 'Account',
+              destinations: _farmerNavDestinations(isFr),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabletLayout(bool isFr) {
+    return Scaffold(
+      extendBody: false,
+      backgroundColor: _bg,
+      body: Row(
+        children: [
+          _FarmerTabletSidebar(
+            farmer: _farmer,
+            loading: _loadingFarmer,
+            isFr: isFr,
+            tab: _tab,
+            cultures: _cultures,
+            onTabChange: _goTab,
+            onGoHome: _goPlatformHome,
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                const OfflineBanner(),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 32, 24),
+                    child: _buildDashboardTabs(isFr),
+                  ),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<NavigationDestination> _farmerNavDestinations(bool isFr) {
+    return [
+      NavigationDestination(
+        icon: const Icon(Icons.home_outlined, color: _textMuted),
+        selectedIcon: const Icon(Icons.home, color: _gold),
+        label: isFr ? 'Accueil' : 'Home',
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.grass_outlined, color: _textMuted),
+        selectedIcon: const Icon(Icons.grass, color: _gold),
+        label: isFr ? 'Production' : 'Produce',
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.psychology_outlined, color: _textMuted),
+        selectedIcon: const Icon(Icons.psychology, color: _gold),
+        label: isFr ? 'Outils IA' : 'AI Tools',
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.card_giftcard_outlined, color: _textMuted),
+        selectedIcon: const Icon(Icons.card_giftcard, color: _gold),
+        label: isFr ? 'Avantages' : 'Benefits',
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.manage_accounts_outlined, color: _textMuted),
+        selectedIcon: const Icon(Icons.manage_accounts, color: _gold),
+        label: isFr ? 'Compte' : 'Account',
+      ),
+    ];
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TABLET SIDEBAR
+// ══════════════════════════════════════════════════════════════
+class _FarmerTabletSidebar extends StatelessWidget {
+  final Map<String, dynamic>? farmer;
+  final bool loading;
+  final bool isFr;
+  final int tab;
+  final List<String> cultures;
+  final ValueChanged<int> onTabChange;
+  final VoidCallback onGoHome;
+
+  const _FarmerTabletSidebar({
+    required this.farmer,
+    required this.loading,
+    required this.isFr,
+    required this.tab,
+    required this.cultures,
+    required this.onTabChange,
+    required this.onGoHome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final name = farmer?['nom']?.toString() ?? auth.displayName;
+
+    return Container(
+      width: 280,
+      decoration: const BoxDecoration(
+        color: _surface2,
+        border: Border(right: BorderSide(color: _border)),
+      ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _gold.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Text('🌾', style: TextStyle(fontSize: 26)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              loading ? '...' : name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: _text,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              isFr ? 'Portail agriculteur' : 'Farmer portal',
+                              style: const TextStyle(
+                                color: _textMuted,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _SidebarStat(
+                    label: isFr ? 'Cultures' : 'Crops',
+                    value: loading ? '—' : '${cultures.length}',
+                  ),
+                  const SizedBox(height: 8),
+                  _SidebarStat(
+                    label: isFr ? 'Statut' : 'Status',
+                    value: isFr ? 'Actif' : 'Active',
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: _border, height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                children: [
+                  _SidebarNavItem(
+                    icon: Icons.home_outlined,
+                    selectedIcon: Icons.home,
+                    label: isFr ? 'Accueil' : 'Home',
+                    selected: tab == 0,
+                    onTap: () => onTabChange(0),
+                  ),
+                  _SidebarNavItem(
+                    icon: Icons.grass_outlined,
+                    selectedIcon: Icons.grass,
+                    label: isFr ? 'Production' : 'Produce',
+                    selected: tab == 1,
+                    onTap: () => onTabChange(1),
+                  ),
+                  _SidebarNavItem(
+                    icon: Icons.psychology_outlined,
+                    selectedIcon: Icons.psychology,
+                    label: isFr ? 'Outils IA' : 'AI Tools',
+                    selected: tab == 2,
+                    onTap: () => onTabChange(2),
+                  ),
+                  _SidebarNavItem(
+                    icon: Icons.card_giftcard_outlined,
+                    selectedIcon: Icons.card_giftcard,
+                    label: isFr ? 'Avantages' : 'Benefits',
+                    selected: tab == 3,
+                    onTap: () => onTabChange(3),
+                  ),
+                  _SidebarNavItem(
+                    icon: Icons.manage_accounts_outlined,
+                    selectedIcon: Icons.manage_accounts,
+                    label: isFr ? 'Compte' : 'Account',
+                    selected: tab == 4,
+                    onTap: () => onTabChange(4),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: OutlinedButton.icon(
+                onPressed: onGoHome,
+                icon: const Icon(Icons.arrow_back, size: 18),
+                label: Text(isFr ? 'Retour accueil' : 'Back to home'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _text,
+                  side: const BorderSide(color: _border),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _SidebarStat extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _SidebarStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: _textMuted, fontSize: 13)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: _gold,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SidebarNavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SidebarNavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: selected ? _gold.withValues(alpha: 0.12) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? selectedIcon : icon,
+                  color: selected ? _gold : _textMuted,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected ? _text : _textMuted,
+                    fontSize: 15,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

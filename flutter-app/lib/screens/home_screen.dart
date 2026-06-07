@@ -11,6 +11,7 @@ import '../core/auth_state.dart';
 import '../core/feature_flags.dart';
 import '../core/glass.dart';
 import '../core/language_provider.dart';
+import '../core/responsive.dart';
 import '../core/theme.dart';
 
 /// Public-facing entry point for Sahel AgriConnect.
@@ -687,10 +688,26 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         });
       },
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Scaffold(
+      child: Responsive.builder(
+        context: context,
+        phone: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: _buildMainScaffold(lp, auth),
+          ),
+        ),
+        tablet: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: _buildMainScaffold(lp, auth),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainScaffold(LanguageProvider lp, AuthState auth) {
+    return Scaffold(
         resizeToAvoidBottomInset: true,
         extendBody: false,
         backgroundColor: const Color(0xFF0C0E12),
@@ -759,9 +776,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildProfileTab(lp, auth),
           ],
         ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1031,6 +1045,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryCarousel(LanguageProvider lp) {
+    return Responsive.builder(
+      context: context,
+      phone: _buildCategoryCarouselPhone(lp),
+      tablet: _buildCategoryCarouselTablet(lp),
+    );
+  }
+
+  Widget _buildCategoryCarouselPhone(LanguageProvider lp) {
     final auth = context.watch<AuthState>();
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -1099,6 +1121,80 @@ class _HomeScreenState extends State<HomeScreen> {
                       duration: 400.ms,
                       curve: Curves.easeOut,
                     );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryCarouselTablet(LanguageProvider lp) {
+    final auth = context.watch<AuthState>();
+    final pad = Responsive.padding(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: pad),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  lp.t('Browse by audience', 'Explorer par audience'),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: Responsive.fontSize(context, 15),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  auth.isLoggedIn
+                      ? lp.t('Tap to open your portal', 'Ouvrir votre portail')
+                      : lp.t('Tap to preview', 'Toucher pour aperçu'),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: Responsive.fontSize(context, 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: pad),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: Responsive.gridColumns(context),
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.35,
+              ),
+              itemCount: _categories.length,
+              itemBuilder: (context, i) {
+                final c = _categories[i];
+                final selected = i == _selectedCategory;
+                final cardRole = _roleForCategoryIndex(i);
+                return _CategoryCard(
+                  category: c,
+                  selected: selected,
+                  isFr: lp.isFr,
+                  tablet: true,
+                  showSignedInBadge: auth.isLoggedIn &&
+                      cardRole != null &&
+                      auth.role == cardRole,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = i;
+                      _loadedPreviews.add(i);
+                    });
+                    _openCategory(i, auth);
+                  },
+                );
               },
             ),
           ),
@@ -2212,11 +2308,14 @@ class _CategoryCard extends StatelessWidget {
   final bool showSignedInBadge;
   final VoidCallback onTap;
 
+  final bool tablet;
+
   const _CategoryCard({
     required this.category,
     required this.selected,
     required this.isFr,
     this.showSignedInBadge = false,
+    this.tablet = false,
     required this.onTap,
   });
 
@@ -2225,10 +2324,10 @@ class _CategoryCard extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
-      width: 160,
+      width: tablet ? null : 160,
       child: GlassCard(
         onTap: onTap,
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(tablet ? 20 : 14),
         borderColor: selected
             ? category.accent.withValues(alpha: 0.6)
             : Colors.white.withValues(alpha: 0.1),
@@ -2243,35 +2342,37 @@ class _CategoryCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: tablet ? 48 : 36,
+                  height: tablet ? 48 : 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: category.accent.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(tablet ? 12 : 10),
                   ),
-                  child: Text(category.emoji,
-                      style: const TextStyle(fontSize: 18)),
+                  child: Text(
+                    category.emoji,
+                    style: TextStyle(fontSize: tablet ? 24 : 18),
+                  ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       isFr ? category.titleFr : category.titleEn,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: tablet ? 18 : 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: tablet ? 6 : 2),
                     Text(
                       isFr ? category.descFr : category.descEn,
-                      maxLines: 2,
+                      maxLines: tablet ? 3 : 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 10.5,
+                        fontSize: tablet ? 13 : 10.5,
                         height: 1.3,
                       ),
                     ),

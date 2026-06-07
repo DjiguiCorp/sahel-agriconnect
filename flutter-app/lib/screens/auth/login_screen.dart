@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/auth_state.dart';
 import 'investor_kyc_screen.dart';
 import '../../core/language_provider.dart';
+import '../../core/responsive.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/biometric_service.dart';
@@ -593,10 +594,12 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Column(
-                children: [
+          child: Responsive.builder(
+            context: context,
+            phone: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  children: [
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                           child: Row(
@@ -730,11 +733,144 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                         ),
                       ],
-              );
-            },
+                );
+              },
+            ),
+            tablet: _buildTabletAuthLayout(lp),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTabletAuthLayout(LanguageProvider lp) {
+    return Row(
+      children: [
+        Expanded(child: _buildBrandingPanel(lp)),
+        Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _buildLanguageToggle(),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(child: _buildTabletAuthForm(lp)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBrandingPanel(LanguageProvider lp) {
+    return Container(
+      padding: const EdgeInsets.all(48),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(_config.emoji, style: const TextStyle(fontSize: 56)),
+          const SizedBox(height: 24),
+          const Text(
+            'Sahel AgriConnect',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _localizedTitle(lp),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _localizedSubtitle(lp),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabletAuthForm(LanguageProvider lp) {
+    if (_step == _LoginStep.otp) {
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _buildOtpStep(lp),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _accountStatusMessage != null
+            ? _buildStatusMessage(lp)
+            : _buildContactStep(lp),
+      ),
+    );
+  }
+
+  Widget _buildLanguageToggle() {
+    return Consumer<LanguageProvider>(
+      builder: (context, langProvider, _) {
+        final isFr = langProvider.locale.languageCode == 'fr';
+        return GestureDetector(
+          onTap: () => langProvider.setLang(isFr ? 'en' : 'fr'),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(isFr ? '🇫🇷' : '🇺🇸', style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 4),
+                Text(
+                  isFr ? 'FR' : 'EN',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
