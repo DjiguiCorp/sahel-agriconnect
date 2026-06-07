@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
+import '../../widgets/sign_out_dialog.dart';
 import 'webview_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -25,6 +26,10 @@ class ProfileScreen extends StatelessWidget {
       resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF8F4E3),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
+          onPressed: () => context.go('/home'),
+        ),
         title: const Text('Profile & Settings'),
         backgroundColor: const Color(0xFF1a3c2e),
         foregroundColor: Colors.white,
@@ -466,35 +471,5 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _handleLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Sign out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1a3c2e),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text('Sign out'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && context.mounted) {
-      await context.read<AuthState>().logout();
-      if (context.mounted) context.go('/home');
-    }
-  }
+  Future<void> _handleLogout(BuildContext context) => showSignOutDialog(context);
 }

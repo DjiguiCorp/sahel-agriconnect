@@ -2155,6 +2155,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (ok == true && mounted) {
       await context.read<AuthState>().logout();
+      if (mounted) context.go('/home');
     }
   }
 }

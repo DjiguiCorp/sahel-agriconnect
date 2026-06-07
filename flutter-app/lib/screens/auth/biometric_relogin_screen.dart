@@ -184,6 +184,16 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
     }
   }
 
+  Future<void> _useDifferentAccount() async {
+    _stopLoading();
+    final auth = context.read<AuthState>();
+    await auth.logout();
+    await auth.clearSeed();
+    await auth.clearSavedFarmerIdentity();
+    auth.continueAsGuest();
+    if (mounted) context.go('/home');
+  }
+
   Future<void> _goToOtpLogin({bool clearIdentity = false}) async {
     _stopLoading();
     final auth = context.read<AuthState>();
@@ -248,6 +258,15 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
         },
         child: Scaffold(
           backgroundColor: AppColors.forestGreen,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.home_rounded, color: AppColors.gold),
+              tooltip: lp.t('Home', 'Accueil'),
+              onPressed: _goHome,
+            ),
+          ),
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -368,11 +387,11 @@ class _BiometricReLoginScreenState extends State<BiometricReLoginScreen> {
                   ],
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () => _goToOtpLogin(clearIdentity: true),
+                    onPressed: _useDifferentAccount,
                     child: Text(
                       lp.t(
-                        'Not you? Use a different email',
-                        'Pas vous ? Utiliser un autre email',
+                        'Not you? Return to home',
+                        'Pas vous ? Retour à l\'accueil',
                       ),
                       textAlign: TextAlign.center,
                       style: TextStyle(

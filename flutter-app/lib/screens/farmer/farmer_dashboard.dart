@@ -198,7 +198,6 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
             loading: _loadingFarmer,
             isFr: isFr,
           ),
-          PortalDashboardToolbar(dialogBackground: _surface2),
           Expanded(child: _buildDashboardTabs(isFr)),
         ],
       ),
@@ -243,7 +242,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        PortalDashboardToolbar(dialogBackground: _surface2),
+                        const PortalDashboardToolbar(),
                         Expanded(child: _buildDashboardTabs(isFr)),
                       ],
                     ),
@@ -430,10 +429,7 @@ class _FarmerTabletSidebar extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: PortalSidebarSignOutButton(
-                dialogBackground: _surface2,
-                borderColor: _border,
-              ),
+              child: PortalSidebarSignOutButton(borderColor: _border),
             ),
           ],
         ),
@@ -573,14 +569,7 @@ class _FarmerHeader extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              GlassHeaderIconButton(
-                icon: Icons.home_outlined,
-                accentColor: _gold,
-                tooltip: isFr
-                    ? 'Retour à l\'accueil principal'
-                    : 'Back to main platform',
-                onTap: () => goPlatformHome(context),
-              ),
+              const PortalGlassHeaderActions(),
               const SizedBox(width: 8),
               GlassHeaderIconButton(
                 icon: Icons.notifications_outlined,

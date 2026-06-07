@@ -10,6 +10,7 @@ import '../../core/language_provider.dart';
 import '../../core/responsive.dart';
 import '../../core/theme.dart';
 import '../../widgets/portal_dashboard_nav.dart';
+import '../../widgets/sign_out_dialog.dart';
 import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -188,7 +189,6 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
                 totalOutput: _totalOutput,
                 isFr: isFr,
               ),
-              PortalDashboardToolbar(dialogBackground: _surface),
               Expanded(child: _buildTabStack(isFr)),
             ],
           ),
@@ -309,7 +309,6 @@ class _ProcessorDashboardState extends State<ProcessorDashboard> {
       selectedIndex: _tab,
       onNavSelected: _goTab,
       onHomeTap: () => context.go('/home'),
-      signOutDialogColor: _surface,
       content: _buildTabStack(isFr),
     );
   }
@@ -399,13 +398,7 @@ class _ProcessorHeader extends StatelessWidget {
               ],
             ),
           ),
-          GlassHeaderIconButton(
-            icon: Icons.home_outlined,
-            accentColor: _amber,
-            circular: false,
-            label: isFr ? 'Accueil' : 'Home',
-            onTap: () => context.go('/home'),
-          ),
+          PortalGlassHeaderActions(accentColor: _amber),
         ],
       ),
       statsRow: Row(
@@ -1577,33 +1570,9 @@ class _ProcessorAccountTab extends StatelessWidget {
             label: Text(isFr ? 'Se déconnecter' : 'Sign Out',
               style: const TextStyle(color: Colors.red,
                 fontWeight: FontWeight.bold, fontSize: 15)),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (_) => AlertDialog(
-                  backgroundColor: _surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                  title: Text(isFr ? 'Se déconnecter ?' : 'Sign out?',
-                    style: const TextStyle(color: _text)),
-                  content: Text(isFr
-                    ? 'Vous serez redirigé vers l\'accueil.'
-                    : 'You will be returned to the home screen.',
-                    style: const TextStyle(color: _muted)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: Text(isFr ? 'Annuler' : 'Cancel',
-                        style: const TextStyle(color: _muted))),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: Text(isFr ? 'Se déconnecter' : 'Sign out',
-                        style: const TextStyle(color: Colors.red))),
-                  ]));
-              if (confirm == true && context.mounted) {
-                await context.read<AuthState>().logout();
-              }
-            })),
+            onPressed: () => showSignOutDialog(context),
+          ),
+        ),
       ]);
   }
 

@@ -68,7 +68,7 @@ class PortalTabletShell extends StatelessWidget {
     this.footer,
     this.topBanner,
     this.onHomeTap,
-    this.signOutDialogColor,
+    this.showSignOutFooter = true,
   });
 
   final Color backgroundColor;
@@ -83,7 +83,7 @@ class PortalTabletShell extends StatelessWidget {
   final Widget? footer;
   final Widget? topBanner;
   final VoidCallback? onHomeTap;
-  final Color? signOutDialogColor;
+  final bool showSignOutFooter;
 
   @override
   Widget build(BuildContext context) {
@@ -182,11 +182,10 @@ class PortalTabletShell extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (signOutDialogColor != null)
+                  if (onHomeTap != null && showSignOutFooter)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: PortalSidebarSignOutButton(
-                        dialogBackground: signOutDialogColor!,
                         borderColor: Colors.white.withValues(alpha: 0.12),
                       ),
                     ),
@@ -207,10 +206,7 @@ class PortalTabletShell extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (onHomeTap != null)
-                          PortalDashboardToolbar(
-                            dialogBackground:
-                                signOutDialogColor ?? sidebarColor,
-                          ),
+                          const PortalDashboardToolbar(),
                         Expanded(child: content),
                       ],
                     ),

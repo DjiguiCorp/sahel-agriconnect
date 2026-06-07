@@ -103,18 +103,10 @@ GoRouter buildRouter(
         if (!ageGate.accepted) return null;
         return authState.isLoggedIn
             ? _dashboardRoute(authState.role)
-            : '/login/investor';
+            : '/home';
       }
 
       final loggedIn = authState.isLoggedIn;
-
-      // If not logged in but a device seed exists → offer biometric re-login
-      if (!loggedIn && loc != '/relogin' && loc != '/home' &&
-          !loc.startsWith('/login') && !loc.startsWith('/register') &&
-          !loc.startsWith('/guest')) {
-        final hasSeed = await authState.hasSavedSession();
-        if (hasSeed) return '/relogin';
-      }
 
       if (loggedIn && loc.startsWith('/guest/')) {
         return _dashboardRoute(authState.role);
@@ -124,10 +116,8 @@ GoRouter buildRouter(
         return _dashboardRoute(authState.role);
       }
 
-      if (authState.isGuest) {
-        if (_isProtectedPath(loc)) {
-          return _loginPathFor(loc);
-        }
+      if (!loggedIn && _isProtectedPath(loc)) {
+        return '/home';
       }
 
       final otpRelogin = state.uri.queryParameters['otp'] == '1';
@@ -390,16 +380,6 @@ bool _isProtectedPath(String loc) {
     if (loc == p || loc.startsWith('$p/')) return true;
   }
   return false;
-}
-
-String _loginPathFor(String loc) {
-  if (loc.startsWith('/farmer')) return '/login/farmer';
-  if (loc.startsWith('/investor')) return '/login/investor';
-  if (loc.startsWith('/cooperative')) return '/login/cooperative';
-  if (loc.startsWith('/government')) return '/login/government';
-  if (loc.startsWith('/ngo')) return '/login/ngo';
-  if (loc.startsWith('/processor')) return '/login/processor';
-  return '/home';
 }
 
 bool _routeMismatch(AuthRole role, String loc) {

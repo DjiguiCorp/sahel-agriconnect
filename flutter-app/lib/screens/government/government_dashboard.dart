@@ -175,7 +175,6 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
               children: [
                 const OfflineBanner(),
                 _GovHeader(data: _data, loading: _loading, isFr: isFr),
-                PortalDashboardToolbar(dialogBackground: _surface),
                 Expanded(child: _buildTabStack(isFr)),
               ],
             ),
@@ -302,7 +301,6 @@ class _GovernmentDashboardState extends State<GovernmentDashboard> {
         selectedIndex: _tab,
         onNavSelected: _goTab,
         onHomeTap: () => context.go('/home'),
-        signOutDialogColor: _surface,
         content: _buildTabStack(isFr),
       ),
     );
@@ -391,13 +389,7 @@ class _GovHeader extends StatelessWidget {
               ],
             ),
           ),
-          GlassHeaderIconButton(
-            icon: Icons.home_outlined,
-            accentColor: _blue,
-            circular: false,
-            label: isFr ? 'Accueil' : 'Home',
-            onTap: () => context.go('/home'),
-          ),
+          PortalGlassHeaderActions(accentColor: _blue),
         ],
       ),
       statsRow: Row(

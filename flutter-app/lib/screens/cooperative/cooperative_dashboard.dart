@@ -231,7 +231,6 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
                   loading: _loading,
                   isFr: isFr,
                 ),
-                PortalDashboardToolbar(dialogBackground: _surface),
                 Expanded(child: _buildTabStack(isFr)),
               ],
             ),
@@ -353,7 +352,6 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
         selectedIndex: _tab,
         onNavSelected: _goTab,
         onHomeTap: () => context.go('/home'),
-        signOutDialogColor: _surface,
         content: _buildTabStack(isFr),
       ),
     );
@@ -465,13 +463,7 @@ class _CoopHeader extends StatelessWidget {
               ],
             ),
           ),
-          GlassHeaderIconButton(
-            icon: Icons.home_outlined,
-            accentColor: _accent,
-            circular: false,
-            label: isFr ? 'Accueil' : 'Home',
-            onTap: () => context.go('/home'),
-          ),
+          PortalGlassHeaderActions(accentColor: _accent),
         ],
       ),
       statsRow: Row(

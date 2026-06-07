@@ -290,7 +290,6 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                 investmentCount: _investments.length,
                 isFr: isFr,
               ),
-              PortalDashboardToolbar(dialogBackground: _surface),
               Expanded(child: _buildTabStack(isFr)),
             ],
           ),
@@ -369,7 +368,6 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
       selectedIndex: _tab,
       onNavSelected: _goTab,
       onHomeTap: () => context.go('/home'),
-      signOutDialogColor: _surface,
       content: _tab == 0
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,14 +458,7 @@ class _InvestorHeader extends StatelessWidget {
               ),
             ],
           ),
-          GlassHeaderIconButton(
-            icon: Icons.home_outlined,
-            accentColor: _gold,
-            tooltip: isFr
-                ? 'Retour à l\'accueil principal'
-                : 'Back to main platform',
-            onTap: () => context.go('/home'),
-          ),
+          const PortalGlassHeaderActions(accentColor: _gold),
         ],
       ),
       statsRow: Row(

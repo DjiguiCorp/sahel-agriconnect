@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../core/auth_state.dart';
 import '../core/language_provider.dart';
+import 'sign_out_dialog.dart';
 
 /// Sign-out control with confirmation dialog; place at end of account tab scroll content.
 class DashboardSignOutButton extends StatelessWidget {
@@ -39,52 +38,7 @@ class DashboardSignOutButton extends StatelessWidget {
                 fontSize: 15,
               ),
             ),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  backgroundColor: dialogBackground,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  title: Text(
-                    lp.t('Sign out?', 'Se déconnecter ?'),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  content: Text(
-                    lp.t(
-                      'You will be returned to the home screen.',
-                      'Vous serez redirigé vers l\'accueil.',
-                    ),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext, false),
-                      child: Text(
-                        lp.t('Cancel', 'Annuler'),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext, true),
-                      child: Text(
-                        lp.t('Sign out', 'Se déconnecter'),
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-              if (confirm == true && context.mounted) {
-                await context.read<AuthState>().logout();
-                if (context.mounted) context.go('/home');
-              }
-            },
+            onPressed: () => showSignOutDialog(context),
           ),
         ),
         const SizedBox(height: 16),
