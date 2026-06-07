@@ -1,12 +1,18 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/auth_state.dart';
+import '../../core/glass.dart';
 import '../../core/language_provider.dart';
 import '../../core/safe_insets.dart';
 import '../../core/theme.dart';
+
+const _bg = Color(0xFF0a1f14);
+const _whatsapp = 'https://wa.me/12152175381';
+const _helpWeb = 'https://sahelagriconnect.com/help-center';
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -18,107 +24,40 @@ class HelpScreen extends StatefulWidget {
 class _HelpScreenState extends State<HelpScreen> {
   final _searchCtrl = TextEditingController();
   String _search = '';
+  int? _openFaq;
 
-  static final Map<AuthRole, List<(String, String)>> _allFaqs = {
-    AuthRole.farmer: [
-      (
-        'How do I declare my produce?',
-        'Go to the Produce tab, tap the + button, select your commodity, enter the quantity and tap Submit. Your cooperative will be notified immediately.',
-      ),
-      (
-        'How does the AI disease detection work?',
-        'Open the AI Tools tab, tap "Disease detect", take a photo of the affected leaf or plant. Our AI analyzes it within seconds and provides diagnosis and treatment recommendations.',
-      ),
-      (
-        'How do I join a cooperative?',
-        "A cooperative must invite you. Once they send an invitation to your phone number or email, you'll receive a notification. Tap it to accept and join automatically.",
-      ),
-      (
-        'When will I receive my benefits?',
-        "Benefits unlock as you increase your certification level. Go to Profile → Benefits progress to see your current level and what's needed for the next tier.",
-      ),
-      (
-        'What is AfriYield Exchange?',
-        'AfriYield Exchange is the investment arm of Sahel AgriConnect. Diaspora investors fund cooperatives like yours to help produce at scale for international markets.',
-      ),
-      (
-        'How do I verify my account?',
-        'Go to Profile → Phone number or Email address. Enter your contact, receive a 6-digit code, and enter it to verify.',
-      ),
-    ],
-    AuthRole.investor: [
-      (
-        'How do I make an investment?',
-        'Browse the Opportunities tab, tap any opportunity to see details, then tap "Invest on web". You\'ll be taken to our secure web platform to complete the investment.',
-      ),
-      (
-        'When do I get my capital back?',
-        "Capital is returned at the end of the production cycle (90–180 days for Track B). You'll be notified when each milestone is verified and funds are released.",
-      ),
-      (
-        'What are the 3 investment tracks?',
-        'Track A: You source a specific commodity with existing buyers. Track B: You invest working capital in a cooperative cycle and receive revenue share. Track C: Premium direct sourcing with our team vetting suppliers in 72h.',
-      ),
-      (
-        'What is the escrow system?',
-        'Funds are held by a licensed escrow agent — never by AfriYield directly. They are released in 3 tranches as verified milestones are completed. See the Escrow tab for live status.',
-      ),
-      (
-        'How do I upgrade to Premium?',
-        'Go to Profile → Premium subscription. Premium gives you price alerts, priority opportunity access, and weekly market reports for \$299/year.',
-      ),
-      (
-        'What is the 7.5% fee?',
-        '5% platform facilitation + 2.5% transaction commission = 7.5% total. Zero fee on failed or cancelled transactions.',
-      ),
-    ],
-    AuthRole.cooperative: [
-      (
-        "How do I approve a farmer's produce?",
-        'Go to the Produce tab. Swipe right on a produce card to approve, or swipe left to reject. The farmer is notified automatically.',
-      ),
-      (
-        'How do I invite farmers to my cooperative?',
-        "Go to Members tab, tap Invite, enter their phone number or email, add a message and send. They'll receive a notification with a one-tap accept link.",
-      ),
-      (
-        'How do I respond to a government project?',
-        "Go to Projects tab. You'll see all active national projects for your country. Tap Commit, Interested, or Decline on each one.",
-      ),
-      (
-        'How do I promote produce to AfriYield?',
-        'After approving a farmer\'s produce, tap the "Promote to AfriYield" button. This action is completed on the web portal for security.',
-      ),
-    ],
-    AuthRole.government: [
-      (
-        'How do I create a national project?',
-        'Complex project creation is available on the web portal at sahelagriconnect.com/government-portal. For quick emergency broadcasts, use the Broadcast tab in the app.',
-      ),
-      (
-        'How do I see who responded to my project?',
-        'Go to the Coops tab, select a project to see all cooperative responses categorized as Committed, Interested, or Declined.',
-      ),
-      (
-        'Can I export farmer data?',
-        'Data export is available on the web portal only. This keeps sensitive data secure and off mobile devices.',
-      ),
-    ],
-    AuthRole.processor: [
-      (
-        'How do I declare my produce?',
-        'Go to the Produce tab, tap the + button, select your commodity, enter the quantity and tap Submit. Your cooperative will be notified immediately.',
-      ),
-      (
-        'How does the AI disease detection work?',
-        'Open the AI Tools tab, tap "Disease detect", take a photo of the affected leaf or plant. Our AI analyzes it within seconds and provides diagnosis and treatment recommendations.',
-      ),
-      (
-        'How do I verify my account?',
-        'Go to Profile → Phone number or Email address. Enter your contact, receive a 6-digit code, and enter it to verify.',
-      ),
-    ],
-  };
+  static const _faqs = [
+    (
+      'Comment créer un compte agriculteur?',
+      'How do I create a farmer account?',
+      'Depuis l\'application, sélectionnez Agriculteur et entrez votre email ou téléphone pour recevoir un lien de connexion.',
+      'In the app, select Farmer and enter your email or phone for a magic sign-in link.',
+    ),
+    (
+      'Comment s\'inscrire en coopérative?',
+      'How do I register as a cooperative?',
+      'Visitez sahelagriconnect.com/cooperative-registration sur ordinateur.',
+      'Visit sahelagriconnect.com/cooperative-registration on your computer.',
+    ),
+    (
+      'Comment fonctionne AfriYield Exchange?',
+      'How does AfriYield Exchange work?',
+      'Les investisseurs de la diaspora financent des coopératives certifiées avec protection escrow.',
+      'Diaspora investors fund certified cooperatives with escrow protection.',
+    ),
+    (
+      'Mes données sont-elles sécurisées?',
+      'Is my data secure?',
+      'Oui. Chiffrement en transit et au repos. Conformité RGPD et OHADA.',
+      'Yes. Encrypted in transit and at rest. GDPR and OHADA compliant.',
+    ),
+    (
+      'Comment supprimer mon compte?',
+      'How do I delete my account?',
+      'Visitez sahelagriconnect.com/delete-account ou support@woneapp.com',
+      'Visit sahelagriconnect.com/delete-account or email support@woneapp.com',
+    ),
+  ];
 
   @override
   void dispose() {
@@ -126,25 +65,34 @@ class _HelpScreenState extends State<HelpScreen> {
     super.dispose();
   }
 
+  Future<void> _open(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open link')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final role = context.watch<AuthState>().role;
-    final faqs = (_allFaqs[role] ?? _allFaqs[AuthRole.farmer]!)
-        .where(
-          (f) =>
-              _search.isEmpty ||
-              f.$1.toLowerCase().contains(_search.toLowerCase()) ||
-              f.$2.toLowerCase().contains(_search.toLowerCase()),
-        )
-        .toList();
-
     final lp = context.watch<LanguageProvider>();
+    final isFr = lp.locale.languageCode == 'fr';
+    final q = _search.toLowerCase();
+    final faqs = _faqs.where((f) {
+      if (q.isEmpty) return true;
+      if (isFr) {
+        return f.$1.toLowerCase().contains(q) || f.$3.toLowerCase().contains(q);
+      }
+      return f.$2.toLowerCase().contains(q) || f.$4.toLowerCase().contains(q);
+    }).toList();
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: _bg,
       appBar: AppBar(
-        title: Text(lp.t('Help center', 'Centre d\'aide')),
+        title: Text(lp.t('Help Center', 'Centre d\'aide')),
         backgroundColor: const Color(0xFF1a3c2e),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -154,177 +102,164 @@ class _HelpScreenState extends State<HelpScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: ListView(
-        padding: SafeInsets.listBottom(context, glassNav: false),
-        children: [
-          TextField(
-            controller: _searchCtrl,
-            onChanged: (v) => setState(() => _search = v),
-            decoration: InputDecoration(
-              hintText: lp.t(
-                'Search help articles...',
-                'Rechercher dans l\'aide...',
-              ),
-              hintStyle: TextStyle(color: Colors.grey[400]),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
-              prefixIcon: const Icon(Icons.search_rounded, color: Colors.grey),
-              suffixIcon: _search.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear_rounded, color: Colors.grey),
-                      onPressed: () {
-                        _searchCtrl.clear();
-                        setState(() => _search = '');
-                      },
-                    )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(vertical: 14),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_bg, Color(0xFF1a3c2e)],
           ),
-          const SizedBox(height: 16),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade200, width: 0.5),
+        ),
+        child: ListView(
+          padding: SafeInsets.listBottom(context, glassNav: false, extra: 20),
+          children: [
+            Text(
+              lp.t('How can we help?', 'Comment pouvons-nous vous aider ?'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            child: Column(
-              children: [
-                _HelpItem(
-                  icon: Icons.chat_bubble_outline,
-                  title: 'Contact Support',
-                  subtitle: 'support@sahelagriconnect.com',
-                  onTap: () => launchUrl(
-                    Uri.parse('mailto:support@sahelagriconnect.com'),
-                    mode: LaunchMode.externalApplication,
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _search = v),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: lp.t('Search help...', 'Rechercher...'),
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                    prefixIcon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.5)),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.06),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: const Color(0xFF1D9E75).withValues(alpha: 0.3)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: const Color(0xFF1D9E75).withValues(alpha: 0.3)),
+                    ),
                   ),
                 ),
-                Divider(height: 1, color: Colors.grey.shade200),
-                _HelpItem(
-                  icon: Icons.language,
-                  title: 'Visit Help Center',
-                  subtitle: 'sahelagriconnect.com/help',
-                  onTap: () => launchUrl(
-                    Uri.parse('https://sahelagriconnect.com/help'),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-                Divider(height: 1, color: Colors.grey.shade200),
-                _HelpItem(
-                  icon: Icons.phone_outlined,
-                  title: 'WhatsApp Support',
-                  subtitle: 'Chat with us on WhatsApp',
-                  onTap: () => launchUrl(
-                    Uri.parse('https://wa.me/message/sahelagriconnect'),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-                Divider(height: 1, color: Colors.grey.shade200),
-                _HelpItem(
-                  icon: Icons.quiz_outlined,
-                  title: 'Frequently Asked Questions',
-                  subtitle:
-                      'How vetting works, how to declare produce, how to invest',
-                  onTap: () => context.push('/faq'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Frequently asked questions',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1a3c2e),
-            ),
-          ),
-          const SizedBox(height: 10),
-          if (faqs.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  'No results for "$_search"',
-                  style: TextStyle(color: Colors.grey[500]),
-                ),
               ),
-            )
-          else
-            ...faqs.map((faq) => _faqItem(context, faq.$1, faq.$2)),
-        ],
+            ),
+            const SizedBox(height: 20),
+            _contactCard(
+              icon: Icons.chat,
+              title: lp.t('WhatsApp', 'WhatsApp'),
+              subtitle: lp.t('Response within 24h', 'Réponse sous 24 h'),
+              color: const Color(0xFF25D366),
+              onTap: () => _open(_whatsapp),
+            ),
+            const SizedBox(height: 10),
+            _contactCard(
+              icon: Icons.mail_outline,
+              title: lp.t('Email', 'Courriel'),
+              subtitle: 'support@woneapp.com',
+              color: const Color(0xFF60a5fa),
+              onTap: () => _open('mailto:support@woneapp.com'),
+            ),
+            const SizedBox(height: 10),
+            _contactCard(
+              icon: Icons.language,
+              title: lp.t('Help website', 'Site d\'aide'),
+              subtitle: 'sahelagriconnect.com/help-center',
+              color: AppColors.gold,
+              onTap: () => _open(_helpWeb),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              lp.t('FAQ', 'Questions fréquentes'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (faqs.isEmpty)
+              Text(
+                lp.t('No results', 'Aucun résultat'),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+              )
+            else
+              ...faqs.asMap().entries.map((e) {
+                final i = e.key;
+                final f = e.value;
+                final open = _openFaq == i;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: GlassCard(
+                    borderColor: const Color(0xFF1D9E75).withValues(alpha: 0.25),
+                    onTap: () => setState(() => _openFaq = open ? null : i),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                isFr ? f.$1 : f.$2,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              open ? Icons.expand_less : Icons.expand_more,
+                              color: const Color(0xFF1D9E75),
+                            ),
+                          ],
+                        ),
+                        if (open) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            isFr ? f.$3 : f.$4,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 13,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _faqItem(BuildContext context, String q, String a) => Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade200, width: 0.5),
-          ),
-          child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-            title: Text(
-              q,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1a3c2e),
-              ),
-            ),
-            children: [
-              Text(
-                a,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  height: 1.6,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-}
-
-class _HelpItem extends StatelessWidget {
-  const _HelpItem({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+  Widget _contactCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) =>
+      GlassCard(
+        borderColor: color.withValues(alpha: 0.35),
+        onTap: onTap,
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF3DE),
-                borderRadius: BorderRadius.circular(10),
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: const Color(0xFF3B6D11), size: 20),
+              child: Icon(icon, color: color),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -334,23 +269,22 @@ class _HelpItem extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 14,
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1a3c2e),
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 18),
+            Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.3)),
           ],
         ),
-      ),
-    );
-  }
+      );
 }

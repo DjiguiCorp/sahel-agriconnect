@@ -27,7 +27,7 @@ function makeHtml(message, title = 'Sahel AgriConnect', recipientName = '') {
       <p style="color:#999;font-size:12px;">
         Sahel AgriConnect · Djigui Corporation<br>
         <a href="${process.env.FRONTEND_URL || '#'}" style="color:#1a3c2e;">sahelagriconnect.com</a> |
-        <a href="mailto:info@djiguicorporation.org" style="color:#1a3c2e;">info@djiguicorporation.org</a>
+        <a href="mailto:support@woneapp.com" style="color:#1a3c2e;">support@woneapp.com</a>
       </p>
     </div>
   </div>`;

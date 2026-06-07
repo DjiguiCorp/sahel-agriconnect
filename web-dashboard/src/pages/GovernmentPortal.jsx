@@ -716,8 +716,8 @@ export default function GovernmentPortal() {
               <p className="text-blue-400 font-bold text-sm mb-1">🔒 {isFr ? 'Souveraineté des données' : 'Data Sovereignty'}</p>
               <p className="text-white/60 text-xs leading-relaxed">
                 {isFr
-                  ? `En tant qu'administrateur de ${admin.country}, vous n'avez accès qu'aux données de votre territoire. Aucune donnée d'autres pays n'est accessible. Toutes vos actions (projets, notifications, exports) sont limitées à ${admin.country}. Pour héberger les données dans votre propre centre de données national, contactez info@djiguicorporation.org.`
-                  : `As ${admin.country} administrator, you only have access to data from your territory. No data from other countries is accessible. All your actions (projects, notifications, exports) are scoped to ${admin.country}. To host data in your own national data center, contact info@djiguicorporation.org.`}
+                  ? `En tant qu'administrateur de ${admin.country}, vous n'avez accès qu'aux données de votre territoire. Aucune donnée d'autres pays n'est accessible. Toutes vos actions (projets, notifications, exports) sont limitées à ${admin.country}. Pour héberger les données dans votre propre centre de données national, contactez support@woneapp.com.`
+                  : `As ${admin.country} administrator, you only have access to data from your territory. No data from other countries is accessible. All your actions (projects, notifications, exports) are scoped to ${admin.country}. To host data in your own national data center, contact support@woneapp.com.`}
               </p>
             </div>
           </div>

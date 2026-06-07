@@ -346,7 +346,7 @@ export default function BenefitsTab({ token, isFr }) {
                 coop.email ||
                 coop.contact ||
                 coop.leaderEmail ||
-                'info@djiguicorporation.org';
+                'support@woneapp.com';
 
               return (
                 <div key={coop._id} className="px-5 py-4">

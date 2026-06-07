@@ -206,7 +206,7 @@ function KYCReviewPanel({ isFr }) {
           reviewNotes: note,
           rejectionReason: decision === 'rejected' ? note : '',
           additionalDocsRequested: decision === 'additional_docs' ? note : '',
-          reviewedBy: 'admin@sahelagriconnect.com',
+          reviewedBy: 'support@woneapp.com',
         }),
       });
       const data = await res.json().catch(() => ({}));

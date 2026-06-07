@@ -93,13 +93,13 @@ Get-Content .env
 ```powershell
 # Si l'admin existe déjà, c'est normal
 # Vous pouvez vous connecter avec :
-# Email: admin@sahelagriconnect.org
+# Email: support@woneapp.com
 # Password: admin123
 
 # Pour réinitialiser, supprimer l'admin dans MongoDB :
 mongosh "mongodb://localhost:27017/sahel-agriconnect"
 use sahel-agriconnect
-db.admins.deleteOne({ email: "admin@sahelagriconnect.org" })
+db.admins.deleteOne({ email: "support@woneapp.com" })
 exit
 
 # Puis recréer :
@@ -280,7 +280,7 @@ if (-not (Test-Path .env)) {
 PORT=3001
 MONGO_URI=mongodb://localhost:27017/sahel-agriconnect
 JWT_SECRET=sahel-agriconnect-super-secret-key-2024
-ADMIN_EMAIL=admin@sahelagriconnect.org
+ADMIN_EMAIL=support@woneapp.com
 ADMIN_PASSWORD=admin123
 "@ | Out-File -FilePath .env -Encoding utf8
 }

@@ -97,14 +97,28 @@ export default function Footer() {
                 ['Think Tank', '/think-tank'],
                 [t('footer.toolsLinks.traceability'), '/trace'],
                 [t('footer.toolsLinks.governance'), '/governance'],
+                [t('footer.toolsLinks.helpCenter', 'Help Center'), '/help-center'],
                 [t('footer.toolsLinks.terms'), '/terms-of-service'],
                 [t('footer.toolsLinks.privacy'), '/privacy-policy'],
+                ['User Agreement', '/user-agreement'],
                 [t('footer.toolsLinks.deleteAccount'), '/delete-account'],
+                ['Support WhatsApp', 'https://wa.me/12152175381'],
               ].map(([label, to]) => (
                 <li key={to}>
-                  <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
-                    {label}
-                  </Link>
+                  {to.startsWith('http') ? (
+                    <a
+                      href={to}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-300 hover:text-white transition text-sm"
+                    >
+                      {label}
+                    </a>
+                  ) : (
+                    <Link to={to} className="text-gray-300 hover:text-white transition text-sm">
+                      {label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -124,6 +138,20 @@ export default function Footer() {
             <Link to="/privacy-policy" className="text-xs text-gray-500 hover:text-white transition">
               {t('footer.privacyShort')}
             </Link>
+            <Link to="/user-agreement" className="text-xs text-gray-500 hover:text-white transition">
+              User Agreement
+            </Link>
+            <Link to="/help-center" className="text-xs text-gray-500 hover:text-white transition">
+              Help Center
+            </Link>
+            <a
+              href="https://wa.me/12152175381"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-500 hover:text-white transition"
+            >
+              Support WhatsApp
+            </a>
             <Link to="/investor-relations" className="text-xs text-gray-500 hover:text-white transition">
               {t('footer.afriYieldLinks.investorRelations')}
             </Link>

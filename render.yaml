@@ -21,7 +21,7 @@ services:
       - key: JWT_SECRET
         sync: false  # Vous devrez le configurer manuellement dans Render
       - key: ADMIN_EMAIL
-        value: info@djiguicorporation.org
+        value: support@woneapp.com
       - key: ADMIN_PASSWORD
         sync: false  # Vous devrez le configurer manuellement dans Render
       - key: FRONTEND_URL

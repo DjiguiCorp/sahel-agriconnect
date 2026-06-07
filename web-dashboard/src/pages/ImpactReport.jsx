@@ -414,7 +414,7 @@ export default function ImpactReport() {
                 : 'AfriYield Exchange investment framework, ROI structure, terms and conditions. Sent on request to qualified investors.'}
             </p>
             <div className="space-y-2">
-              <a href="mailto:info@djiguicorporation.org?subject=Demande prospectus — AfriYield Exchange&body=Bonjour,%0A%0ANom: %0APays: %0AMontant envisagé: "
+              <a href="mailto:support@woneapp.com?subject=Demande prospectus — AfriYield Exchange&body=Bonjour,%0A%0ANom: %0APays: %0AMontant envisagé: "
                 className="block w-full text-center py-2.5 rounded-xl font-bold text-[#1a3c2e] text-sm"
                 style={{ background: '#B5850A' }}>
                 {isFr ? '📧 Demander le prospectus' : '📧 Request Prospectus'}

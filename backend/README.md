@@ -39,7 +39,7 @@ Backend Node.js/Express avec MongoDB pour la plateforme Sahel AgriConnect.
    PORT=3001
    MONGO_URI=mongodb://localhost:27017/sahel-agriconnect
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-   ADMIN_EMAIL=admin@sahelagriconnect.org
+   ADMIN_EMAIL=support@woneapp.com
    ADMIN_PASSWORD=admin123
    ```
 
@@ -78,7 +78,7 @@ Le serveur démarre sur `http://localhost:3001`
 - **POST** `/api/auth/login` - Connexion admin
   ```json
   {
-    "email": "admin@sahelagriconnect.org",
+    "email": "support@woneapp.com",
     "password": "admin123"
   }
   ```
@@ -180,7 +180,7 @@ curl -X POST http://localhost:3001/api/farmers \
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@sahelagriconnect.org",
+    "email": "support@woneapp.com",
     "password": "admin123"
   }'
 ```

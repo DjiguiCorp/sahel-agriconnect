@@ -145,7 +145,7 @@ Ce document décrit les flux utilisateurs principaux de la plateforme Sahel Agri
 1. Admin accède à /admin/login
    ↓
 2. Entre credentials :
-   - Email: admin@sahelagriconnect.org
+   - Email: support@woneapp.com
    - Password: admin123
    ↓
 3. Backend vérifie credentials

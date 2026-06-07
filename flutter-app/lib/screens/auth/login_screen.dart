@@ -529,8 +529,8 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() {
           _loading = false;
           _accountStatusMessage = lp.t(
-            'Your account has been suspended. Contact support@sahelagriconnect.com',
-            'Votre compte a été suspendu. Contactez support@sahelagriconnect.com',
+            'Your account has been suspended. Contact support@woneapp.com',
+            'Votre compte a été suspendu. Contactez support@woneapp.com',
           );
         });
         return;

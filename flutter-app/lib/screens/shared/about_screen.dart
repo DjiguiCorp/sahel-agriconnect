@@ -116,9 +116,9 @@ class AboutScreen extends StatelessWidget {
                     icon: '📬',
                     title: 'Contact Us',
                     content:
-                        'support@sahelagriconnect.com\nsahelagriconnect.com',
+                        'support@woneapp.com\nsahelagriconnect.com',
                     onTap: () => launchUrl(
-                      Uri.parse('mailto:support@sahelagriconnect.com'),
+                      Uri.parse('mailto:support@woneapp.com'),
                       mode: LaunchMode.externalApplication,
                     ),
                   ),

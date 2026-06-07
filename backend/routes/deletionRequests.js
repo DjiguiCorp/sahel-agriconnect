@@ -49,7 +49,7 @@ async function notifyUserOfDeletion(email, name, userType, reason, isFr = false)
             <p style="color:#555;">Votre compte (${userType}) sur Sahel AgriConnect a été supprimé par notre équipe d'administration.</p>
             ${reason ? `<p style="color:#555;"><strong>Raison :</strong> ${reason}</p>` : ''}
             <p style="color:#555;">Toutes vos données ont été supprimées de notre système conformément à notre politique de confidentialité.</p>
-            <p style="color:#555;">Si vous pensez que cette suppression est une erreur, contactez-nous à <a href="mailto:info@djiguicorporation.org" style="color:#1a3c2e;">info@djiguicorporation.org</a>.</p>
+            <p style="color:#555;">Si vous pensez que cette suppression est une erreur, contactez-nous à <a href="mailto:support@woneapp.com" style="color:#1a3c2e;">support@woneapp.com</a>.</p>
             <p style="color:#333;margin-top:24px;">Cordialement,<br><strong>L'équipe Sahel AgriConnect</strong></p>
           </div>
         </div>`,
@@ -197,7 +197,7 @@ router.post('/', async (req, res) => {
       if (resend) {
         await resend.emails.send({
           from: 'onboarding@resend.dev',
-          to: process.env.ADMIN_EMAIL || 'info@djiguicorporation.org',
+          to: process.env.ADMIN_EMAIL || 'support@woneapp.com',
           subject: `${urgency} — Deletion Request from ${userName} (${userEmail})`,
           html: `
             <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">

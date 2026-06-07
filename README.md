@@ -289,7 +289,7 @@ VITE_WS_BASE_URL=http://localhost:3001
 PORT=3001
 MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/sahel-agriconnect
 JWT_SECRET=your-secret-key
-ADMIN_EMAIL=admin@sahelagriconnect.org
+ADMIN_EMAIL=support@woneapp.com
 ADMIN_PASSWORD=admin123
 FRONTEND_URL=http://localhost:5173
 ```
@@ -395,7 +395,7 @@ Nous nous engageons à maintenir un environnement respectueux et inclusif. Voir 
 ### Équipe Projet
 
 - **Organisation** : Djigui Corporation
-- **Email** : info@djiguicorporation.org
+- **Email** : support@woneapp.com
 - **Site Web** : https://sahel-agriconnect.vercel.app
 
 ### Partenaires
@@ -408,7 +408,7 @@ Nous nous engageons à maintenir un environnement respectueux et inclusif. Voir 
 
 - **Documentation** : Voir le dossier `docs/`
 - **Issues** : https://github.com/DjiguiCorp/sahel-agriconnect/issues
-- **Email Support** : support@sahelagriconnect.org
+- **Email Support** : support@woneapp.com
 
 ---
 

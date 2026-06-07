@@ -200,10 +200,10 @@ class ProfileScreen extends StatelessWidget {
               iconBg: const Color(0xFFEAF3DE),
               iconColor: const Color(0xFF3B6D11),
               title: 'Contact us',
-              subtitle: 'info@djiguicorporation.org',
+              subtitle: 'support@woneapp.com',
               isExternal: true,
               onTap: () => launchUrl(
-                Uri.parse('mailto:info@djiguicorporation.org'),
+                Uri.parse('mailto:support@woneapp.com'),
                 mode: LaunchMode.externalApplication,
               ),
             ),
@@ -216,7 +216,7 @@ class ProfileScreen extends StatelessWidget {
               subtitle: 'Chat with our team',
               isExternal: true,
               onTap: () => launchUrl(
-                Uri.parse('https://wa.me/message/sahelagriconnect'),
+                Uri.parse('https://wa.me/12152175381'),
                 mode: LaunchMode.externalApplication,
               ),
             ),

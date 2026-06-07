@@ -78,14 +78,14 @@ export default function InvestorRelations() {
         <p className="text-white/70 text-lg max-w-2xl mx-auto mb-8">{t('trust.investorRelations.subtitle')}</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <a
-            href="mailto:info@djiguicorporation.org?subject=Pitch Deck Request — AfriYield Exchange"
+            href="mailto:support@woneapp.com?subject=Pitch Deck Request — AfriYield Exchange"
             className="rounded-xl px-7 py-3.5 font-bold text-[#1a3c2e]"
             style={{ background: '#B5850A' }}
           >
             {t('trust.investorRelations.requestDeck')}
           </a>
           <a
-            href="mailto:info@djiguicorporation.org?subject=Investor Call Request — AfriYield Exchange"
+            href="mailto:support@woneapp.com?subject=Investor Call Request — AfriYield Exchange"
             className="rounded-xl px-7 py-3.5 font-bold text-white border-2 border-white/30 hover:border-white/60 transition"
           >
             {t('trust.investorRelations.scheduleCall')}
@@ -211,7 +211,7 @@ export default function InvestorRelations() {
               <h3 className="font-bold text-[#1a3c2e] mb-2">{t('trust.investorRelations.team.joinTitle')}</h3>
               <p className="text-gray-600 text-sm mb-4">{t('trust.investorRelations.team.joinBody')}</p>
               <a
-                href="mailto:info@djiguicorporation.org?subject=Join the Team — AfriYield Exchange"
+                href="mailto:support@woneapp.com?subject=Join the Team — AfriYield Exchange"
                 className="rounded-xl px-5 py-2.5 font-semibold text-sm text-white"
                 style={{ background: '#1a3c2e' }}
               >

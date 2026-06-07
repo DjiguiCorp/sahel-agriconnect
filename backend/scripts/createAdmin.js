@@ -16,7 +16,7 @@ dotenv.config();
 const MONGO =
   process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/sahel-agriconnect';
 
-const EMAIL = 'admin@sahelagriconnect.org'; // ← change this
+const EMAIL = 'support@woneapp.com'; // ← change this
 const PASSWORD = 'changeme123'; // ← change this before running
 const NAME = 'Central Administrator';
 const ROLE = 'super-admin';

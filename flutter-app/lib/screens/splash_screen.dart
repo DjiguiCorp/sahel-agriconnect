@@ -76,12 +76,12 @@ class _SplashScreenState extends State<SplashScreen>
 
     final auth = context.read<AuthState>();
 
-    if (!_termsAccepted) {
-      context.go('/terms');
-      return;
-    }
     if (!_langSelected) {
       context.go('/language');
+      return;
+    }
+    if (!_termsAccepted) {
+      context.go('/terms');
       return;
     }
     if (auth.isLoggedIn) {
@@ -107,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigate() async {
-    if (!_termsAccepted || !_langSelected) {
+    if (!_langSelected || !_termsAccepted) {
       await _preloadPrefs();
     }
     if (!mounted) return;

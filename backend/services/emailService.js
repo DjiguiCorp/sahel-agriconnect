@@ -18,7 +18,7 @@ function getResend() {
 }
 
 const FROM_ADDRESS = process.env.FROM_EMAIL || 'onboarding@resend.dev';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'contact@djiguicorporation.org';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@woneapp.com';
 
 // ── INTERNAL ADMIN NOTIFICATIONS ──────────────────────────────────────
 

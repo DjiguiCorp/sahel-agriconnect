@@ -3,7 +3,7 @@ import { Mail, Trash2, Shield, Smartphone } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 
 const MAILTO =
-  'mailto:privacy@sahelagriconnect.com?subject=Account%20Deletion%20Request&body=Please%20delete%20my%20Sahel%20AgriConnect%20account.%0A%0ARegistered%20email%3A%20';
+  'mailto:support@woneapp.com?subject=Account%20Deletion%20Request&body=Please%20delete%20my%20Sahel%20AgriConnect%20account.%0A%0ARegistered%20email%3A%20';
 
 const DELETED_ITEMS = [
   { en: 'Profile information', fr: 'Informations de profil' },
@@ -65,10 +65,10 @@ export default function DeleteAccount() {
               <p>
                 To request deletion of your account and data, send an email to:{' '}
                 <a
-                  href="mailto:privacy@sahelagriconnect.com"
+                  href="mailto:support@woneapp.com"
                   className="font-semibold text-[#d4af37] underline-offset-2 hover:underline"
                 >
-                  privacy@sahelagriconnect.com
+                  support@woneapp.com
                 </a>
                 . Include your registered email address. Your account and all associated
                 data will be deleted within 30 days of your request.
@@ -82,10 +82,10 @@ export default function DeleteAccount() {
                 Pour demander la suppression de votre compte et de vos données, envoyez un
                 e-mail à :{' '}
                 <a
-                  href="mailto:privacy@sahelagriconnect.com"
+                  href="mailto:support@woneapp.com"
                   className="font-semibold text-[#d4af37] underline-offset-2 hover:underline"
                 >
-                  privacy@sahelagriconnect.com
+                  support@woneapp.com
                 </a>
                 . Indiquez votre adresse e-mail enregistrée. Votre compte et toutes les
                 données associées seront supprimés dans les 30 jours suivant votre demande.

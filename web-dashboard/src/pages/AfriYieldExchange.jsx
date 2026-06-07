@@ -1111,8 +1111,8 @@ export default function AfriYieldExchange() {
                   />
                   <span className="text-xs leading-relaxed text-gray-700">
                     {isFr
-                      ? 'Je confirme que je ne suis PAS une "US Person" au sens de la réglementation SEC américaine. (Ressortissants/résidents américains: contactez compliance@sahelagriconnect.com)'
-                      : 'I confirm I am NOT a "US Person" under US SEC regulations. (US citizens/residents: contact compliance@sahelagriconnect.com)'}
+                      ? 'Je confirme que je ne suis PAS une "US Person" au sens de la réglementation SEC américaine. (Ressortissants/résidents américains: contactez support@woneapp.com)'
+                      : 'I confirm I am NOT a "US Person" under US SEC regulations. (US citizens/residents: contact support@woneapp.com)'}
                   </span>
                 </label>
 

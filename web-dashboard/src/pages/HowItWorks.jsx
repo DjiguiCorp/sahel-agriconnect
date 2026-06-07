@@ -242,7 +242,7 @@ export default function HowItWorks() {
               {t('trust.howItWorks.agreement.body')}
             </p>
             <a
-              href="mailto:info@djiguicorporation.org?subject=Investment Agreement Sample Request"
+              href="mailto:support@woneapp.com?subject=Investment Agreement Sample Request"
               className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-opacity hover:opacity-90"
               style={{
                 background: 'linear-gradient(135deg, #B5850A 0%, #d4a017 50%, #8a6410 100%)',
