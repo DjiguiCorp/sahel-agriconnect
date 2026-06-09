@@ -139,6 +139,7 @@ router.post('/confirm', async (req, res) => {
     res.status(e.status || 500).json({
       success: false,
       error: e.message,
+      ...(e.errorFr ? { errorFr: e.errorFr } : {}),
       ...(e.code ? { code: e.code } : {}),
     });
   }

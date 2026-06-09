@@ -14,6 +14,7 @@ import {
   codeEmailSubject,
   normalizeLang,
 } from '../utils/authEmailTemplates.js';
+import { assertAccountExistsForLogin } from '../utils/authAccountGate.js';
 
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
@@ -68,6 +69,16 @@ export async function sendOtp({ purpose, email, phone, name, role, lang, country
     isNewUser = !existing;
   } else if (emailRaw) {
     isNewUser = !(await accountExistsForRole(role, emailRaw, phoneRaw));
+  }
+
+  // Login OTP: account must exist (registration flows use farmer_verify / coop_verify).
+  if (purposeNorm === 'login') {
+    await assertAccountExistsForLogin({
+      role: role || 'farmer',
+      email: emailRaw,
+      phone: phoneRaw,
+    });
+    isNewUser = false;
   }
 
   const code = generateCode();
@@ -147,7 +158,11 @@ async function accountExistsForRole(role, email, phone) {
   if (r === 'investor') return Boolean(await Investor.findOne({ email }).lean());
   if (r === 'cooperative') {
     return Boolean(
-      await CooperativePlatformRegistration.findOne({ email }).lean(),
+      await CooperativePlatformRegistration.findOne({
+        email,
+        status: 'active',
+        paymentReceived: true,
+      }).lean(),
     );
   }
   if (r === 'government' || r === 'ngo') {
@@ -191,7 +206,7 @@ export async function verifyOtp({ verificationId, otp, role, deviceHint = '' }) 
   const purpose = record.purpose;
   const roleNorm = String(role || 'farmer').toLowerCase();
 
-  if (purpose === 'farmer_verify' || (purpose === 'login' && roleNorm === 'farmer')) {
+  if (purpose === 'farmer_verify') {
     const farmer = await findFarmerByContact(email, phone);
     if (email) {
       await Farmer.findOneAndUpdate(
@@ -234,23 +249,56 @@ export async function verifyOtp({ verificationId, otp, role, deviceHint = '' }) 
     };
   }
 
+  if (purpose === 'login' && roleNorm === 'farmer') {
+    const farmer = await findFarmerByContact(email, phone);
+    if (!farmer) {
+      throw Object.assign(
+        new Error('No farmer account found. Please register first.'),
+        {
+          status: 404,
+          code: 'USER_NOT_FOUND',
+          errorFr: 'Aucun compte agriculteur trouvé. Veuillez vous inscrire.',
+        },
+      );
+    }
+    if (email) {
+      await Farmer.findOneAndUpdate(
+        { email },
+        { emailVerified: true, verifiedAt: new Date() },
+      );
+    }
+    const token = jwt.sign(
+      {
+        role: 'farmer',
+        id: farmer._id.toString(),
+        email: farmer.email || email,
+        nom: farmer.nom,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '90d' },
+    );
+    const sessionSeed = await DeviceSession.issue(
+      farmer._id.toString(),
+      'farmer',
+      deviceHint,
+    );
+    return {
+      success: true,
+      verified: true,
+      isNewUser: false,
+      role: 'farmer',
+      token,
+      sessionSeed,
+      user: farmerSummary(farmer),
+      accountStatus: farmer.statut === 'Actif' ? 'active' : 'pending_vetting',
+    };
+  }
+
   if (purpose === 'login') {
     return issueRoleLoginToken(roleNorm, email, phone, deviceHint);
   }
 
   return { success: true, verified: true };
-}
-
-function registerPathForRole(role) {
-  const paths = {
-    farmer: '/inscription',
-    investor: '/afri-yield/register',
-    cooperative: '/cooperative-registration',
-    government: '/platform-licensing',
-    ngo: '/platform-licensing',
-    processor: '/transformation-registration',
-  };
-  return paths[role] || '/';
 }
 
 /**
@@ -345,28 +393,19 @@ export async function confirmMagicCode({
   }
 
   if (purposeNorm === 'login') {
-    try {
-      const result = await issueRoleLoginToken(
-        roleNorm,
-        recEmail,
-        recPhone,
-        deviceHint,
-      );
-      const appRole =
-        roleNorm === 'cooperative' ? 'cooperative' : roleNorm;
-      return { ...result, role: appRole };
-    } catch (e) {
-      if (e.code === 'not_registered') {
-        return {
-          success: true,
-          isNewUser: true,
-          role: roleNorm,
-          registerPath: registerPathForRole(roleNorm),
-          message: e.message,
-        };
-      }
-      throw e;
-    }
+    await assertAccountExistsForLogin({
+      role: roleNorm,
+      email: recEmail,
+      phone: recPhone,
+    });
+    const result = await issueRoleLoginToken(
+      roleNorm,
+      recEmail,
+      recPhone,
+      deviceHint,
+    );
+    const appRole = roleNorm === 'cooperative' ? 'cooperative' : roleNorm;
+    return { ...result, role: appRole };
   }
 
   if (purposeNorm === 'coop_verify' && recEmail) {
@@ -380,6 +419,8 @@ export async function confirmMagicCode({
 }
 
 export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
+  await assertAccountExistsForLogin({ role, email, phone });
+
   if (role === 'investor') {
     if (!email) throw Object.assign(new Error('Email required for investor login'), { status: 400 });
     const investor = await Investor.findOne({ email }).lean();
@@ -411,13 +452,17 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
 
   if (role === 'cooperative') {
     if (!email) throw Object.assign(new Error('Email required'), { status: 400 });
-    const coop = await CooperativePlatformRegistration.findOne({ email }).lean();
+    const coop = await CooperativePlatformRegistration.findOne({
+      email,
+      status: 'active',
+      paymentReceived: true,
+    }).lean();
     if (!coop) {
       throw Object.assign(
         new Error(
           'No active cooperative account found. Complete registration at sahelagriconnect.com/cooperative-registration',
         ),
-        { status: 404, code: 'not_registered' },
+        { status: 404, code: 'ACCOUNT_NOT_FOUND' },
       );
     }
     if (coop.status !== 'active') {
@@ -456,11 +501,15 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
 
   if (role === 'government' || role === 'ngo') {
     if (!email) throw Object.assign(new Error('Email required'), { status: 400 });
-    const admin = await GovernmentAdmin.findOne({ email }).lean();
+    const adminQuery =
+      role === 'ngo'
+        ? { email, orgType: 'ngo' }
+        : { email, orgType: { $in: ['government', 'enterprise', 'international_org'] } };
+    const admin = await GovernmentAdmin.findOne(adminQuery).lean();
     if (!admin) {
       throw Object.assign(
         new Error('No account found. Request access on the web first.'),
-        { status: 404, code: 'not_registered' },
+        { status: 404, code: 'ACCOUNT_NOT_FOUND' },
       );
     }
     if (admin.status !== 'active') {
