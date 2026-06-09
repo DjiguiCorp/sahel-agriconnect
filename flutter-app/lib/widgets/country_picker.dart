@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
@@ -224,6 +226,7 @@ const List<String> diasporaCountries = [
   'United States',
 ];
 
+/// Single normalized country list — Africa first, then diaspora.
 const List<String> allCountries = [
   ...africanCountries,
   ...diasporaCountries,
@@ -258,132 +261,133 @@ class CountryDropdown extends StatelessWidget {
   /// When true, uses high-contrast dark-green styling for dark auth backgrounds.
   final bool darkStyle;
 
-  static const _itemStyle = TextStyle(
+  static const _menuItemStyle = TextStyle(
     color: Colors.white,
     fontSize: 15,
     fontWeight: FontWeight.w500,
   );
 
-  static const _lightItemStyle = TextStyle(
+  static const _fieldItemStyle = TextStyle(
     color: Color(0xFF1a3c2e),
     fontSize: 15,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
   );
+
+  static const _darkFieldItemStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+  );
+
+  List<DropdownMenuItem<String>> _buildItems() {
+    return countries
+        .map(
+          (c) => DropdownMenuItem<String>(
+            value: c,
+            child: Text(c, style: _menuItemStyle),
+          ),
+        )
+        .toList();
+  }
+
+  List<Widget> _buildSelectedItems(TextStyle style) {
+    return countries
+        .map(
+          (c) => Align(
+            alignment: Alignment.centerLeft,
+            child: Text(c, style: style, overflow: TextOverflow.ellipsis),
+          ),
+        )
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final itemStyle = darkStyle ? _itemStyle : _lightItemStyle;
-    final fieldFill = darkStyle ? const Color(0xFF1a3c2e) : fillColor;
-    final borderColor = darkStyle
-        ? AppColors.gold.withValues(alpha: 0.5)
-        : (value.isEmpty ? Colors.orange.shade300 : Colors.transparent);
+    final items = _buildItems();
+    final hasSelection = value.isNotEmpty && countries.contains(value);
+    final fieldStyle = darkStyle ? _darkFieldItemStyle : _fieldItemStyle;
 
     if (darkStyle) {
-      return DropdownButtonFormField<String>(
-        value: value.isEmpty ? null : value,
-        isExpanded: true,
-        style: _itemStyle,
-        dropdownColor: const Color(0xFF1a3c2e),
-        iconEnabledColor: AppColors.gold,
-        selectedItemBuilder: (context) => countries
-            .map(
-              (c) => Align(
-                alignment: Alignment.centerLeft,
-                child: Text(c, style: _itemStyle),
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: DropdownButtonFormField<String>(
+            value: hasSelection ? value : null,
+            isExpanded: true,
+            style: _darkFieldItemStyle,
+            dropdownColor: const Color(0xFF142820),
+            iconEnabledColor: AppColors.gold,
+            items: items,
+            selectedItemBuilder: (context) =>
+                _buildSelectedItems(_darkFieldItemStyle),
+            decoration: InputDecoration(
+              labelText: hint,
+              labelStyle: const TextStyle(color: Colors.white70),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.08),
+              enabledBorder: OutlineInputBorder(
+                borderSide:
+                    BorderSide(color: AppColors.gold.withValues(alpha: 0.45)),
+                borderRadius: BorderRadius.circular(14),
               ),
-            )
-            .toList(),
-        decoration: InputDecoration(
-          labelText: hint,
-          labelStyle: const TextStyle(color: Colors.white70),
-          filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.08),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.5)),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: AppColors.gold),
-            borderRadius: BorderRadius.circular(12),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            onChanged: onChanged,
           ),
         ),
-        items: countries
-            .map(
-              (c) => DropdownMenuItem<String>(
-                value: c,
-                child: Text(c, style: _itemStyle),
-              ),
-            )
-            .toList(),
-        onChanged: onChanged,
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: fieldFill,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor, width: 0.5),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value.isEmpty ? null : value,
-          isExpanded: true,
-          style: _lightItemStyle,
-          dropdownColor: const Color(0xFF1a3c2e),
-          iconEnabledColor: AppColors.gold,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          selectedItemBuilder: (context) => countries
-              .map(
-                (c) => Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(c, style: _lightItemStyle),
-                ),
-              )
-              .toList(),
-          hint: hint == null
-              ? null
-              : Text(
-                  hint!,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF888780),
-                  ),
-                ),
-          items: [
-            ...africanCountries.map(
-              (c) => DropdownMenuItem<String>(
-                value: c,
-                child: Text(c, style: _itemStyle),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F0E4).withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: value.isEmpty
+                  ? AppColors.gold.withValues(alpha: 0.35)
+                  : AppColors.forestGreen.withValues(alpha: 0.18),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.forestGreen.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
+            ],
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: hasSelection ? value : null,
+              isExpanded: true,
+              style: fieldStyle,
+              dropdownColor: const Color(0xFF142820),
+              iconEnabledColor: AppColors.gold,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              items: items,
+              selectedItemBuilder: (context) => _buildSelectedItems(fieldStyle),
+              hint: hint == null
+                  ? null
+                  : Text(
+                      hint!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6B7280),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+              onChanged: onChanged,
             ),
-            const DropdownMenuItem<String>(
-              enabled: false,
-              value: '__diaspora__',
-              child: Divider(height: 1, color: Colors.white24),
-            ),
-            DropdownMenuItem<String>(
-              enabled: false,
-              value: '__diaspora_label__',
-              child: Text(
-                '🌐 Other Countries',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.55),
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            ...diasporaCountries.map(
-              (c) => DropdownMenuItem<String>(
-                value: c,
-                child: Text(c, style: _itemStyle),
-              ),
-            ),
-          ],
-          onChanged: onChanged,
+          ),
         ),
       ),
     );

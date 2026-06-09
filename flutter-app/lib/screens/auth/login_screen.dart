@@ -481,20 +481,26 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showOtpSentSnackBar() {
+  void _showOtpSentSnackBar(LanguageProvider lp) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           _isEmail
-              ? 'Code sent to $_contact. Check your inbox.'
-              : 'Code sent to $_countryPrefix$_contact',
+              ? lp.t(
+                  'Code sent to $_contact. Check your inbox.',
+                  'Code envoyé à $_contact. Vérifiez votre boîte mail.',
+                )
+              : lp.t(
+                  'Code sent to $_countryPrefix$_contact',
+                  'Code envoyé au $_countryPrefix$_contact',
+                ),
           style: const TextStyle(color: Colors.black),
         ),
         backgroundColor: AppColors.gold,
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: 'OK',
+          label: lp.t('OK', 'OK'),
           textColor: Colors.black,
           onPressed: () {},
         ),
@@ -568,7 +574,7 @@ class _LoginScreenState extends State<LoginScreen> {
       });
       _clearOtpFields();
       _startResendCountdown();
-      _showOtpSentSnackBar();
+      _showOtpSentSnackBar(lp);
     } catch (e) {
       if (!mounted) return;
       setState(() {

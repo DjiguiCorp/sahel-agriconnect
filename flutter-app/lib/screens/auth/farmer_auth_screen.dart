@@ -63,6 +63,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   String? _verificationId;
   String? _accountStatusMessage;
   bool _showManualCode = false;
+  String _otpPurpose = 'login';
 
   Timer? _resendTimer;
   int _resendSeconds = 45;
@@ -282,14 +283,27 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         err.contains('route');
   }
 
-  Future<Map<String, dynamic>> _sendOtpApi() async {
+  bool _isFarmerNotFoundResponse(Map<String, dynamic> res) {
+    final code = res['code']?.toString() ?? '';
+    if (code == 'USER_NOT_FOUND' || code == 'ACCOUNT_NOT_FOUND') {
+      return true;
+    }
+    final err = res['error']?.toString().toLowerCase() ?? '';
+    return err.contains('no farmer account') ||
+        err.contains('not found') ||
+        err.contains('register first');
+  }
+
+  Future<Map<String, dynamic>> _sendOtpApi({
+    String purpose = 'login',
+  }) async {
     final contact = _contactController.text.trim();
     final formattedContact = contact.contains('@')
         ? contact
         : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
     final lang = context.read<LanguageProvider>().lang;
     final body = <String, dynamic>{
-      'purpose': 'farmer_verify',
+      'purpose': purpose,
       'role': 'farmer',
       'lang': lang,
       if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
@@ -402,20 +416,26 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     return cleaned;
   }
 
-  void _showOtpSentSnackBar() {
+  void _showOtpSentSnackBar(LanguageProvider lp) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           _isEmail
-              ? 'Code sent to $_contact. Check your inbox.'
-              : 'Code sent to $_countryPrefix$_contact',
+              ? lp.t(
+                  'Code sent to $_contact. Check your inbox.',
+                  'Code envoyé à $_contact. Vérifiez votre boîte mail.',
+                )
+              : lp.t(
+                  'Code sent to $_countryPrefix$_contact',
+                  'Code envoyé au $_countryPrefix$_contact',
+                ),
           style: const TextStyle(color: Colors.black),
         ),
         backgroundColor: AppColors.gold,
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: 'OK',
+          label: lp.t('OK', 'OK'),
           textColor: Colors.black,
           onPressed: () {},
         ),
@@ -447,7 +467,95 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       return;
     }
     try {
-      final res = await _sendOtpApi();
+      _otpPurpose = 'login';
+      final res = await _sendOtpApi(purpose: _otpPurpose);
+      if (res['success'] == false && res['code'] == 'EMAIL_SEND_FAILED') {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = lp.t(
+            'Email not received. Check your email address and try again.',
+            'Email non reçu. Vérifiez votre adresse email et réessayez.',
+          );
+        });
+        return;
+      }
+      if (res['success'] == false) {
+        if (_isFarmerNotFoundResponse(res)) {
+          setState(() {
+            _loading = false;
+            _step = FarmerAuthStep.register;
+            _error = lp.t(
+              'No farmer account found. Please register to get started.',
+              'Aucun compte agriculteur trouvé. '
+                  'Veuillez vous inscrire pour commencer.',
+            );
+          });
+          return;
+        }
+        setState(() {
+          _error = _apiErrorMessage(res, lp);
+          _loading = false;
+        });
+        return;
+      }
+      final vid = res['verificationId']?.toString();
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _verificationId = vid ?? 'mock-id';
+        _step = FarmerAuthStep.otp;
+        _showManualCode = false;
+      });
+      _clearOtpFields();
+      _startResendCountdown();
+      _showOtpSentSnackBar(lp);
+      if (mounted && res['emailDelivery'] == 'dev_logged') {
+        final devCode = res['otpCode']?.toString() ?? '';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              lp.t(
+                devCode.isNotEmpty
+                    ? 'Email delivery is not configured. Dev OTP code: $devCode'
+                    : 'Email delivery is not configured on the server. Check server logs for the code, or ask admin to set RESEND_API_KEY.',
+                devCode.isNotEmpty
+                    ? 'Envoi email non configuré. Code OTP (dev): $devCode'
+                    : 'L\'envoi d\'email n\'est pas configuré sur le serveur. Vérifiez les logs serveur pour le code, ou configurez RESEND_API_KEY.',
+              ),
+            ),
+            duration: const Duration(seconds: 6),
+            backgroundColor: AppColors.gold,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = _friendlyError(e, lp);
+      });
+    }
+  }
+
+  Future<void> _sendRegistrationCode() async {
+    final lp = context.read<LanguageProvider>();
+    if (!_isValidContact) {
+      setState(() => _error = lp.t(
+            'Please enter a valid email or phone number',
+            'Veuillez entrer un email ou un numéro de téléphone valide',
+          ));
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+      _accountStatusMessage = null;
+      _pendingRegistrationId = null;
+    });
+    try {
+      _otpPurpose = 'farmer_verify';
+      final res = await _sendOtpApi(purpose: _otpPurpose);
       if (res['success'] == false && res['code'] == 'EMAIL_SEND_FAILED') {
         if (!mounted) return;
         setState(() {
@@ -476,26 +584,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       });
       _clearOtpFields();
       _startResendCountdown();
-      _showOtpSentSnackBar();
-      if (mounted && res['emailDelivery'] == 'dev_logged') {
-        final devCode = res['otpCode']?.toString() ?? '';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              lp.t(
-                devCode.isNotEmpty
-                    ? 'Email delivery is not configured. Dev OTP code: $devCode'
-                    : 'Email delivery is not configured on the server. Check server logs for the code, or ask admin to set RESEND_API_KEY.',
-                devCode.isNotEmpty
-                    ? 'Envoi email non configuré. Code OTP (dev): $devCode'
-                    : 'L\'envoi d\'email n\'est pas configuré sur le serveur. Vérifiez les logs serveur pour le code, ou configurez RESEND_API_KEY.',
-              ),
-            ),
-            duration: const Duration(seconds: 6),
-            backgroundColor: AppColors.gold,
-          ),
-        );
-      }
+      _showOtpSentSnackBar(lp);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -652,7 +741,11 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
 
   Future<void> _resendCode() async {
     if (_resendSeconds > 0 || _loading) return;
-    await _sendCode();
+    if (_otpPurpose == 'farmer_verify') {
+      await _sendRegistrationCode();
+    } else {
+      await _sendCode();
+    }
   }
 
   Future<void> _captureLocation(LanguageProvider lp) async {
@@ -1427,7 +1520,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
               TextButton(
                 onPressed: _loading
                     ? null
-                    : _sendCode,
+                    : _sendRegistrationCode,
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -1586,7 +1679,15 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                 TextButton(
                   onPressed: _loading ? null : _goToIdentityStep,
                   child: Text(
-                    lp.t('← Change number', '← Changer le numéro'),
+                    _isEmail
+                        ? lp.t(
+                            '← Change email',
+                            '← Changer l\'email',
+                          )
+                        : lp.t(
+                            '← Change number',
+                            '← Changer le numéro',
+                          ),
                     style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                 ),
