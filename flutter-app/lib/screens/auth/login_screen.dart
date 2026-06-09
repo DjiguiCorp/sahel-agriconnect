@@ -750,11 +750,50 @@ class _LoginScreenState extends State<LoginScreen> {
     await _sendCode();
   }
 
+  PreferredSizeWidget _buildAuthAppBar(LanguageProvider lp) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      leading: IconButton(
+        icon: const Icon(
+          Icons.arrow_back_ios_rounded,
+          color: Colors.white,
+        ),
+        onPressed: () => context.go('/home'),
+        tooltip: lp.t('Back to home', 'Retour à l\'accueil'),
+      ),
+    );
+  }
+
+  Widget _buildBackToPortalsLink(
+    LanguageProvider lp, {
+    Color? textColor,
+  }) {
+    return Center(
+      child: TextButton(
+        onPressed: () => context.go('/home'),
+        child: Text(
+          lp.t(
+            '← Back to all portals',
+            '← Retour à tous les portails',
+          ),
+          style: TextStyle(
+            color: textColor ?? Colors.white.withValues(alpha: 0.5),
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      extendBodyBehindAppBar: true,
+      appBar: _buildAuthAppBar(lp),
       body: Responsive.builder(
         context: context,
         phone: Container(
@@ -940,6 +979,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     Expanded(child: _buildTabletAuthForm(lp)),
+                    _buildBackToPortalsLink(lp),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -951,12 +992,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildBrandingPanel(LanguageProvider lp) {
-    return Container(
-      padding: const EdgeInsets.all(48),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return Stack(
+      children: [
+        Positioned(
+          top: 8,
+          left: 8,
+          child: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_rounded,
+              color: Colors.white,
+            ),
+            onPressed: () => context.go('/home'),
+            tooltip: lp.t('Back to home', 'Retour à l\'accueil'),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(48),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
           Text(_config.emoji, style: const TextStyle(fontSize: 56)),
           const SizedBox(height: 24),
           const Text(
@@ -986,8 +1041,10 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 1.5,
             ),
           ),
-        ],
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1081,6 +1138,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Text(lp.t('Back to sign in', 'Retour à la connexion')),
           ),
         ),
+        const SizedBox(height: 8),
+        _buildBackToPortalsLink(lp, textColor: Colors.grey[600]),
       ],
     );
   }
@@ -1266,6 +1325,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 8),
         _registerFooter(lp),
+        const SizedBox(height: 4),
+        _buildBackToPortalsLink(lp, textColor: Colors.grey[600]),
       ],
     ),
     );
@@ -1410,6 +1471,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
                 const SizedBox(height: 8),
                 _registerFooter(lp),
+                const SizedBox(height: 4),
+                _buildBackToPortalsLink(lp, textColor: Colors.grey[600]),
               ],
             ),
           ),
