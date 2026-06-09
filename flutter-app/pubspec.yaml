@@ -1,6 +1,6 @@
 name: sahel_agriconnect
 description: Sahel AgriConnect & AfriYield Exchange — African Agricultural Platform
-version: 1.0.1+7
+version: 1.0.1+8
 publish_to: none
 
 environment:
