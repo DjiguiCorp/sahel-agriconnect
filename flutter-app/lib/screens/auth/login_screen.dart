@@ -755,6 +755,7 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
       leading: IconButton(
         icon: const Icon(
           Icons.arrow_back_ios_rounded,
@@ -865,29 +866,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                           child: Row(
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  if (_step == _LoginStep.otp) {
-                                    _goToContactStep();
-                                  } else {
-                                    context.go('/home');
-                                  }
-                                },
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.arrow_back_ios_new_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -992,26 +970,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildBrandingPanel(LanguageProvider lp) {
-    return Stack(
-      children: [
-        Positioned(
-          top: 8,
-          left: 8,
-          child: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_rounded,
-              color: Colors.white,
-            ),
-            onPressed: () => context.go('/home'),
-            tooltip: lp.t('Back to home', 'Retour à l\'accueil'),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(48),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+    return Container(
+      padding: const EdgeInsets.all(48),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           Text(_config.emoji, style: const TextStyle(fontSize: 56)),
           const SizedBox(height: 24),
           const Text(
@@ -1041,10 +1005,8 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 1.5,
             ),
           ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

@@ -788,6 +788,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
       leading: IconButton(
         icon: const Icon(
           Icons.arrow_back_ios_rounded,
@@ -902,35 +903,6 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                           child: Row(
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  if (_step == FarmerAuthStep.identity) {
-                                    context.go('/home');
-                                  } else if (_step == FarmerAuthStep.otp) {
-                                    _goToIdentityStep();
-                                  } else {
-                                    setState(() {
-                                      _step = FarmerAuthStep.identity;
-                                      _error = '';
-                                      _accountStatusMessage = null;
-                                    });
-                                  }
-                                },
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.arrow_back_ios_new_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1061,26 +1033,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   }
 
   Widget _buildBrandingPanel(LanguageProvider lp) {
-    return Stack(
-      children: [
-        Positioned(
-          top: 8,
-          left: 8,
-          child: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_rounded,
-              color: Colors.white,
-            ),
-            onPressed: () => context.go('/home'),
-            tooltip: lp.t('Back to home', 'Retour à l\'accueil'),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(48),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+    return Container(
+      padding: const EdgeInsets.all(48),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           const Text('🌾', style: TextStyle(fontSize: 56)),
           const SizedBox(height: 24),
           const Text(
@@ -1113,10 +1071,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
               height: 1.5,
             ),
           ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
