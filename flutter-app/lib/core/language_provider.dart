@@ -15,6 +15,7 @@ class LanguageProvider extends ChangeNotifier {
   static const _key = 'app_locale';
 
   String _lang = 'fr';
+  int _setLangGeneration = 0;
 
   String get lang => _lang;
   bool get isFr => _lang == 'fr';
@@ -27,8 +28,10 @@ class LanguageProvider extends ChangeNotifier {
   }
 
   Future<void> _load() async {
+    final genAtStart = _setLangGeneration;
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (genAtStart != _setLangGeneration) return;
       final saved = prefs.getString(_key);
       if (saved == 'fr' || saved == 'en') {
         _lang = saved!;
@@ -50,8 +53,8 @@ class LanguageProvider extends ChangeNotifier {
   Future<void> setLang(String lang) async {
     final normalized = lang.toLowerCase();
     if (normalized != 'fr' && normalized != 'en') return;
-    if (_lang == normalized) return;
 
+    _setLangGeneration++;
     _lang = normalized;
     notifyListeners();
     SahelApp.updateLocale(Locale(_lang));

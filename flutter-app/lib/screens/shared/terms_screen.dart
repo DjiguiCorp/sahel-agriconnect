@@ -330,7 +330,9 @@ class _LegalScroll extends StatelessWidget {
   final LanguageProvider lp;
 
   Future<void> _openFull() async {
-    final uri = Uri.parse(webUrl);
+    final separator = webUrl.contains('?') ? '&' : '?';
+    final localizedUrl = '$webUrl${separator}lang=${lp.lang}&from=app';
+    final uri = Uri.parse(localizedUrl);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       // ignore: avoid_print
     }

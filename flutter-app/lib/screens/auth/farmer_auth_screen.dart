@@ -345,6 +345,16 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     }
   }
 
+  String _apiErrorMessage(Map<String, dynamic> data, LanguageProvider lp) {
+    if (lp.isFr) {
+      return data['errorFr']?.toString() ??
+          data['error']?.toString() ??
+          lp.t('An error occurred', 'Une erreur est survenue');
+    }
+    return data['error']?.toString() ??
+        lp.t('An error occurred', 'Une erreur est survenue');
+  }
+
   String _friendlyError(Object? raw, LanguageProvider lp) {
     final msg = raw?.toString().toLowerCase() ?? '';
     if (msg.contains('expir')) {
@@ -451,11 +461,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       }
       if (res['success'] == false) {
         setState(() {
-          _error = res['error'] ??
-              lp.t(
-                'Something went wrong. Try again.',
-                'Une erreur est survenue. Réessayez.',
-              );
+          _error = _apiErrorMessage(res, lp);
           _loading = false;
         });
         return;
@@ -577,7 +583,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       if (res['success'] == false &&
           res['token'] == null &&
           res['isNewUser'] != true) {
-        throw Exception(res['error']?.toString() ?? 'Verification failed');
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = _apiErrorMessage(res, lp);
+        });
+        return;
       }
 
       final status = res['accountStatus']?.toString();
@@ -701,15 +712,21 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
   }
 
   Future<void> _register() async {
+    final lp = context.read<LanguageProvider>();
     if (_nameCtrl.text.trim().isEmpty) {
-      setState(() => _error = 'Please enter your name');
+      setState(() => _error = lp.t(
+            'Please enter your name',
+            'Veuillez entrer votre nom',
+          ));
       return;
     }
     if (_selectedCountry.isEmpty) {
-      setState(() => _error = 'Please select your country');
+      setState(() => _error = lp.t(
+            'Please select your country',
+            'Veuillez sélectionner votre pays',
+          ));
       return;
     }
-    final lp = context.read<LanguageProvider>();
     if (_pendingRegistrationId == null || _pendingRegistrationId!.isEmpty) {
       setState(() => _error = lp.t(
             'Please verify your email first. Go back and tap Send Code, then enter the 6-digit code.',
@@ -737,11 +754,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         'cultures': [_selectedCrop],
         'statut': 'Actif',
       });
-      if (res['error'] != null) {
-        throw Exception(res['error'].toString());
-      }
-      if (res['success'] == false) {
-        throw Exception(res['error']?.toString() ?? 'Registration failed');
+      if (res['error'] != null || res['success'] == false) {
+        throw Exception(_apiErrorMessage(res, lp));
       }
       final token = res['token'] as String?;
       if (token != null && token.isNotEmpty) {
@@ -771,11 +785,13 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'No token returned';
+        _error = lp.t(
+          'No token returned',
+          'Aucun jeton retourné',
+        );
       });
     } catch (e) {
       if (!mounted) return;
-      final lp = context.read<LanguageProvider>();
       setState(() {
         _loading = false;
         _error = _friendlyError(e, lp);

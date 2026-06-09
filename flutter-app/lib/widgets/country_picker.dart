@@ -285,9 +285,19 @@ class CountryDropdown extends StatelessWidget {
         style: _itemStyle,
         dropdownColor: const Color(0xFF1a3c2e),
         iconEnabledColor: AppColors.gold,
+        selectedItemBuilder: (context) => countries
+            .map(
+              (c) => Align(
+                alignment: Alignment.centerLeft,
+                child: Text(c, style: _itemStyle),
+              ),
+            )
+            .toList(),
         decoration: InputDecoration(
           labelText: hint,
           labelStyle: const TextStyle(color: Colors.white70),
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.08),
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.5)),
             borderRadius: BorderRadius.circular(12),
@@ -320,10 +330,18 @@ class CountryDropdown extends StatelessWidget {
         child: DropdownButton<String>(
           value: value.isEmpty ? null : value,
           isExpanded: true,
-          style: itemStyle,
+          style: _lightItemStyle,
           dropdownColor: const Color(0xFF1a3c2e),
           iconEnabledColor: AppColors.gold,
           icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          selectedItemBuilder: (context) => countries
+              .map(
+                (c) => Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(c, style: _lightItemStyle),
+                ),
+              )
+              .toList(),
           hint: hint == null
               ? null
               : Text(
@@ -337,13 +355,13 @@ class CountryDropdown extends StatelessWidget {
             ...africanCountries.map(
               (c) => DropdownMenuItem<String>(
                 value: c,
-                child: Text(c, style: itemStyle),
+                child: Text(c, style: _itemStyle),
               ),
             ),
             const DropdownMenuItem<String>(
               enabled: false,
               value: '__diaspora__',
-              child: Divider(height: 1),
+              child: Divider(height: 1, color: Colors.white24),
             ),
             DropdownMenuItem<String>(
               enabled: false,
@@ -353,7 +371,7 @@ class CountryDropdown extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey,
+                  color: Colors.white.withValues(alpha: 0.55),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -361,7 +379,7 @@ class CountryDropdown extends StatelessWidget {
             ...diasporaCountries.map(
               (c) => DropdownMenuItem<String>(
                 value: c,
-                child: Text(c, style: itemStyle),
+                child: Text(c, style: _itemStyle),
               ),
             ),
           ],

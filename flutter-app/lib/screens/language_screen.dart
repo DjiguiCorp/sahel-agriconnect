@@ -13,7 +13,9 @@ class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key});
 
   Future<void> _select(BuildContext context, Locale locale) async {
-    await context.read<LanguageProvider>().setLang(locale.languageCode);
+    final lp = context.read<LanguageProvider>();
+    await lp.setLang(locale.languageCode);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('language_selected', true);
     if (!context.mounted) return;

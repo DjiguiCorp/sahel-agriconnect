@@ -380,6 +380,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  String _apiErrorMessage(Map<String, dynamic> data, LanguageProvider lp) {
+    if (lp.isFr) {
+      return data['errorFr']?.toString() ??
+          data['error']?.toString() ??
+          lp.t('An error occurred', 'Une erreur est survenue');
+    }
+    return data['error']?.toString() ??
+        lp.t('An error occurred', 'Une erreur est survenue');
+  }
+
   String _friendlyError(Object? raw, LanguageProvider lp) {
     final msg = raw?.toString().toLowerCase() ?? '';
     if (msg.contains('not found') ||
@@ -541,7 +551,12 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final res = await _sendOtpApi();
       if (res['success'] == false && res['verificationId'] == null) {
-        throw Exception(res['error']?.toString() ?? 'Request failed');
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = _apiErrorMessage(res, lp);
+        });
+        return;
       }
       final vid = res['verificationId']?.toString();
       if (!mounted) return;
@@ -727,11 +742,21 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final res = await _verifyOtpApi(_otpCode);
       if (res['success'] == false && res['token'] == null) {
-        throw Exception(res['error']?.toString() ?? 'Verification failed');
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = _apiErrorMessage(res, lp);
+        });
+        return;
       }
       final token = res['token'] as String?;
       if (token == null || token.isEmpty) {
-        throw Exception(res['error']?.toString() ?? 'Verification failed');
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = _apiErrorMessage(res, lp);
+        });
+        return;
       }
       final status = res['accountStatus']?.toString() ?? 'active';
       await _handleAccountStatus(status, token, res, lp);
