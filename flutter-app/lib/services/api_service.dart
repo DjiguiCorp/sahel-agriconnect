@@ -143,7 +143,9 @@ class ApiService {
           headers: {if (token != null) 'Authorization': 'Bearer $token'},
         ),
       );
-      return _decode(res.data);
+      final decoded = _decode(res.data);
+      decoded['statusCode'] = res.statusCode ?? 200;
+      return decoded;
     } on DioException catch (e) {
       if (retries > 0 &&
           (e.type == DioExceptionType.connectionTimeout ||
@@ -152,12 +154,39 @@ class ApiService {
         await Future.delayed(const Duration(seconds: 3));
         return post(path, body, token: token, retries: retries - 1);
       }
-      return _decode(e.response?.data)
-        ..putIfAbsent('success', () => false)
-        ..putIfAbsent('error', () => _friendlyError(e));
+      final decoded = _decode(e.response?.data);
+      decoded['statusCode'] = e.response?.statusCode ?? 500;
+      decoded.putIfAbsent('success', () => false);
+      decoded.putIfAbsent('error', () => _friendlyError(e));
+      return decoded;
     } catch (_) {
-      return {'success': false, 'error': _friendlyError(null)};
+      return {
+        'success': false,
+        'statusCode': 500,
+        'error': _friendlyError(null),
+        'errorFr': 'Erreur réseau. Vérifiez votre connexion.',
+      };
     }
+  }
+
+  /// Passwordless OTP send — always returns [statusCode] alongside the API body.
+  static Future<Map<String, dynamic>> sendOtp({
+    required String contact,
+    required String role,
+    required String purpose,
+    String? country,
+    String lang = 'en',
+  }) async {
+    final trimmed = contact.trim();
+    final isEmail = trimmed.contains('@');
+    return post('/api/auth/send-otp', {
+      'purpose': purpose,
+      'role': role,
+      'lang': lang,
+      if (isEmail) 'email': trimmed.toLowerCase(),
+      if (!isEmail) 'phone': trimmed,
+      if (country != null && country.isNotEmpty) 'country': country,
+    });
   }
 
   /// Translates a Dio exception (or null for unknown failures) into a

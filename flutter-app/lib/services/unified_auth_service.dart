@@ -88,49 +88,34 @@ class UnifiedAuthService {
     return _heuristicMessage(msg) ?? unexpectedError;
   }
 
-  static Future<AuthResult> sendOtp(String contact, String purpose) async {
-    try {
-      final isEmail = contact.contains('@');
-      final body = isEmail
-          ? {'email': contact, 'purpose': purpose}
-          : {'phone': contact, 'purpose': purpose};
-
-      final response = await ApiService.post('/api/auth/send-otp', body);
-      if (response['error'] != null ||
-          response['success'] == false ||
-          response['verificationId'] == null) {
-        throw StateError('send-otp fallback');
-      }
-      return AuthResult.success(response['verificationId']);
-    } catch (_) {
-      return AuthResult.success(
-        'mock-verification-id-${DateTime.now().millisecondsSinceEpoch}',
-      );
-    }
+  static Future<AuthResult> sendOtp(
+    String contact,
+    String purpose, {
+    String role = 'farmer',
+    String? country,
+    String lang = 'en',
+  }) async {
+    final response = await ApiService.sendOtp(
+      contact: contact,
+      role: role,
+      purpose: purpose,
+      country: country,
+      lang: lang,
+    );
+    return _fromMap(response);
   }
 
   static Future<AuthResult> verifyOtp(
     String verificationId,
-    String otp,
-  ) async {
-    try {
-      final response = await ApiService.post('/api/auth/verify-otp', {
-        'verificationId': verificationId,
-        'otp': otp,
-      });
-      if (response['error'] != null ||
-          response['success'] == false ||
-          (response['token'] == null && response['accountStatus'] == null)) {
-        throw StateError('verify-otp fallback');
-      }
-      return AuthResult.success(response);
-    } catch (_) {
-      return AuthResult.success({
-        'token': 'mock-token-${DateTime.now().millisecondsSinceEpoch}',
-        'accountStatus': 'active',
-        'role': 'farmer',
-      });
-    }
+    String otp, {
+    String role = 'farmer',
+  }) async {
+    final response = await ApiService.post('/api/auth/verify-otp', {
+      'verificationId': verificationId,
+      'otp': otp,
+      'role': role,
+    });
+    return _fromMap(response);
   }
 
   static Future<AuthResult> checkAccountStatus({required String token}) async {

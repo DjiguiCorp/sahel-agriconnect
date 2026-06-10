@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/safe_insets.dart';
 import 'package:go_router/go_router.dart';
@@ -309,75 +308,36 @@ class _LoginScreenState extends State<LoginScreen> {
     _clearOtpFields();
   }
 
-  bool _shouldMock(Map<String, dynamic> res) {
-    if (res['verificationId'] != null || res['token'] != null) return false;
-    final err = res['error']?.toString().toLowerCase() ?? '';
-    return res['success'] == false ||
-        err.contains('not found') ||
-        err.contains('404') ||
-        err.contains('route');
+  String _formattedContact() {
+    final contact = _contactCtrl.text.trim();
+    return contact.contains('@')
+        ? contact
+        : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
   }
 
   Future<Map<String, dynamic>> _sendOtpApi() async {
-    final contact = _contactCtrl.text.trim();
-    final formattedContact = contact.contains('@')
-        ? contact
-        : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
     final lang = context.read<LanguageProvider>().lang;
-    final body = <String, dynamic>{
-      'purpose': 'login',
-      'role': widget.role.name,
-      'lang': lang,
-      if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
-      if (!contact.contains('@')) 'phone': formattedContact,
-      if (_needsCountry && _selectedCountry.isNotEmpty)
-        'country': _selectedCountry,
-    };
-    try {
-      final res = await ApiService.post('/api/auth/send-otp', body);
-      if (res['verificationId'] != null ||
-          (res['success'] == true && res['error'] == null)) {
-        return res;
-      }
-      if (kDebugMode && _shouldMock(res)) {
-        return {'success': true, 'verificationId': 'mock-id'};
-      }
-      return res;
-    } catch (_) {
-      if (kDebugMode) {
-        return {'success': true, 'verificationId': 'mock-id'};
-      }
-      rethrow;
-    }
+    return ApiService.sendOtp(
+      contact: _formattedContact(),
+      role: widget.role.name,
+      purpose: 'login',
+      country: _needsCountry && _selectedCountry.isNotEmpty
+          ? _selectedCountry
+          : null,
+      lang: lang,
+    );
   }
 
   Future<Map<String, dynamic>> _verifyOtpApi(String otp) async {
-    final id = _verificationId ?? 'mock-id';
-    try {
-      final res = await ApiService.post('/api/auth/verify-otp', {
-        'verificationId': id,
-        'otp': otp,
-        'role': widget.role.name,
-      });
-      if (res['token'] != null || res['success'] == true) return res;
-      if (kDebugMode && _shouldMock(res)) {
-        return {
-          'success': true,
-          'token': 'mock-token',
-          'accountStatus': 'active',
-        };
-      }
-      return res;
-    } catch (_) {
-      if (kDebugMode) {
-        return {
-          'success': true,
-          'token': 'mock-token',
-          'accountStatus': 'active',
-        };
-      }
-      rethrow;
+    final id = _verificationId;
+    if (id == null || id.isEmpty) {
+      throw Exception('Missing verification session. Request a new code.');
     }
+    return ApiService.post('/api/auth/verify-otp', {
+      'verificationId': id,
+      'otp': otp,
+      'role': widget.role.name,
+    });
   }
 
   String _apiErrorMessage(Map<String, dynamic> data, LanguageProvider lp) {
@@ -556,7 +516,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     try {
       final res = await _sendOtpApi();
-      if (res['success'] == false && res['verificationId'] == null) {
+      final statusCode = res['statusCode'] as int? ?? 200;
+      final code = res['code']?.toString() ?? '';
+
+      if (statusCode == 403 || code == 'INVALID_EMAIL_DOMAIN') {
         if (!mounted) return;
         setState(() {
           _loading = false;
@@ -564,11 +527,38 @@ class _LoginScreenState extends State<LoginScreen> {
         });
         return;
       }
+
+      if (statusCode == 404 ||
+          code == 'ACCOUNT_NOT_FOUND' ||
+          code == 'not_registered' ||
+          res['success'] == false) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = _apiErrorMessage(res, lp).isNotEmpty
+              ? _apiErrorMessage(res, lp)
+              : _friendlyError('not_registered', lp);
+        });
+        return;
+      }
+
+      if (res['success'] != true) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = _apiErrorMessage(res, lp);
+        });
+        return;
+      }
+
       final vid = res['verificationId']?.toString();
+      if (vid == null || vid.isEmpty) {
+        throw Exception(res['error']?.toString() ?? 'Request failed');
+      }
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _verificationId = vid ?? 'mock-id';
+        _verificationId = vid;
         _step = _LoginStep.otp;
         _showManualCode = false;
       });
@@ -747,7 +737,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       final res = await _verifyOtpApi(_otpCode);
-      if (res['success'] == false && res['token'] == null) {
+      final statusCode = res['statusCode'] as int? ?? 200;
+      final code = res['code']?.toString() ?? '';
+
+      if (statusCode == 403 || code == 'INVALID_EMAIL_DOMAIN') {
         if (!mounted) return;
         setState(() {
           _loading = false;
@@ -755,6 +748,21 @@ class _LoginScreenState extends State<LoginScreen> {
         });
         return;
       }
+
+      if (statusCode == 404 ||
+          code == 'ACCOUNT_NOT_FOUND' ||
+          code == 'not_registered' ||
+          (res['success'] == false && res['token'] == null)) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = _apiErrorMessage(res, lp).isNotEmpty
+              ? _apiErrorMessage(res, lp)
+              : _friendlyError('not_registered', lp);
+        });
+        return;
+      }
+
       final token = res['token'] as String?;
       if (token == null || token.isEmpty) {
         if (!mounted) return;

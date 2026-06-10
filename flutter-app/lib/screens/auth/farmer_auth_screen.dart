@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/safe_insets.dart';
 import 'package:go_router/go_router.dart';
@@ -274,89 +273,35 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     _clearOtpFields();
   }
 
-  bool _shouldMock(Map<String, dynamic> res) {
-    if (res['verificationId'] != null || res['token'] != null) return false;
-    final err = res['error']?.toString().toLowerCase() ?? '';
-    return res['success'] == false ||
-        err.contains('not found') ||
-        err.contains('404') ||
-        err.contains('route');
-  }
-
-  bool _isFarmerNotFoundResponse(Map<String, dynamic> res) {
-    final code = res['code']?.toString() ?? '';
-    if (code == 'USER_NOT_FOUND' || code == 'ACCOUNT_NOT_FOUND') {
-      return true;
-    }
-    final err = res['error']?.toString().toLowerCase() ?? '';
-    return err.contains('no farmer account') ||
-        err.contains('not found') ||
-        err.contains('register first');
+  String _formattedContact() {
+    final contact = _contactController.text.trim();
+    return contact.contains('@')
+        ? contact
+        : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
   }
 
   Future<Map<String, dynamic>> _sendOtpApi({
     String purpose = 'login',
   }) async {
-    final contact = _contactController.text.trim();
-    final formattedContact = contact.contains('@')
-        ? contact
-        : '$_countryPrefix${contact.replaceAll(RegExp(r'^0+'), '')}';
     final lang = context.read<LanguageProvider>().lang;
-    final body = <String, dynamic>{
-      'purpose': purpose,
-      'role': 'farmer',
-      'lang': lang,
-      if (contact.contains('@')) 'email': formattedContact.toLowerCase(),
-      if (!contact.contains('@')) 'phone': formattedContact,
-    };
-    try {
-      final res = await ApiService.post('/api/auth/send-otp', body);
-      if (res['success'] == false && res['code'] == 'EMAIL_SEND_FAILED') {
-        return res;
-      }
-      if (res['verificationId'] != null ||
-          (res['success'] == true && res['error'] == null)) {
-        return res;
-      }
-      if (kDebugMode && _shouldMock(res)) {
-        return {'success': true, 'verificationId': 'mock-id'};
-      }
-      return res;
-    } catch (_) {
-      if (kDebugMode) {
-        return {'success': true, 'verificationId': 'mock-id'};
-      }
-      rethrow;
-    }
+    return ApiService.sendOtp(
+      contact: _formattedContact(),
+      role: 'farmer',
+      purpose: purpose,
+      lang: lang,
+    );
   }
 
   Future<Map<String, dynamic>> _verifyOtpApi(String otp) async {
-    final id = _verificationId ?? 'mock-id';
-    try {
-      final res = await ApiService.post('/api/auth/verify-otp', {
-        'verificationId': id,
-        'otp': otp,
-        'role': 'farmer',
-      });
-      if (res['token'] != null || res['success'] == true) return res;
-      if (kDebugMode && _shouldMock(res)) {
-        return {
-          'success': true,
-          'token': 'mock-token',
-          'accountStatus': 'active',
-        };
-      }
-      return res;
-    } catch (_) {
-      if (kDebugMode) {
-        return {
-          'success': true,
-          'token': 'mock-token',
-          'accountStatus': 'active',
-        };
-      }
-      rethrow;
+    final id = _verificationId;
+    if (id == null || id.isEmpty) {
+      throw Exception('Missing verification session. Request a new code.');
     }
+    return ApiService.post('/api/auth/verify-otp', {
+      'verificationId': id,
+      'otp': otp,
+      'role': 'farmer',
+    });
   }
 
   String _apiErrorMessage(Map<String, dynamic> data, LanguageProvider lp) {
@@ -469,7 +414,10 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
     try {
       _otpPurpose = 'login';
       final res = await _sendOtpApi(purpose: _otpPurpose);
-      if (res['success'] == false && res['code'] == 'EMAIL_SEND_FAILED') {
+      final statusCode = res['statusCode'] as int? ?? 200;
+      final code = res['code']?.toString() ?? '';
+
+      if (res['success'] == false && code == 'EMAIL_SEND_FAILED') {
         if (!mounted) return;
         setState(() {
           _loading = false;
@@ -480,30 +428,43 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         });
         return;
       }
-      if (res['success'] == false) {
-        if (_isFarmerNotFoundResponse(res)) {
-          setState(() {
-            _loading = false;
-            _step = FarmerAuthStep.register;
-            _error = lp.t(
-              'No farmer account found. Please register to get started.',
-              'Aucun compte agriculteur trouvé. '
-                  'Veuillez vous inscrire pour commencer.',
-            );
-          });
-          return;
-        }
+
+      if (statusCode == 404 ||
+          code == 'USER_NOT_FOUND' ||
+          code == 'ACCOUNT_NOT_FOUND' ||
+          code == 'not_registered') {
+        if (!mounted) return;
         setState(() {
-          _error = _apiErrorMessage(res, lp);
           _loading = false;
+          _step = FarmerAuthStep.register;
+          _error = _apiErrorMessage(res, lp).isNotEmpty
+              ? _apiErrorMessage(res, lp)
+              : lp.t(
+                  'No farmer account found. Please register to get started.',
+                  'Aucun compte agriculteur trouvé. '
+                      'Veuillez vous inscrire pour commencer.',
+                );
         });
         return;
       }
+
+      if (statusCode >= 400 || res['success'] == false) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = _apiErrorMessage(res, lp);
+        });
+        return;
+      }
+
       final vid = res['verificationId']?.toString();
+      if (vid == null || vid.isEmpty) {
+        throw Exception(res['error']?.toString() ?? 'Request failed');
+      }
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _verificationId = vid ?? 'mock-id';
+        _verificationId = vid;
         _step = FarmerAuthStep.otp;
         _showManualCode = false;
       });
@@ -567,7 +528,8 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         });
         return;
       }
-      if (res['success'] == false) {
+      final statusCode = res['statusCode'] as int? ?? 200;
+      if (statusCode >= 400 || res['success'] == false) {
         setState(() {
           _error = _apiErrorMessage(res, lp);
           _loading = false;
@@ -575,10 +537,13 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         return;
       }
       final vid = res['verificationId']?.toString();
+      if (vid == null || vid.isEmpty) {
+        throw Exception(res['error']?.toString() ?? 'Request failed');
+      }
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _verificationId = vid ?? 'mock-id';
+        _verificationId = vid;
         _step = FarmerAuthStep.otp;
         _showManualCode = false;
       });
