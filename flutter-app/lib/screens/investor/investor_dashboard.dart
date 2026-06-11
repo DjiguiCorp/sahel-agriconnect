@@ -186,6 +186,7 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
     final displayName = context.watch<AuthState>().displayName;
     return IndexedStack(
       index: _tab,
+      sizing: StackFit.expand,
       children: [
         _PortfolioTab(
           investments: _investments,
@@ -367,14 +368,29 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
       navItems: _sidebarNavItems(isFr),
       selectedIndex: _tab,
       onNavSelected: _goTab,
-      content: _tab == 0
-          ? Row(
+      content: LayoutBuilder(
+        builder: (context, constraints) {
+          // Portfolio tab: main feed + market sidebar when content area is wide enough.
+          if (_tab == 0 && constraints.maxWidth >= 560) {
+            final marketWidth =
+                (constraints.maxWidth * 0.34).clamp(280.0, 380.0);
+            return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(flex: 3, child: _buildTabStack(isFr)),
-                const SizedBox(width: 16),
                 Expanded(
-                  flex: 2,
+                  child: _PortfolioTab(
+                    investments: _investments,
+                    opportunities: _opportunities,
+                    loading: _loading,
+                    isFr: isFr,
+                    displayName: auth.displayName,
+                    onTabChange: _goTab,
+                    onRefresh: _load,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: marketWidth,
                   child: _ExchangeTab(
                     opportunities: _opportunities,
                     loading: _loading,
@@ -383,8 +399,11 @@ class _InvestorDashboardState extends State<InvestorDashboard> {
                   ),
                 ),
               ],
-            )
-          : _buildTabStack(isFr),
+            );
+          }
+          return _buildTabStack(isFr);
+        },
+      ),
     );
   }
 
@@ -1425,46 +1444,19 @@ class _ExchangeTab extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
             ),
-            child: Row(
-              children: [
-                const Text('💻', style: TextStyle(fontSize: 24)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isFr ? 'Accédez au portail complet' : 'Access Full Portal',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                      ),
-                      Text(
-                        isFr
-                            ? 'Investissez, gérez et suivez vos retours sur afriyieldexchange.com'
-                            : 'Invest, manage and track your returns on afriyieldexchange.com',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isFr
-                            ? 'Détails complets et paiement sur afriyieldexchange.com'
-                            : 'Full details and payment on afriyieldexchange.com',
-                        style: TextStyle(
-                          color: AppColors.gold.withValues(alpha: 0.85),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final narrow = constraints.maxWidth < 300;
+                final title = isFr
+                    ? 'Accédez au portail complet'
+                    : 'Access Full Portal';
+                final subtitle = isFr
+                    ? 'Investissez, gérez et suivez vos retours sur afriyieldexchange.com'
+                    : 'Invest, manage and track your returns on afriyieldexchange.com';
+                final note = isFr
+                    ? 'Détails complets et paiement sur afriyieldexchange.com'
+                    : 'Full details and payment on afriyieldexchange.com';
+                final openButton = GestureDetector(
                   onTap: () async {
                     final uri = Uri.parse('https://afriyieldexchange.com');
                     if (await canLaunchUrl(uri)) {
@@ -1492,8 +1484,59 @@ class _ExchangeTab extends StatelessWidget {
                       ),
                     ),
                   ),
-                ),
-              ],
+                );
+                final copy = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      note,
+                      style: TextStyle(
+                        color: AppColors.gold.withValues(alpha: 0.85),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                );
+                if (narrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('💻', style: TextStyle(fontSize: 24)),
+                      const SizedBox(height: 10),
+                      copy,
+                      const SizedBox(height: 12),
+                      openButton,
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('💻', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 12),
+                    Expanded(child: copy),
+                    const SizedBox(width: 8),
+                    openButton,
+                  ],
+                );
+              },
             ),
           ),
           Text(
@@ -1538,8 +1581,11 @@ class _ExchangeTab extends StatelessWidget {
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     c['price'] as String,
                     style: const TextStyle(color: _muted, fontSize: 12),
