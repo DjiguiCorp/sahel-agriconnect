@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/auth_state.dart';
 import '../../core/language_provider.dart';
 import '../../core/theme.dart';
 
@@ -22,7 +21,7 @@ class _NotifSettingsState extends State<NotificationSettingsScreen> {
     'produce_updates': true,
     'milestone_releases': true,
     'new_opportunities': true,
-    'price_alerts': false,
+    'price_alerts': true,
     'platform_updates': false,
   };
 
@@ -66,8 +65,8 @@ class _NotifSettingsState extends State<NotificationSettingsScreen> {
     'price_alerts': (
       'Price alerts',
       'Alertes de prix',
-      'Commodity price movements (Premium)',
-      'Mouvements des prix des matières (Premium)',
+      'Commodity price movements',
+      'Mouvements des prix des matières',
     ),
     'platform_updates': (
       'Platform updates',
@@ -108,7 +107,6 @@ class _NotifSettingsState extends State<NotificationSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
-    final isPremium = context.watch<AuthState>().user?['isPremium'] == true;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -162,81 +160,45 @@ class _NotifSettingsState extends State<NotificationSettingsScreen> {
                 child: Column(
                   children: _settings.entries.map((entry) {
                     final labels = _labels[entry.key]!;
-                    final isPremiumFeature = entry.key == 'price_alerts';
-                    final isLocked = isPremiumFeature && !isPremium;
 
-                    return Opacity(
-                      opacity: isLocked ? 0.5 : 1.0,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          lp.t(labels.$1, labels.$2),
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: _text,
-                                          ),
-                                        ),
-                                      ),
-                                      if (isPremiumFeature) ...[
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.gold
-                                                .withValues(alpha: 0.2),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          child: Text(
-                                            'Premium',
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              color: AppColors.gold,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  lp.t(labels.$1, labels.$2),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: _text,
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    lp.t(labels.$3, labels.$4),
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: _muted,
-                                    ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  lp.t(labels.$3, labels.$4),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: _muted,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            Switch.adaptive(
-                              value: entry.value,
-                              onChanged: isLocked
-                                  ? null
-                                  : (v) => _toggle(entry.key, v),
-                              activeTrackColor: _accent,
-                              inactiveTrackColor:
-                                  Colors.white.withValues(alpha: 0.15),
-                            ),
-                          ],
-                        ),
+                          ),
+                          Switch.adaptive(
+                            value: entry.value,
+                            onChanged: (v) => _toggle(entry.key, v),
+                            activeTrackColor: _accent,
+                            inactiveTrackColor:
+                                Colors.white.withValues(alpha: 0.15),
+                          ),
+                        ],
                       ),
                     );
                   }).toList(),

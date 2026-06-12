@@ -26,13 +26,13 @@ const _termsEn = [
     title: '2. Accounts and eligibility',
     paragraphs: [
       'You must be at least 18 years old and provide accurate information when registering. You are responsible for all activity under your account and must keep your login credentials secure.',
-      'Farmers agree to provide truthful production data and allow cooperative verification. Cooperatives pay an annual subscription, certify only verified farmers, and maintain accurate member records.',
+      'Farmers agree to provide truthful production data and allow cooperative verification. Cooperatives certify only verified farmers and maintain accurate member records. Manage cooperative accounts at sahelagriconnect.com.',
     ],
   ),
   LegalSection(
     title: '3. AfriYield Exchange',
     paragraphs: [
-      'Investors pay an annual access fee, complete mandatory KYC, and understand that agricultural investments carry risk. Returns are not guaranteed and funds are held in escrow until verified milestones are completed.',
+      'Investors complete mandatory KYC and understand that agricultural investments carry risk. Returns are not guaranteed and funds are held in escrow until verified milestones are completed. Manage investor accounts at sahelagriconnect.com.',
       'Djigui Corporation is not liable for crop failures, investment losses, or third-party outages. Maximum liability is limited to fees paid in the last twelve months.',
     ],
   ),
@@ -57,13 +57,13 @@ const _termsFr = [
     title: '2. Comptes et éligibilité',
     paragraphs: [
       'Vous devez avoir au moins 18 ans et fournir des informations exactes lors de l\'inscription. Vous êtes responsable de toute activité sous votre compte et devez protéger vos identifiants.',
-      'Les agriculteurs s\'engagent à fournir des données de production véridiques et à permettre la vérification par la coopérative. Les coopératives paient un abonnement annuel, certifient uniquement des agriculteurs vérifiés et tiennent des registres exacts.',
+      'Les agriculteurs s\'engagent à fournir des données de production véridiques et à permettre la vérification par la coopérative. Les coopératives certifient uniquement des agriculteurs vérifiés et tiennent des registres exacts. Gérez votre compte coopératif sur sahelagriconnect.com.',
     ],
   ),
   LegalSection(
     title: '3. AfriYield Exchange',
     paragraphs: [
-      'Les investisseurs paient des frais d\'accès annuels, complètent une vérification KYC obligatoire et comprennent que les investissements agricoles comportent des risques. Les rendements ne sont pas garantis et les fonds sont détenus en séquestre jusqu\'à la réalisation des jalons vérifiés.',
+      'Les investisseurs complètent une vérification KYC obligatoire et comprennent que les investissements agricoles comportent des risques. Les rendements ne sont pas garantis et les fonds sont détenus en séquestre jusqu\'à la réalisation des jalons vérifiés. Gérez votre compte investisseur sur sahelagriconnect.com.',
       'Djigui Corporation n\'est pas responsable des pertes de récolte, des pertes d\'investissement ni des interruptions de services tiers. La responsabilité maximale est limitée aux frais payés au cours des douze derniers mois.',
     ],
   ),
@@ -148,7 +148,7 @@ const _agreementEn = [
   LegalSection(
     title: '2. Your role',
     paragraphs: [
-      'Farmers register for free and provide accurate farm data. Cooperatives pay \$199 per year and manage certified members. Investors pay \$99 per year, complete KYC, and accept investment risks.',
+      'Farmers provide accurate farm data after registration. Cooperatives and investors manage their accounts at sahelagriconnect.com. Government and NGO users require an institutional license and must use data only for authorized purposes within their territory.',
       'Government and NGO users require an institutional license and must use data only for authorized purposes within their territory.',
     ],
   ),
@@ -171,7 +171,7 @@ const _agreementFr = [
   LegalSection(
     title: '2. Votre rôle',
     paragraphs: [
-      'Les agriculteurs s\'inscrivent gratuitement et fournissent des données d\'exploitation exactes. Les coopératives paient 199 \$ par an et gèrent des membres certifiés. Les investisseurs paient 99 \$ par an, complètent le KYC et acceptent les risques d\'investissement.',
+      'Les agriculteurs fournissent des données d\'exploitation exactes après inscription. Les coopératives et investisseurs gèrent leurs comptes sur sahelagriconnect.com. Les utilisateurs gouvernementaux et ONG doivent disposer d\'une licence institutionnelle et n\'utiliser les données qu\'à des fins autorisées sur leur territoire.',
       'Les utilisateurs gouvernementaux et ONG doivent disposer d\'une licence institutionnelle et n\'utiliser les données qu\'à des fins autorisées sur leur territoire.',
     ],
   ),

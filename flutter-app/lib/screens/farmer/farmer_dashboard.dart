@@ -1083,7 +1083,7 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
               items: ['A', 'B', 'C']
                 .map((q) => DropdownMenuItem(value: q,
                   child: Text(
-                    q == 'A' ? (isFr ? 'A — Premium' : 'A — Premium')
+                    q == 'A' ? (isFr ? 'A — Supérieure' : 'A — Superior')
                     : q == 'B' ? (isFr ? 'B — Standard' : 'B — Standard')
                     : (isFr ? 'C — Ordinaire' : 'C — Ordinary'),
                     style: const TextStyle(color: _text))))

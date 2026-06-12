@@ -771,7 +771,7 @@ class _RoleScreenState extends State<RoleScreen>
           },
           {
             'name': 'Union Sésame Sikasso',
-            'type': isFr ? 'Sésame premium' : 'Premium Sesame',
+            'type': isFr ? 'Sésame grade A' : 'Grade A Sesame',
             'members': '87',
             'region': 'Sikasso, Mali',
             'qty': '1,800 kg',

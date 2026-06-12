@@ -1505,7 +1505,7 @@ class _ProductionTabState extends State<_ProductionTab> {
                             DropdownMenuItem(
                               value: 'A',
                               child: Text(
-                                isFr ? 'A — Premium' : 'A — Premium',
+                                isFr ? 'A — Supérieure' : 'A — Superior',
                                 style: const TextStyle(color: _text),
                               ),
                             ),

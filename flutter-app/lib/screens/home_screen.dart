@@ -147,8 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
         (
           labelEn: 'Cashew',
           labelFr: 'Noix de cajou',
-          subEn: 'Premium grade wanted',
-          subFr: 'Qualité premium recherchée',
+          subEn: 'Grade A quality wanted',
+          subFr: 'Qualité grade A recherchée',
           metaEn: '+8%',
           metaFr: '+8%',
         ),
@@ -495,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     Text(
                       lp.t(
-                          'Sign in to unlock', 'Connectez-vous pour débloquer'),
+                          'Sign in to continue', 'Connectez-vous pour continuer'),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -999,8 +999,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     'Vous êtes connecté. Touchez une carte pour y accéder.',
                                   )
                                 : lp.t(
-                                    'Browsing as guest. Sign in anytime to unlock more.',
-                                    'En mode visiteur. Connectez-vous pour débloquer plus.',
+                                    'Browsing as guest. Sign in to access your portal.',
+                                    'En mode visiteur. Connectez-vous pour accéder à votre portail.',
                                   ),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.75),
@@ -1873,8 +1873,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         lp.t(
-                          'Unlock the full platform',
-                          'Débloquez toute la plateforme',
+                          'Join Sahel AgriConnect',
+                          'Rejoignez Sahel AgriConnect',
                         ),
                         style: const TextStyle(
                           color: Colors.white,
