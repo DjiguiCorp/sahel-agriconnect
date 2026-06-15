@@ -2,7 +2,7 @@ import { Smartphone } from 'lucide-react';
 
 const PLAY_STORE =
   'https://play.google.com/store/apps/details?id=com.sahelagriconnect.app';
-const APP_STORE = 'https://apps.apple.com/us/search?term=Sahel%20AgriConnect';
+const APP_STORE = 'https://apps.apple.com/app/id6775890201';
 
 /**
  * Compact glass download strip for the homepage hero.
