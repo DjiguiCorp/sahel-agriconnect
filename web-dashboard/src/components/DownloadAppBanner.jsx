@@ -1,7 +1,6 @@
 import { Smartphone } from 'lucide-react';
 
-const PLAY_STORE =
-  'https://play.google.com/store/apps/details?id=com.sahelagriconnect.app';
+const PLAY_STORE = 'https://play.google.com/store/apps/details?id=com.sahelagriconnect.app';
 const APP_STORE = 'https://apps.apple.com/app/id6775890201';
 
 /**
