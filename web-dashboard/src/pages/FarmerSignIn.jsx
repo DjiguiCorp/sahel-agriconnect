@@ -43,7 +43,9 @@ export default function FarmerSignIn() {
         }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+      if (!r.ok || !d.success) {
+        throw new Error((isFr && d.errorFr) || d.error || 'Failed');
+      }
       setVerificationId(d.verificationId || '');
       setStep('code');
     } catch (e2) {
@@ -69,7 +71,9 @@ export default function FarmerSignIn() {
         }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+      if (!r.ok || !d.success) {
+        throw new Error((isFr && d.errorFr) || d.error || 'Failed');
+      }
       if (!d.token) throw new Error(isFr ? 'Compte non activé.' : 'Account not active yet.');
 
       localStorage.setItem('auth_token_farmer', d.token);

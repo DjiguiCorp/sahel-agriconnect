@@ -421,6 +421,52 @@ export async function confirmMagicCode({
 export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
   await assertAccountExistsForLogin({ role, email, phone });
 
+  if (role === 'farmer') {
+    const farmer = await findFarmerByContact(email, phone);
+    if (!farmer) {
+      throw Object.assign(
+        new Error('No farmer account found. Please register first.'),
+        {
+          status: 404,
+          code: 'USER_NOT_FOUND',
+          errorFr: 'Aucun compte agriculteur trouvé. Veuillez vous inscrire.',
+        },
+      );
+    }
+    if (email) {
+      await Farmer.findOneAndUpdate(
+        { email: email.toLowerCase().trim() },
+        { emailVerified: true, verifiedAt: new Date() },
+      );
+    }
+    const token = jwt.sign(
+      {
+        role: 'farmer',
+        id: farmer._id.toString(),
+        email: farmer.email || email,
+        nom: farmer.nom,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '90d' },
+    );
+    const sessionSeed = await DeviceSession.issue(
+      farmer._id.toString(),
+      'farmer',
+      deviceHint,
+    );
+    return {
+      success: true,
+      role: 'farmer',
+      token,
+      sessionSeed,
+      accountStatus: farmer.statut === 'Actif' ? 'active' : 'pending_vetting',
+      user: {
+        ...farmerSummary(farmer),
+        name: farmer.nom,
+      },
+    };
+  }
+
   if (role === 'investor') {
     if (!email) throw Object.assign(new Error('Email required for investor login'), { status: 400 });
     const investor = await Investor.findOne({ email }).lean();
