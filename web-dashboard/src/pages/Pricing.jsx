@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Sprout, Star, Users, Factory, Globe,
   Landmark, Heart, Check, ArrowRight
 } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 // ── PRICING DATA ─────────────────────────────────────────────
 const TIERS = [
@@ -80,6 +81,8 @@ const TIERS = [
     cta: { en: 'Start Producer Pro', fr: 'Démarrer Producteur Pro' },
     ctaRoute: '/producer-pro-registration',
     popular: false,
+    stripeAmountUsd: { monthly: 29.99, annual: 299 },
+    tierKey: 'producer_pro',
   },
   {
     id: 'cooperative',
@@ -118,6 +121,8 @@ const TIERS = [
     cta: { en: 'Register Cooperative', fr: 'Inscrire la coopérative' },
     ctaRoute: '/cooperative-registration',
     popular: true,
+    stripeAmountUsd: { monthly: null, annual: 199 },
+    tierKey: 'cooperative',
   },
   {
     id: 'transformation',
@@ -152,6 +157,8 @@ const TIERS = [
     cta: { en: 'Register Center', fr: 'Inscrire le centre' },
     ctaRoute: '/transformation-registration',
     popular: false,
+    stripeAmountUsd: { monthly: 109, annual: 1090 },
+    tierKey: 'transformation',
   },
   {
     id: 'ngo_industry',
@@ -265,6 +272,8 @@ const TIERS = [
     cta: { en: 'Register as Investor', fr: 'S\'inscrire comme investisseur' },
     ctaRoute: '/afri-yield/register',
     popular: false,
+    stripeAmountUsd: { monthly: 29.99, annual: 299 },
+    tierKey: 'investor',
   },
 ];
 
@@ -273,6 +282,61 @@ export default function Pricing() {
   const isFr = i18n.language === 'fr';
   const [billing, setBilling] = useState('monthly');
   const [openFaq, setOpenFaq] = useState(null);
+  const [searchParams] = useSearchParams();
+  const [loadingTier, setLoadingTier] = useState(null);
+
+  const handlePricingCheckout = async (tier) => {
+    setLoadingTier(tier.id);
+    try {
+      let amountUsd =
+        billing === 'annual' && tier.stripeAmountUsd?.annual
+          ? tier.stripeAmountUsd.annual
+          : tier.stripeAmountUsd?.monthly;
+
+      // Annual-only tiers (e.g. cooperative) — always use annual amount
+      if (!amountUsd && tier.stripeAmountUsd?.annual) {
+        amountUsd = tier.stripeAmountUsd.annual;
+      }
+
+      if (!amountUsd) {
+        alert(isFr ? 'Erreur de paiement. Veuillez réessayer.' : 'Payment error. Please try again.');
+        return;
+      }
+
+      const tierRouteMap = {
+        producer_pro: '/producer-pro-registration',
+        cooperative: '/cooperative-registration',
+        transformation: '/transformation-registration',
+        investor: '/afri-yield/register',
+      };
+      const returnBase = tierRouteMap[tier.id] || '/pricing';
+
+      const res = await fetch(`${API_BASE_URL}/api/payments/stripe/create-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: '',
+          tierKey: tier.id,
+          tierName: tier.name[isFr ? 'fr' : 'en'],
+          amountUsd,
+          billingInterval: billing === 'annual' || tier.annualOnly ? 'year' : 'month',
+          successUrl: `${window.location.origin}${returnBase}?payment=success&tier=${tier.id}`,
+          cancelUrl: `${window.location.origin}/pricing?cancelled=${tier.id}`,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert(isFr ? 'Erreur de paiement. Veuillez réessayer.' : 'Payment error. Please try again.');
+      }
+    } catch (e) {
+      console.error('Checkout error:', e);
+      alert(isFr ? 'Erreur de connexion. Veuillez réessayer.' : 'Connection error. Please try again.');
+    } finally {
+      setLoadingTier(null);
+    }
+  };
 
   const faqs = [
     {
@@ -375,6 +439,11 @@ export default function Pricing() {
             </button>
           ))}
         </div>
+        {searchParams?.get?.('cancelled') && (
+          <p className="text-red-400 text-sm mt-2">
+            {isFr ? 'Paiement annulé. Vous pouvez réessayer.' : 'Payment cancelled. You can try again.'}
+          </p>
+        )}
       </section>
 
       {/* Tiers grid */}
@@ -455,22 +524,35 @@ export default function Pricing() {
                 </ul>
 
                 {/* CTA */}
-                <Link to={tier.ctaRoute}>
+                {tier.id === 'farmer' ? (
+                  <Link to={tier.ctaRoute}>
+                    <button type="button" className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                      style={{ backgroundColor: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>
+                      {tier.cta[isFr ? 'fr' : 'en']}
+                      <ArrowRight size={14} />
+                    </button>
+                  </Link>
+                ) : tier.id === 'ngo_industry' || tier.id === 'government' ? (
+                  <Link to={tier.ctaRoute}>
+                    <button type="button" className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                      style={{ backgroundColor: tier.popular ? tier.color : `${tier.color}20`, color: tier.popular ? 'black' : tier.color, border: `1px solid ${tier.color}40` }}>
+                      {tier.cta[isFr ? 'fr' : 'en']}
+                      <ArrowRight size={14} />
+                    </button>
+                  </Link>
+                ) : (
                   <button
                     type="button"
-                    className="w-full py-3 rounded-xl font-semibold
-                      text-sm transition-all flex items-center
-                      justify-center gap-2"
-                    style={{
-                      backgroundColor: tier.popular
-                        ? tier.color : `${tier.color}20`,
-                      color: tier.popular ? 'black' : tier.color,
-                      border: `1px solid ${tier.color}40`,
-                    }}>
-                    {tier.cta[isFr ? 'fr' : 'en']}
+                    disabled={loadingTier === tier.id}
+                    onClick={() => handlePricingCheckout(tier)}
+                    className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                    style={{ backgroundColor: tier.popular ? tier.color : `${tier.color}20`, color: tier.popular ? 'black' : tier.color, border: `1px solid ${tier.color}40` }}>
+                    {loadingTier === tier.id
+                      ? (isFr ? 'Redirection...' : 'Redirecting...')
+                      : tier.cta[isFr ? 'fr' : 'en']}
                     <ArrowRight size={14} />
                   </button>
-                </Link>
+                )}
               </div>
             );
           })}

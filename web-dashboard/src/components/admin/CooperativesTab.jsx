@@ -124,6 +124,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
   const [selectedCoop, setSelectedCoop] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activating, setActivating] = useState(null);
 
   const headers = useMemo(
     () => ({
@@ -133,21 +134,55 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     [token]
   );
 
-  useEffect(() => {
+  const fetchCooperatives = async () => {
     if (!token) return;
     setLoading(true);
-    Promise.all([
-      fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations`, { headers }).then((r) => r.json()),
-      fetch(`${API_BASE_URL}/api/farmers`, { headers }).then((r) => r.json()),
-    ])
-      .then(([coops, farm]) => {
-        const coopList = Array.isArray(coops) ? coops : coops.cooperatives || coops.registrations || [];
-        setCooperatives(coopList);
-        setFarmers(Array.isArray(farm) ? farm : farm.farmers || []);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    try {
+      const [coops, farm] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations`, { headers }).then((r) => r.json()),
+        fetch(`${API_BASE_URL}/api/farmers`, { headers }).then((r) => r.json()),
+      ]);
+      const coopList = Array.isArray(coops) ? coops : coops.cooperatives || coops.registrations || [];
+      setCooperatives(coopList);
+      setFarmers(Array.isArray(farm) ? farm : farm.farmers || []);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCooperatives();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, headers]);
+
+  const handleManualActivate = async (coopId, email) => {
+    if (!window.confirm(`Activer la coopérative ${email || coopId} manuellement (paiement reçu hors-ligne) ?`)) return;
+    setActivating(coopId);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/cooperatives/${coopId}/activate`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ paymentMethod: 'manual', adminNote: 'Activated manually by admin' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchCooperatives();
+        setSelectedCoop((prev) =>
+          prev && prev._id === coopId
+            ? { ...prev, status: 'active', paymentReceived: true }
+            : prev
+        );
+      } else {
+        alert(data.error || 'Activation failed');
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setActivating(null);
+    }
+  };
 
   const updateCoopStatus = async (id, status) => {
     try {
@@ -215,17 +250,29 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                 👤 {leader} · 📧 {selectedCoop.email}
               </p>
             </div>
-            <span
-              className={`text-xs px-3 py-1.5 rounded-full font-semibold shrink-0 ${
-                selectedCoop.status === 'active'
-                  ? 'bg-green-400/20 text-green-300'
-                  : selectedCoop.status === 'pending'
-                    ? 'bg-yellow-400/20 text-yellow-300'
-                    : 'bg-gray-400/20 text-gray-300'
-              }`}
-            >
-              {selectedCoop.status || 'pending'}
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span
+                className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
+                  selectedCoop.status === 'active'
+                    ? 'bg-green-400/20 text-green-300'
+                    : selectedCoop.status === 'pending'
+                      ? 'bg-yellow-400/20 text-yellow-300'
+                      : 'bg-gray-400/20 text-gray-300'
+                }`}
+              >
+                {selectedCoop.status || 'pending'}
+              </span>
+              {selectedCoop.status === 'pending_payment' && (
+                <button
+                  type="button"
+                  disabled={activating === selectedCoop._id}
+                  onClick={() => handleManualActivate(selectedCoop._id, selectedCoop.email)}
+                  className="px-3 py-1 rounded-lg text-xs font-bold bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 transition-colors"
+                >
+                  {activating === selectedCoop._id ? '...' : '✅ Activer'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -646,15 +693,27 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                       🌍 {coop.country || coop.pays} · {coop.regionCity || '—'}
                     </p>
                   </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      coop.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}
-                  >
-                    {coop.status || 'pending'}
-                  </span>
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        coop.status === 'active'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}
+                    >
+                      {coop.status || 'pending'}
+                    </span>
+                    {coop.status === 'pending_payment' && (
+                      <button
+                        type="button"
+                        disabled={activating === coop._id}
+                        onClick={() => handleManualActivate(coop._id, coop.email)}
+                        className="ml-1 px-3 py-1 rounded-lg text-xs font-bold bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 transition-colors"
+                      >
+                        {activating === coop._id ? '...' : '✅ Activer'}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mb-3 text-center">

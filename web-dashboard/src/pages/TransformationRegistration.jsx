@@ -1,16 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProcessorRegistration from '../components/ProcessorRegistration';
 import AppReturnBanner from '../components/AppReturnBanner';
+import { API_BASE_URL } from '../config/api';
 
 export default function TransformationRegistration() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const fromApp = searchParams.get('from') === 'app';
   const [success, setSuccess] = useState(false);
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      setPaymentDone(true);
+      setSuccess(true);
+    }
+  }, [searchParams]);
+
+  const handleTransformationPayment = async (billingInterval = 'month') => {
+    setCheckoutLoading(true);
+    try {
+      const amountUsd = billingInterval === 'year' ? 1090 : 109;
+      const res = await fetch(`${API_BASE_URL}/api/payments/stripe/create-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: '',
+          tierKey: 'transformation',
+          tierName: billingInterval === 'year'
+            ? 'Transformation Center — Annual'
+            : 'Transformation Center — Monthly',
+          amountUsd,
+          billingInterval,
+          successUrl: `${window.location.origin}/transformation-registration?payment=success`,
+          cancelUrl: `${window.location.origin}/transformation-registration?payment=cancelled`,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert(isFr ? 'Erreur de paiement. Veuillez réessayer.' : 'Payment error. Please try again.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert(isFr ? 'Erreur de connexion. Veuillez réessayer.' : 'Connection error. Please try again.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen" style={{ background: '#0b1f12' }}>
@@ -88,17 +130,30 @@ export default function TransformationRegistration() {
             style={{ borderColor: 'rgba(255,255,255,0.14)', background: 'rgba(245,158,11,0.06)' }}
           >
             <h2 className="text-white font-bold text-lg">
-              {isFr ? "📋 Formulaire d'enregistrement" : '📋 Registration Form'}
+              {paymentDone
+                ? (isFr ? "📋 Formulaire d'enregistrement" : '📋 Registration Form')
+                : (isFr ? '💳 Abonnement requis' : '💳 Subscription Required')}
             </h2>
             <p className="text-white/50 text-sm">
-              {isFr
-                ? 'Remplissez le formulaire — notre équipe vous contactera sous 24h.'
-                : 'Fill the form — our team will contact you within 24h.'}
+              {paymentDone
+                ? (isFr
+                    ? 'Paiement confirmé — complétez votre enregistrement.'
+                    : 'Payment confirmed — complete your registration.')
+                : (isFr
+                    ? 'Payez d\'abord pour activer votre portail centre de transformation.'
+                    : 'Pay first to activate your transformation center portal.')}
             </p>
           </div>
 
           <div className="p-6 registration-dark-zone">
-            {success ? (
+            {paymentDone ? (
+              <div>
+                <div className="mb-4 p-3 rounded-xl bg-green-500/15 border border-green-500/30 text-green-400 text-sm font-semibold">
+                  ✅ {isFr ? 'Paiement confirmé ! Complétez votre enregistrement.' : 'Payment confirmed! Complete your registration.'}
+                </div>
+                <ProcessorRegistration onProcessorAdded={() => { setPaymentDone(false); setSuccess(true); }} />
+              </div>
+            ) : success ? (
               <div className="text-center py-8">
                 <AppReturnBanner role="processor" />
                 <div className="text-5xl mb-4">🏭</div>
@@ -107,8 +162,8 @@ export default function TransformationRegistration() {
                 </h3>
                 <p className="text-white/60 text-sm mb-6 max-w-sm mx-auto">
                   {isFr
-                    ? 'Notre équipe examinera votre dossier et vous contactera dans les 24 heures.'
-                    : 'Our team will review your application and contact you within 24 hours.'}
+                    ? 'Notre équipe examinera votre dossier et activera votre portail dans les 24 heures.'
+                    : 'Our team will review your application and activate your portal within 24 hours.'}
                 </p>
                 <button
                   type="button"
@@ -120,7 +175,46 @@ export default function TransformationRegistration() {
                 </button>
               </div>
             ) : (
-              <ProcessorRegistration onProcessorAdded={() => setSuccess(true)} />
+              <div className="space-y-4">
+                <h3 className="text-white font-bold text-lg mb-2">
+                  {isFr ? '💳 Choisissez votre abonnement' : '💳 Choose Your Subscription'}
+                </h3>
+                {searchParams.get('payment') === 'cancelled' && (
+                  <p className="text-red-400 text-sm">
+                    {isFr ? 'Paiement annulé. Vous pouvez réessayer.' : 'Payment cancelled. You can try again.'}
+                  </p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-xl p-5 border border-amber-500/30 bg-amber-500/10">
+                    <p className="text-amber-400 font-bold text-lg">$109 / {isFr ? 'mois' : 'month'}</p>
+                    <p className="text-white/60 text-sm mb-4">{isFr ? 'Abonnement mensuel' : 'Monthly subscription'}</p>
+                    <button
+                      type="button"
+                      disabled={checkoutLoading}
+                      onClick={() => handleTransformationPayment('month')}
+                      className="w-full py-3 rounded-xl font-bold text-black bg-amber-500 disabled:opacity-60 text-sm"
+                    >
+                      {checkoutLoading ? '...' : isFr ? '💳 Payer mensuellement' : '💳 Pay Monthly'}
+                    </button>
+                  </div>
+                  <div className="rounded-xl p-5 border border-amber-400/50 bg-amber-500/15">
+                    <p className="text-amber-400 font-bold text-lg">$1,090 / {isFr ? 'an' : 'year'}</p>
+                    <p className="text-green-400 text-xs mb-1">{isFr ? 'Économisez $218/an' : 'Save $218/year'}</p>
+                    <p className="text-white/60 text-sm mb-4">{isFr ? 'Abonnement annuel' : 'Annual subscription'}</p>
+                    <button
+                      type="button"
+                      disabled={checkoutLoading}
+                      onClick={() => handleTransformationPayment('year')}
+                      className="w-full py-3 rounded-xl font-bold text-black bg-amber-400 disabled:opacity-60 text-sm"
+                    >
+                      {checkoutLoading ? '...' : isFr ? '💳 Payer annuellement' : '💳 Pay Annually'}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-white/40 text-xs text-center">
+                  🔒 {isFr ? 'Paiement sécurisé par Stripe · Visa, Mastercard, Amex' : 'Secure payment by Stripe · Visa, Mastercard, Amex'}
+                </p>
+              </div>
             )}
           </div>
         </div>

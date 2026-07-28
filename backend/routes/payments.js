@@ -99,14 +99,16 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
       cancelUrl,
       billingInterval,
     } = req.body || {};
-    if (!email || !amountUsd) {
-      return res.status(400).json({ success: false, error: 'email and amountUsd required' });
+    if (!amountUsd) {
+      return res.status(400).json({ success: false, error: 'amountUsd required' });
     }
+    // email is optional — Stripe will collect it on the checkout page if not provided
 
     const amountCents = Math.round(Number(amountUsd) * 100);
     const productName = tierName || tierKey || 'Sahel AgriConnect Subscription';
     const isAnnualCoop =
       tierKey === 'cooperative' || billingInterval === 'year';
+    const emailNorm = email ? String(email).toLowerCase().trim() : '';
 
     const baseFront = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
     const coopSuccessFallback = `${baseFront}/cooperative-registration?payment=success`;
@@ -119,7 +121,7 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
         ? {
             payment_method_types: ['card'],
             mode: 'payment',
-            customer_email: email,
+            ...(emailNorm ? { customer_email: emailNorm } : {}),
             line_items: [
               {
                 price_data: {
@@ -129,8 +131,8 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
                     description:
                       'Annual cooperative membership — Sahel AgriConnect',
                   },
+                  unit_amount: amountCents,
                 },
-                unit_amount: amountCents,
                 quantity: 1,
               },
             ],
@@ -138,7 +140,7 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
               statement_descriptor_suffix: 'SAHELAGRICONN',
               description: `Sahel AgriConnect — ${productName}`,
             },
-            metadata: { tierKey: tierKey || 'cooperative', email },
+            metadata: { tierKey: tierKey || 'cooperative', email: emailNorm },
             success_url:
               safeReturnUrl(successUrl, coopSuccessFallback),
             cancel_url:
@@ -147,7 +149,7 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
         : {
             payment_method_types: ['card'],
             mode: 'subscription',
-            customer_email: email,
+            ...(emailNorm ? { customer_email: emailNorm } : {}),
             line_items: [
               {
                 price_data: {
@@ -165,11 +167,7 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
                 quantity: 1,
               },
             ],
-            payment_intent_data: {
-              statement_descriptor_suffix: 'SAHELAGRICONN',
-              description: `Sahel AgriConnect — ${productName}`,
-            },
-            metadata: { tierKey: tierKey || '', email },
+            metadata: { tierKey: tierKey || '', email: emailNorm },
             success_url:
               safeReturnUrl(successUrl, pricingSuccessFallback),
             cancel_url:
