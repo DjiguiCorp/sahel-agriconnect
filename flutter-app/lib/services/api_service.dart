@@ -298,6 +298,12 @@ class ApiService {
   static Future<Map<String, dynamic>> getCoopPublicStats() =>
       get('/api/cooperatives/public-stats');
 
+  /// Platform cooperative registration (starter free / growth pending payment).
+  static Future<Map<String, dynamic>> registerCooperativePlatform(
+    Map<String, dynamic> body,
+  ) =>
+      post('/api/cooperatives/register-platform', body);
+
   // ── Government ────────────────────────────────────────────
   static Future<Map<String, dynamic>> govLogin(
     String email,

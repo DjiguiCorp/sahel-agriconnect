@@ -12,6 +12,7 @@ import '../screens/auth/investor_kyc_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/magic_link_screen.dart';
 import '../screens/cooperative/cooperative_dashboard.dart';
+import '../screens/cooperative/cooperative_registration_screen.dart';
 import '../screens/farmer/farmer_dashboard.dart';
 import '../screens/farmer/farmer_onboarding_screen.dart';
 import '../screens/government/government_dashboard.dart';
@@ -263,6 +264,10 @@ GoRouter buildRouter(
       GoRoute(
         path: '/investor',
         pageBuilder: (c, s) => _instantPage(s, const InvestorDashboard()),
+      ),
+      GoRoute(
+        path: '/cooperative/register',
+        builder: (_, __) => const CooperativeRegistrationScreen(),
       ),
       GoRoute(
         path: '/cooperative',

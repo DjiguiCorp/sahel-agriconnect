@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/glass.dart';
@@ -616,11 +617,78 @@ class _FarmerHomeTab extends StatelessWidget {
     required this.onPushTool,
   });
 
+  bool get _isProducerPro {
+    final meta = farmer?['producerProMeta'];
+    final tier = farmer?['subscriptionTier'] ??
+        farmer?['tier'] ??
+        (meta is Map ? meta['tier'] : null);
+    return tier == 'producer_pro' ||
+        farmer?['isProducerPro'] == true ||
+        farmer?['producerPro'] == true ||
+        meta != null;
+  }
+
+  Future<void> _openProUpgrade() async {
+    final uri = Uri.parse('https://sahelagriconnect.com/pricing');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: SafeInsets.listBottom(context),
       children: [
+
+        if (!_isProducerPro) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD97706).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFD97706).withValues(alpha: 0.45),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  isFr
+                      ? '🌟 Débloquez Producteur Pro — 29,99\$/mois. Accès marché prioritaire, outils export & prévisions.'
+                      : '🌟 Unlock Producer Pro — \$29.99/mo. Priority market access, export tools & yield forecasting.',
+                  style: const TextStyle(
+                    color: Color(0xFFFBBF24),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton(
+                    onPressed: _openProUpgrade,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                    ),
+                    child: Text(
+                      isFr ? 'Mettre à niveau' : 'Upgrade Now',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         // ── QUICK ACTIONS GRID ─────────────────────────────────
         Text(isFr ? 'Actions rapides' : 'Quick Actions',

@@ -106,9 +106,10 @@ class _LoginScreenState extends State<LoginScreen> {
       bg: const [Color(0xFF1a3c2e), Color(0xFF2d5a3d)],
       loginEndpoint: '/api/cooperatives/lookup',
       canSelfRegister: true,
-      registerUrl: 'https://sahelagriconnect.com/cooperative-registration',
+      registerUrl: 'app://cooperative/register',
       hint: 'cooperative@email.com or +223...',
     ),
+    // Kept for deep-link / legacy login paths — not shown in public role picker
     AuthRole.government: (
       title: 'Government',
       subtitle: 'Government portal',
@@ -117,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
       bg: const [Color(0xFF0d1a2e), Color(0xFF1a3c2e)],
       loginEndpoint: '/api/government/login',
       canSelfRegister: false,
-      registerUrl: 'https://sahelagriconnect.com/platform-licensing',
+      registerUrl: 'https://sahelagriconnect.com/contact',
       hint: 'minister@agriculture.gov.ml',
     ),
     AuthRole.ngo: (
@@ -128,13 +129,13 @@ class _LoginScreenState extends State<LoginScreen> {
       bg: const [Color(0xFF0d2e1a), Color(0xFF1a3c2e)],
       loginEndpoint: '/api/government/login',
       canSelfRegister: false,
-      registerUrl: 'https://sahelagriconnect.com/platform-licensing',
+      registerUrl: 'https://sahelagriconnect.com/contact',
       hint: 'contact@ngo.org',
     ),
     AuthRole.processor: (
-      title: 'Processor portal',
-      subtitle: 'Transformation center',
-      emoji: '⚙️',
+      title: 'Transformation Center',
+      subtitle: 'Processor portal',
+      emoji: '🏭',
       color: const Color(0xFF3B6D11),
       bg: const [Color(0xFF1a3c2e), Color(0xFF0d1f17)],
       loginEndpoint: '/api/processors/login',
@@ -429,6 +430,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _openUrl(String url) async {
+    // In-app cooperative registration (member-count freemium gate)
+    if (url.startsWith('app://cooperative/register')) {
+      if (mounted) context.push('/cooperative/register');
+      return;
+    }
+
     // Pass current app language to web pages so they open in EN or FR correctly
     final lang = context.read<LanguageProvider>().lang;
 
@@ -1521,16 +1528,14 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
   bool get _showsWebPaymentNote =>
-      widget.role == AuthRole.investor ||
-      widget.role == AuthRole.cooperative ||
-      widget.role == AuthRole.processor;
+      widget.role == AuthRole.investor || widget.role == AuthRole.processor;
 
   String _registerButtonLabel(LanguageProvider lp) {
     if (widget.role == AuthRole.investor) {
       return lp.t('Register', "S'inscrire");
     }
     if (widget.role == AuthRole.cooperative) {
-      return lp.t('Register (web)', "S'inscrire (web)");
+      return lp.t('Register free', "S'inscrire gratuitement");
     }
     if (widget.role == AuthRole.processor) {
       return lp.t('Register (web)', "S'inscrire (web)");
@@ -1636,7 +1641,7 @@ class _LoginScreenState extends State<LoginScreen> {
       case AuthRole.ngo:
         return lp.t('NGO / Partner', 'ONG / Partenaire');
       case AuthRole.processor:
-        return lp.t('Processor portal', 'Portail processeur');
+        return lp.t('Transformation Center', 'Centre de transformation');
       default:
         return _config.title;
     }
