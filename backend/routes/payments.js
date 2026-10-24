@@ -107,8 +107,17 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
     const amountCents = Math.round(Number(amountUsd) * 100);
     const productName = tierName || tierKey || 'Sahel AgriConnect Subscription';
     const isAnnualCoop =
-      tierKey === 'cooperative' || billingInterval === 'year';
+      tierKey === 'cooperative' ||
+      tierKey === 'cooperative_growth' ||
+      billingInterval === 'year';
     const emailNorm = email ? String(email).toLowerCase().trim() : '';
+    const extraMeta = req.body?.metadata && typeof req.body.metadata === 'object'
+      ? Object.fromEntries(
+          Object.entries(req.body.metadata).map(([k, v]) => [k, String(v ?? '')])
+        )
+      : {};
+    if (req.body?.memberCount != null) extraMeta.memberCount = String(req.body.memberCount);
+    if (req.body?.cooperativeName) extraMeta.cooperativeName = String(req.body.cooperativeName);
 
     const baseFront = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
     const coopSuccessFallback = `${baseFront}/cooperative-registration?payment=success`;
@@ -129,7 +138,7 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
                   product_data: {
                     name: productName,
                     description:
-                      'Annual cooperative membership — Sahel AgriConnect',
+                      'Annual cooperative Growth membership — Sahel AgriConnect',
                   },
                   unit_amount: amountCents,
                 },
@@ -140,7 +149,11 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
               statement_descriptor_suffix: 'SAHELAGRICONN',
               description: `Sahel AgriConnect — ${productName}`,
             },
-            metadata: { tierKey: tierKey || 'cooperative', email: emailNorm },
+            metadata: {
+              tierKey: tierKey || 'cooperative',
+              email: emailNorm,
+              ...extraMeta,
+            },
             success_url:
               safeReturnUrl(successUrl, coopSuccessFallback),
             cancel_url:
@@ -167,7 +180,11 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
                 quantity: 1,
               },
             ],
-            metadata: { tierKey: tierKey || '', email: emailNorm },
+            metadata: {
+              tierKey: tierKey || '',
+              email: emailNorm,
+              ...extraMeta,
+            },
             success_url:
               safeReturnUrl(successUrl, pricingSuccessFallback),
             cancel_url:
@@ -358,20 +375,32 @@ router.post('/stripe/webhook', async (req, res) => {
         }
       }
 
-      // ── Cooperative annual membership ───────────────────────
-      if (session.metadata?.tierKey === 'cooperative' && email) {
+      // ── Cooperative Growth annual membership ────────────────
+      if (
+        ['cooperative', 'cooperative_growth'].includes(session.metadata?.tierKey) &&
+        email
+      ) {
+        const memberCountMeta = Number(session.metadata?.memberCount);
+        const update = {
+          paymentReceived: true,
+          paymentDate: new Date(),
+          paymentMethod: 'stripe',
+          status: 'active',
+          activatedAt: new Date(),
+          tier: 'growth',
+          certificationEligible: true,
+          afriyieldEligible: true,
+          exportEligible: true,
+        };
+        if (Number.isFinite(memberCountMeta) && memberCountMeta > 0) {
+          update.memberCount = memberCountMeta;
+        }
         await CooperativePlatformRegistration.findOneAndUpdate(
           { email: String(email).toLowerCase().trim() },
-          {
-            paymentReceived: true,
-            paymentDate: new Date(),
-            paymentMethod: 'stripe',
-            status: 'active',
-            activatedAt: new Date(),
-          },
+          update,
           { sort: { createdAt: -1 } }
         );
-        console.log('✅ Cooperative membership payment:', email);
+        console.log('✅ Cooperative Growth membership payment:', email);
       }
 
       // ── Subscription payment (existing logic) ─────────────────

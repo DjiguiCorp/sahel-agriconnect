@@ -12,12 +12,25 @@ import Farmer from '../models/Farmer.js';
 import NationalProject from '../models/NationalProject.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { countryFilter } from '../middleware/countryFilter.js';
+import { requireGrowthTier } from '../middleware/requireGrowthTier.js';
 import { confirmCooperativeRegistration, notifyAdminNewCooperative } from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import { dispatchNotification } from './notifications.js';
 import DeviceSession from '../models/DeviceSession.js';
 
 const router = express.Router();
+
+/** Derive freemium tier from declared member count (Growth = 51+). */
+export function deriveCoopTier(memberCount) {
+  const n = Number(memberCount) || 0;
+  const isGrowth = n > 50;
+  return {
+    tier: isGrowth ? 'growth' : 'starter',
+    certificationEligible: isGrowth,
+    afriyieldEligible: isGrowth,
+    exportEligible: isGrowth,
+  };
+}
 
 const authCoop = async (req, res, next) => {
   try {
@@ -27,6 +40,18 @@ const authCoop = async (req, res, next) => {
     if (decoded.role !== 'cooperative_leader') return res.status(403).json({ error: 'Not a cooperative leader' });
     const coop = await CooperativePlatformRegistration.findById(decoded.coopId);
     if (!coop || coop.status !== 'active') return res.status(403).json({ error: 'Cooperative not active' });
+    // Backfill tier for legacy records
+    if (!coop.tier) {
+      const derived = deriveCoopTier(coop.memberCount);
+      Object.assign(coop, derived);
+      if (coop.paymentReceived && coop.memberCount > 50) {
+        coop.tier = 'growth';
+        coop.certificationEligible = true;
+        coop.afriyieldEligible = true;
+        coop.exportEligible = true;
+      }
+      await coop.save().catch(() => {});
+    }
     req.coop = coop;
     next();
   } catch {
@@ -78,11 +103,25 @@ router.get('/public-stats', async (req, res) => {
 
 router.post('/register-platform', async (req, res) => {
   try {
+    const memberCount = Number(req.body.memberCount ?? req.body.currentMembers ?? 0);
+    const isGrowth = memberCount > 50;
+    const tier = req.body.tier === 'growth' || req.body.tier === 'starter'
+      ? req.body.tier
+      : isGrowth
+        ? 'growth'
+        : 'starter';
+    // Eligibility unlocks with Growth tier; unpaid Growth stays pending_payment (cannot login until paid).
+    const paidGrowth = tier === 'growth' && (req.body.paymentReceived === true || req.body.skipPayment === true);
+
     const cooperative = await CooperativePlatformRegistration.create({
       cooperativeName: req.body.cooperativeName,
       country: req.body.country,
       regionCity: req.body.regionCity,
-      memberCount: Number(req.body.memberCount ?? req.body.currentMembers ?? 0),
+      memberCount,
+      tier,
+      certificationEligible: tier === 'growth',
+      afriyieldEligible: tier === 'growth',
+      exportEligible: tier === 'growth',
       primaryCrops: Array.isArray(req.body.primaryCrops) ? req.body.primaryCrops : [],
       autresCrops: req.body.autresCrops || '',
       certificationStatus: req.body.certificationStatus || 'None',
@@ -90,8 +129,10 @@ router.post('/register-platform', async (req, res) => {
       email: req.body.email,
       phone: req.body.phone || '',
       interests: Array.isArray(req.body.interests) ? req.body.interests : [],
-      status: 'pending_payment', // Always starts as pending_payment
-      paymentReceived: false,
+      status: tier === 'starter' || paidGrowth ? 'active' : 'pending_payment',
+      paymentReceived: tier === 'starter' || paidGrowth,
+      paymentMethod: tier === 'starter' ? 'free_starter' : paidGrowth ? (req.body.paymentMethod || 'stripe') : undefined,
+      activatedAt: tier === 'starter' || paidGrowth ? new Date() : undefined,
     });
 
     notifyAdminNewCooperative(cooperative).catch(console.error);
@@ -108,6 +149,8 @@ router.post('/register-platform', async (req, res) => {
       success: true,
       cooperativeId: cooperative._id,
       email: cooperative.email,
+      tier: cooperative.tier,
+      requiresPayment: cooperative.status === 'pending_payment',
     });
   } catch (error) {
     console.error('Erreur enregistrement coopérative plateforme:', error);
@@ -433,13 +476,91 @@ router.get('/my-portal', authCoop, async (req, res) => {
       activeProjects: projectsWithMine.length,
     };
 
+    const tier = req.coop.tier || deriveCoopTier(req.coop.memberCount).tier;
+    const isGrowth = tier === 'growth';
+
     res.json({
       success: true,
+      cooperative: {
+        id: req.coop._id,
+        cooperativeName: req.coop.cooperativeName,
+        country: req.coop.country,
+        memberCount: req.coop.memberCount,
+        tier,
+        certificationEligible: isGrowth || Boolean(req.coop.certificationEligible),
+        afriyieldEligible: isGrowth || Boolean(req.coop.afriyieldEligible),
+        exportEligible: isGrowth || Boolean(req.coop.exportEligible),
+      },
       stats,
       memberFarmers,
       produceListings,
       invitations,
       nationalProjects: projectsWithMine,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /api/cooperatives/my-portal/promote-listing/:id — AfriYield marketplace (Growth only)
+router.put('/my-portal/promote-listing/:id', authCoop, requireGrowthTier, async (req, res) => {
+  try {
+    const listing = await ProduceListing.findOneAndUpdate(
+      { _id: req.params.id, cooperativeId: req.coop._id },
+      {
+        cooperativeApproved: true,
+        cooperativeApprovedAt: new Date(),
+        promotedToMarketplace: true,
+        promotedAt: new Date(),
+        visibility: 'marketplace',
+      },
+      { new: true }
+    );
+    if (!listing) return res.status(404).json({ error: 'Listing not found' });
+    res.json({ success: true, listing });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/cooperatives/my-portal/certification — certification workflow kickoff (Growth only)
+router.post('/my-portal/certification', authCoop, requireGrowthTier, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Certification workflow available',
+      certificationStatus: req.coop.certificationStatus || 'None',
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/cooperatives/my-portal/export-readiness — export readiness (Growth only)
+router.post('/my-portal/export-readiness', authCoop, requireGrowthTier, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Export readiness tools unlocked',
+      exportEligible: true,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/cooperatives/my-portal/upgrade — mark intent / refresh after Growth payment
+router.post('/my-portal/upgrade', authCoop, async (req, res) => {
+  try {
+    if (req.coop.tier === 'growth' && req.coop.paymentReceived) {
+      return res.json({ success: true, tier: 'growth', alreadyActive: true });
+    }
+    res.json({
+      success: true,
+      tier: req.coop.tier || 'starter',
+      requiresCheckout: true,
+      amountUsd: 199,
+      tierKey: 'cooperative_growth',
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

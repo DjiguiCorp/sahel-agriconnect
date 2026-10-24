@@ -1,10 +1,33 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LogOut, Loader2, Check, X, Plus } from 'lucide-react';
 import { API_ENDPOINTS } from '../config/api';
 
 const API = import.meta.env.VITE_API_BASE_URL;
+
+function GrowthLockedPanel({ isFr, navigate }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-200 px-6">
+      <span className="text-4xl mb-4">🔒</span>
+      <p className="text-[#1a3c2e] font-semibold mb-2">
+        {isFr ? 'Disponible avec le plan Croissance' : 'Available on Growth Plan'}
+      </p>
+      <p className="text-gray-500 text-sm mb-6 max-w-sm">
+        {isFr
+          ? "Les petites coopératives (≤50 membres) ne sont pas éligibles à la certification car l'export requiert quantité et qualité. Passez à 51+ membres et mettez à niveau pour débloquer."
+          : 'Smaller cooperatives (≤50 members) are not eligible for certification because export requires both quantity and quality. Grow to 51+ members and upgrade to unlock.'}
+      </p>
+      <button
+        type="button"
+        onClick={() => navigate('/cooperative-upgrade')}
+        className="px-6 py-3 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition-all"
+      >
+        {isFr ? 'Mettre à niveau — $199/an' : 'Upgrade — $199/year'}
+      </button>
+    </div>
+  );
+}
 
 const COOP_TOKEN = 'sac_coop_token';
 const COOP_DATA = 'sac_coop_data';
@@ -12,6 +35,7 @@ const COOP_DATA = 'sac_coop_data';
 export default function CooperativePortal() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
+  const navigate = useNavigate();
   const [token, setToken] = useState(() => sessionStorage.getItem(COOP_TOKEN));
   const [coop, setCoop] = useState(() => {
     try {
@@ -23,6 +47,8 @@ export default function CooperativePortal() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const coopTier = data?.cooperative?.tier || 'starter';
+  const isGrowth = coopTier === 'growth';
 
   const [loginStep, setLoginStep] = useState('email'); // email | code
   const [loginEmail, setLoginEmail] = useState('');
@@ -319,6 +345,18 @@ export default function CooperativePortal() {
       label: isFr ? `🌾 Productions (${data?.produceListings?.length ?? '—'})` : `🌾 Produce (${data?.produceListings?.length ?? '—'})`,
     },
     {
+      key: 'certification',
+      label: isFr ? `🏅 Certification${isGrowth ? '' : ' 🔒'}` : `🏅 Certification${isGrowth ? '' : ' 🔒'}`,
+    },
+    {
+      key: 'afriyield',
+      label: `🌍 AfriYield${isGrowth ? '' : ' 🔒'}`,
+    },
+    {
+      key: 'export',
+      label: isFr ? `📦 Export${isGrowth ? '' : ' 🔒'}` : `📦 Export${isGrowth ? '' : ' 🔒'}`,
+    },
+    {
       key: 'projects',
       label: isFr
         ? `📋 Projets nationaux (${data?.nationalProjects?.length ?? '—'})`
@@ -371,6 +409,45 @@ export default function CooperativePortal() {
           </div>
         </div>
       )}
+
+      <div className="max-w-5xl mx-auto px-4 pt-4">
+        {!isGrowth ? (
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 bg-white mb-2 shadow-sm">
+            <span className="text-2xl">🌱</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[#1a3c2e] font-semibold text-sm">
+                {isFr ? 'Plan Démarrage — Gratuit' : 'Starter Plan — Free'}
+              </p>
+              <p className="text-gray-500 text-xs">
+                {isFr
+                  ? 'Certification, AfriYield et export disponibles à partir de 51 membres (plan Croissance $199/an)'
+                  : 'Certification, AfriYield & export available from 51 members (Growth plan $199/year)'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/cooperative-upgrade')}
+              className="px-4 py-2 rounded-lg bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition-all shrink-0"
+            >
+              {isFr ? 'Mettre à niveau' : 'Upgrade'}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-teal-500/40 bg-teal-50 mb-2">
+            <span className="text-2xl">🚀</span>
+            <div>
+              <p className="text-teal-700 font-semibold text-sm">
+                {isFr ? 'Plan Croissance — Actif' : 'Growth Plan — Active'}
+              </p>
+              <p className="text-teal-700/70 text-xs">
+                {isFr
+                  ? 'Certification, AfriYield Exchange et export diaspora débloqués'
+                  : 'Certification, AfriYield Exchange & diaspora export unlocked'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex overflow-x-auto gap-1 py-3">
@@ -482,7 +559,14 @@ export default function CooperativePortal() {
                   },
                   { icon: '🌾', label: isFr ? 'Voir les productions' : 'View produce', action: () => setActiveTab('produce') },
                   { icon: '📋', label: isFr ? 'Projets nationaux' : 'National projects', action: () => setActiveTab('projects') },
-                  { icon: '🌍', label: 'AfriYield Exchange', action: () => window.open('/afri-yield/opportunities', '_blank') },
+                  {
+                    icon: '🌍',
+                    label: 'AfriYield Exchange',
+                    action: () =>
+                      isGrowth
+                        ? window.open('/afri-yield/opportunities', '_blank')
+                        : setActiveTab('afriyield'),
+                  },
                 ].map(({ icon, label, action }) => (
                   <button
                     key={label}
@@ -555,6 +639,67 @@ export default function CooperativePortal() {
               </table>
             )}
           </div>
+        )}
+
+        {activeTab === 'certification' && !loading && (
+          isGrowth ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-bold text-[#1a3c2e] mb-2">🏅 {isFr ? 'Certification' : 'Certification'}</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                {isFr
+                  ? 'Votre plan Croissance débloque le workflow de certification et le parcours USDA (partenariat DSU).'
+                  : 'Your Growth plan unlocks the certification workflow and USDA pathway (DSU partnership).'}
+              </p>
+              <Link
+                to="/farmer-certification"
+                className="inline-flex px-4 py-2 rounded-xl text-sm font-bold text-white"
+                style={{ background: '#1a3c2e' }}
+              >
+                {isFr ? 'Ouvrir le programme de certification →' : 'Open certification program →'}
+              </Link>
+            </div>
+          ) : (
+            <GrowthLockedPanel isFr={isFr} navigate={navigate} />
+          )
+        )}
+
+        {activeTab === 'afriyield' && !loading && (
+          isGrowth ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-bold text-[#1a3c2e] mb-2">🌍 AfriYield Exchange</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                {isFr
+                  ? 'Listez vos productions certifiées et connectez-vous aux investisseurs diaspora.'
+                  : 'List certified produce and connect with diaspora investors.'}
+              </p>
+              <a
+                href="/afri-yield/opportunities"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex px-4 py-2 rounded-xl text-sm font-bold text-white"
+                style={{ background: '#B5850A' }}
+              >
+                {isFr ? 'Ouvrir AfriYield →' : 'Open AfriYield →'}
+              </a>
+            </div>
+          ) : (
+            <GrowthLockedPanel isFr={isFr} navigate={navigate} />
+          )
+        )}
+
+        {activeTab === 'export' && !loading && (
+          isGrowth ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-bold text-[#1a3c2e] mb-2">📦 {isFr ? 'Export diaspora' : 'Diaspora export'}</h3>
+              <p className="text-gray-600 text-sm">
+                {isFr
+                  ? 'Outils de préparation à l\'export vers les marchés USA et Europe — débloqués sur le plan Croissance.'
+                  : 'Export readiness tools for USA and Europe markets — unlocked on the Growth plan.'}
+              </p>
+            </div>
+          ) : (
+            <GrowthLockedPanel isFr={isFr} navigate={navigate} />
+          )
         )}
 
         {activeTab === 'produce' && !loading && (

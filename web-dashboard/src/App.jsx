@@ -26,6 +26,7 @@ const PerksRequest = lazy(() => import('./components/farmer/PerksRequest'));
 const IrrigationAssessment = lazy(() => import('./components/farmer/IrrigationAssessment'));
 const ProductionOptimizer = lazy(() => import('./components/farmer/ProductionOptimizer'));
 const CooperativeRegistration = lazy(() => import('./pages/CooperativeRegistration'));
+const CooperativeUpgrade = lazy(() => import('./pages/CooperativeUpgrade'));
 const FarmerCertificationProgram = lazy(() => import('./pages/FarmerCertificationProgram'));
 const EquipmentFund = lazy(() => import('./pages/EquipmentFund'));
 const FarmerNeeds = lazy(() => import('./pages/FarmerNeeds'));
@@ -242,6 +243,14 @@ function App() {
                     element={
                       <ApiSection>
                         <CooperativeRegistration />
+                      </ApiSection>
+                    }
+                  />
+                  <Route
+                    path="cooperative-upgrade"
+                    element={
+                      <ApiSection>
+                        <CooperativeUpgrade />
                       </ApiSection>
                     }
                   />

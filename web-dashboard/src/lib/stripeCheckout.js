@@ -24,6 +24,13 @@ const TIER_DEFAULTS = {
     successPath: '/cooperative-registration?payment=success',
     cancelPath: '/pricing?cancelled=cooperative',
   },
+  cooperative_growth: {
+    tierName: 'Growth Cooperative',
+    monthly: null,
+    annual: 199,
+    successPath: '/cooperative-portal?upgrade=success',
+    cancelPath: '/cooperative-upgrade?cancelled=1',
+  },
   transformation: {
     tierName: 'Transformation Center',
     monthly: 109,
@@ -71,6 +78,9 @@ export async function createCheckoutSession(tierKey, options = {}) {
     cancelUrl:
       options.cancelUrl ||
       `${origin}${defaults.cancelPath || '/pricing?cancelled=1'}`,
+    ...(options.memberCount != null ? { memberCount: options.memberCount } : {}),
+    ...(options.cooperativeName ? { cooperativeName: options.cooperativeName } : {}),
+    ...(options.metadata ? { metadata: options.metadata } : {}),
   };
 
   const res = await fetch(`${API_BASE_URL}/api/payments/stripe/create-session`, {

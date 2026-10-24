@@ -69,14 +69,18 @@ export default function CooperativeRegistration() {
   });
   const [benefitsOpen, setBenefitsOpen] = useState(false);
 
+  const memberCountNum = Number(form.memberCount || 0);
+  const isGrowthTier = memberCountNum > 50;
+
   const stripeCheckout = useMemo(
-    () => isStripeCheckoutAvailable(form.country),
-    [form.country]
+    () => isStripeCheckoutAvailable(form.country) && isGrowthTier,
+    [form.country, isGrowthTier]
   );
 
   const showStripeSuccess =
-    state.ok && stripeCheckout && state.paymentPath === 'stripe';
+    state.ok && state.paymentPath === 'stripe';
   const showManualSuccess = state.ok && !showStripeSuccess;
+  const showFreeSuccess = state.ok && state.paymentPath === 'free';
 
   useEffect(() => {
     const payment = searchParams.get('payment');
@@ -127,12 +131,22 @@ export default function CooperativeRegistration() {
     e.preventDefault();
     setState({ loading: true, ok: false, err: '', paymentPath: null });
     try {
+      const count = Number(form.memberCount || 0);
+      if (!count || count < 1) {
+        throw new Error(
+          isFr ? 'Le nombre de membres est requis (min. 1).' : 'Member count is required (min. 1).'
+        );
+      }
+      const growth = count > 50;
+      const tier = growth ? 'growth' : 'starter';
+
       const r = await fetch(API_ENDPOINTS.COOPERATIVES.REGISTER_PLATFORM, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          memberCount: Number(form.memberCount || 0),
+          memberCount: count,
+          tier,
         }),
       });
       const j = await r.json().catch(() => ({}));
@@ -144,17 +158,25 @@ export default function CooperativeRegistration() {
         registerCooperative(form.email, form.leaderName);
       }
 
-      if (stripeCheckout) {
+      // Growth (51+): Stripe checkout required before portal activation
+      if (growth && isStripeCheckoutAvailable(form.country)) {
         const stripeRes = await fetch(`${API}/api/payments/stripe/create-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: form.email.trim().toLowerCase(),
-            tierKey: 'cooperative',
-            tierName: isFr ? 'Adhésion coopérative' : 'Cooperative Membership',
+            tierKey: 'cooperative_growth',
+            tierName: isFr ? 'Coopérative Croissance' : 'Growth Cooperative',
             amountUsd: COOP_PRICE_USD,
             billingInterval: 'year',
-            successUrl: `${window.location.origin}/cooperative-registration?payment=success&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
+            memberCount: count,
+            cooperativeName: form.cooperativeName,
+            metadata: {
+              memberCount: String(count),
+              cooperativeName: form.cooperativeName,
+              tier: 'growth',
+            },
+            successUrl: `${window.location.origin}/cooperative-registration?payment=success&tier=growth&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
             cancelUrl: `${window.location.origin}/cooperative-registration?payment=cancelled&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
           }),
         });
@@ -168,7 +190,13 @@ export default function CooperativeRegistration() {
         }
       }
 
-      setState({ loading: false, ok: true, err: '', paymentPath: 'manual' });
+      // Starter (≤50): free registration — no Stripe
+      setState({
+        loading: false,
+        ok: true,
+        err: '',
+        paymentPath: growth ? 'manual' : 'free',
+      });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setState({
@@ -216,7 +244,9 @@ export default function CooperativeRegistration() {
       >
         <div className="section-container py-8 md:py-12">
           <p className="text-teal-400 text-sm font-semibold mb-2">
-            {isFr ? '199$/an · Portail coopérative' : '$199/yr · Cooperative portal'}
+            {isFr
+              ? 'Gratuit jusqu\'à 50 membres · Croissance 199$/an'
+              : 'Free up to 50 members · Growth $199/yr'}
           </p>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
             {t('cooperativeReg.hero.title')}
@@ -299,30 +329,41 @@ export default function CooperativeRegistration() {
               <div
                 className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
                 style={{
-                  background: showStripeSuccess
-                    ? 'rgba(29,158,117,0.25)'
-                    : 'rgba(245,158,11,0.2)',
+                  background:
+                    showStripeSuccess || showFreeSuccess
+                      ? 'rgba(29,158,117,0.25)'
+                      : 'rgba(245,158,11,0.2)',
                 }}
               >
-                <span className="text-4xl">{showStripeSuccess ? '✅' : '⏳'}</span>
+                <span className="text-4xl">
+                  {showStripeSuccess || showFreeSuccess ? '✅' : '⏳'}
+                </span>
               </div>
               <h2 className="text-2xl font-extrabold text-white mb-3">
-                {showStripeSuccess
+                {showFreeSuccess
                   ? isFr
-                    ? 'Paiement reçu — Portail en activation'
-                    : 'Payment received — Portal activating'
-                  : isFr
-                    ? 'Inscription reçue — Finalisez le paiement'
-                    : 'Registration received — Complete payment'}
+                    ? 'Inscription gratuite confirmée — Portail actif'
+                    : 'Free registration confirmed — Portal active'
+                  : showStripeSuccess
+                    ? isFr
+                      ? 'Paiement reçu — Portail en activation'
+                      : 'Payment received — Portal activating'
+                    : isFr
+                      ? 'Inscription reçue — Finalisez le paiement'
+                      : 'Registration received — Complete payment'}
               </h2>
               <p className="text-white/70 mb-6 max-w-md mx-auto text-sm leading-relaxed">
-                {showStripeSuccess
+                {showFreeSuccess
                   ? isFr
-                    ? 'Merci ! Votre paiement Stripe a été enregistré. Votre portail coopérative sera actif sous 24h.'
-                    : 'Thank you! Your Stripe payment was recorded. Your cooperative portal will be active within 24 hours.'
-                  : isFr
-                    ? 'Votre coopérative est enregistrée. Contactez notre équipe pour finaliser le paiement de 199$/an — votre portail sera activé après confirmation.'
-                    : 'Your cooperative is registered. Contact our team to complete the $199/year payment — your portal will be activated after confirmation.'}
+                    ? 'Votre coopérative (Plan Démarrage) est active. Connectez-vous au portail pour gérer vos membres. Passez à 51+ membres pour débloquer certification et export.'
+                    : 'Your cooperative (Starter plan) is active. Sign in to the portal to manage members. Grow to 51+ members to unlock certification and export.'
+                  : showStripeSuccess
+                    ? isFr
+                      ? 'Merci ! Votre paiement Stripe a été enregistré. Votre portail coopérative sera actif sous 24h.'
+                      : 'Thank you! Your Stripe payment was recorded. Your cooperative portal will be active within 24 hours.'
+                    : isFr
+                      ? 'Votre coopérative est enregistrée. Contactez notre équipe pour finaliser le paiement de 199$/an — votre portail sera activé après confirmation.'
+                      : 'Your cooperative is registered. Contact our team to complete the $199/year payment — your portal will be activated after confirmation.'}
               </p>
 
               {showManualSuccess && (
@@ -565,11 +606,11 @@ export default function CooperativeRegistration() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label className="block space-y-1">
                       <span className={LABEL_CLS}>
-                        {t('cooperativeReg.form.memberCount')} *
+                        {isFr ? 'Nombre de membres actifs' : 'Number of active members'} *
                       </span>
                       <input
                         type="number"
-                        min="0"
+                        min="1"
                         name="memberCount"
                         value={form.memberCount}
                         onChange={onChange}
@@ -577,6 +618,20 @@ export default function CooperativeRegistration() {
                         placeholder="Ex: 45"
                         className={INPUT_CLS}
                       />
+                      {isGrowthTier && (
+                        <div className="mt-2 p-4 rounded-xl border border-amber-500/40 bg-amber-500/10">
+                          <p className="text-amber-400 font-semibold text-sm mb-1">
+                            {isFr
+                              ? '📈 Mise à niveau requise — Coopérative Croissance'
+                              : '📈 Upgrade Required — Growth Cooperative'}
+                          </p>
+                          <p className="text-white/70 text-xs leading-relaxed">
+                            {isFr
+                              ? "Les coopératives de plus de 50 membres accèdent au plan Croissance ($199/an) qui débloque la certification, AfriYield Exchange et l'exportation vers les marchés diaspora."
+                              : 'Cooperatives with more than 50 members access the Growth plan ($199/year), which unlocks certification, AfriYield Exchange listing, and export to diaspora markets.'}
+                          </p>
+                        </div>
+                      )}
                     </label>
                     <label className="block space-y-1">
                       <span className={LABEL_CLS}>
@@ -888,13 +943,19 @@ export default function CooperativeRegistration() {
                       style={{ borderColor: 'rgba(29,158,117,0.2)' }}
                     >
                       <span className="text-sm text-white/60">
-                        {isFr ? 'Adhésion annuelle' : 'Annual membership'}
+                        {isGrowthTier
+                          ? (isFr ? 'Plan Croissance (annuel)' : 'Growth plan (annual)')
+                          : (isFr ? 'Plan Démarrage' : 'Starter plan')}
                       </span>
-                      <span className="font-bold text-teal-400">{t('cooperativeReg.plan.price')}</span>
+                      <span className="font-bold text-teal-400">
+                        {isGrowthTier
+                          ? (isFr ? '199$/an' : '$199/year')
+                          : (isFr ? 'Gratuit' : 'Free')}
+                      </span>
                     </div>
                   </div>
 
-                  {stripeCheckout ? (
+                  {isGrowthTier ? (
                     <div
                       className="rounded-xl p-4 border text-left"
                       style={{
@@ -907,31 +968,22 @@ export default function CooperativeRegistration() {
                       </p>
                       <p className="text-xs text-white/55 leading-relaxed">
                         {isFr
-                          ? 'Après validation, vous serez redirigé vers Stripe pour payer en toute sécurité (Visa, Mastercard, Amex).'
-                          : 'After you submit, you will be redirected to Stripe to pay securely (Visa, Mastercard, Amex).'}
+                          ? '51+ membres : après validation, vous serez redirigé vers Stripe pour le plan Croissance (Visa, Mastercard, Amex).'
+                          : '51+ members: after you submit, you will be redirected to Stripe for the Growth plan (Visa, Mastercard, Amex).'}
                       </p>
                     </div>
                   ) : (
                     <div
                       className="rounded-xl p-4 border text-left"
-                      style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}
+                      style={{ background: 'rgba(29,158,117,0.08)', borderColor: 'rgba(29,158,117,0.25)' }}
                     >
                       <p className="font-semibold text-white text-sm mb-1">
-                        {isFr ? '📧 Paiement par coordination' : '📧 Coordinated payment'}
+                        {isFr ? '🌱 Inscription gratuite — Plan Démarrage' : '🌱 Free registration — Starter plan'}
                       </p>
                       <p className="text-xs text-white/55 leading-relaxed">
                         {isFr
-                          ? 'Pour les coopératives en Afrique : soumettez ce formulaire, puis notre équipe vous enverra les instructions de paiement par email. Pas de carte bancaire en ligne sur cette voie.'
-                          : 'For cooperatives in Africa: submit this form, then our team will email you payment instructions. No online card checkout on this path.'}
-                      </p>
-                      <p className="text-xs text-white/40 mt-2">
-                        {isFr ? 'Contact : ' : 'Contact: '}
-                        <a
-                          href="mailto:support@woneapp.com"
-                          className="text-teal-400 font-semibold hover:underline"
-                        >
-                          support@woneapp.com
-                        </a>
+                          ? 'Jusqu\'à 50 membres : aucun paiement requis. La certification, AfriYield et l\'export se débloquent à 51+ membres (199$/an).'
+                          : 'Up to 50 members: no payment required. Certification, AfriYield & export unlock at 51+ members ($199/year).'}
                       </p>
                     </div>
                   )}
@@ -964,13 +1016,13 @@ export default function CooperativeRegistration() {
                         ? isFr
                           ? 'Envoi...'
                           : 'Sending...'
-                        : stripeCheckout
+                        : isGrowthTier
                           ? isFr
                             ? 'Payer avec Stripe →'
                             : 'Pay with Stripe →'
                           : isFr
-                            ? 'Soumettre et demander le paiement'
-                            : 'Submit and request payment'}
+                            ? 'S\'inscrire gratuitement →'
+                            : 'Register for free →'}
                     </button>
                   </div>
                 </form>

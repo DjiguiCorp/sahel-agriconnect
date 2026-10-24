@@ -62,38 +62,51 @@ const TIERS = [
     bg: 'from-teal-900/30 to-teal-950/50',
     border: 'border-teal-500/20',
     name: { en: 'Cooperative', fr: 'Coopérative' },
-    price: { monthly: null, annual: 199 },
-    annualOnly: true,
+    price: { monthly: 0, annual: 199 },
     badge: { en: 'Most Popular', fr: 'Plus populaire' },
     audience: {
-      en: 'The engine — recruit farmers, certify, export',
-      fr: 'Le moteur — recrute les agriculteurs, certifie, exporte',
+      en: 'Free to start (≤50 members). Growth unlocks at 51+ ($199/year).',
+      fr: 'Gratuit pour démarrer (≤50 membres). Croissance à 51+ (199$/an).',
     },
-    features: {
+    featuresFree: {
       en: [
-        'Recruit and manage farmer members',
-        'Aggregate and certify production',
-        'Affiliation with transformation centers',
-        'AfriYield Exchange listing — sell to investors',
+        'Free registration — always',
+        'Member management (up to 50)',
+        'Connect with farmers & receive join requests',
+        'Access to training programs',
+        'Basic cooperative dashboard',
+      ],
+      fr: [
+        'Inscription gratuite — toujours',
+        'Gestion des membres (jusqu\'à 50)',
+        'Connexion agriculteurs & demandes d\'adhésion',
+        'Accès aux formations',
+        'Tableau de bord coopérative de base',
+      ],
+    },
+    featuresGrowth: {
+      en: [
+        'Certification workflow',
+        'AfriYield Exchange listing',
+        'Export to diaspora markets (USA, Europe)',
+        'USDA certification pathway (DSU partnership)',
         'Equipment fund eligibility',
-        'Receive farmer join requests',
         'Track A & B investment visibility',
       ],
       fr: [
-        'Recruter et gérer les agriculteurs membres',
-        'Agréger et certifier la production',
-        'Affiliation avec centres de transformation',
-        'Référencement AfriYield Exchange — vendre aux investisseurs',
-        "Éligibilité au fonds d'équipement",
-        "Recevoir les demandes d'adhésion des agriculteurs",
+        'Workflow de certification',
+        'Référencement AfriYield Exchange',
+        'Export vers marchés diaspora (USA, Europe)',
+        'Parcours certification USDA (partenariat DSU)',
+        'Éligibilité au fonds d\'équipement',
         'Visibilité investissements Track A & B',
       ],
     },
+    features: { en: [], fr: [] },
     cta: { en: 'Register Cooperative', fr: 'Inscrire la coopérative' },
     ctaRoute: '/cooperative-registration',
     popular: true,
-    stripeAmountUsd: { monthly: null, annual: 199 },
-    tierKey: 'cooperative',
+    registerOnly: true,
   },
   {
     id: 'transformation',
@@ -267,6 +280,9 @@ export default function Pricing() {
 
   const getPrice = (tier) => {
     const billing = getBilling(tier.id);
+    if (tier.id === 'cooperative') {
+      return isFr ? 'Gratuit → 199$/an' : 'Free → $199/yr';
+    }
     if (tier.price.monthly === 0) return isFr ? 'Gratuit' : 'Free';
     if (tier.annualOnly) return `$${tier.price.annual}${isFr ? '/an' : '/year'}`;
     if (billing === 'annual' && tier.price.annual) {
@@ -402,23 +418,50 @@ export default function Pricing() {
                 </div>
 
                 <ul className="space-y-2 mb-6 flex-1">
-                  {tier.features[isFr ? 'fr' : 'en'].map((f, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <Check size={14} className="mt-0.5 flex-shrink-0"
-                        style={{ color: tier.color }} />
-                      <span className="text-white/70 text-xs
-                        leading-relaxed">
-                        {f}
-                      </span>
-                    </li>
-                  ))}
+                  {tier.featuresFree ? (
+                    <>
+                      <p className="text-green-400 text-xs font-semibold mb-1">
+                        {isFr ? '✅ GRATUIT — Démarrage (≤50 membres)' : '✅ FREE — Starter (≤50 members)'}
+                      </p>
+                      {tier.featuresFree[isFr ? 'fr' : 'en'].map((f, i) => (
+                        <li key={`free-${i}`} className="flex items-start gap-2">
+                          <Check size={14} className="mt-0.5 flex-shrink-0"
+                            style={{ color: tier.color }} />
+                          <span className="text-white/70 text-xs leading-relaxed">{f}</span>
+                        </li>
+                      ))}
+                      <div className="border-t border-white/10 my-3 pt-3">
+                        <p className="text-amber-400 text-xs font-semibold mb-2">
+                          {isFr ? '🔒 Plan Croissance — 51+ membres' : '🔒 Growth Plan — 51+ members'}
+                        </p>
+                      </div>
+                      {tier.featuresGrowth[isFr ? 'fr' : 'en'].map((f, i) => (
+                        <li key={`growth-${i}`} className="flex items-start gap-2">
+                          <span className="text-xs mt-0.5 flex-shrink-0">🔒</span>
+                          <span className="text-white/35 text-xs leading-relaxed">{f}</span>
+                        </li>
+                      ))}
+                    </>
+                  ) : (
+                    tier.features[isFr ? 'fr' : 'en'].map((f, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <Check size={14} className="mt-0.5 flex-shrink-0"
+                          style={{ color: tier.color }} />
+                        <span className="text-white/70 text-xs leading-relaxed">{f}</span>
+                      </li>
+                    ))
+                  )}
                 </ul>
 
-                {tier.id === 'farmer' ? (
+                {tier.id === 'farmer' || tier.registerOnly ? (
                   <div>
                     <Link to={tier.ctaRoute}>
                       <button type="button" className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-                        style={{ backgroundColor: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>
+                        style={{
+                          backgroundColor: tier.popular ? tier.color : `${tier.color}20`,
+                          color: tier.popular ? 'black' : tier.color,
+                          border: `1px solid ${tier.color}40`,
+                        }}>
                         {tier.cta[isFr ? 'fr' : 'en']}
                         <ArrowRight size={14} />
                       </button>
