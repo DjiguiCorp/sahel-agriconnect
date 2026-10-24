@@ -25,7 +25,6 @@ export default function Contact() {
     { value: 'investment', fr: 'Investissement AfriYield', en: 'AfriYield investment' },
     { value: 'technical', fr: 'Support technique', en: 'Technical support' },
     { value: 'press', fr: 'Presse & médias', en: 'Press & media' },
-    { value: 'government', fr: 'Portail gouvernemental', en: 'Government portal' },
     { value: 'compliance', fr: 'Conformité & KYC', en: 'Compliance & KYC' },
   ];
 
@@ -179,8 +178,8 @@ export default function Contact() {
                 },
                 { label: 'AfriYield Exchange', to: '/afri-yield' },
                 {
-                  label: isFr ? 'Portail gouvernemental' : 'Government portal',
-                  to: '/government-portal',
+                  label: isFr ? 'Centre de transformation' : 'Transformation Center',
+                  to: '/transformation-registration',
                 },
               ].map(({ label, to }) => (
                 <Link
