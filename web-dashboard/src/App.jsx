@@ -25,7 +25,6 @@ const Governance = lazy(() => import('./pages/Governance'));
 const PerksRequest = lazy(() => import('./components/farmer/PerksRequest'));
 const IrrigationAssessment = lazy(() => import('./components/farmer/IrrigationAssessment'));
 const ProductionOptimizer = lazy(() => import('./components/farmer/ProductionOptimizer'));
-const PlatformLicensing = lazy(() => import('./pages/PlatformLicensing'));
 const CooperativeRegistration = lazy(() => import('./pages/CooperativeRegistration'));
 const FarmerCertificationProgram = lazy(() => import('./pages/FarmerCertificationProgram'));
 const EquipmentFund = lazy(() => import('./pages/EquipmentFund'));
@@ -192,26 +191,26 @@ function App() {
                   <Route path="optimisation-production" element={<ProductionOptimizer />} />
                   <Route
                     path="platform-licensing"
-                    element={
-                      <ApiSection>
-                        <PlatformLicensing />
-                      </ApiSection>
-                    }
+                    element={<Navigate to="/contact" replace />}
                   />
                   <Route
                     path="government-portal"
                     element={
-                      <ApiSection>
-                        <GovernmentPortal />
-                      </ApiSection>
+                      <ProtectedRoute requiredRole="admin">
+                        <ApiSection>
+                          <GovernmentPortal />
+                        </ApiSection>
+                      </ProtectedRoute>
                     }
                   />
                   <Route
                     path="ngo-portal"
                     element={
-                      <ApiSection>
-                        <NgoPortal />
-                      </ApiSection>
+                      <ProtectedRoute requiredRole="admin">
+                        <ApiSection>
+                          <NgoPortal />
+                        </ApiSection>
+                      </ProtectedRoute>
                     }
                   />
                   <Route
@@ -248,7 +247,7 @@ function App() {
                   />
                   <Route path="producer-pro-registration" element={<ProducerProRegistration />} />
                   <Route path="transformation-registration" element={<TransformationRegistration />} />
-                  <Route path="ngo-registration" element={<Navigate to="/contact" replace />} />
+                  <Route path="ngo-registration" element={<Navigate to="/admin/login" replace />} />
                   <Route path="farmer-certification" element={<FarmerCertificationProgram />} />
                   <Route
                     path="equipment-fund"

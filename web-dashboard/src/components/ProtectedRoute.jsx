@@ -2,7 +2,11 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAdminToken } from '../utils/adminSession';
 
-const ProtectedRoute = ({ children }) => {
+/**
+ * Admin-gated route.
+ * `requiredRole="admin"` documents intent; only admin auth is supported.
+ */
+const ProtectedRoute = ({ children, requiredRole = 'admin' }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
@@ -15,8 +19,9 @@ const ProtectedRoute = ({ children }) => {
   }
 
   const token = getAdminToken();
+  const isAdmin = Boolean(isAuthenticated && token);
 
-  if (!isAuthenticated || !token) {
+  if (!isAdmin || requiredRole !== 'admin') {
     const returnTo = `${location.pathname}${location.search}`;
     return (
       <Navigate

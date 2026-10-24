@@ -39,7 +39,7 @@ export default function DownloadAppBanner({ isFr = false, className = '' }) {
           </div>
         </div>
 
-        <div className="flex shrink-0 gap-2">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:shrink-0">
           <StoreButton href={PLAY_STORE} type="play" isFr={isFr} />
           <StoreButton href={APP_STORE} type="apple" isFr={isFr} />
         </div>

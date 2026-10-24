@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Sprout, Star, Users, Factory, Globe,
-  Landmark, Heart, Check, ArrowRight
+  Sprout, Users, Factory, Globe, Check, ArrowRight
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 
@@ -15,7 +14,7 @@ const TIERS = [
     color: '#4CAF50',
     bg: 'from-green-900/30 to-green-950/50',
     border: 'border-green-500/20',
-    name: { en: 'Farmer Basic', fr: 'Agriculteur de base' },
+    name: { en: 'Farmer', fr: 'Agriculteur' },
     price: { monthly: 0, annual: 0 },
     badge: null,
     audience: {
@@ -27,62 +26,34 @@ const TIERS = [
         'Free registration — always',
         'Soil diagnostic & disease detection (AI)',
         'Connect with local cooperatives',
-        'Connect to cooperatives and get recruited',
         'Geolocation-based cooperative discovery',
         'Request to join cooperatives near you',
         'Browse training programs',
         'Community support resources',
+        'Production insights (upgrade to unlock full access)',
+        'Export readiness tools (upgrade to unlock)',
+        'Direct market listings (upgrade to unlock)',
       ],
       fr: [
         'Inscription gratuite — toujours',
         'Diagnostic sol & détection maladies (IA)',
         'Connexion avec coopératives locales',
-        'Connectez-vous aux coopératives et soyez recruté',
         'Découverte de coopératives par géolocalisation',
-        'Demande d\'adhésion aux coopératives proches',
+        "Demande d'adhésion aux coopératives proches",
         'Accès aux formations',
         'Ressources communautaires',
+        'Aperçus de production (mise à niveau pour accès complet)',
+        "Outils de préparation à l'export (mise à niveau pour débloquer)",
+        'Accès direct aux marchés (mise à niveau pour débloquer)',
       ],
     },
-    cta: { en: 'Register Free', fr: 'S\'inscrire gratuitement' },
+    cta: { en: 'Register Free', fr: "S'inscrire gratuitement" },
     ctaRoute: '/inscription',
-    popular: false,
-  },
-  {
-    id: 'producer_pro',
-    icon: Star,
-    color: '#B5850A',
-    bg: 'from-amber-900/30 to-amber-950/50',
-    border: 'border-amber-500/30',
-    name: { en: 'Producer Pro', fr: 'Producteur Pro' },
-    price: { monthly: 29.99, annual: 299 },
-    badge: null,
-    audience: { en: 'For serious farmers & exporters', fr: 'Pour agriculteurs & exportateurs' },
-    features: {
-      en: [
-        'Everything in Farmer Basic',
-        'Priority irrigation assessments',
-        'Production optimization insights',
-        'Export readiness checklist',
-        'Direct market access & listings',
-        'Yield tracking & forecasting',
-        'Premium support',
-      ],
-      fr: [
-        'Tout inclus dans Agriculteur de base',
-        'Évaluations d\'irrigation prioritaires',
-        'Optimisation de la production',
-        'Liste de contrôle export',
-        'Accès direct aux marchés',
-        'Suivi et prévision des rendements',
-        'Support premium',
-      ],
+    ctaNote: {
+      en: 'Upgrade anytime from your dashboard',
+      fr: 'Mettez à niveau depuis votre tableau de bord',
     },
-    cta: { en: 'Start Producer Pro', fr: 'Démarrer Producteur Pro' },
-    ctaRoute: '/producer-pro-registration',
     popular: false,
-    stripeAmountUsd: { monthly: 29.99, annual: 299 },
-    tierKey: 'producer_pro',
   },
   {
     id: 'cooperative',
@@ -113,8 +84,8 @@ const TIERS = [
         'Agréger et certifier la production',
         'Affiliation avec centres de transformation',
         'Référencement AfriYield Exchange — vendre aux investisseurs',
-        'Éligibilité au fonds d\'équipement',
-        'Recevoir les demandes d\'adhésion des agriculteurs',
+        "Éligibilité au fonds d'équipement",
+        "Recevoir les demandes d'adhésion des agriculteurs",
         'Visibilité investissements Track A & B',
       ],
     },
@@ -132,6 +103,7 @@ const TIERS = [
     border: 'border-yellow-500/20',
     name: { en: 'Transformation Center', fr: 'Centre de transformation' },
     price: { monthly: 109, annual: 1090 },
+    dualBilling: true,
     badge: null,
     audience: { en: 'For processors & agro-industries', fr: 'Pour transformateurs & agro-industries' },
     features: {
@@ -161,82 +133,6 @@ const TIERS = [
     tierKey: 'transformation',
   },
   {
-    id: 'ngo_industry',
-    icon: Heart,
-    color: '#2ECC71',
-    bg: 'from-emerald-900/30 to-emerald-950/50',
-    border: 'border-emerald-500/20',
-    name: { en: 'NGO / Industries', fr: 'ONG / Industries' },
-    price: { monthly: 499, annual: 4990 },
-    badge: null,
-    audience: {
-      en: 'For NGOs, development orgs & industries. Institutional access — dedicated portal on request',
-      fr: 'Pour ONG, organisations de développement & industries. Accès institutionnel — portail dédié sur demande',
-    },
-    features: {
-      en: [
-        'Program & beneficiary management',
-        'Impact tracking & reporting',
-        'Cooperative & farmer network access',
-        'PDF report generation',
-        'Multi-region operations',
-        'Data export & analytics',
-        'Dedicated account manager',
-      ],
-      fr: [
-        'Gestion programmes & bénéficiaires',
-        'Suivi et rapports d\'impact',
-        'Accès réseau coopératives & agriculteurs',
-        'Génération rapports PDF',
-        'Opérations multi-régions',
-        'Export données & analytique',
-        'Gestionnaire de compte dédié',
-      ],
-    },
-    cta: { en: 'Get Started', fr: 'Commencer' },
-    ctaRoute: '/contact',
-    popular: false,
-  },
-  {
-    id: 'government',
-    icon: Landmark,
-    color: '#185FA5',
-    bg: 'from-blue-900/30 to-blue-950/50',
-    border: 'border-blue-500/30',
-    name: { en: 'Government', fr: 'Gouvernement' },
-    price: { monthly: 999, annual: 9990 },
-    badge: { en: 'Sovereign', fr: 'Souverain' },
-    audience: {
-      en: 'For ministries & government agencies. Institutional access — dedicated portal on request',
-      fr: 'Pour ministères & agences gouvernementales. Accès institutionnel — portail dédié sur demande',
-    },
-    features: {
-      en: [
-        'Country-isolated admin environment',
-        'Unlimited farmer & cooperative seats',
-        'National agricultural dashboard',
-        'Custom governance & policy modules',
-        'Global commodity visibility on AfriYield',
-        'Sovereign data control',
-        'SLA-backed dedicated support',
-        'Onboarding & training for your team',
-      ],
-      fr: [
-        'Environnement admin isolé par pays',
-        'Sièges agriculteurs & coopératives illimités',
-        'Tableau de bord agricole national',
-        'Modules de gouvernance & politique personnalisés',
-        'Visibilité mondiale sur AfriYield',
-        'Contrôle souverain des données',
-        'Support dédié avec SLA',
-        'Intégration & formation de l\'équipe',
-      ],
-    },
-    cta: { en: 'Contact for Licensing', fr: 'Contacter pour licence' },
-    ctaRoute: '/contact',
-    popular: false,
-  },
-  {
     id: 'investor',
     icon: Globe,
     color: '#B5850A',
@@ -244,6 +140,7 @@ const TIERS = [
     border: 'border-amber-500/20',
     name: { en: 'AfriYield Investor', fr: 'Investisseur AfriYield' },
     price: { monthly: 29.99, annual: 299 },
+    dualBilling: true,
     badge: null,
     audience: {
       en: 'Buy certified African commodities OR fund the cooperatives that produce them.',
@@ -269,7 +166,7 @@ const TIERS = [
         '5% frais de facilitation sur le capital déployé uniquement',
       ],
     },
-    cta: { en: 'Register as Investor', fr: 'S\'inscrire comme investisseur' },
+    cta: { en: 'Register as Investor', fr: "S'inscrire comme investisseur" },
     ctaRoute: '/afri-yield/register',
     popular: false,
     stripeAmountUsd: { monthly: 29.99, annual: 299 },
@@ -280,20 +177,22 @@ const TIERS = [
 export default function Pricing() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
-  const [billing, setBilling] = useState('monthly');
+  const [cardBilling, setCardBilling] = useState({});
   const [openFaq, setOpenFaq] = useState(null);
   const [searchParams] = useSearchParams();
   const [loadingTier, setLoadingTier] = useState(null);
 
+  const getBilling = (tierId) => cardBilling[tierId] || 'monthly';
+
   const handlePricingCheckout = async (tier) => {
     setLoadingTier(tier.id);
     try {
+      const billing = getBilling(tier.id);
       let amountUsd =
         billing === 'annual' && tier.stripeAmountUsd?.annual
           ? tier.stripeAmountUsd.annual
           : tier.stripeAmountUsd?.monthly;
 
-      // Annual-only tiers (e.g. cooperative) — always use annual amount
       if (!amountUsd && tier.stripeAmountUsd?.annual) {
         amountUsd = tier.stripeAmountUsd.annual;
       }
@@ -304,7 +203,6 @@ export default function Pricing() {
       }
 
       const tierRouteMap = {
-        producer_pro: '/producer-pro-registration',
         cooperative: '/cooperative-registration',
         transformation: '/transformation-registration',
         investor: '/afri-yield/register',
@@ -348,8 +246,8 @@ export default function Pricing() {
     {
       q: isFr ? 'Y a-t-il un essai gratuit?' : 'Is there a free trial?',
       a: isFr
-        ? 'Producer Pro et Centre de transformation incluent un essai de 30 jours. Aucune carte de crédit requise.'
-        : 'Producer Pro and Transformation Center include a 30-day trial. No credit card required.',
+        ? 'Les agriculteurs s\'inscrivent gratuitement. Les centres de transformation incluent un essai de 30 jours. Aucune carte de crédit requise pour démarrer.'
+        : 'Farmers sign up free. Transformation Centers include a 30-day trial. No credit card required to start.',
     },
     {
       q: isFr ? 'Comment fonctionne l\'adhésion coopérative?'
@@ -365,16 +263,10 @@ export default function Pricing() {
         ? 'Paiement sécurisé par carte via Stripe (Visa, Mastercard, Amex).'
         : 'Secure card payment via Stripe (Visa, Mastercard, Amex).',
     },
-    {
-      q: isFr ? 'Le gouvernement a-t-il son propre portail?'
-        : 'Does government have its own portal?',
-      a: isFr
-        ? 'Oui. L\'abonnement gouvernemental déploie un environnement entièrement isolé avec contrôle souverain des données nationales.'
-        : 'Yes. The government subscription deploys a fully isolated environment with sovereign control of national data.',
-    },
   ];
 
   const getPrice = (tier) => {
+    const billing = getBilling(tier.id);
     if (tier.price.monthly === 0) return isFr ? 'Gratuit' : 'Free';
     if (tier.annualOnly) return `$${tier.price.annual}${isFr ? '/an' : '/year'}`;
     if (billing === 'annual' && tier.price.annual) {
@@ -412,33 +304,14 @@ export default function Pricing() {
         </span>
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
           {isFr
-            ? 'Choisissez votre rôle dans la chaîne agricole'
-            : 'Choose Your Role in the Agricultural Chain'}
+            ? 'Rejoignez la révolution agricole — Gratuit pour démarrer'
+            : 'Join the Agricultural Revolution — Free to Start'}
         </h1>
         <p className="text-white/60 text-base max-w-2xl mx-auto mb-8">
           {isFr
-            ? 'Des plans conçus pour chaque acteur — des agriculteurs aux gouvernements. Commencez gratuitement, évoluez avec vos besoins.'
-            : 'Plans designed for every stakeholder — from farmers to governments. Start free, scale with your needs.'}
+            ? "Chaque agriculteur s'inscrit gratuitement. Les coopératives, centres de transformation et investisseurs débloquent toute la puissance de la plateforme."
+            : 'Every farmer signs up free. Cooperatives, transformation centers, and investors unlock the full power of the platform.'}
         </p>
-
-        {/* Billing toggle */}
-        <div className="inline-flex items-center gap-1 bg-white/5
-          border border-white/10 rounded-xl p-1 mb-8">
-          {['monthly', 'annual'].map(b => (
-            <button
-              key={b}
-              type="button"
-              onClick={() => setBilling(b)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium
-                transition-all ${billing === b
-                  ? 'bg-amber-500 text-black'
-                  : 'text-white/60 hover:text-white'}`}>
-              {b === 'monthly'
-                ? (isFr ? 'Mensuel' : 'Monthly')
-                : (isFr ? 'Annuel (économisez ~15%)' : 'Annual (save ~15%)')}
-            </button>
-          ))}
-        </div>
         {searchParams?.get?.('cancelled') && (
           <p className="text-red-400 text-sm mt-2">
             {isFr ? 'Paiement annulé. Vous pouvez réessayer.' : 'Payment cancelled. You can try again.'}
@@ -448,19 +321,18 @@ export default function Pricing() {
 
       {/* Tiers grid */}
       <section className="px-4 pb-16 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-          xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
           {TIERS.map((tier) => {
+            const billing = getBilling(tier.id);
             const savings = getSavings(tier);
             const TierIcon = tier.icon;
             return (
               <div
                 key={tier.id}
                 className={`relative rounded-2xl border bg-gradient-to-b
-                  ${tier.bg} ${tier.border} p-6 flex flex-col
+                  ${tier.bg} ${tier.border} p-6 flex flex-col min-h-[32rem]
                   ${tier.popular
-                    ? 'ring-2 ring-amber-500/50 scale-105' : ''}`}>
-                {/* Popular badge */}
+                    ? 'ring-2 ring-amber-500/50 lg:scale-[1.02]' : ''}`}>
                 {tier.badge && (
                   <div className="absolute -top-3 left-1/2
                     -translate-x-1/2">
@@ -471,7 +343,6 @@ export default function Pricing() {
                   </div>
                 )}
 
-                {/* Icon & name */}
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl flex
                     items-center justify-center"
@@ -489,7 +360,28 @@ export default function Pricing() {
                   </div>
                 </div>
 
-                {/* Price */}
+                {tier.dualBilling && (
+                  <div className="inline-flex self-start items-center gap-1 bg-white/5
+                    border border-white/10 rounded-lg p-0.5 mb-3">
+                    {['monthly', 'annual'].map((b) => (
+                      <button
+                        key={b}
+                        type="button"
+                        onClick={() => setCardBilling((prev) => ({ ...prev, [tier.id]: b }))}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                          billing === b
+                            ? 'bg-amber-500 text-black'
+                            : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        {b === 'monthly'
+                          ? (isFr ? 'Mensuel' : 'Monthly')
+                          : (isFr ? 'Annuel' : 'Annual')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="mb-4">
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold"
@@ -509,7 +401,6 @@ export default function Pricing() {
                   )}
                 </div>
 
-                {/* Features */}
                 <ul className="space-y-2 mb-6 flex-1">
                   {tier.features[isFr ? 'fr' : 'en'].map((f, i) => (
                     <li key={i} className="flex items-start gap-2">
@@ -523,23 +414,21 @@ export default function Pricing() {
                   ))}
                 </ul>
 
-                {/* CTA */}
                 {tier.id === 'farmer' ? (
-                  <Link to={tier.ctaRoute}>
-                    <button type="button" className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-                      style={{ backgroundColor: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>
-                      {tier.cta[isFr ? 'fr' : 'en']}
-                      <ArrowRight size={14} />
-                    </button>
-                  </Link>
-                ) : tier.id === 'ngo_industry' || tier.id === 'government' ? (
-                  <Link to={tier.ctaRoute}>
-                    <button type="button" className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-                      style={{ backgroundColor: tier.popular ? tier.color : `${tier.color}20`, color: tier.popular ? 'black' : tier.color, border: `1px solid ${tier.color}40` }}>
-                      {tier.cta[isFr ? 'fr' : 'en']}
-                      <ArrowRight size={14} />
-                    </button>
-                  </Link>
+                  <div>
+                    <Link to={tier.ctaRoute}>
+                      <button type="button" className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                        style={{ backgroundColor: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>
+                        {tier.cta[isFr ? 'fr' : 'en']}
+                        <ArrowRight size={14} />
+                      </button>
+                    </Link>
+                    {tier.ctaNote && (
+                      <p className="text-white/40 text-[11px] text-center mt-2">
+                        {tier.ctaNote[isFr ? 'fr' : 'en']}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <button
                     type="button"

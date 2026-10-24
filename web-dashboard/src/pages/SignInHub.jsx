@@ -11,8 +11,6 @@ const ROLE_ORDER = [
   ROLES.cooperative,
   ROLES.investor,
   ROLES.processor,
-  ROLES.government,
-  ROLES.ngo,
 ];
 
 export default function SignInHub() {
@@ -63,8 +61,8 @@ export default function SignInHub() {
           </h1>
           <p className="text-white/60 max-w-xl mx-auto text-sm md:text-base">
             {isFr
-              ? 'Chaque profil a sa couleur et son portail dédié — pas de confusion entre agriculteur, investisseur AfriYield, gouvernement ou ONG.'
-              : 'Each profile has its own color and dedicated portal — no confusion between farmer, AfriYield investor, government, or NGO.'}
+              ? 'Chaque profil a sa couleur et son portail dédié — pas de confusion entre agriculteur, coopérative, centre de transformation ou investisseur AfriYield.'
+              : 'Each profile has its own color and dedicated portal — no confusion between farmer, cooperative, transformation center, or AfriYield investor.'}
           </p>
         </div>
 

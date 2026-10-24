@@ -76,7 +76,7 @@ const Home = () => {
       desc: isFr
         ? 'Enregistrez votre exploitation, accédez aux outils et formations'
         : 'Register your farm, access tools and training',
-      to: '/dashboard',
+      to: '/inscription',
     },
     {
       emoji: '🤝',
@@ -86,25 +86,17 @@ const Home = () => {
     },
     {
       emoji: '🏭',
-      title: isFr ? 'Transformateur' : 'Processor',
+      title: isFr ? 'Centre de transformation' : 'Transformation Center',
       desc: isFr
         ? 'Certifiez votre centre, connectez-vous aux acheteurs diaspora'
         : 'Certify your center, connect to diaspora buyers',
-      to: '/dashboard',
+      to: '/transformation-registration',
     },
     {
       emoji: '💰',
-      title: isFr ? 'Investisseur Diaspora' : 'Diaspora Investor',
+      title: isFr ? 'Investisseur' : 'Investor',
       desc: isFr ? "Investissez dans l'agriculture africaine via AfriYield" : 'Invest in African agriculture via AfriYield',
       to: '/afri-yield',
-    },
-    {
-      emoji: '🏛️',
-      title: isFr ? 'Gouvernement' : 'Government',
-      desc: isFr
-        ? 'Suivi des politiques agricoles et données nationales'
-        : 'Monitor agricultural policies and national data',
-      to: '/platform-licensing?type=government',
     },
   ];
 
@@ -191,7 +183,7 @@ const Home = () => {
                 : 'Choose your profile to get started on the pan-African platform'}
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {roleCards.map((card, i) => (
               <Link
                 key={card.title}

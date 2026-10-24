@@ -86,13 +86,13 @@ function readSessions() {
     government: government
       ? {
           active: true,
-          portalPath: PORTAL_META.government.portalPath,
+          portalPath: '/government-portal',
         }
       : null,
     ngo: ngo
       ? {
           active: true,
-          portalPath: PORTAL_META.ngo.portalPath,
+          portalPath: '/ngo-portal',
           name: ngoAdmin?.name || '',
         }
       : null,

@@ -47,8 +47,6 @@ export default function Footer() {
                 [t('footer.platformLinks.signInPortals'), '/connexion'],
                 [t('footer.platformLinks.farmerPortal'), '/my-dashboard'],
                 [t('footer.platformLinks.cooperativePortal'), '/cooperative-portal'],
-                [t('footer.platformLinks.governmentAccess'), '/platform-licensing?type=government'],
-                [t('footer.platformLinks.institutionalLicenses'), '/platform-licensing'],
                 [t('nav.contact'), '/contact'],
                 [t('footer.platformLinks.prices'), '/pricing'],
               ].map(([label, to]) => (

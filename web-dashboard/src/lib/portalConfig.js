@@ -1,6 +1,7 @@
 /**
  * Role-specific portals — Sahel AgriConnect vs AfriYield Exchange.
  * Single source of truth for nav, sign-in hub, and redirects.
+ * Government & NGO portals are admin-gated (not public).
  */
 
 export const ROLES = {
@@ -8,8 +9,6 @@ export const ROLES = {
   cooperative: 'cooperative',
   investor: 'investor',
   processor: 'processor',
-  government: 'government',
-  ngo: 'ngo',
 };
 
 export const PORTAL_META = {
@@ -65,34 +64,16 @@ export const PORTAL_META = {
     descEn: 'Capacity, products and certification',
     storageKeys: [],
   },
-  government: {
-    brand: 'sahel',
-    icon: '🏛️',
-    portalPath: '/government-portal',
-    registerPath: '/platform-licensing?type=government',
-    signInPath: '/government-portal',
-    labelFr: 'Portail gouvernement',
-    labelEn: 'Government portal',
-    descFr: 'Données pays et licences',
-    descEn: 'Country data and licensing',
-    storageKeys: ['gov_token', 'gov_admin'],
-  },
-  ngo: {
-    brand: 'sahel',
-    icon: '🌍',
-    portalPath: '/ngo-portal',
-    registerPath: '/platform-licensing?type=ngo',
-    signInPath: '/ngo-portal',
-    labelFr: 'Portail ONG',
-    labelEn: 'NGO portal',
-    descFr: 'Programmes et impact',
-    descEn: 'Programs and impact',
-    storageKeys: ['ngo_token', 'ngo_admin', 'gov_token', 'gov_admin'],
-  },
+};
+
+/** Legacy admin-gated portal paths (not in public ROLES / PORTAL_META). */
+const LEGACY_ADMIN_PORTAL_KEYS = {
+  government: ['gov_token', 'gov_admin', 'auth_token_government'],
+  ngo: ['ngo_token', 'ngo_admin', 'auth_token_ngo', 'gov_token', 'gov_admin'],
 };
 
 export function clearRoleStorage(role) {
-  const keys = PORTAL_META[role]?.storageKeys || [];
+  const keys = PORTAL_META[role]?.storageKeys || LEGACY_ADMIN_PORTAL_KEYS[role] || [];
   keys.forEach((k) => {
     try {
       if (k === 'afriyield_token') sessionStorage.removeItem(k);
@@ -111,5 +92,6 @@ export function clearRoleStorage(role) {
 
 export function clearAllPortalStorage() {
   Object.keys(PORTAL_META).forEach(clearRoleStorage);
+  Object.keys(LEGACY_ADMIN_PORTAL_KEYS).forEach(clearRoleStorage);
   localStorage.removeItem('auth_role');
 }

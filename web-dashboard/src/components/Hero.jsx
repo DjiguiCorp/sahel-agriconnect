@@ -80,7 +80,7 @@ export default function Hero() {
         </div>
 
         {/* Headline */}
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.08]">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.08]">
           <span className="text-white block">
             {isFr ? "L'agriculture africaine," : 'African agriculture,'}
           </span>
@@ -130,7 +130,7 @@ export default function Hero() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto">
           {[
             { icon: '🌾', v: isFr ? 'Gratuit' : 'Free', l: isFr ? 'pour agriculteurs' : 'for farmers' },
-            { icon: '🤝', v: '6', l: isFr ? "types d'acteurs" : 'actor types' },
+            { icon: '🤝', v: '4', l: isFr ? "types d'acteurs" : 'actor types' },
             { icon: '🌍', v: 'Sahel', l: isFr ? "Afrique de l'Ouest" : 'West Africa' },
             { icon: '💰', v: 'AfriYield', l: isFr ? 'investisseurs' : 'investors' },
           ].map(({ icon, v, l }) => (

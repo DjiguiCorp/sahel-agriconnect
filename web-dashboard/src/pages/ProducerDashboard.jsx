@@ -1,11 +1,96 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import { useWebSession } from '../hooks/useWebSession';
 import { API_ENDPOINTS } from '../config/api';
+import { isStripeCheckoutAvailable, createCheckoutSession } from '../lib/stripeCheckout';
 import { CROP_EMOJIS } from './producer-dashboard/constants';
+
+function hasProducerProStatus(profile) {
+  if (!profile) return false;
+  const tier =
+    profile.producerProMeta?.tier ||
+    profile.subscriptionTier ||
+    profile.tier ||
+    profile.plan ||
+    '';
+  return (
+    tier === 'producer_pro' ||
+    profile.isProducerPro === true ||
+    profile.producerPro === true ||
+    Boolean(profile.producerProMeta)
+  );
+}
+
+function ProUpgradeBanner({ isFr, email, onDismiss }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleUpgrade = async () => {
+    if (!isStripeCheckoutAvailable()) {
+      alert(isFr ? 'Paiement indisponible.' : 'Checkout unavailable.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await createCheckoutSession('producer_pro', {
+        email: email || '',
+        billingInterval: 'month',
+        amountUsd: 29.99,
+        successUrl: `${window.location.origin}/my-dashboard?upgrade=success`,
+        cancelUrl: `${window.location.origin}/my-dashboard?upgrade=cancelled`,
+      });
+      if (result?.error) {
+        alert(isFr ? 'Erreur de paiement. Veuillez réessayer.' : 'Payment error. Please try again.');
+      }
+    } catch (e) {
+      console.error('Upgrade checkout error:', e);
+      alert(isFr ? 'Erreur de connexion. Veuillez réessayer.' : 'Connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="relative rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
+      style={{
+        background: 'linear-gradient(90deg, rgba(181,133,10,0.18) 0%, rgba(245,158,11,0.12) 100%)',
+        border: '1px solid rgba(181,133,10,0.45)',
+      }}
+      role="region"
+      aria-label={isFr ? 'Mise à niveau Producteur Pro' : 'Producer Pro upgrade'}
+    >
+      <p className="flex-1 text-sm text-amber-100/95 leading-snug pr-6 sm:pr-0">
+        {isFr
+          ? '🌟 Débloquez Producteur Pro — 29,99$/mois ou 299$/an. Accès marché prioritaire, outils export & prévisions de rendement.'
+          : '🌟 Unlock Producer Pro — $29.99/mo or $299/year. Priority market access, export tools & yield forecasting.'}
+      </p>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={handleUpgrade}
+          disabled={loading}
+          className="px-4 py-2 rounded-xl text-sm font-bold transition disabled:opacity-60"
+          style={{ background: '#B5850A', color: '#0f1a10' }}
+        >
+          {loading
+            ? (isFr ? 'Redirection...' : 'Redirecting...')
+            : (isFr ? 'Mettre à niveau' : 'Upgrade Now')}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="p-2 rounded-lg text-amber-200/70 hover:text-white hover:bg-white/10"
+          aria-label={isFr ? 'Fermer' : 'Dismiss'}
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const OverviewTab = lazy(() => import('./producer-dashboard/OverviewTab'));
 const ListingsTab = lazy(() => import('./producer-dashboard/ListingsTab'));
@@ -84,6 +169,13 @@ function ProducerDashboard() {
   });
 
   const [listingState, setListingState] = useState({ loading: false, ok: false, err: '' });
+  const [upgradeBannerDismissed, setUpgradeBannerDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem('sac_pro_upgrade_dismissed') === '1';
+    } catch {
+      return false;
+    }
+  });
 
   const selectTab = useCallback((key) => {
     setActiveTab(key);
@@ -320,6 +412,8 @@ function ProducerDashboard() {
   const crops = profile?.cultures || profile?.culturesPrincipales || [];
   const countryDisplay = profile?.country || '';
   const contactMasked = userEmail ? maskedDestination(userEmail, true) : '';
+  const showProUpgrade =
+    !hasProducerProStatus(profile) && !upgradeBannerDismissed;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -400,6 +494,21 @@ function ProducerDashboard() {
           )}
         </div>
       </div>
+
+      {showProUpgrade ? (
+        <ProUpgradeBanner
+          isFr={isFr}
+          email={userEmail}
+          onDismiss={() => {
+            setUpgradeBannerDismissed(true);
+            try {
+              sessionStorage.setItem('sac_pro_upgrade_dismissed', '1');
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
+      ) : null}
 
       <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl overflow-x-auto">
         {tabs.map((tab) => (

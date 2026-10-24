@@ -48,8 +48,11 @@ const getMainNavLinks = (isFr) => [
 ];
 
 const getJoinMenuItems = (isFr) => [
-  { icon: '🌾', label: isFr ? 'Agriculteur (gratuit)' : 'Farmer (free)', to: '/inscription' },
-  { icon: '⭐', label: 'Producer Pro', to: '/producer-pro-registration' },
+  {
+    icon: '🌾',
+    label: isFr ? 'Agriculteur — Inscription gratuite' : 'Farmer — Sign up free',
+    to: '/inscription',
+  },
   { icon: '🤝', label: isFr ? 'Coopérative' : 'Cooperative', to: '/cooperative-registration' },
   { icon: '🏭', label: isFr ? 'Centre transformation' : 'Transformation Center', to: '/transformation-registration' },
   { icon: '💰', label: isFr ? 'Investisseur AfriYield' : 'AfriYield Investor', to: '/afri-yield/register' },
@@ -217,8 +220,6 @@ const Header = () => {
       { kind: 'role', ...make('cooperative') },
       { kind: 'role', ...make('processor') },
       { kind: 'role', ...make('investor') },
-      { kind: 'role', ...make('government') },
-      { kind: 'role', ...make('ngo') },
     ];
   }, [sessions, isFr, t]);
 
@@ -681,6 +682,23 @@ const Header = () => {
                 {isFr ? '🔐 Connexion & portails' : '🔐 Sign in & portals'}
               </Link>
 
+              <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-2">
+                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-white/40">
+                  {isFr ? 'Rejoindre' : 'Join'}
+                </p>
+                {joinMenuItems.map((item) => (
+                  <Link
+                    key={`mobile-join-${item.to}`}
+                    to={item.to}
+                    onClick={closeAllNav}
+                    className="flex items-center gap-3 px-2 py-3 text-base text-white/80 hover:text-white"
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+
               <div className="border-l-2 border-brand-sage/40 pl-3 ml-1 mt-1">
                 <button
                   type="button"
@@ -768,7 +786,10 @@ const Header = () => {
                 )}
               </div>
 
-              <div className="pt-4">
+              <div className="pt-4 px-2">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+                  {isFr ? 'Langue' : 'Language'}
+                </p>
                 <LanguageSelector />
               </div>
 
