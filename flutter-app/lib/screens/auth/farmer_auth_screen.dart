@@ -17,6 +17,7 @@ import '../../widgets/auth_form_theme.dart';
 import '../../widgets/biometric_setup_sheet.dart';
 import '../../widgets/country_picker.dart';
 import '../../widgets/otp_code_row.dart';
+import '../../widgets/premium_upgrade_dialog.dart';
 
 enum FarmerAuthStep { identity, otp, register }
 
@@ -835,6 +836,12 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
           context,
           sessionSeed: seed,
           role: 'farmer',
+        );
+        if (!mounted) return;
+        await PremiumUpgradeDialog.showRegistrationWelcome(
+          context,
+          isFr: lp.isFr,
+          roleLabel: lp.t('farmer', 'agriculteur'),
         );
         if (!mounted) return;
         context.go('/farmer/onboarding');

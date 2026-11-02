@@ -1,6 +1,6 @@
 name: sahel_agriconnect
 description: Sahel AgriConnect & AfriYield Exchange — African Agricultural Platform
-version: 1.0.2+21
+version: 1.0.2+26
 publish_to: none
 
 environment:
@@ -47,7 +47,7 @@ dependencies:
   # firebase_messaging: ^16.2.2
   # firebase_analytics: ^11.0.0
   # cloud_firestore: ^5.0.0
-  flutter_local_notifications: ^18.0.1
+  # flutter_local_notifications: ^18.0.1
 
   # Auth & biometrics
   local_auth: ^2.2.0

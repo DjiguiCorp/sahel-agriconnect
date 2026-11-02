@@ -12,4 +12,10 @@ class AgeGateRefresh extends ChangeNotifier {
     _accepted = true;
     notifyListeners();
   }
+
+  void setAccepted(bool value) {
+    if (_accepted == value) return;
+    _accepted = value;
+    notifyListeners();
+  }
 }

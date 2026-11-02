@@ -15,20 +15,38 @@ class OfflineQueue extends ChangeNotifier {
   static const _queueKey = 'offline_queue';
 
   OfflineQueue() {
-    _sub = Connectivity().onConnectivityChanged.listen(_onConnectivityChanged);
-    Future.microtask(() async {
-      await _loadQueue();
-      await _checkInitial();
-    });
+    start();
   }
 
+  /// Construct without touching connectivity plugins until [start] is called.
+  OfflineQueue.deferred();
+
   StreamSubscription<List<ConnectivityResult>>? _sub;
+  bool _started = false;
 
   bool _isOnline = true;
   List<Map<String, dynamic>> _queue = [];
 
   bool get isOnline => _isOnline;
   int get queueLength => _queue.length;
+
+  void start() {
+    if (_started) return;
+    _started = true;
+    try {
+      _sub = Connectivity().onConnectivityChanged.listen(_onConnectivityChanged);
+    } catch (e) {
+      debugPrint('OfflineQueue connectivity listen failed: $e');
+    }
+    Future.microtask(() async {
+      try {
+        await _loadQueue();
+        await _checkInitial();
+      } catch (e) {
+        debugPrint('OfflineQueue start work failed: $e');
+      }
+    });
+  }
 
   Future<void> _checkInitial() async {
     final result = await Connectivity().checkConnectivity();

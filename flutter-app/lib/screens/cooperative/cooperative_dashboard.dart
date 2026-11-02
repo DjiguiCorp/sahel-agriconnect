@@ -15,6 +15,7 @@ import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/offline_queue.dart';
 import '../../widgets/offline_banner.dart';
+import '../../widgets/premium_upgrade_dialog.dart';
 
 const _bg = Color(0xFF0d1f1a);
 const _surface = Color(0xFF1a3530);
@@ -592,6 +593,53 @@ class _HomeTab extends StatelessWidget {
               title: isFr ? 'Mon compte' : 'My Account',
               color: _gold,
               onTap: () => onTabChange(4),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          isFr ? 'Fonctionnalités Growth' : 'Growth features',
+          style: const TextStyle(
+            color: _text,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 1.35,
+          children: [
+            _QA(
+              emoji: '🚢',
+              title: isFr ? 'Export' : 'Export',
+              color: const Color(0xFF4A8FD4),
+              onTap: () => PremiumUpgradeDialog.showCoopGrowthUpgrade(
+                context,
+                isFr: isFr,
+              ),
+            ),
+            _QA(
+              emoji: '💹',
+              title: 'AfriYield Exchange',
+              color: _gold,
+              onTap: () => PremiumUpgradeDialog.showCoopGrowthUpgrade(
+                context,
+                isFr: isFr,
+              ),
+            ),
+            _QA(
+              emoji: '🎓',
+              title: isFr ? 'Formation DSU' : 'DSU Training',
+              color: const Color(0xFF7B61FF),
+              onTap: () => PremiumUpgradeDialog.showCoopGrowthUpgrade(
+                context,
+                isFr: isFr,
+              ),
             ),
           ],
         ),
