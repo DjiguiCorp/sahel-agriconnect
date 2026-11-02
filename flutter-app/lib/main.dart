@@ -1,10 +1,10 @@
+import 'dart:async';
+
 import 'package:app_links/app_links.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,12 +14,26 @@ import 'core/terms_refresh.dart';
 import 'core/language_provider.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
-import 'firebase_options.dart';
+// Firebase removed for iOS crash isolation:
+// import 'package:firebase_core/firebase_core.dart';
+// import 'firebase_options.dart';
 import 'navigation/session_nav.dart';
 import 'screens/age_gate_screen.dart';
 import 'screens/shared/terms_screen.dart';
-import 'services/notification_service.dart';
 import 'services/offline_queue.dart';
+
+void _goDeepLink(String location) {
+  if (!isAppRouterReady) {
+    debugPrint('Deep link ignored: router not ready yet ($location)');
+    return;
+  }
+  try {
+    appRouter.go(location);
+  } catch (e, st) {
+    debugPrint('Deep link navigation failed: $e');
+    if (kDebugMode) debugPrint('$st');
+  }
+}
 
 void _handleDeepLink(Uri uri) {
   // Payment return: sahelagriconnect://payment/success?role=cooperative&lang=en
@@ -28,9 +42,6 @@ void _handleDeepLink(Uri uri) {
       uri.queryParameters['payment'] == 'success') {
     final role = uri.queryParameters['role'] ?? 'cooperative';
     final lang = uri.queryParameters['lang'];
-    if (lang == 'en' || lang == 'fr') {
-      // LanguageProvider may not be mounted yet on cold start; route carries hint.
-    }
     final loginRoutes = {
       'cooperative': '/login/cooperative',
       'investor': '/login/investor',
@@ -41,7 +52,7 @@ void _handleDeepLink(Uri uri) {
     };
     final dest = loginRoutes[role] ?? '/home';
     final q = lang != null ? '?lang=$lang&payment=success' : '?payment=success';
-    appRouter.go('$dest$q');
+    _goDeepLink('$dest$q');
     return;
   }
 
@@ -61,58 +72,67 @@ void _handleDeepLink(Uri uri) {
       ];
       if (role.isNotEmpty) parts.add('r=${Uri.encodeComponent(role)}');
       if (lang.isNotEmpty) parts.add('lang=${Uri.encodeComponent(lang)}');
-      appRouter.go('/auth/magic?${parts.join('&')}');
+      _goDeepLink('/auth/magic?${parts.join('&')}');
     }
   }
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> _bootstrap() async {
   final authState = AuthState();
-  await authState.restoreSession();
-
-  // Listen for deep links when app is already running (background → foreground)
-  final appLinks = AppLinks();
-  appLinks.uriLinkStream.listen((uri) {
-    _handleDeepLink(uri);
-  });
-
-  // Handle launch URI (app opened via deep link from cold start)
-  final initialUri = await appLinks.getInitialLink();
-  if (initialUri != null) {
-    _handleDeepLink(initialUri);
+  try {
+    await authState.restoreSession();
+  } catch (e, st) {
+    debugPrint('restoreSession failed: $e');
+    if (kDebugMode) debugPrint('$st');
   }
 
-  final ageAccepted = await AgeGateScreen.hasAccepted();
+  bool ageAccepted = false;
+  bool termsAccepted = false;
+  try {
+    ageAccepted = await AgeGateScreen.hasAccepted();
+  } catch (_) {}
+  try {
+    termsAccepted = await TermsScreen.hasAccepted();
+  } catch (_) {}
+
   final ageGate = AgeGateRefresh(ageAccepted);
-
-  final termsAccepted = await TermsScreen.hasAccepted();
   final termsGate = TermsRefresh(termsAccepted);
-
-  GoogleFonts.config.allowRuntimeFetching = true;
 
   buildRouter(authState, ageGate, termsGate);
   onAuthSessionExpired = () {
     authState.logoutAll();
-    appRouter.go('/home');
+    if (isAppRouterReady) {
+      appRouter.go('/home');
+    }
   };
 
+  // Deep links via app_links only (FlutterDeepLinkingEnabled is false in Info.plist).
+  Uri? initialUri;
   try {
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
-    await NotificationService.init();
+    final appLinks = AppLinks();
+    appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    }, onError: (Object e) {
+      debugPrint('uriLinkStream error: $e');
+    });
+    initialUri = await appLinks.getInitialLink();
   } catch (e, st) {
-    debugPrint('Firebase/FCM not ready (configure firebase_options.dart): $e');
+    debugPrint('Deep link setup failed: $e');
     if (kDebugMode) debugPrint('$st');
   }
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  try {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
+    await SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp],
+    );
+  } catch (_) {}
+
   runApp(
     MultiProvider(
       providers: [
@@ -122,13 +142,37 @@ void main() async {
         ChangeNotifierProvider(create: (_) => OfflineQueue()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
-      child: const SahelApp(),
+      child: SahelApp(initialDeepLink: initialUri),
     ),
   );
 }
 
+void main() {
+  // ensureInitialized + runApp must share the same zone.
+  runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      debugPrint('FlutterError: ${details.exceptionAsString()}');
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('PlatformDispatcher error: $error');
+      if (kDebugMode) debugPrint('$stack');
+      return true;
+    };
+
+    unawaited(_bootstrap());
+  }, (error, stack) {
+    debugPrint('Zone error: $error');
+    if (kDebugMode) debugPrint('$stack');
+  });
+}
+
 class SahelApp extends StatefulWidget {
-  const SahelApp({super.key});
+  const SahelApp({super.key, this.initialDeepLink});
+
+  final Uri? initialDeepLink;
 
   /// Public entry point used by [LanguageScreen] (or any other screen)
   /// to switch the app locale at runtime. Forwards to the singleton
@@ -156,6 +200,13 @@ class _SahelAppState extends State<SahelApp> {
     super.initState();
     _instance = this;
     _loadSavedLocale();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final link = widget.initialDeepLink;
+      if (link != null) {
+        _handleDeepLink(link);
+      }
+    });
   }
 
   @override

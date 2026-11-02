@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   static const forestGreen = Color(0xFF1a3c2e);
@@ -24,48 +23,67 @@ class AppColors {
   static Color glassGold = AppColors.gold.withValues(alpha: 0.12);
 }
 
+/// Uses the bundled [PlusJakartaSans] family from pubspec assets.
+/// Avoids google_fonts runtime downloads that can fail/crash on first launch
+/// when the device has no network or font CDN access.
+TextTheme _jakartaTextTheme([TextTheme? base]) {
+  final source = base ?? ThemeData.light().textTheme;
+  return source.apply(fontFamily: 'PlusJakartaSans');
+}
+
 class AppTheme {
   static ThemeData get light => ThemeData(
         useMaterial3: true,
+        fontFamily: 'PlusJakartaSans',
         colorScheme: const ColorScheme.light(
           primary: AppColors.forestGreen,
           secondary: AppColors.gold,
           surface: AppColors.cream,
         ),
-        textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
-          displayLarge: GoogleFonts.plusJakartaSans(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: AppColors.forestGreen),
-          titleLarge: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.forestGreen),
-          titleMedium: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.forestGreen),
-          bodyMedium: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: AppColors.textDark),
-          bodySmall: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: AppColors.textMuted),
+        textTheme: _jakartaTextTheme().copyWith(
+          displayLarge: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            color: AppColors.forestGreen,
+          ),
+          titleLarge: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.forestGreen,
+          ),
+          titleMedium: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.forestGreen,
+          ),
+          bodyMedium: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textDark,
+          ),
+          bodySmall: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textMuted,
+          ),
         ),
         scaffoldBackgroundColor: AppColors.cream,
       );
 
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
+        fontFamily: 'PlusJakartaSans',
         colorScheme: const ColorScheme.dark(
           primary: AppColors.gold,
           secondary: AppColors.forestGreen,
           surface: AppColors.darkCard,
         ),
         scaffoldBackgroundColor: AppColors.darkBg,
-        textTheme:
-            GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme),
+        textTheme: _jakartaTextTheme(ThemeData.dark().textTheme),
       );
 }

@@ -64,7 +64,13 @@
 			</dict>
 		</array>
 		<key>FlutterDeepLinkingEnabled</key>
-		<true/>
+		<false/>
+		<key>FirebaseAppDelegateProxyEnabled</key>
+		<false/>
+		<key>FirebaseAutomaticScreenReportingEnabled</key>
+		<false/>
+		<key>FirebaseMessagingAutoInitEnabled</key>
+		<false/>
 		<key>NSCameraUsageDescription</key>
 		<string>This app uses the camera to capture photos for KYC verification, crop diagnostics, and profile updates.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
