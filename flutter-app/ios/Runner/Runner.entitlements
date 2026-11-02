@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- aps-environment deferred: current provisioning profile lacks Push Notifications.
+	     Enable Push on App ID com.sahelagriconnect.app in developer.apple.com, then add:
+	     <key>aps-environment</key><string>production</string>
+	     when re-enabling firebase_messaging. -->
+</dict>
+</plist>

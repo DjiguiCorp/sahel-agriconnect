@@ -1,10 +1,10 @@
+import 'dart:async';
+
 import 'package:app_links/app_links.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,125 +14,149 @@ import 'core/terms_refresh.dart';
 import 'core/language_provider.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
-import 'firebase_options.dart';
 import 'navigation/session_nav.dart';
 import 'screens/age_gate_screen.dart';
 import 'screens/shared/terms_screen.dart';
-import 'services/notification_service.dart';
 import 'services/offline_queue.dart';
 
-void _handleDeepLink(Uri uri) {
-  // Payment return: sahelagriconnect://payment/success?role=cooperative&lang=en
-  if (uri.host == 'payment' ||
-      uri.pathSegments.contains('payment') ||
-      uri.queryParameters['payment'] == 'success') {
-    final role = uri.queryParameters['role'] ?? 'cooperative';
-    final lang = uri.queryParameters['lang'];
-    if (lang == 'en' || lang == 'fr') {
-      // LanguageProvider may not be mounted yet on cold start; route carries hint.
-    }
-    final loginRoutes = {
-      'cooperative': '/login/cooperative',
-      'investor': '/login/investor',
-      'processor': '/login/processor',
-      'farmer': '/login/farmer',
-      'government': '/login/government',
-      'ngo': '/login/ngo',
-    };
-    final dest = loginRoutes[role] ?? '/home';
-    final q = lang != null ? '?lang=$lang&payment=success' : '?payment=success';
-    appRouter.go('$dest$q');
-    return;
-  }
-
-  // Magic link: sahelagriconnect://auth/magic?c=...&e=...&p=...&r=cooperative&lang=en
-  if (uri.pathSegments.contains('magic') ||
-      (uri.host == 'auth' && uri.path.contains('magic'))) {
-    final code = uri.queryParameters['c'] ?? '';
-    final email = uri.queryParameters['e'] ?? '';
-    final purpose = uri.queryParameters['p'] ?? '';
-    final role = uri.queryParameters['r'] ?? '';
-    final lang = uri.queryParameters['lang'] ?? '';
-    if (code.isNotEmpty && email.isNotEmpty) {
-      final parts = <String>[
-        'c=${Uri.encodeComponent(code)}',
-        'e=${Uri.encodeComponent(email)}',
-        'p=${Uri.encodeComponent(purpose)}',
-      ];
-      if (role.isNotEmpty) parts.add('r=${Uri.encodeComponent(role)}');
-      if (lang.isNotEmpty) parts.add('lang=${Uri.encodeComponent(lang)}');
-      appRouter.go('/auth/magic?${parts.join('&')}');
-    }
-  }
-}
+/// TestFlight launch probe. If this screen opens on device, Flutter engine is fine
+/// and the crash is in real bootstrap (keychain / plugins / router).
+/// Set to false after build 24 is confirmed on TestFlight.
+const bool kLaunchSmokeTest = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final authState = AuthState();
-  await authState.restoreSession();
 
-  // Listen for deep links when app is already running (background → foreground)
-  final appLinks = AppLinks();
-  appLinks.uriLinkStream.listen((uri) {
-    _handleDeepLink(uri);
-  });
-
-  // Handle launch URI (app opened via deep link from cold start)
-  final initialUri = await appLinks.getInitialLink();
-  if (initialUri != null) {
-    _handleDeepLink(initialUri);
+  if (kLaunchSmokeTest) {
+    runApp(
+      const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: _LaunchSmokeScreen(),
+      ),
+    );
+    return;
   }
 
-  final ageAccepted = await AgeGateScreen.hasAccepted();
+  await _bootstrapFullApp();
+}
+
+class _LaunchSmokeScreen extends StatelessWidget {
+  const _LaunchSmokeScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF1a3c2e),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Build 24 OK',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'If you see this on TestFlight, the crash is not the Flutter engine — it is app startup code.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFB8C5B0),
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _bootstrapFullApp() async {
+  final authState = AuthState();
+  try {
+    await authState.restoreSession();
+  } catch (e, st) {
+    debugPrint('restoreSession failed: $e');
+    if (kDebugMode) debugPrint('$st');
+  }
+
+  bool ageAccepted = false;
+  bool termsAccepted = false;
+  try {
+    ageAccepted = await AgeGateScreen.hasAccepted();
+  } catch (_) {}
+  try {
+    termsAccepted = await TermsScreen.hasAccepted();
+  } catch (_) {}
+
   final ageGate = AgeGateRefresh(ageAccepted);
-
-  final termsAccepted = await TermsScreen.hasAccepted();
   final termsGate = TermsRefresh(termsAccepted);
-
-  GoogleFonts.config.allowRuntimeFetching = true;
+  final offlineQueue = OfflineQueue.deferred();
 
   buildRouter(authState, ageGate, termsGate);
   onAuthSessionExpired = () {
     authState.logoutAll();
-    appRouter.go('/home');
+    if (isAppRouterReady) {
+      appRouter.go('/home');
+    }
   };
 
   try {
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
-    await NotificationService.init();
-  } catch (e, st) {
-    debugPrint('Firebase/FCM not ready (configure firebase_options.dart): $e');
-    if (kDebugMode) debugPrint('$st');
-  }
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
+    await SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp],
+    );
+  } catch (_) {}
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authState),
         ChangeNotifierProvider.value(value: ageGate),
         ChangeNotifierProvider.value(value: termsGate),
-        ChangeNotifierProvider(create: (_) => OfflineQueue()),
+        ChangeNotifierProvider.value(value: offlineQueue),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
-      child: const SahelApp(),
+      child: SahelApp(
+        authState: authState,
+        ageGate: ageGate,
+        termsGate: termsGate,
+        offlineQueue: offlineQueue,
+      ),
     ),
   );
 }
 
 class SahelApp extends StatefulWidget {
-  const SahelApp({super.key});
+  const SahelApp({
+    super.key,
+    required this.authState,
+    required this.ageGate,
+    required this.termsGate,
+    required this.offlineQueue,
+  });
 
-  /// Public entry point used by [LanguageScreen] (or any other screen)
-  /// to switch the app locale at runtime. Forwards to the singleton
-  /// state if it's mounted; otherwise a no-op.
+  final AuthState authState;
+  final AgeGateRefresh ageGate;
+  final TermsRefresh termsGate;
+  final OfflineQueue offlineQueue;
+
   static void updateLocale(Locale locale) {
     _SahelAppState._instance?.setLocale(locale);
   }
@@ -142,20 +166,72 @@ class SahelApp extends StatefulWidget {
 }
 
 class _SahelAppState extends State<SahelApp> {
-  // Persisted under this SharedPreferences key.
   static const _kLocalePrefKey = 'app_locale';
-
-  // Singleton-style handle so any screen can request a locale change
-  // without threading an InheritedWidget through every route.
   static _SahelAppState? _instance;
-
   Locale _locale = const Locale('fr');
+  bool _postLaunchStarted = false;
 
   @override
   void initState() {
     super.initState();
     _instance = this;
     _loadSavedLocale();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_runPostLaunchWork());
+    });
+  }
+
+  Future<void> _runPostLaunchWork() async {
+    if (_postLaunchStarted) return;
+    _postLaunchStarted = true;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
+
+    try {
+      widget.offlineQueue.start();
+    } catch (e) {
+      debugPrint('OfflineQueue start failed: $e');
+    }
+
+    try {
+      final appLinks = AppLinks();
+      appLinks.uriLinkStream.listen(_handleDeepLink, onError: (Object e) {
+        debugPrint('uriLinkStream error: $e');
+      });
+      final initial = await appLinks.getInitialLink();
+      if (initial != null) _handleDeepLink(initial);
+    } catch (e) {
+      debugPrint('Deep link init skipped: $e');
+    }
+  }
+
+  void _handleDeepLink(Uri uri) {
+    if (!mounted || !isAppRouterReady) return;
+    if (uri.host == 'payment' || uri.pathSegments.contains('payment')) {
+      final role = uri.queryParameters['role'] ?? 'cooperative';
+      final lang = uri.queryParameters['lang'];
+      const routes = {
+        'cooperative': '/login/cooperative',
+        'investor': '/login/investor',
+        'processor': '/login/processor',
+        'farmer': '/login/farmer',
+      };
+      final dest = routes[role] ?? '/home';
+      final q = lang != null ? '?lang=$lang&payment=success' : '?payment=success';
+      try {
+        appRouter.go('$dest$q');
+      } catch (_) {}
+    } else if (uri.pathSegments.contains('magic')) {
+      final code = uri.queryParameters['c'] ?? '';
+      final email = uri.queryParameters['e'] ?? '';
+      if (code.isNotEmpty && email.isNotEmpty) {
+        try {
+          appRouter.go(
+            '/auth/magic?c=${Uri.encodeComponent(code)}&e=${Uri.encodeComponent(email)}',
+          );
+        } catch (_) {}
+      }
+    }
   }
 
   @override
@@ -171,9 +247,7 @@ class _SahelAppState extends State<SahelApp> {
       if (mounted && (saved == 'fr' || saved == 'en')) {
         setState(() => _locale = Locale(saved));
       }
-    } catch (_) {
-      // Keep the default locale if storage fails.
-    }
+    } catch (_) {}
   }
 
   void setLocale(Locale locale) {
@@ -211,12 +285,9 @@ class _SahelAppState extends State<SahelApp> {
   }
 }
 
-/// Global overscroll physics for all scrollables under [MaterialApp.router].
 class _BouncingScrollBehavior extends ScrollBehavior {
   const _BouncingScrollBehavior();
-
   @override
-  ScrollPhysics getScrollPhysics(BuildContext context) {
-    return const BouncingScrollPhysics();
-  }
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BouncingScrollPhysics();
 }

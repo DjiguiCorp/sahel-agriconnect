@@ -19,6 +19,7 @@ import '../../widgets/auth_form_theme.dart';
 import '../../widgets/biometric_setup_sheet.dart';
 import '../../widgets/country_picker.dart';
 import '../../widgets/otp_code_row.dart';
+import '../../widgets/premium_upgrade_dialog.dart';
 
 typedef _LoginRoleConfig = ({
   String title,
@@ -1520,22 +1521,37 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-  bool get _showsWebPaymentNote =>
-      widget.role == AuthRole.investor ||
-      widget.role == AuthRole.cooperative ||
-      widget.role == AuthRole.processor;
-
   String _registerButtonLabel(LanguageProvider lp) {
-    if (widget.role == AuthRole.investor) {
-      return lp.t('Register', "S'inscrire");
-    }
-    if (widget.role == AuthRole.cooperative) {
-      return lp.t('Register (web)', "S'inscrire (web)");
-    }
-    if (widget.role == AuthRole.processor) {
-      return lp.t('Register (web)', "S'inscrire (web)");
+    if (widget.role == AuthRole.investor ||
+        widget.role == AuthRole.cooperative ||
+        widget.role == AuthRole.processor) {
+      return lp.t('Register free', 'Inscription gratuite');
     }
     return lp.t('Request access', "Demander l'accès");
+  }
+
+  String _registerRoleLabel(LanguageProvider lp) {
+    switch (widget.role) {
+      case AuthRole.investor:
+        return lp.t('investor', 'investisseur');
+      case AuthRole.cooperative:
+        return lp.t('cooperative', 'coopérative');
+      case AuthRole.processor:
+        return lp.t('transformation center', 'centre de transformation');
+      default:
+        return lp.t('account', 'compte');
+    }
+  }
+
+  Future<void> _startFreeRegistration(LanguageProvider lp) async {
+    final isFr = lp.isFr;
+    await PremiumUpgradeDialog.showRegistrationWelcome(
+      context,
+      isFr: isFr,
+      roleLabel: _registerRoleLabel(lp),
+    );
+    if (!mounted) return;
+    await _openUrl(_config.registerUrl);
   }
 
   Widget _registerFooter(LanguageProvider lp) => Container(
@@ -1574,7 +1590,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => _openUrl(_config.registerUrl),
+                  onPressed: () => _startFreeRegistration(lp),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -1596,20 +1612,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-            if (_showsWebPaymentNote) ...[
-              const SizedBox(height: 10),
-              Text(
-                lp.t(
-                  'Registration starts here. Payment is completed in the web browser.',
-                  'L\'inscription démarre ici. Le paiement s\'effectue sur le navigateur web.',
-                ),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                  height: 1.4,
-                ),
+            const SizedBox(height: 10),
+            Text(
+              lp.t(
+                'Free registration — no payment required. Premium features unlock as you grow.',
+                'Inscription gratuite — aucun paiement requis. Les fonctions premium se débloquent avec votre croissance.',
               ),
-            ],
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+            ),
           ],
         ),
       );

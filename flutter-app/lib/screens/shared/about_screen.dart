@@ -96,8 +96,8 @@ class AboutScreen extends StatelessWidget {
                     content:
                         'Sahel AgriConnect is a pan-African agricultural '
                         'platform connecting farmers, cooperatives, investors, '
-                        'processors and NGOs across West Africa and the global '
-                        'diaspora. We digitize and strengthen agricultural '
+                        'and transformation centers across West Africa and the '
+                        'global diaspora. We digitize and strengthen agricultural '
                         'value chains for a more prosperous Africa.',
                   ),
                   const SizedBox(height: 12),

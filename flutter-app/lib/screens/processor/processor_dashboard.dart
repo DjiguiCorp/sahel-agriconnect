@@ -15,7 +15,7 @@ import '../../widgets/portal_tablet_shell.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/offline_banner.dart';
-import 'processor_certification_flow.dart';
+import '../../widgets/premium_upgrade_dialog.dart';
 
 const _bg      = Color(0xFF1a1200);
 const _surface = Color(0xFF2a1a00);
@@ -498,13 +498,13 @@ class _HomeTab extends StatelessWidget {
               subtitle: isFr ? 'Pickup & livraison'
                 : 'Pickup & delivery',
               color: _blue, onTap: () => onTabChange(3)),
-            _QA(emoji: '✅',
-              title: isFr ? 'Demander certification'
-                : 'Request Certification',
-              subtitle: isFr ? 'Qualité & normes'
-                : 'Quality & standards',
+            _QA(emoji: '🔒',
+              title: isFr ? 'Export & marchés'
+                : 'Export & markets',
+              subtitle: isFr ? 'Premium — accès international'
+                : 'Premium — overseas access',
               color: const Color(0xFF7B61FF),
-              onTap: () => ProcessorCertificationFlow.show(
+              onTap: () => PremiumUpgradeDialog.showProcessorPremiumLock(
                 context,
                 isFr: isFr,
               )),
@@ -1169,14 +1169,13 @@ class _ProcessingTabState extends State<_ProcessingTab> {
                   icon: const Icon(Icons.verified_outlined,
                     color: _green, size: 16),
                   label: Text(
-                    isFr ? 'Demander certification'
-                         : 'Request Certification',
+                    isFr ? 'Certification export (premium)'
+                         : 'Export certification (premium)',
                     style: const TextStyle(color: _green,
                       fontSize: 12, fontWeight: FontWeight.w600)),
-                  onPressed: () => ProcessorCertificationFlow.show(
+                  onPressed: () => PremiumUpgradeDialog.showProcessorPremiumLock(
                     context,
                     isFr: isFr,
-                    batch: b,
                   ))),
             ],
           ])).animate(delay: Duration(milliseconds: 50 * e.key))

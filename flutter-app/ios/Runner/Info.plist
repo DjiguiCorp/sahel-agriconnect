@@ -37,6 +37,28 @@
 		<string>LaunchScreen</string>
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
+		<!-- Required by iOS 27 / Xcode 27: apps without UIScene fail to launch. -->
+		<key>UIApplicationSceneManifest</key>
+		<dict>
+			<key>UIApplicationSupportsMultipleScenes</key>
+			<false/>
+			<key>UISceneConfigurations</key>
+			<dict>
+				<key>UIWindowSceneSessionRoleApplication</key>
+				<array>
+					<dict>
+						<key>UISceneClassName</key>
+						<string>UIWindowScene</string>
+						<key>UISceneDelegateClassName</key>
+						<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+						<key>UISceneConfigurationName</key>
+						<string>Default Configuration</string>
+						<key>UISceneStoryboardFile</key>
+						<string>Main</string>
+					</dict>
+				</array>
+			</dict>
+		</dict>
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
@@ -64,11 +86,20 @@
 			</dict>
 		</array>
 		<key>FlutterDeepLinkingEnabled</key>
-		<true/>
+		<false/>
+		<!-- Impeller has caused release/TestFlight launch crashes on some devices. -->
+		<key>FLTEnableImpeller</key>
+		<false/>
+		<key>FirebaseAppDelegateProxyEnabled</key>
+		<false/>
+		<key>FirebaseAutomaticScreenReportingEnabled</key>
+		<false/>
+		<key>FirebaseMessagingAutoInitEnabled</key>
+		<false/>
 		<key>NSCameraUsageDescription</key>
-		<string>This app uses the camera to capture photos for KYC verification, crop diagnostics, and profile updates.</string>
+		<string>We need camera access to verify your identity for investor KYC</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>This app needs access to your photo library to upload documents and select images for KYC verification.</string>
+		<string>We need photo library access to upload your government ID</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>This app uses your location to suggest nearby cooperatives and provide localized services.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

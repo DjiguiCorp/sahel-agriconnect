@@ -40,7 +40,18 @@ final GlobalKey<NavigatorState> _rootKey =
 
 GlobalKey<NavigatorState> get rootNavigatorKey => _rootKey;
 
-late GoRouter appRouter;
+GoRouter? _appRouter;
+
+/// Initialized by [buildRouter]. Throws if used before setup.
+GoRouter get appRouter {
+  final router = _appRouter;
+  if (router == null) {
+    throw StateError('appRouter used before buildRouter()');
+  }
+  return router;
+}
+
+bool get isAppRouterReady => _appRouter != null;
 
 /// Instant route swap — avoids a blank/grey frame between splash and home.
 Page<void> _instantPage(GoRouterState state, Widget child) {
@@ -55,7 +66,7 @@ GoRouter buildRouter(
   AgeGateRefresh ageGate,
   TermsRefresh termsGate,
 ) {
-  appRouter = GoRouter(
+  _appRouter = GoRouter(
     navigatorKey: _rootKey,
     initialLocation: '/',
     refreshListenable: Listenable.merge([authState, ageGate, termsGate]),
@@ -74,11 +85,16 @@ GoRouter buildRouter(
         return loc == '/' ? null : '/';
       }
 
-      // SplashScreen owns navigation from `/` after its entrance/exit animation.
-      if (loc == '/') return null;
-
       final prefs = await SharedPreferences.getInstance();
       final langSelected = prefs.getBool('language_selected') ?? false;
+
+      // `/` no longer waits on an animated splash — route immediately.
+      if (loc == '/') {
+        if (!langSelected) return '/language';
+        if (!termsGate.accepted) return '/terms';
+        if (authState.isLoggedIn) return _dashboardRoute(authState.role);
+        return '/home';
+      }
 
       if (!langSelected && loc != '/language') {
         return '/language';

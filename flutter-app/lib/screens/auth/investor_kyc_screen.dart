@@ -37,6 +37,14 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
   int _step = 0;
   String? _idPhotoBase64;
   String? _idPhotoName;
+  String? _selfieBase64;
+  String? _selfieName;
+
+  static const _acceptedIdTypes = {
+    'passport',
+    'national_id',
+    'drivers_license',
+  };
 
   static const _bg = Color(0xFF0A1628);
   static const _surface = Color(0xFF1a2744);
@@ -57,7 +65,7 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
     super.dispose();
   }
 
-  Future<void> _pickIdPhoto(bool isFr) async {
+  Future<void> _pickIdPhoto() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(
       source: ImageSource.gallery,
@@ -70,6 +78,23 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
     setState(() {
       _idPhotoBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
       _idPhotoName = file.name;
+    });
+  }
+
+  Future<void> _captureSelfie() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _selfieBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      _selfieName = file.name;
     });
   }
 
@@ -107,21 +132,34 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
         SnackBar(
           content: Text(
             isFr
-                ? 'Téléversez une photo de votre passeport ou carte d\'identité.'
-                : 'Upload a photo of your passport or national ID.',
+                ? 'Téléchargez une pièce d\'identité officielle.'
+                : 'Upload a government-issued ID.',
           ),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
-    if (!['passport', 'national_id'].contains(_idType)) {
+    if (_selfieBase64 == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             isFr
-                ? 'Seuls le passeport ou la carte nationale sont acceptés.'
-                : 'Only passport or national ID are accepted.',
+                ? 'Prenez un selfie en tenant votre pièce d\'identité.'
+                : 'Take a selfie holding your ID.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (!_acceptedIdTypes.contains(_idType)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isFr
+                ? 'Passeport, carte nationale ou permis de conduire uniquement.'
+                : 'Only passport, national ID, or driver\'s license are accepted.',
           ),
           backgroundColor: Colors.red,
         ),
@@ -143,6 +181,8 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
       'idNumber': _idNumberCtrl.text.trim(),
       'photoIdUrl': _idPhotoBase64,
       'photoIdUploaded': true,
+      'selfieUrl': _selfieBase64,
+      'selfieUploaded': true,
       'acceptedTerms': true,
       'acceptedRiskDisclosure': true,
       'acceptedPrivacyPolicy': true,
@@ -201,7 +241,7 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
       body: Column(
         children: [
           LinearProgressIndicator(
-            value: (_step + 1) / 3,
+            value: (_step + 1) / 4,
             backgroundColor: Colors.white.withValues(alpha: 0.1),
             color: _gold,
             minHeight: 3,
@@ -214,11 +254,12 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
                 20,
                 SafeInsets.bottom(context, extra: 100),
               ),
-              child: _step == 0
-                  ? _buildStep1(isFr)
-                  : _step == 1
-                      ? _buildStep2(isFr)
-                      : _buildStep3(isFr),
+              child: switch (_step) {
+                0 => _buildStep1(isFr),
+                1 => _buildStep2(isFr),
+                2 => _buildSelfieStep(isFr),
+                _ => _buildStep3(isFr),
+              },
             ),
           ),
         ],
@@ -232,8 +273,8 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
           _heading(
             isFr ? '👤 Identité personnelle' : '👤 Personal Identity',
             isFr
-                ? 'Étape 1 sur 3 — Informations de base'
-                : 'Step 1 of 3 — Basic information',
+                ? 'Étape 1 sur 4 — Informations de base'
+                : 'Step 1 of 4 — Basic information',
           ),
           const SizedBox(height: 20),
           _card(
@@ -321,10 +362,12 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _heading(
-            isFr ? '🪪 Pièce d\'identité' : '🪪 Identity Document',
             isFr
-                ? 'Étape 2 sur 3 — Vérification documentaire'
-                : 'Step 2 of 3 — Document verification',
+                ? '🪪 Télécharger une pièce d\'identité officielle'
+                : '🪪 Upload Government-Issued ID',
+            isFr
+                ? 'Étape 2 sur 4 — Passeport, carte nationale ou permis'
+                : 'Step 2 of 4 — Passport, national ID, or driver\'s license',
           ),
           const SizedBox(height: 20),
           _card(
@@ -358,13 +401,6 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
                       style: const TextStyle(color: _text),
                     ),
                   ),
-                  DropdownMenuItem(
-                    value: 'residence_permit',
-                    child: Text(
-                      isFr ? 'Titre de séjour' : 'Residence Permit',
-                      style: const TextStyle(color: _text),
-                    ),
-                  ),
                 ],
                 onChanged: (v) => setState(() => _idType = v ?? 'passport'),
               ),
@@ -377,15 +413,19 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
                     : 'Number as it appears on document',
               ),
               const SizedBox(height: 12),
-              _lbl(isFr ? 'Photo du document *' : 'Document photo *'),
+              _lbl(
+                isFr
+                    ? 'Télécharger une pièce d\'identité officielle *'
+                    : 'Upload Government-Issued ID *',
+              ),
               OutlinedButton.icon(
-                onPressed: () => _pickIdPhoto(isFr),
-                icon: const Icon(Icons.camera_alt_outlined, color: _gold),
+                onPressed: _pickIdPhoto,
+                icon: const Icon(Icons.upload_file_outlined, color: _gold),
                 label: Text(
                   _idPhotoName ??
                       (isFr
-                          ? 'Choisir passeport / carte d\'identité'
-                          : 'Choose passport / national ID photo'),
+                          ? 'Galerie — passeport, CNI ou permis'
+                          : 'Gallery — passport, national ID, or license'),
                   style: TextStyle(
                     color: _idPhotoName != null ? Colors.greenAccent : _muted,
                     fontSize: 13,
@@ -449,21 +489,21 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
                 SnackBar(
                   content: Text(
                     isFr
-                        ? 'Photo du passeport ou carte d\'identité requise'
-                        : 'Passport or national ID photo required',
+                        ? 'Téléchargez une pièce d\'identité officielle'
+                        : 'Upload a government-issued ID',
                   ),
                   backgroundColor: Colors.red,
                 ),
               );
               return;
             }
-            if (!['passport', 'national_id'].contains(_idType)) {
+            if (!_acceptedIdTypes.contains(_idType)) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
                     isFr
-                        ? 'Utilisez un passeport ou une carte nationale'
-                        : 'Use a passport or national ID',
+                        ? 'Passeport, carte nationale ou permis uniquement'
+                        : 'Passport, national ID, or driver\'s license only',
                   ),
                   backgroundColor: Colors.red,
                 ),
@@ -475,14 +515,92 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
         ],
       );
 
+  Widget _buildSelfieStep(bool isFr) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _heading(
+            isFr
+                ? '🤳 Prenez un selfie en tenant votre pièce d\'identité'
+                : '🤳 Take a selfie holding your ID',
+            isFr
+                ? 'Étape 3 sur 4 — Caméra avant obligatoire'
+                : 'Step 3 of 4 — Front camera required',
+          ),
+          const SizedBox(height: 20),
+          _card(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.25)),
+                ),
+                child: Text(
+                  isFr
+                      ? 'Instructions : tenez votre pièce d\'identité à côté de votre visage. Assurez-vous que votre visage et le texte de la pièce sont lisibles.'
+                      : 'Instructions: hold your ID next to your face. Ensure your face and the ID text are clearly visible.',
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _captureSelfie,
+                icon: const Icon(Icons.camera_front_outlined, color: _gold),
+                label: Text(
+                  _selfieName ??
+                      (isFr
+                          ? 'Ouvrir la caméra avant'
+                          : 'Open front camera'),
+                  style: TextStyle(
+                    color: _selfieName != null ? Colors.greenAccent : _muted,
+                    fontSize: 13,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _gold,
+                  side: BorderSide(
+                    color: _selfieName != null
+                        ? Colors.greenAccent
+                        : Colors.white24,
+                  ),
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _nextBtn(isFr ? 'Continuer' : 'Continue', () {
+            if (_selfieBase64 == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isFr
+                        ? 'Selfie avec pièce d\'identité requis'
+                        : 'Selfie holding your ID is required',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            setState(() => _step = 3);
+          }),
+        ],
+      );
+
   Widget _buildStep3(bool isFr) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _heading(
             isFr ? '📋 Déclarations et accords' : '📋 Declarations & Agreements',
             isFr
-                ? 'Étape 3 sur 3 — Confirmation légale'
-                : 'Step 3 of 3 — Legal confirmation',
+                ? 'Étape 4 sur 4 — Confirmation légale'
+                : 'Step 4 of 4 — Legal confirmation',
           ),
           const SizedBox(height: 20),
           _card(

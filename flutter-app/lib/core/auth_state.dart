@@ -15,8 +15,10 @@ class AuthState extends ChangeNotifier {
 
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    // unlocked_this_device avoids launch hangs when device is still locked
+    // after a TestFlight update (first_unlock_this_device can block/crash cold start).
     iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
+      accessibility: KeychainAccessibility.unlocked_this_device,
     ),
   );
 
