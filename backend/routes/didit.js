@@ -6,7 +6,9 @@ import { authenticateInvestor } from '../middleware/auth.js';
 
 const router = express.Router();
 
-const DIDIT_SESSION_URL = 'https://verify.didit.me/v1/session/';
+// Hosted UI is verify.didit.me — API is verification.didit.me (v3).
+// Calling verify.didit.me/v1/session/ returns a Next.js HTML 404 page.
+const DIDIT_SESSION_URL = 'https://verification.didit.me/v3/session/';
 
 function mapDiditStatus(raw) {
   const s = String(raw || '').trim().toLowerCase().replace(/\s+/g, '_');
@@ -60,28 +62,37 @@ router.post('/start', authenticateInvestor, async (req, res) => {
       process.env.DIDIT_REDIRECT_URL ||
       'https://sahelagriconnect.com/verify/callback';
 
-    // Didit: API key auth only — Bearer DIDIT_API_KEY (no OAuth / client_secret)
-    const body = {
-      callback,
-      vendor_data: req.user.id,
-    };
-    // Application / workflow id from Render (required by current Didit session API)
-    if (process.env.DIDIT_APPLICATION_ID) {
-      body.workflow_id = process.env.DIDIT_APPLICATION_ID;
+    // workflow_id is required by Didit v3 (Console → Workflows → copy UUID).
+    // Prefer DIDIT_WORKFLOW_ID; fall back to DIDIT_APPLICATION_ID if that env holds the workflow UUID.
+    const workflowId =
+      process.env.DIDIT_WORKFLOW_ID || process.env.DIDIT_APPLICATION_ID || '';
+    if (!workflowId) {
+      return res.status(503).json({
+        success: false,
+        error:
+          'Didit workflow_id missing — set DIDIT_WORKFLOW_ID (or DIDIT_APPLICATION_ID) to your KYC workflow UUID from the Didit Console',
+      });
     }
+
+    // Didit v3: authenticate with x-api-key (no OAuth / client_secret)
+    const body = {
+      workflow_id: workflowId,
+      vendor_data: req.user.id,
+      callback,
+    };
     if (process.env.DIDIT_VENDOR_DATA) {
       body.metadata = { vendor: process.env.DIDIT_VENDOR_DATA };
     }
 
     console.log('Didit request:', {
-      url: 'https://verify.didit.me/v1/session/',
+      url: DIDIT_SESSION_URL,
       headers: {
-        Authorization: 'Bearer ' + process.env.DIDIT_API_KEY?.slice(0, 10) + '...',
+        'x-api-key': process.env.DIDIT_API_KEY?.slice(0, 10) + '...',
       },
       body: {
-        callback: process.env.DIDIT_REDIRECT_URL,
+        workflow_id: workflowId,
+        callback,
         vendor_data: req.user.id,
-        ...(body.workflow_id ? { workflow_id: body.workflow_id } : {}),
         ...(body.metadata ? { metadata: body.metadata } : {}),
       },
     });
@@ -89,10 +100,10 @@ router.post('/start', authenticateInvestor, async (req, res) => {
     const response = await fetch(DIDIT_SESSION_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        // Some Didit deployments also accept x-api-key; Bearer is required per product spec
         'x-api-key': apiKey,
+        // Also send Bearer for compatibility with older docs / proxies
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
     });
@@ -107,6 +118,12 @@ router.post('/start', authenticateInvestor, async (req, res) => {
         error: 'Didit session creation failed',
         details: responseText,
         status: response.status,
+        hint:
+          response.status === 404
+            ? 'Wrong Didit API host/path — use https://verification.didit.me/v3/session/'
+            : response.status === 400
+              ? 'Check workflow_id (must be a KYC Workflow UUID from Didit Console, not Application ID unless they match)'
+              : undefined,
       });
     }
 
