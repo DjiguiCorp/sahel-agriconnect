@@ -1437,7 +1437,22 @@ export default function InvestorPortal() {
         window.location.href = data.verification_url;
         return;
       }
-      alert(data?.error || (isFr ? 'Impossible de démarrer Didit.' : 'Could not start Didit.'));
+      // Temporary: surface raw Didit error for debugging
+      const detail =
+        typeof data?.details === 'string'
+          ? data.details
+          : data?.details
+            ? JSON.stringify(data.details)
+            : '';
+      alert(
+        [
+          data?.error || (isFr ? 'Impossible de démarrer Didit.' : 'Could not start Didit.'),
+          data?.status != null ? `status: ${data.status}` : '',
+          detail,
+        ]
+          .filter(Boolean)
+          .join('\n')
+      );
     } catch (e) {
       alert(e.message || 'Didit error');
     } finally {

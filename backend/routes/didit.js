@@ -53,6 +53,9 @@ router.post('/start', authenticateInvestor, async (req, res) => {
     }
 
     const userId = investor._id.toString();
+    // Align with Didit vendor_data = user id (also expose as req.user for logging)
+    req.user = { id: userId, email };
+
     const callback =
       process.env.DIDIT_REDIRECT_URL ||
       'https://sahelagriconnect.com/verify/callback';
@@ -60,7 +63,7 @@ router.post('/start', authenticateInvestor, async (req, res) => {
     // Didit: API key auth only — Bearer DIDIT_API_KEY (no OAuth / client_secret)
     const body = {
       callback,
-      vendor_data: userId,
+      vendor_data: req.user.id,
     };
     // Application / workflow id from Render (required by current Didit session API)
     if (process.env.DIDIT_APPLICATION_ID) {
@@ -70,7 +73,20 @@ router.post('/start', authenticateInvestor, async (req, res) => {
       body.metadata = { vendor: process.env.DIDIT_VENDOR_DATA };
     }
 
-    const diditRes = await fetch(DIDIT_SESSION_URL, {
+    console.log('Didit request:', {
+      url: 'https://verify.didit.me/v1/session/',
+      headers: {
+        Authorization: 'Bearer ' + process.env.DIDIT_API_KEY?.slice(0, 10) + '...',
+      },
+      body: {
+        callback: process.env.DIDIT_REDIRECT_URL,
+        vendor_data: req.user.id,
+        ...(body.workflow_id ? { workflow_id: body.workflow_id } : {}),
+        ...(body.metadata ? { metadata: body.metadata } : {}),
+      },
+    });
+
+    const response = await fetch(DIDIT_SESSION_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -81,13 +97,27 @@ router.post('/start', authenticateInvestor, async (req, res) => {
       body: JSON.stringify(body),
     });
 
-    const data = await diditRes.json().catch(() => ({}));
-    if (!diditRes.ok) {
-      console.error('[Didit] session create failed:', diditRes.status, data);
-      return res.status(502).json({
-        success: false,
-        error: data?.detail || data?.error || 'Didit session creation failed',
-        details: data,
+    // Log raw text first — do not parse as JSON before logging
+    const responseText = await response.text();
+    console.error('Didit response status:', response.status);
+    console.error('Didit response body:', responseText);
+
+    if (!response.ok) {
+      return res.status(500).json({
+        error: 'Didit session creation failed',
+        details: responseText,
+        status: response.status,
+      });
+    }
+
+    let data = {};
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      return res.status(500).json({
+        error: 'Didit session creation failed',
+        details: responseText,
+        status: response.status,
       });
     }
 
@@ -96,10 +126,11 @@ router.post('/start', authenticateInvestor, async (req, res) => {
       data.verification_url || data.url || data.verificationUrl;
 
     if (!sessionId || !verificationUrl) {
-      console.error('[Didit] unexpected session response:', data);
-      return res.status(502).json({
-        success: false,
-        error: 'Didit response missing session_id or verification url',
+      console.error('[Didit] unexpected session response:', responseText);
+      return res.status(500).json({
+        error: 'Didit session creation failed',
+        details: responseText,
+        status: response.status,
       });
     }
 
