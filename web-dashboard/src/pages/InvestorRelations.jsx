@@ -41,7 +41,7 @@ export default function InvestorRelations() {
   ];
   const investRows = [
     ['Facilitation fees', '5% of AUM', '$25,000'],
-    ['Premium subscriptions', '$299/year', '$14,950'],
+    ['AfriYield Exchange access', '$99/year', '$14,950'],
     ['Advisory sessions', '$99/call', '$4,950'],
     ['Buyer marketplace', '2–3% fee', 'TBD'],
   ];

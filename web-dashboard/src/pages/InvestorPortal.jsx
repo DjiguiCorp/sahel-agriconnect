@@ -1268,7 +1268,7 @@ function HelpTab({ investor, t }) {
 function PremiumModal({ t, onClose }) {
   const { i18n } = useTranslation();
   const features = t('investorPortal.premium.features', { returnObjects: true });
-  const [billing, setBilling] = useState('annual'); // 'monthly' or 'annual'
+  const isFr = String(i18n.language || '').toLowerCase().startsWith('fr');
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
@@ -1305,60 +1305,21 @@ function PremiumModal({ t, onClose }) {
             ))}
         </div>
 
-        {/* Billing toggle */}
-        <div className="flex rounded-xl overflow-hidden border border-white/10 mb-4">
-          <button
-            type="button"
-            onClick={() => setBilling('monthly')}
-            className={`flex-1 py-2 text-sm font-medium transition ${
-              billing === 'monthly' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'
-            }`}
-          >
-            {t('investorPortal.premium.priceMonthly')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setBilling('annual')}
-            className={`flex-1 py-2 text-sm font-medium transition relative ${
-              billing === 'annual' ? 'bg-[#B5850A] text-[#0d1f17]' : 'text-white/40 hover:text-white/60'
-            }`}
-          >
-            {t('investorPortal.premium.priceAnnual')}
-            {billing === 'annual' && (
-              <span className="absolute -top-2 -right-1 text-xs bg-green-500 text-white px-1 rounded-full">
-                -17%
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Price display */}
+        {/* Annual-only price — AfriYield Exchange $99/year */}
         <div className="mb-1">
-          {billing === 'annual' ? (
-            <div>
-              <p className="text-[#B5850A] font-mono font-bold text-3xl">
-                $299<span className="text-lg">/year</span>
-              </p>
-              <p className="text-green-400 text-xs mt-1">= $24.92/month — {t('investorPortal.premium.saveWithAnnual')}</p>
-            </div>
-          ) : (
-            <p className="text-[#B5850A] font-mono font-bold text-3xl">
-              $29.99<span className="text-lg">/month</span>
-            </p>
-          )}
+          <p className="text-[#B5850A] font-mono font-bold text-3xl">
+            $99<span className="text-lg">{isFr ? ' / an' : ' / year'}</span>
+          </p>
+          <p className="text-white/50 text-xs mt-1">Accès annuel complet · Full annual access</p>
         </div>
         <p className="text-white/30 text-xs mb-4">{t('investorPortal.premium.nofees')}</p>
 
         <a
-          href={`mailto:support@woneapp.com?subject=AfriYield Premium - ${
-            billing === 'annual' ? 'Annual $299' : 'Monthly $29.99'
-          }&body=I would like to subscribe to AfriYield Premium (${
-            billing === 'annual' ? 'Annual plan - $299/year' : 'Monthly plan - $29.99/month'
-          }).%0A%0AName: %0AEmail: `}
+          href={`mailto:support@woneapp.com?subject=AfriYield Exchange - Annual $99&body=I would like to subscribe to AfriYield Exchange (Annual plan - $99/year).%0A%0AName: %0AEmail: `}
           className="block w-full rounded-xl py-3 font-bold text-center text-[#0d1f17]"
           style={{ background: '#B5850A' }}
         >
-          {t('investorPortal.premium.cta')} — {billing === 'annual' ? '$299/yr' : '$29.99/mo'}
+          {t('investorPortal.premium.cta')} — {isFr ? '$99 / an' : '$99 / year'}
         </a>
         <p className="text-xs mt-2" style={{ color: 'rgba(245,240,232,0.45)' }}>
           {String(i18n.language || '').toLowerCase().startsWith('fr')

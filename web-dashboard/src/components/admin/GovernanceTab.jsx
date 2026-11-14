@@ -121,7 +121,7 @@ export default function GovernanceTab({ isFr }) {
             'Certification export: 299$ individuel / 499$ coopérative — frais uniques de traitement',
             'Licence pays: 999$/mois — accès administrateur dédié avec isolation des données',
             'AfriYield facilitation: 5% du capital déployé — frais unique à l\'investissement',
-            'Premium investisseur: 29,99$/mois ou 299$/an — accès aux alertes et rapports exclusifs',
+            'AfriYield Exchange: 99 $/an — KYC, accès Track A/B, rapports de marché, protection escrow',
             'Formations: 99–299$ par session selon le niveau et la certification associée',
             'Aucun frais caché. Aucune commission sur les revenus des agriculteurs ou coopératives.',
           ]
@@ -130,7 +130,7 @@ export default function GovernanceTab({ isFr }) {
             'Export certification: $299 individual / $499 cooperative — one-time processing fee',
             'Country license: $999/month — dedicated admin access with data isolation',
             'AfriYield facilitation: 5% of capital deployed — one-time at investment',
-            'Investor Premium: $29.99/month or $299/year — access to alerts and exclusive reports',
+            'AfriYield Exchange: $99/year — KYC, Track A/B access, market reports, escrow protection',
             'Training: $99–$299 per session depending on level and associated certification',
             'No hidden fees. No commission on farmer or cooperative revenue.',
           ],

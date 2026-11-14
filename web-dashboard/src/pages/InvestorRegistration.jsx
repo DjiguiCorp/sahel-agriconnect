@@ -347,13 +347,17 @@ export default function InvestorRegistration() {
               </p>
               <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 mb-6 max-w-sm mx-auto text-left">
                 <p className="text-amber-400 font-bold text-base mb-3">
-                  AfriYield Exchange — {isFr ? 'Accès annuel' : 'Annual Access'}
+                  AfriYield Exchange — $99/{isFr ? 'an' : 'year'}
+                </p>
+                <p className="text-white/50 text-xs mb-3">
+                  Accès annuel complet · Full annual access
                 </p>
                 <ul className="space-y-2 text-xs text-white/60 mb-4">
                   <li>✓ {isFr ? 'Vérification KYC incluse' : 'KYC verification included'}</li>
                   <li>✓ {isFr ? 'Accès à toutes les opportunités Track A et B' : 'Access to all Track A and B opportunities'}</li>
                   <li>✓ {isFr ? 'Rapports de marché mensuels' : 'Monthly market reports'}</li>
                   <li>✓ {isFr ? 'Protection escrow sur tous les deals' : 'Escrow protection on all deals'}</li>
+                  <li>✓ {isFr ? 'Couverture complète du cycle agricole de 12 mois' : 'Full 12-month agricultural cycle coverage'}</li>
                 </ul>
                 <p className="text-white font-bold text-2xl text-center">$99 / {isFr ? 'an' : 'year'}</p>
               </div>
@@ -362,11 +366,17 @@ export default function InvestorRegistration() {
                 onClick={async () => {
                   try {
                     const API = import.meta.env.VITE_API_BASE_URL || '';
+                    // AfriYield access: $99/year only (dynamic Stripe price_data — no fixed Price ID).
+                    // FLAG: if you add a Stripe Dashboard Price ID for AfriYield $99/year, wire it in payments.js.
                     const r = await fetch(`${API}/api/payments/stripe/create-session`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
                         type: 'afriyield_access',
+                        tierKey: 'investor',
+                        tierName: 'AfriYield Exchange',
+                        amountUsd: 99,
+                        billingInterval: 'year',
                         email: form.email,
                         name: form.fullName,
                         successUrl: `${window.location.origin}/afri-yield/register?payment=success&step=kyc&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
@@ -382,7 +392,7 @@ export default function InvestorRegistration() {
                 className="w-full max-w-sm mx-auto block py-4 rounded-xl font-bold text-black text-sm"
                 style={{ backgroundColor: '#B5850A' }}
               >
-                {isFr ? '→ Payer et accéder à AfriYield' : '→ Pay and access AfriYield'} — $99
+                {isFr ? '→ Payer et accéder à AfriYield' : '→ Pay and access AfriYield'} — $99 / {isFr ? 'an' : 'year'}
               </button>
               <p className="mt-3 text-white/30 text-xs text-center">
                 {isFr

@@ -1115,7 +1115,7 @@
         "col2": "Frais",
         "col3": "Quand",
         "row1": ["Facilitation d'investissement", "5% du capital déployé", "Unique à l'investissement"],
-        "row2": ["Abonnement Premium", "29,99$/mois ou 299$/an", "Optionnel, récurrent"],
+        "row2": ["Accès AfriYield Exchange", "99 $ / an", "Annuel"],
         "row3": ["Appel conseil — premier", "GRATUIT", "Première session uniquement"],
         "row4": ["Appel conseil — suivi", "99$/session", "Par session"],
         "row5": ["Adhésion coopérative", "199$/an", "Annuel"],
@@ -1352,7 +1352,7 @@
       "alertOff": "Recevoir des alertes",
       "premiumTitle": "Vous voulez savoir avant tout le monde?",
       "premiumBody": "Les membres Premium reçoivent des alertes de prix sur leur téléphone quand les prix des commodités africaines bougent. Ils reçoivent aussi des rapports mensuels écrits en langage simple — sans jargon financier.",
-      "premiumPrice": "29,99$/mois ou 299$/an — annulez à tout moment",
+      "premiumPrice": "99 $ / an — accès annuel complet",
       "premiumCta": "En savoir plus sur Premium"
     },
     "news": {
@@ -1361,7 +1361,7 @@
       "readMore": "Lire la suite",
       "readingTime": "min de lecture",
       "premiumLabel": "Membres Premium uniquement",
-      "premiumUnlock": "Ceci est pour les membres Premium. Rejoignez pour 29,99$/mois pour lire l'histoire complète.",
+      "premiumUnlock": "Ceci est pour les membres AfriYield. Rejoignez pour 99 $ / an pour lire l'histoire complète.",
       "unlock": "Débloquer",
       "tags": {
         "market": "Actualité marché",
@@ -1409,26 +1409,26 @@
       "callInclude": "Inclut un résumé écrit et des recommandations personnalisées"
     },
     "premium": {
-      "badge": "PREMIUM",
-      "title": "Rejoindre AfriYield Premium",
-      "body": "Premium vous donne les outils qu'utilisent les investisseurs sérieux dans l'agriculture africaine. Pas de graphiques compliqués — juste des informations claires sur où mettre votre argent et quand agir.",
+      "badge": "AFRIYIELD",
+      "title": "AfriYield Exchange — 99 $ / an",
+      "body": "Accès annuel complet · Full annual access. Des informations claires sur où mettre votre argent et quand agir — sans graphiques compliqués.",
       "features": [
-        "Soyez notifié quand les prix du karité ou du sésame bougent",
-        "Accès WhatsApp direct à notre équipe",
-        "Rapport mensuel en langage simple — sans jargon",
-        "Voir les nouvelles opportunités 24 heures avant tout le monde",
-        "Savoir ce qui se passe pays par pays"
+        "Vérification KYC incluse",
+        "Accès à toutes les opportunités Track A et B",
+        "Rapports de marché mensuels",
+        "Protection escrow sur tous les deals",
+        "Couverture complète du cycle agricole de 12 mois"
       ],
-      "price": "29,99$/mois ou 299$/an",
-      "priceMonthly": "29,99$/mois",
-      "priceAnnual": "299$/an",
-      "saveWithAnnual": "Économisez 17% avec l'abonnement annuel — meilleure valeur",
-      "nofees": "Annulez à tout moment. Pas de frais cachés.",
-      "annualBadge": "MEILLEURE VALEUR",
-      "cta": "Rejoindre Premium",
+      "price": "99 $ / an",
+      "priceMonthly": "99 $ / an",
+      "priceAnnual": "99 $ / an",
+      "saveWithAnnual": "Abonnement annuel uniquement",
+      "nofees": "Facturation annuelle uniquement. Pas de frais cachés.",
+      "annualBadge": "ANNUEL",
+      "cta": "Rejoindre AfriYield",
       "later": "Peut-être plus tard",
       "currentFree": "Plan actuel: Gratuit",
-      "currentPremium": "Plan actuel: Premium"
+      "currentPremium": "Plan actuel: AfriYield (99 $ / an)"
     },
     "advisory": {
       "title": "Parlez à une vraie personne de votre investissement",

@@ -6,6 +6,7 @@ import CooperativePlatformRegistration from '../models/CooperativePlatformRegist
 import Investment from '../models/Investment.js';
 import Opportunity from '../models/Opportunity.js';
 import Investor from '../models/Investor.js';
+import GovernmentAdmin from '../models/GovernmentAdmin.js';
 import PendingNotification from '../models/PendingNotification.js';
 import {
   confirmAfriYieldInvestmentPayment,
@@ -18,6 +19,80 @@ const router = express.Router();
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-01-27.acacia' })
   : null;
+
+/**
+ * Map checkout tierKey → Stripe Price ID (Render env vars).
+ * AfriYield / cooperative / transform / producer / ngo / government.
+ */
+function resolveStripePriceId(tierKey) {
+  const key = String(tierKey || '').trim().toLowerCase();
+  const map = {
+    investor: process.env.STRIPE_PRICE_AFRIYIELD,
+    afriyield: process.env.STRIPE_PRICE_AFRIYIELD,
+    afriyield_access: process.env.STRIPE_PRICE_AFRIYIELD,
+    cooperative: process.env.STRIPE_PRICE_COOPERATIVE,
+    cooperative_growth: process.env.STRIPE_PRICE_COOPERATIVE,
+    transformation: process.env.STRIPE_PRICE_TRANSFORMATION,
+    transformation_center: process.env.STRIPE_PRICE_TRANSFORMATION,
+    producer_pro: process.env.STRIPE_PRICE_PRODUCER_PRO,
+    ngo: process.env.STRIPE_PRICE_NGO,
+    government: process.env.STRIPE_PRICE_GOVERNMENT,
+  };
+  const priceId = map[key];
+  return priceId ? String(priceId).trim() : null;
+}
+
+function defaultReturnUrls(tierKey, baseFront) {
+  const key = String(tierKey || '').trim().toLowerCase();
+  const defaults = {
+    investor: {
+      success: `${baseFront}/afri-yield/register?payment=success`,
+      cancel: `${baseFront}/pricing?cancelled=investor`,
+    },
+    afriyield: {
+      success: `${baseFront}/afri-yield/register?payment=success`,
+      cancel: `${baseFront}/pricing?cancelled=investor`,
+    },
+    afriyield_access: {
+      success: `${baseFront}/afri-yield/register?payment=success`,
+      cancel: `${baseFront}/afri-yield/register?payment=cancelled`,
+    },
+    cooperative: {
+      success: `${baseFront}/cooperative-registration?payment=success`,
+      cancel: `${baseFront}/pricing?cancelled=cooperative`,
+    },
+    cooperative_growth: {
+      success: `${baseFront}/cooperative-portal?upgrade=success`,
+      cancel: `${baseFront}/cooperative-upgrade?cancelled=1`,
+    },
+    transformation: {
+      success: `${baseFront}/transformation-registration?payment=success`,
+      cancel: `${baseFront}/pricing?cancelled=transformation`,
+    },
+    transformation_center: {
+      success: `${baseFront}/transformation-registration?payment=success`,
+      cancel: `${baseFront}/pricing?cancelled=transformation`,
+    },
+    producer_pro: {
+      success: `${baseFront}/my-dashboard?upgrade=success`,
+      cancel: `${baseFront}/pricing?cancelled=producer_pro`,
+    },
+    ngo: {
+      success: `${baseFront}/ngo-portal?payment=success`,
+      cancel: `${baseFront}/pricing?cancelled=ngo`,
+    },
+    government: {
+      success: `${baseFront}/government-portal?payment=success`,
+      cancel: `${baseFront}/pricing?cancelled=government`,
+    },
+  };
+  return (
+    defaults[key] || {
+      success: `${baseFront}/pricing?success=true`,
+      cancel: `${baseFront}/pricing?cancelled=true`,
+    }
+  );
+}
 
 function ensureStripeConfigured(res) {
   if (!stripe) {
@@ -86,7 +161,11 @@ function buildPayoutSchedule({ amountDeployed, expectedROIPercent, deploymentDat
 
 // ── Stripe: create checkout session ────────────────────────────
 // POST /api/payments/stripe/create-session
-// Body: { email, tierKey, tierName, amountUsd, successUrl, cancelUrl }
+// Body: { email, tierKey, tierName, amountUsd?, successUrl, cancelUrl, billingInterval? }
+//
+// Prefer Stripe Dashboard Price IDs (Render env):
+//   STRIPE_PRICE_AFRIYIELD | COOPERATIVE | TRANSFORMATION | PRODUCER_PRO | NGO | GOVERNMENT
+// Checkout uses line_items: [{ price: <Price ID>, quantity: 1 }] — not dynamic price_data.
 router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
   try {
     if (!ensureStripeConfigured(res)) return;
@@ -99,17 +178,18 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
       cancelUrl,
       billingInterval,
     } = req.body || {};
-    if (!amountUsd) {
-      return res.status(400).json({ success: false, error: 'amountUsd required' });
-    }
-    // email is optional — Stripe will collect it on the checkout page if not provided
 
-    const amountCents = Math.round(Number(amountUsd) * 100);
-    const productName = tierName || tierKey || 'Sahel AgriConnect Subscription';
-    const isAnnualCoop =
-      tierKey === 'cooperative' ||
-      tierKey === 'cooperative_growth' ||
-      billingInterval === 'year';
+    const tier = String(tierKey || '').trim();
+    const priceId = resolveStripePriceId(tier);
+    if (!priceId && (amountUsd == null || amountUsd === '')) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Stripe Price ID not configured for this tier (set STRIPE_PRICE_* env) and amountUsd missing',
+      });
+    }
+
+    // email is optional — Stripe will collect it on the checkout page if not provided
     const emailNorm = email ? String(email).toLowerCase().trim() : '';
     const extraMeta = req.body?.metadata && typeof req.body.metadata === 'object'
       ? Object.fromEntries(
@@ -118,79 +198,66 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
       : {};
     if (req.body?.memberCount != null) extraMeta.memberCount = String(req.body.memberCount);
     if (req.body?.cooperativeName) extraMeta.cooperativeName = String(req.body.cooperativeName);
+    if (req.body?.type) extraMeta.type = String(req.body.type);
 
     const baseFront = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
-    const coopSuccessFallback = `${baseFront}/cooperative-registration?payment=success`;
-    const coopCancelFallback = `${baseFront}/cooperative-registration?payment=cancelled`;
-    const pricingSuccessFallback = `${baseFront}/pricing?success=true`;
-    const pricingCancelFallback = `${baseFront}/pricing?cancelled=true`;
+    const urls = defaultReturnUrls(tier, baseFront);
+    const interval =
+      billingInterval === 'month'
+        ? 'month'
+        : 'year'; // all Sahel Price IDs are annual subscriptions
 
-    const session = await stripe.checkout.sessions.create(
-      isAnnualCoop
-        ? {
-            payment_method_types: ['card'],
-            mode: 'payment',
-            ...(emailNorm ? { customer_email: emailNorm } : {}),
-            line_items: [
-              {
-                price_data: {
-                  currency: 'usd',
-                  product_data: {
-                    name: productName,
-                    description:
-                      'Annual cooperative Growth membership — Sahel AgriConnect',
-                  },
-                  unit_amount: amountCents,
-                },
-                quantity: 1,
-              },
-            ],
-            payment_intent_data: {
-              statement_descriptor_suffix: 'SAHELAGRICONN',
-              description: `Sahel AgriConnect — ${productName}`,
+    const metadata = {
+      tierKey: tier || '',
+      email: emailNorm,
+      billingInterval: interval,
+      stripePriceId: priceId || '',
+      ...extraMeta,
+    };
+
+    // Price-ID path (production): exact Stripe product/price match
+    if (priceId) {
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        mode: 'subscription',
+        ...(emailNorm ? { customer_email: emailNorm } : {}),
+        line_items: [{ price: priceId, quantity: 1 }],
+        metadata,
+        success_url: safeReturnUrl(successUrl, urls.success),
+        cancel_url: safeReturnUrl(cancelUrl, urls.cancel),
+      });
+      return res.json({ success: true, url: session.url, sessionId: session.id });
+    }
+
+    // Legacy fallback (local/dev only): dynamic price_data when Price ID env is missing
+    const amountCents = Math.round(Number(amountUsd) * 100);
+    if (!Number.isFinite(amountCents) || amountCents <= 0) {
+      return res.status(400).json({ success: false, error: 'amountUsd required' });
+    }
+    const productName = tierName || tier || 'Sahel AgriConnect Subscription';
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      ...(emailNorm ? { customer_email: emailNorm } : {}),
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            recurring: { interval },
+            product_data: {
+              name: productName,
+              description: `Sahel AgriConnect Platform — ${productName}`,
+              images: ['https://sahelagriconnect.com/sahel-logo.png'],
             },
-            metadata: {
-              tierKey: tierKey || 'cooperative',
-              email: emailNorm,
-              ...extraMeta,
-            },
-            success_url:
-              safeReturnUrl(successUrl, coopSuccessFallback),
-            cancel_url:
-              safeReturnUrl(cancelUrl, coopCancelFallback),
-          }
-        : {
-            payment_method_types: ['card'],
-            mode: 'subscription',
-            ...(emailNorm ? { customer_email: emailNorm } : {}),
-            line_items: [
-              {
-                price_data: {
-                  currency: 'usd',
-                  recurring: {
-                    interval: billingInterval === 'year' ? 'year' : 'month',
-                  },
-                  product_data: {
-                    name: productName,
-                    description: `Sahel AgriConnect Platform — ${productName}`,
-                    images: ['https://sahelagriconnect.com/sahel-logo.png'],
-                  },
-                  unit_amount: amountCents,
-                },
-                quantity: 1,
-              },
-            ],
-            metadata: {
-              tierKey: tierKey || '',
-              email: emailNorm,
-              ...extraMeta,
-            },
-            success_url:
-              safeReturnUrl(successUrl, pricingSuccessFallback),
-            cancel_url:
-              safeReturnUrl(cancelUrl, pricingCancelFallback),
-          }
-    );
+            unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+      ],
+      metadata,
+      success_url: safeReturnUrl(successUrl, urls.success),
+      cancel_url: safeReturnUrl(cancelUrl, urls.cancel),
+    });
     return res.json({ success: true, url: session.url, sessionId: session.id });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
@@ -375,10 +442,16 @@ router.post('/stripe/webhook', async (req, res) => {
         }
       }
 
+      const tierKey = String(session.metadata?.tierKey || '').trim().toLowerCase();
+      const emailNorm = email ? String(email).toLowerCase().trim() : '';
+      // Investment checkouts are not platform subscriptions
+      const isInvestmentCheckout = type === 'afriyield_investment';
+
       // ── Cooperative Growth annual membership ────────────────
       if (
-        ['cooperative', 'cooperative_growth'].includes(session.metadata?.tierKey) &&
-        email
+        !isInvestmentCheckout &&
+        ['cooperative', 'cooperative_growth'].includes(tierKey) &&
+        emailNorm
       ) {
         const memberCountMeta = Number(session.metadata?.memberCount);
         const update = {
@@ -396,29 +469,63 @@ router.post('/stripe/webhook', async (req, res) => {
           update.memberCount = memberCountMeta;
         }
         await CooperativePlatformRegistration.findOneAndUpdate(
-          { email: String(email).toLowerCase().trim() },
+          { email: emailNorm },
           update,
           { sort: { createdAt: -1 } }
         );
-        console.log('✅ Cooperative Growth membership payment:', email);
+        console.log('✅ Cooperative Growth membership payment:', emailNorm);
       }
 
-      // ── Subscription payment (existing logic) ─────────────────
-      else if (email) {
+      // ── Platform subscriptions (AfriYield, Producer Pro, Transform, NGO, Gov) ─
+      // checkout.session.completed → activate PremiumSubscription in MongoDB
+      else if (!isInvestmentCheckout && emailNorm) {
+        const isAnnual =
+          session.metadata?.billingInterval === 'year' ||
+          ['investor', 'afriyield', 'afriyield_access', 'cooperative', 'cooperative_growth',
+            'transformation', 'transformation_center', 'producer_pro', 'ngo', 'government',
+          ].includes(tierKey) ||
+          Boolean(session.metadata?.stripePriceId) ||
+          Number(session.amount_total) === 9900;
+        const days = isAnnual ? 365 : 30;
         await PremiumSubscription.findOneAndUpdate(
-          { investorEmail: email },
+          { investorEmail: emailNorm },
           {
-            investorEmail: email,
-            plan: 'monthly',
+            investorEmail: emailNorm,
+            ...(tierKey ? { tierKey } : {}),
+            ...(session.metadata?.stripePriceId
+              ? { stripePriceId: session.metadata.stripePriceId }
+              : {}),
+            ...(session.subscription
+              ? {
+                  stripeSubscriptionId:
+                    typeof session.subscription === 'string'
+                      ? session.subscription
+                      : session.subscription.id,
+                }
+              : {}),
+            plan: isAnnual ? 'annual' : 'monthly',
             priceUSD: (session.amount_total || 0) / 100,
             status: 'active',
             paymentMethod: 'stripe',
             paymentReference: session.id,
             startDate: new Date(),
-            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            endDate: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
           },
           { upsert: true, new: true }
         );
+        console.log('✅ Subscription activated:', { email: emailNorm, tierKey: tierKey || 'unknown' });
+
+        // NGO / Government portal access
+        if (['ngo', 'government'].includes(tierKey)) {
+          await GovernmentAdmin.findOneAndUpdate(
+            { email: emailNorm },
+            {
+              status: 'active',
+              accessTier: 'standard',
+              ...(tierKey === 'ngo' ? { orgType: 'ngo' } : {}),
+            }
+          );
+        }
       }
     }
     return res.json({ received: true });

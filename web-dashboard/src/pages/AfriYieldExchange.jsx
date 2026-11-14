@@ -935,25 +935,28 @@ export default function AfriYieldExchange() {
                     className="text-[10px] font-bold uppercase tracking-[0.35em]"
                     style={{ color: '#B5850A' }}
                   >
-                    AfriYield Premium
+                    AfriYield Exchange
                   </span>
                 </div>
                 <h2 className="mb-3 text-3xl font-bold text-white">
-                  {isFr ? 'Accès complet. Priorité totale.' : 'Full access. Full priority.'}
+                  AfriYield Exchange — {isFr ? '$99 / an' : '$99 / year'}
                 </h2>
                 <p className="mb-8 max-w-xl text-white/60">
-                  {isFr
-                    ? 'Alertes de deal en temps réel, accès aux opportunités Track C, rapports de marché hebdomadaires, appel conseil gratuit mensuel.'
-                    : 'Real-time deal alerts, Track C opportunity access, weekly market reports, monthly free advisory call.'}
+                  Accès annuel complet · Full annual access
                 </p>
                 <div className="mb-8 grid gap-3 sm:grid-cols-2">
                   {[
-                    isFr ? 'Accès prioritaire aux nouveaux deals' : 'Priority access to new deals',
-                    isFr ? 'Alertes prix commodités en temps réel' : 'Real-time commodity price alerts',
-                    isFr ? 'Rapports de marché hebdomadaires' : 'Weekly market reports',
-                    isFr ? 'Appel conseil mensuel gratuit ($99 valeur)' : 'Monthly free advisory call ($99 value)',
-                    isFr ? 'Score AfriYield des fournisseurs visible' : 'Supplier AfriYield Score visible',
-                    isFr ? 'Accès Track C — sourcing premium vérifié' : 'Track C access — verified premium sourcing',
+                    isFr ? 'Vérification KYC incluse' : 'KYC verification included',
+                    isFr
+                      ? 'Accès à toutes les opportunités Track A et B'
+                      : 'Access to all Track A and B opportunities',
+                    isFr ? 'Rapports de marché mensuels' : 'Monthly market reports',
+                    isFr
+                      ? 'Protection escrow sur tous les deals'
+                      : 'Escrow protection on all deals',
+                    isFr
+                      ? 'Couverture complète du cycle agricole de 12 mois'
+                      : 'Full 12-month agricultural cycle coverage',
                   ].map((f) => (
                     <div key={f} className="flex items-center gap-2 text-sm text-white/70">
                       <Check className="h-4 w-4 flex-shrink-0" style={{ color: '#B5850A' }} />
@@ -967,12 +970,12 @@ export default function AfriYieldExchange() {
                     className="rounded-xl px-8 py-3.5 font-bold text-[#1a3c2e]"
                     style={{ background: '#B5850A' }}
                   >
-                    {isFr ? `S'inscrire — $299/an` : `Subscribe — $299/year`}
+                    {isFr ? `S'inscrire — $99 / an` : `Subscribe — $99 / year`}
                   </Link>
                   <span className="text-sm text-white/40">
                     {isFr
-                      ? 'ou $29.99/mois · Premier appel conseil gratuit'
-                      : 'or $29.99/month · First advisory call free'}
+                      ? 'Abonnement annuel uniquement'
+                      : 'Annual subscription only'}
                   </span>
                 </div>
               </div>

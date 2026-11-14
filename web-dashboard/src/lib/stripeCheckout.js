@@ -39,9 +39,14 @@ const TIER_DEFAULTS = {
     cancelPath: '/pricing?cancelled=transformation',
   },
   investor: {
-    tierName: 'AfriYield Investor',
-    monthly: 29.99,
-    annual: 299,
+    // AfriYield Exchange — annual access only ($99/year).
+    // No fixed Stripe Price ID in code (dynamic price_data). If you create a
+    // dashboard Price for AfriYield $99/year, replace price_data with that price ID
+    // in backend/routes/payments.js create-session for tierKey === 'investor'.
+    // FLAG: update Stripe Dashboard product/price to $99/year (interval: year).
+    tierName: 'AfriYield Exchange',
+    monthly: null,
+    annual: 99,
     successPath: '/afri-yield/register?payment=success',
     cancelPath: '/pricing?cancelled=investor',
   },
@@ -55,7 +60,10 @@ const TIER_DEFAULTS = {
  */
 export async function createCheckoutSession(tierKey, options = {}) {
   const defaults = TIER_DEFAULTS[tierKey] || {};
-  const billingInterval = options.billingInterval || 'month';
+  // AfriYield investor is annual-only ($99/year) — never send a monthly interval.
+  const billingInterval =
+    options.billingInterval ||
+    (defaults.monthly == null && defaults.annual != null ? 'year' : 'month');
   const amountUsd =
     options.amountUsd ??
     (billingInterval === 'year' ? defaults.annual : defaults.monthly) ??
