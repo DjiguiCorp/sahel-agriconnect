@@ -1351,14 +1351,24 @@ export default function InvestorPortal() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [kyc, setKyc] = useState(null);
+  const [diditStatus, setDiditStatus] = useState(null); // pending | approved | declined | expired
+  const [tradingApproved, setTradingApproved] = useState(false);
+  const [diditStarting, setDiditStarting] = useState(false);
 
-  useEffect(() => {
-    const token = sessionStorage.getItem('afriyield_token');
-    const email = sessionStorage.getItem('afriyield_investor_email');
-    const name = sessionStorage.getItem('afriyield_investor_name');
-    if (token && email) {
-      setInvestor({ email, fullName: name || email });
-      loadData(email);
+  const fetchDiditStatus = useCallback(async () => {
+    try {
+      const token = sessionStorage.getItem('afriyield_token');
+      if (!token) return;
+      const res = await fetch(`${API}/api/investors/kyc-status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setDiditStatus(d.diditStatus || 'pending');
+        setTradingApproved(Boolean(d.tradingApproved));
+      }
+    } catch {
+      /* ignore */
     }
   }, []);
 
@@ -1396,9 +1406,49 @@ export default function InvestorPortal() {
     }
   }, []);
 
+  useEffect(() => {
+    const token = sessionStorage.getItem('afriyield_token');
+    const email = sessionStorage.getItem('afriyield_investor_email');
+    const name = sessionStorage.getItem('afriyield_investor_name');
+    if (token && email) {
+      setInvestor({ email, fullName: name || email });
+      loadData(email);
+      fetchDiditStatus();
+    }
+  }, [fetchDiditStatus, loadData]);
+
+  const startDiditVerification = async () => {
+    setDiditStarting(true);
+    try {
+      const token = sessionStorage.getItem('afriyield_token');
+      if (!token) {
+        alert(isFr ? 'Veuillez vous reconnecter.' : 'Please sign in again.');
+        return;
+      }
+      const res = await fetch(`${API}/api/didit/start`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.verification_url) {
+        window.location.href = data.verification_url;
+        return;
+      }
+      alert(data?.error || (isFr ? 'Impossible de démarrer Didit.' : 'Could not start Didit.'));
+    } catch (e) {
+      alert(e.message || 'Didit error');
+    } finally {
+      setDiditStarting(false);
+    }
+  };
+
   const handleAccess = (inv) => {
     setInvestor(inv);
     loadData(inv.email);
+    fetchDiditStatus();
   };
 
   const signOut = () => {
@@ -1586,6 +1636,45 @@ export default function InvestorPortal() {
             </div>
           </div>
         </header>
+
+        {/* Didit identity verification banners */}
+        {diditStatus && diditStatus !== 'approved' && (
+          <div
+            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            style={{
+              background: 'rgba(234,179,8,0.12)',
+              border: '1px solid rgba(234,179,8,0.45)',
+            }}
+          >
+            <p className="text-sm font-semibold text-amber-200">
+              Vérification d&apos;identité requise / Identity verification required
+            </p>
+            <button
+              type="button"
+              disabled={diditStarting}
+              onClick={startDiditVerification}
+              className="rounded-lg px-4 py-2 text-sm font-bold text-[#0d1f17] disabled:opacity-60"
+              style={{ background: '#EAB308' }}
+            >
+              {diditStarting
+                ? (isFr ? 'Ouverture…' : 'Opening…')
+                : 'Commencer la vérification / Start Verification'}
+            </button>
+          </div>
+        )}
+        {diditStatus === 'approved' && !tradingApproved && (
+          <div
+            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3"
+            style={{
+              background: 'rgba(59,130,246,0.12)',
+              border: '1px solid rgba(59,130,246,0.45)',
+            }}
+          >
+            <p className="text-sm font-semibold text-blue-200">
+              Votre identité est vérifiée. L&apos;approbation finale est en cours / Identity verified. Final approval pending.
+            </p>
+          </div>
+        )}
 
       {showNotifications && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setShowNotifications(false)}>

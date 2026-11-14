@@ -1,5 +1,6 @@
 import express from 'express';
 import Investor from '../models/Investor.js';
+import InvestorKYC from '../models/InvestorKYC.js';
 import InvestorNotification from '../models/InvestorNotification.js';
 import PendingNotification from '../models/PendingNotification.js';
 import { authenticateInvestor, authenticateToken } from '../middleware/auth.js';
@@ -177,6 +178,33 @@ router.post('/investment-intent', async (req, res) => {
     }).catch(console.error);
 
     return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
+  }
+});
+
+/**
+ * GET /api/investors/kyc-status
+ * Auth: investor JWT — Didit identity + trading gate for the portal.
+ */
+router.get('/kyc-status', authenticateInvestor, async (req, res) => {
+  try {
+    const email = String(req.investorEmail || '').toLowerCase().trim();
+    const kyc = await InvestorKYC.findOne({ investorEmail: email })
+      .select('diditStatus tradingApproved diditVerifiedAt diditSessionId status')
+      .lean();
+
+    const diditStatus = kyc?.diditStatus || 'pending';
+    const tradingApproved = Boolean(kyc?.tradingApproved);
+
+    return res.json({
+      success: true,
+      diditStatus,
+      tradingApproved,
+      kycComplete: diditStatus === 'approved',
+      diditVerifiedAt: kyc?.diditVerifiedAt || null,
+      legacyStatus: kyc?.status || null,
+    });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message || 'Failed' });
   }

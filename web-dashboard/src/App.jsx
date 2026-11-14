@@ -52,6 +52,7 @@ const CooperativePortal = lazy(() => import('./pages/CooperativePortal'));
 const JoinCooperative = lazy(() => import('./pages/JoinCooperative'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const InvestmentSuccess = lazy(() => import('./pages/InvestmentSuccess'));
+const DiditCallback = lazy(() => import('./pages/DiditCallback'));
 const ProcessorPortal = lazy(() => import('./pages/ProcessorPortal'));
 
 const PageLoader = () => (
@@ -70,6 +71,8 @@ function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/auth/magic" element={<MagicLinkVerify />} />
+                <Route path="/verify/callback" element={<DiditCallback />} />
+                <Route path="/investor-portal" element={<Navigate to="/afri-yield/portal" replace />} />
                 <Route path="/invest/success" element={<InvestmentSuccess />} />
                 <Route path="/invest/cancel" element={<Navigate to="/afri-yield" replace />} />
                 <Route path="/admin/login" element={<AdminLogin />} />

@@ -47,6 +47,7 @@ import investorNotificationsRouter from './routes/investorNotifications.js';
 import deletionRequestsRouter from './routes/deletionRequests.js';
 import paymentsRouter from './routes/payments.js';
 import kycRoutes from './routes/kyc.js';
+import diditRouter from './routes/didit.js';
 import adminRouter from './routes/admin.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger.js';
@@ -193,6 +194,7 @@ app.use('/api/waitlist', waitlistRouter);
 // Phase 2 stubs: Orange Money, MTN MoMo (see routes/payments.js — require env vars)
 app.use('/api/payments', paymentsRouter);
 app.use('/api/kyc', kycRoutes);
+app.use('/api/didit', diditRouter);
 app.use('/api/admin', adminRouter);
 
 app.use('/api/investments', investmentsRouter);
