@@ -8,6 +8,7 @@ import CooperativePlatformRegistration from '../models/CooperativePlatformRegist
 import { farmerTelephoneQuery } from '../utils/phone.js';
 import DeviceSession from '../models/DeviceSession.js';
 import { confirmMagicCode } from '../services/otpAuthService.js';
+import { sendSms } from '../services/smsService.js';
 import {
   codeEmailHtml,
   codeEmailSubject,
@@ -104,7 +105,7 @@ router.post('/send', async (req, res) => {
       console.log(`[DEV] OTP email ${emailRaw}: ${code} (RESEND_API_KEY not set)`);
     }
 
-    const smsSent = false; // SMS provider not yet configured — set to true when Twilio/Africa's Talking is live
+    const smsSent = await sendSms(phoneRaw, `Your Sahel AgriConnect verification code: ${code}`);
     if (phoneRaw && !emailRaw) {
       console.log(`[PENDING SMS] OTP for ${phoneRaw}: ${code} — SMS provider not active. Configure TWILIO_* or AFRICASTALKING_* env vars.`);
     }
@@ -115,7 +116,7 @@ router.post('/send', async (req, res) => {
       message: emailRaw ? 'Verification code sent to email' : 'Account registered — phone verification pending SMS activation',
       isNewUser,
       smsStatus: phoneRaw && !emailRaw
-        ? (smsSent ? 'sent' : 'pending_provider')
+        ? (smsSent?.success ? 'sent' : 'pending_provider')
         : null,
     });
   } catch (e) {
