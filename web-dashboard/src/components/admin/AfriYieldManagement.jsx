@@ -194,20 +194,23 @@ function DiditVerificationsPanel({ isFr }) {
 
   if (loading) {
     return (
-      <div className="text-center py-6 text-white/40 text-sm">
+      <div className="text-center py-6 text-gray-400 text-sm">
         {isFr ? 'Chargement Didit KYC…' : 'Loading Didit KYC…'}
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-xl p-4 md:p-5 mb-6" style={{ background: '#0d1f17' }}>
+    <div
+      className="space-y-3 rounded-xl p-4 md:p-5 mb-6 text-gray-100 [&_th]:text-gray-400 [&_td]:text-gray-100 [&_p]:text-gray-400"
+      style={{ background: '#0d1f17' }}
+    >
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h3 className="text-white font-bold text-sm">
             {isFr ? 'Vérifications Didit' : 'Didit Verifications'}
           </h3>
-          <p className="text-white/45 text-xs mt-0.5">
+          <p className="text-gray-400 text-xs mt-0.5">
             {isFr
               ? 'Activez tradingApproved après validation Didit pour débloquer l\'investisseur.'
               : 'Toggle tradingApproved after Didit approval to unlock the investor.'}
@@ -216,27 +219,27 @@ function DiditVerificationsPanel({ isFr }) {
         <button
           type="button"
           onClick={load}
-          className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-white/70 hover:text-white"
+          className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 hover:text-white"
         >
           {isFr ? 'Actualiser' : 'Refresh'}
         </button>
       </div>
 
-      {error ? <p className="text-red-400 text-xs">{error}</p> : null}
+      {error ? <p className="!text-red-400 text-xs">{error}</p> : null}
 
       {rows.length === 0 ? (
-        <p className="text-white/40 text-sm text-center py-6">
+        <p className="text-gray-400 text-sm text-center py-6">
           {isFr ? 'Aucune vérification Didit pour le moment.' : 'No Didit verifications yet.'}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-white/10">
-          <table className="min-w-full text-sm">
-            <thead className="bg-white/5 text-left text-white/50 text-xs uppercase">
+          <table className="min-w-full text-sm text-gray-100">
+            <thead className="bg-white/5 text-left text-gray-400 text-xs uppercase">
               <tr>
-                <th className="px-3 py-2 font-semibold">{isFr ? 'Nom' : 'Name'}</th>
-                <th className="px-3 py-2 font-semibold">Email</th>
-                <th className="px-3 py-2 font-semibold">Didit</th>
-                <th className="px-3 py-2 font-semibold">Trading</th>
+                <th className="px-3 py-2 font-semibold text-gray-400">{isFr ? 'Nom' : 'Name'}</th>
+                <th className="px-3 py-2 font-semibold text-gray-400">Email</th>
+                <th className="px-3 py-2 font-semibold text-gray-400">Didit</th>
+                <th className="px-3 py-2 font-semibold text-gray-400">Trading</th>
               </tr>
             </thead>
             <tbody>
@@ -244,20 +247,20 @@ function DiditVerificationsPanel({ isFr }) {
                 const busy = toggling === (row.investorId || row.investorEmail);
                 return (
                   <tr key={row.investorEmail} className="border-t border-white/10">
-                    <td className="px-3 py-2.5 text-white font-medium">
+                    <td className="px-3 py-2.5 text-gray-100 font-medium">
                       {row.investorName || '—'}
                     </td>
-                    <td className="px-3 py-2.5 text-white/60 text-xs">{row.investorEmail}</td>
+                    <td className="px-3 py-2.5 text-gray-300 text-xs">{row.investorEmail}</td>
                     <td className="px-3 py-2.5">
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                          statusCls[row.diditStatus] || 'bg-white/10 text-white/50'
+                          statusCls[row.diditStatus] || 'bg-white/10 text-gray-300'
                         }`}
                       >
                         {row.diditStatus || '—'}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-2.5 text-gray-100">
                       <label className="inline-flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
@@ -266,7 +269,7 @@ function DiditVerificationsPanel({ isFr }) {
                           onChange={(e) => toggleTrading(row, e.target.checked)}
                           className="rounded border-white/30"
                         />
-                        <span className="text-xs text-white/70">
+                        <span className="text-xs text-gray-300">
                           {row.tradingApproved
                             ? (isFr ? 'Approuvé' : 'Approved')
                             : (isFr ? 'En attente' : 'Pending')}
@@ -404,15 +407,18 @@ function KYCReviewPanel({ isFr }) {
 
   if (loading) {
     return (
-      <div className="text-center py-8 text-white/40">
+      <div className="text-center py-8 text-gray-400">
         {isFr ? 'Chargement des KYC...' : 'Loading KYC reviews...'}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 rounded-xl p-4 md:p-6" style={{ background: '#0d1f17' }}>
-      <p className="text-white/50 text-sm">
+    <div
+      className="space-y-4 rounded-xl p-4 md:p-6 text-gray-100 [&_th]:text-gray-400 [&_td]:text-gray-100 [&_p]:text-gray-400"
+      style={{ background: '#0d1f17' }}
+    >
+      <p className="text-gray-400 text-sm">
         {isFr
           ? 'Trois files de revue : Africains (après paiement), Diaspora (24h), Autres (48-72h).'
           : 'Three review queues: African (post-payment), Diaspora (24h), Other (48-72h).'}
@@ -432,13 +438,13 @@ function KYCReviewPanel({ isFr }) {
               }
             }}
           >
-            <p className="text-2xl font-bold text-white">
+            <p className="!text-white text-2xl font-bold">
               {kycs.filter((k) => k.countryCategory === cat).length}
             </p>
             <p className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-1 ${categoryColors[cat]}`}>
               {categoryLabels[cat]}
             </p>
-            <p className="text-white/40 text-xs mt-2">{sectionHints[cat]}</p>
+            <p className="text-gray-400 text-xs mt-2">{sectionHints[cat]}</p>
           </div>
         ))}
       </div>
@@ -452,7 +458,7 @@ function KYCReviewPanel({ isFr }) {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               filter === f
                 ? 'bg-amber-500 text-black'
-                : 'bg-white/10 text-white/60 hover:text-white'
+                : 'bg-white/10 text-gray-300 hover:text-white'
             }`}
           >
             {f === 'all'
@@ -463,7 +469,7 @@ function KYCReviewPanel({ isFr }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-8 text-white/40 text-sm">
+        <div className="text-center py-8 text-gray-400 text-sm">
           {isFr ? 'Aucun KYC en attente' : 'No pending KYC reviews'}
         </div>
       ) : (
@@ -1144,7 +1150,7 @@ export default function AfriYieldManagement() {
   }
 
   return (
-    <div className="text-gray-900 [&_th]:text-gray-900 [&_td]:text-gray-900 [&_h2]:text-gray-900 [&_p]:text-gray-700">
+    <div className="text-gray-900">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-primary-green mb-2">AfriYield Exchange</h2>
         <p className="text-gray-600">Manage investment opportunities, investors, and meeting requests.</p>
