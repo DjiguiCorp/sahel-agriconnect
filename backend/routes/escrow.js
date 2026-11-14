@@ -61,13 +61,40 @@ router.put('/:id/milestone', authenticateToken, async (req, res) => {
     }
 
     if (status === 'released' || status === 'verified') {
+      const Investor = (await import('../models/Investor.js')).default;
+      const InvestorNotification = (await import('../models/InvestorNotification.js')).default;
+      const {
+        resolveInvestorLang,
+        investorNotificationCopy,
+      } = await import('../utils/investorNotificationCopy.js');
+      const inv = await Investor.findOne({
+        email: String(tx.investorEmail || '').toLowerCase(),
+      })
+        .select('preferredLanguage countryOfResidence')
+        .lean();
+      const lang = resolveInvestorLang({
+        preferredLanguage: inv?.preferredLanguage,
+        countryOfResidence: inv?.countryOfResidence,
+      });
+      const copy = investorNotificationCopy('escrow_milestone', lang, {
+        args: [milestoneNumber, tx.supplierName],
+      });
+      const trackUrl = 'sahelagriconnect.com/afri-yield';
       await PendingNotification.create({
         recipientEmail: tx.investorEmail,
         recipientName: tx.investorName,
-        message: `✅ Milestone ${milestoneNumber} verified for your AfriYield investment in ${tx.supplierName}. Funds released. Track your transaction at sahelagriconnect.com/afri-yield`,
+        message: `✅ ${copy.message} ${trackUrl}`,
         source: 'escrow_milestone',
         status: 'pending',
       });
+      InvestorNotification.create({
+        investorEmail: String(tx.investorEmail || '').toLowerCase(),
+        type: 'escrow_milestone',
+        title: copy.title,
+        message: copy.message,
+        lang,
+        link: '/afri-yield/portal',
+      }).catch(console.error);
     }
 
     await tx.save();

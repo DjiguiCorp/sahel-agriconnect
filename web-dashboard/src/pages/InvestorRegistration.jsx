@@ -169,6 +169,7 @@ export default function InvestorRegistration() {
       investmentRange: form.investmentRange,
       heardAbout: form.heardAbout,
       message: form.message || '',
+      lang: urlLang,
     };
 
     try {
@@ -230,6 +231,7 @@ export default function InvestorRegistration() {
           investorEmail: form.email,
           investorName: form.fullName,
           countryOfResidence: normalizeCountry(form.countryOfResidence),
+          lang: urlLang,
           idType,
           photoIdType: idType,
           photoIdUrl,

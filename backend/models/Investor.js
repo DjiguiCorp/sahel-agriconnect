@@ -67,6 +67,12 @@ const investorSchema = new mongoose.Schema({
     type: String,
     enum: ['african', 'diaspora', 'other'],
   },
+  /** Portal / notification language preference */
+  preferredLanguage: {
+    type: String,
+    enum: ['en', 'fr'],
+    default: 'fr',
+  },
 });
 
 investorSchema.index({ email: 1 }, { unique: true });

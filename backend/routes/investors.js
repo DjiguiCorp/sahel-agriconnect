@@ -8,6 +8,10 @@ import { queueNotification, messageTemplates } from '../services/notificationSer
 import jwt from 'jsonwebtoken';
 import DeviceSession from '../models/DeviceSession.js';
 import { normalizeInvestorResidence } from '../constants/investorResidenceCountries.js';
+import {
+  resolveInvestorLang,
+  investorNotificationCopy,
+} from '../utils/investorNotificationCopy.js';
 
 const router = express.Router();
 
@@ -75,6 +79,10 @@ router.post('/register', async (req, res) => {
       message,
     } = req.body;
     const heardFrom = req.body.heardFrom ?? req.body.heardAbout ?? '';
+    const preferredLanguage = resolveInvestorLang({
+      lang: req.body.lang || req.body.language || req.body.preferredLanguage,
+      countryOfResidence,
+    });
 
     const residence = normalizeInvestorResidence(countryOfResidence);
     if (!residence) {
@@ -95,6 +103,7 @@ router.post('/register', async (req, res) => {
       investmentRange,
       heardFrom,
       message: message || '',
+      preferredLanguage,
     });
 
     notifyAdminNewInvestor(investor).catch(console.error);
@@ -103,16 +112,17 @@ router.post('/register', async (req, res) => {
       name: investor.fullName,
       phone: investor.phone,
       email: investor.email,
-      message: messageTemplates.investorWelcome(investor.fullName),
+      message: messageTemplates.investorWelcome(investor.fullName, preferredLanguage),
       source: 'investor_registration',
     }).catch(console.error);
 
+    const welcome = investorNotificationCopy('welcome', preferredLanguage);
     InvestorNotification.create({
       investorEmail: investor.email,
       type: 'welcome',
-      title: 'Welcome to AfriYield Exchange',
-      message:
-        'Your investor account is active. Browse opportunities and build your African agricultural portfolio.',
+      title: welcome.title,
+      message: welcome.message,
+      lang: preferredLanguage,
       link: '/afri-yield/portal',
     }).catch(console.error);
 

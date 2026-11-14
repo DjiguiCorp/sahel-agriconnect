@@ -7,8 +7,10 @@ export const messageTemplates = {
     `✅ Bonjour ${name}! L'inscription de votre coopérative a été reçue. Activation sous 48h. 🤝 sahelagriconnect.com`,
   expertRequestReceived: (name) =>
     `🔬 Bonjour ${name}! Votre demande d'expert a été reçue. Un spécialiste vous contactera bientôt. Sahel AgriConnect`,
-  investorWelcome: (name) =>
-    `💰 Bienvenue ${name} sur AfriYield Exchange! Notre équipe vous contactera dans les 24h. 🌍 sahelagriconnect.com/afri-yield`,
+  investorWelcome: (name, lang = 'fr') =>
+    String(lang || '').toLowerCase().startsWith('en')
+      ? `💰 Welcome ${name} to AfriYield Exchange! Our team will contact you within 24h. 🌍 sahelagriconnect.com/afri-yield`
+      : `💰 Bienvenue ${name} sur AfriYield Exchange! Notre équipe vous contactera dans les 24h. 🌍 sahelagriconnect.com/afri-yield`,
   certificationReceived: (name) =>
     `🏅 Bonjour ${name}! Votre demande de certification export a été reçue. Sahel AgriConnect`,
   profileActivated: (name) =>

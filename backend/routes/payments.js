@@ -12,6 +12,11 @@ import {
   confirmAfriYieldInvestmentPayment,
   notifyAdminAfriYieldInvestmentPayment,
 } from '../services/emailService.js';
+import InvestorNotification from '../models/InvestorNotification.js';
+import {
+  resolveInvestorLang,
+  investorNotificationCopy,
+} from '../utils/investorNotificationCopy.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
@@ -396,11 +401,28 @@ router.post('/stripe/webhook', async (req, res) => {
             status: 'pending',
           });
 
+          const invLang = resolveInvestorLang({
+            preferredLanguage: investor?.preferredLanguage,
+            countryOfResidence: investor?.countryOfResidence,
+          });
+          const invCopy = investorNotificationCopy('investment_confirmed', invLang, {
+            args: [investment.opportunityName, amountDeployed],
+          });
+          InvestorNotification.create({
+            investorEmail: investorEmailLower,
+            type: 'investment_confirmed',
+            title: invCopy.title,
+            message: invCopy.message,
+            lang: invLang,
+            link: '/afri-yield/portal',
+          }).catch(console.error);
+
           confirmAfriYieldInvestmentPayment({
             investorEmail: investorEmailLower,
             investorName: investment.investorName,
             opportunityName: investment.opportunityName,
             amountUSD: amountDeployed,
+            lang: invLang,
           }).catch(console.error);
 
           notifyAdminAfriYieldInvestmentPayment({
