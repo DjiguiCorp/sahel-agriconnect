@@ -129,6 +129,161 @@ function csvEscape(v) {
   return s;
 }
 
+/** Didit identity verifications + tradingApproved toggle */
+function DiditVerificationsPanel({ isFr }) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState(null);
+  const [error, setError] = useState('');
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError('');
+    fetch(`${API_BASE_URL}/api/admin/investors/didit-kyc`, { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setRows(d.kycs || []);
+        else setError(d.error || 'Failed to load');
+      })
+      .catch((e) => setError(e.message || 'Failed to load'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const toggleTrading = async (row, next) => {
+    const id = row.investorId || row.investorEmail;
+    if (!id) return;
+    setToggling(id);
+    setError('');
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(id)}/approve-trading`,
+        {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ tradingApproved: next }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Update failed');
+      }
+      setRows((prev) =>
+        prev.map((r) =>
+          r.investorEmail === row.investorEmail
+            ? { ...r, tradingApproved: Boolean(data.tradingApproved) }
+            : r
+        )
+      );
+    } catch (e) {
+      setError(e.message || 'Update failed');
+    } finally {
+      setToggling(null);
+    }
+  };
+
+  const statusCls = {
+    pending: 'bg-blue-500/15 text-blue-300',
+    approved: 'bg-green-500/15 text-green-300',
+    declined: 'bg-red-500/15 text-red-300',
+    expired: 'bg-orange-500/15 text-orange-300',
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-6 text-white/40 text-sm">
+        {isFr ? 'Chargement Didit KYC…' : 'Loading Didit KYC…'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl p-4 md:p-5 mb-6" style={{ background: '#0d1f17' }}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="text-white font-bold text-sm">
+            {isFr ? 'Vérifications Didit' : 'Didit Verifications'}
+          </h3>
+          <p className="text-white/45 text-xs mt-0.5">
+            {isFr
+              ? 'Activez tradingApproved après validation Didit pour débloquer l\'investisseur.'
+              : 'Toggle tradingApproved after Didit approval to unlock the investor.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={load}
+          className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-white/70 hover:text-white"
+        >
+          {isFr ? 'Actualiser' : 'Refresh'}
+        </button>
+      </div>
+
+      {error ? <p className="text-red-400 text-xs">{error}</p> : null}
+
+      {rows.length === 0 ? (
+        <p className="text-white/40 text-sm text-center py-6">
+          {isFr ? 'Aucune vérification Didit pour le moment.' : 'No Didit verifications yet.'}
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-white/10">
+          <table className="min-w-full text-sm">
+            <thead className="bg-white/5 text-left text-white/50 text-xs uppercase">
+              <tr>
+                <th className="px-3 py-2 font-semibold">{isFr ? 'Nom' : 'Name'}</th>
+                <th className="px-3 py-2 font-semibold">Email</th>
+                <th className="px-3 py-2 font-semibold">Didit</th>
+                <th className="px-3 py-2 font-semibold">Trading</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const busy = toggling === (row.investorId || row.investorEmail);
+                return (
+                  <tr key={row.investorEmail} className="border-t border-white/10">
+                    <td className="px-3 py-2.5 text-white font-medium">
+                      {row.investorName || '—'}
+                    </td>
+                    <td className="px-3 py-2.5 text-white/60 text-xs">{row.investorEmail}</td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                          statusCls[row.diditStatus] || 'bg-white/10 text-white/50'
+                        }`}
+                      >
+                        {row.diditStatus || '—'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(row.tradingApproved)}
+                          disabled={busy}
+                          onChange={(e) => toggleTrading(row, e.target.checked)}
+                          className="rounded border-white/30"
+                        />
+                        <span className="text-xs text-white/70">
+                          {row.tradingApproved
+                            ? (isFr ? 'Approuvé' : 'Approved')
+                            : (isFr ? 'En attente' : 'Pending')}
+                        </span>
+                      </label>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function KYCReviewPanel({ isFr }) {
   const [kycs, setKycs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1232,7 +1387,14 @@ export default function AfriYieldManagement() {
       )}
 
       {sub === 'kyc-reviews' && (
-        <KYCReviewPanel isFr={typeof localStorage !== 'undefined' && localStorage.getItem('i18nextLng') === 'fr'} />
+        <div className="space-y-2">
+          <DiditVerificationsPanel
+            isFr={typeof localStorage !== 'undefined' && localStorage.getItem('i18nextLng') === 'fr'}
+          />
+          <KYCReviewPanel
+            isFr={typeof localStorage !== 'undefined' && localStorage.getItem('i18nextLng') === 'fr'}
+          />
+        </div>
       )}
 
       {sub === 'meetings' && (

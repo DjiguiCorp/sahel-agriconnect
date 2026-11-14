@@ -1,11 +1,122 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
+import mongoose from 'mongoose';
 import { Resend } from 'resend';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import Investor from '../models/Investor.js';
+import InvestorKYC from '../models/InvestorKYC.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+/**
+ * GET /api/admin/investors/didit-kyc
+ * Lists investor KYC rows with Didit verification + trading gate.
+ */
+router.get('/investors/didit-kyc', authenticateToken, async (req, res) => {
+  try {
+    const kycs = await InvestorKYC.find({
+      $or: [
+        { diditSessionId: { $exists: true, $ne: null } },
+        { diditVerifiedAt: { $exists: true, $ne: null } },
+        { diditStatus: { $in: ['pending', 'approved', 'declined', 'expired'] } },
+      ],
+    })
+      .sort({ updatedAt: -1 })
+      .select(
+        'investorEmail investorName countryOfResidence countryCategory status ' +
+          'diditStatus diditSessionId diditVerifiedAt tradingApproved paymentVerified submittedAt'
+      )
+      .lean();
+
+    // Attach Investor Mongo ids when available (for approve-trading :id)
+    const emails = kycs.map((k) => k.investorEmail);
+    const investors = await Investor.find({ email: { $in: emails } })
+      .select('_id email fullName')
+      .lean();
+    const byEmail = Object.fromEntries(
+      investors.map((i) => [String(i.email).toLowerCase(), i])
+    );
+
+    const rows = kycs.map((k) => {
+      const inv = byEmail[String(k.investorEmail).toLowerCase()];
+      return {
+        ...k,
+        investorId: inv?._id?.toString() || null,
+        investorName: k.investorName || inv?.fullName || '',
+      };
+    });
+
+    return res.json({ success: true, kycs: rows });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * POST /api/admin/investors/:id/approve-trading
+ * Body: { tradingApproved: boolean }
+ * :id = Investor Mongo _id OR investor email
+ */
+router.post('/investors/:id/approve-trading', authenticateToken, async (req, res) => {
+  try {
+    const rawId = String(req.params.id || '').trim();
+    const tradingApproved = Boolean(req.body?.tradingApproved);
+
+    let investor = null;
+    if (mongoose.Types.ObjectId.isValid(rawId) && !rawId.includes('@')) {
+      investor = await Investor.findById(rawId);
+    }
+    if (!investor) {
+      investor = await Investor.findOne({ email: rawId.toLowerCase() });
+    }
+    if (!investor) {
+      // Fall back: treat :id as KYC email directly
+      const email = rawId.toLowerCase();
+      const kyc = await InvestorKYC.findOneAndUpdate(
+        { investorEmail: email },
+        { $set: { tradingApproved } },
+        { new: true }
+      );
+      if (!kyc) {
+        return res.status(404).json({ success: false, error: 'Investor / KYC not found' });
+      }
+      return res.json({
+        success: true,
+        tradingApproved: kyc.tradingApproved,
+        investorEmail: kyc.investorEmail,
+      });
+    }
+
+    const kyc = await InvestorKYC.findOneAndUpdate(
+      { investorEmail: String(investor.email).toLowerCase() },
+      {
+        $set: {
+          tradingApproved,
+          investorEmail: String(investor.email).toLowerCase(),
+          investorName: investor.fullName,
+        },
+        $setOnInsert: {
+          countryOfResidence: investor.countryOfResidence || 'United States',
+          countryCategory: 'diaspora',
+          status: 'approved',
+        },
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    return res.json({
+      success: true,
+      tradingApproved: kyc.tradingApproved,
+      investorId: investor._id.toString(),
+      investorEmail: kyc.investorEmail,
+      diditStatus: kyc.diditStatus,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 // POST /api/admin/cooperatives/:id/activate
 // Manual activation when payment was received offline (bank transfer, etc.)

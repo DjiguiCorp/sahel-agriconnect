@@ -366,7 +366,7 @@ function AccessScreen({ onAccess, t }) {
 }
 
 /* ─── HOME TAB ──────────────────────────────────────────────────────── */
-function HomeTab({ investor, investments, notifications, kyc, t, navigate, onOpenNotifications }) {
+function HomeTab({ investor, investments, notifications, kyc, diditStatus, t, navigate, onOpenNotifications }) {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
   const firstName = (investor?.fullName || '').split(' ')[0];
@@ -415,7 +415,12 @@ function HomeTab({ investor, investments, notifications, kyc, t, navigate, onOpe
           </div>
 
           {showStatusTracker && kyc ? (
-            <InvestorAccountStatus kyc={kyc} hasInvestments={hasInvestments} isFr={isFr} />
+            <InvestorAccountStatus
+              kyc={kyc}
+              hasInvestments={hasInvestments}
+              isFr={isFr}
+              diditStatus={diditStatus}
+            />
           ) : null}
 
           {/* Main investment card — desktop wider with 1-row stats */}
@@ -596,7 +601,7 @@ function HomeTab({ investor, investments, notifications, kyc, t, navigate, onOpe
 }
 
 /* ─── MY PORTFOLIO TAB ─────────────────────────────────────────────── */
-function PortfolioTab({ investments, investor, kyc, t, navigate }) {
+function PortfolioTab({ investments, investor, kyc, diditStatus, t, navigate }) {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
   if (!investments || investments.length === 0) {
@@ -611,7 +616,12 @@ function PortfolioTab({ investments, investor, kyc, t, navigate }) {
         </p>
         {kyc ? (
           <div className="w-full max-w-md mb-4 text-left">
-            <InvestorAccountStatus kyc={kyc} hasInvestments={false} isFr={isFr} />
+            <InvestorAccountStatus
+              kyc={kyc}
+              hasInvestments={false}
+              isFr={isFr}
+              diditStatus={diditStatus}
+            />
           </div>
         ) : null}
         <div className="max-w-md w-full mb-4">
@@ -1364,7 +1374,8 @@ export default function InvestorPortal() {
       });
       const d = await res.json().catch(() => ({}));
       if (res.ok) {
-        setDiditStatus(d.diditStatus || 'pending');
+        // Keep null when Didit has not been started (do not coerce to 'pending')
+        setDiditStatus(d.diditStatus === undefined ? null : d.diditStatus);
         setTradingApproved(Boolean(d.tradingApproved));
       }
     } catch {
@@ -1652,8 +1663,8 @@ export default function InvestorPortal() {
           </div>
         </header>
 
-        {/* Didit identity verification banners */}
-        {diditStatus && diditStatus !== 'approved' && (
+        {/* Didit identity verification banners — distinct states */}
+        {(diditStatus == null) && (
           <div
             className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             style={{
@@ -1677,6 +1688,19 @@ export default function InvestorPortal() {
             </button>
           </div>
         )}
+        {diditStatus === 'pending' && (
+          <div
+            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3"
+            style={{
+              background: 'rgba(59,130,246,0.12)',
+              border: '1px solid rgba(59,130,246,0.45)',
+            }}
+          >
+            <p className="text-sm font-semibold text-blue-200">
+              Votre vérification est en cours d&apos;examen / Your verification is under review
+            </p>
+          </div>
+        )}
         {diditStatus === 'approved' && !tradingApproved && (
           <div
             className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3"
@@ -1686,8 +1710,52 @@ export default function InvestorPortal() {
             }}
           >
             <p className="text-sm font-semibold text-blue-200">
-              Votre identité est vérifiée. L&apos;approbation finale est en cours / Identity verified. Final approval pending.
+              Identité vérifiée — approbation de trading en attente / Identity verified — trading approval pending
             </p>
+          </div>
+        )}
+        {diditStatus === 'declined' && (
+          <div
+            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            style={{
+              background: 'rgba(239,68,68,0.12)',
+              border: '1px solid rgba(239,68,68,0.45)',
+            }}
+          >
+            <p className="text-sm font-semibold text-red-300">
+              Vérification refusée — veuillez réessayer / Verification declined — please try again
+            </p>
+            <button
+              type="button"
+              disabled={diditStarting}
+              onClick={startDiditVerification}
+              className="rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+              style={{ background: '#EF4444' }}
+            >
+              {diditStarting ? (isFr ? 'Ouverture…' : 'Opening…') : (isFr ? 'Réessayer' : 'Retry')}
+            </button>
+          </div>
+        )}
+        {diditStatus === 'expired' && (
+          <div
+            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            style={{
+              background: 'rgba(249,115,22,0.12)',
+              border: '1px solid rgba(249,115,22,0.45)',
+            }}
+          >
+            <p className="text-sm font-semibold text-orange-300">
+              Session expirée — veuillez recommencer / Session expired — please restart
+            </p>
+            <button
+              type="button"
+              disabled={diditStarting}
+              onClick={startDiditVerification}
+              className="rounded-lg px-4 py-2 text-sm font-bold text-[#0d1f17] disabled:opacity-60"
+              style={{ background: '#F97316' }}
+            >
+              {diditStarting ? (isFr ? 'Ouverture…' : 'Opening…') : (isFr ? 'Recommencer' : 'Restart')}
+            </button>
           </div>
         )}
 
@@ -1755,13 +1823,21 @@ export default function InvestorPortal() {
                 investments={investments}
                 notifications={notifications}
                 kyc={kyc}
+                diditStatus={diditStatus}
                 t={t}
                 navigate={navigate}
                 onOpenNotifications={() => setShowNotifications(true)}
               />
             )}
             {activeTab === 'portfolio' && (
-              <PortfolioTab investments={investments} investor={investor} kyc={kyc} t={t} navigate={navigate} />
+              <PortfolioTab
+                investments={investments}
+                investor={investor}
+                kyc={kyc}
+                diditStatus={diditStatus}
+                t={t}
+                navigate={navigate}
+              />
             )}
             {activeTab === 'prices' && <PricesTab onOpenPremium={() => setShowPremiumModal(true)} />}
             {activeTab === 'news' && <NewsTab t={t} onOpenPremium={() => setShowPremiumModal(true)} />}

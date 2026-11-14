@@ -194,16 +194,28 @@ router.get('/kyc-status', authenticateInvestor, async (req, res) => {
       .select('diditStatus tradingApproved diditVerifiedAt diditSessionId status')
       .lean();
 
-    const diditStatus = kyc?.diditStatus || 'pending';
-    const tradingApproved = Boolean(kyc?.tradingApproved);
+    // No KYC record, or Didit never started → diditStatus null (show "required" banner)
+    if (!kyc || (!kyc.diditSessionId && !kyc.diditVerifiedAt)) {
+      return res.json({
+        success: true,
+        diditStatus: null,
+        tradingApproved: false,
+        kycComplete: false,
+        diditVerifiedAt: null,
+        legacyStatus: kyc?.status || null,
+      });
+    }
+
+    const diditStatus = kyc.diditStatus || 'pending';
+    const tradingApproved = Boolean(kyc.tradingApproved);
 
     return res.json({
       success: true,
       diditStatus,
       tradingApproved,
-      kycComplete: diditStatus === 'approved',
-      diditVerifiedAt: kyc?.diditVerifiedAt || null,
-      legacyStatus: kyc?.status || null,
+      kycComplete: diditStatus === 'approved' && tradingApproved === true,
+      diditVerifiedAt: kyc.diditVerifiedAt || null,
+      legacyStatus: kyc.status || null,
     });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message || 'Failed' });
