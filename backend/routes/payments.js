@@ -490,12 +490,22 @@ router.post('/stripe/webhook', async (req, res) => {
         if (Number.isFinite(memberCountMeta) && memberCountMeta > 0) {
           update.memberCount = memberCountMeta;
         }
-        await CooperativePlatformRegistration.findOneAndUpdate(
+        const coopUpdated = await CooperativePlatformRegistration.findOneAndUpdate(
           { email: emailNorm },
           update,
-          { sort: { createdAt: -1 } }
+          { sort: { createdAt: -1 }, new: true }
         );
         console.log('✅ Cooperative Growth membership payment:', emailNorm);
+        if (coopUpdated?._id) {
+          try {
+            const { applyCooperativeCertification } = await import(
+              '../services/certificationService.js'
+            );
+            await applyCooperativeCertification(coopUpdated._id);
+          } catch (certErr) {
+            console.error('[payments] coop certification check failed:', certErr.message);
+          }
+        }
       }
 
       // ── Platform subscriptions (AfriYield, Producer Pro, Transform, NGO, Gov) ─

@@ -129,21 +129,70 @@ function csvEscape(v) {
   return s;
 }
 
-/** Didit identity verifications + tradingApproved toggle */
+const REJECTION_REASONS = [
+  'Document quality insufficient',
+  'Document type not accepted',
+  'Identity mismatch',
+  'Sanctions/PEP flag',
+  'Other',
+];
+
+const TYPE_BADGE = {
+  African: 'bg-green-500/15 text-green-300',
+  Diaspora: 'bg-blue-500/15 text-blue-300',
+  Institutional: 'bg-amber-500/15 text-amber-300',
+};
+
+const DIDIT_STATUS_CLS = {
+  pending: 'bg-blue-500/15 text-blue-300',
+  approved: 'bg-green-500/15 text-green-300',
+  declined: 'bg-red-500/15 text-red-300',
+  expired: 'bg-orange-500/15 text-orange-300',
+};
+
+function formatDocType(t) {
+  if (!t) return '—';
+  return String(t).replace(/_/g, ' ');
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  try {
+    return new Date(d).toLocaleString();
+  } catch {
+    return '—';
+  }
+}
+
+/** Full Didit KYC compliance review queue + modal + audit log */
 function DiditVerificationsPanel({ isFr }) {
   const [rows, setRows] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState(null);
   const [error, setError] = useState('');
+  const [reviewId, setReviewId] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
     setError('');
-    fetch(`${API_BASE_URL}/api/admin/investors/didit-kyc`, { headers: authHeaders() })
-      .then((r) => r.json())
-      .then((d) => {
+    Promise.all([
+      fetch(`${API_BASE_URL}/api/admin/investors/didit-kyc`, { headers: authHeaders() }).then((r) =>
+        r.json()
+      ),
+      fetch(`${API_BASE_URL}/api/admin/investors/kyc-audit-log`, { headers: authHeaders() }).then(
+        (r) => r.json()
+      ),
+    ])
+      .then(([d, a]) => {
         if (d.success) setRows(d.kycs || []);
         else setError(d.error || 'Failed to load');
+        if (a.success) setAuditLogs(a.logs || []);
       })
       .catch((e) => setError(e.message || 'Failed to load'))
       .finally(() => setLoading(false));
@@ -153,43 +202,93 @@ function DiditVerificationsPanel({ isFr }) {
     load();
   }, [load]);
 
-  const toggleTrading = async (row, next) => {
+  const openReview = async (row) => {
     const id = row.investorId || row.investorEmail;
-    if (!id) return;
-    setToggling(id);
+    setReviewId(id);
+    setDetail(null);
+    setNotes(row.kycReviewNotes || '');
+    setRejectionReason('');
+    setShowRejectForm(false);
+    setDetailLoading(true);
     setError('');
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(id)}/approve-trading`,
-        {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({ tradingApproved: next }),
-        }
+        `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(id)}/kyc-detail`,
+        { headers: authHeaders() }
       );
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Update failed');
-      }
-      setRows((prev) =>
-        prev.map((r) =>
-          r.investorEmail === row.investorEmail
-            ? { ...r, tradingApproved: Boolean(data.tradingApproved) }
-            : r
-        )
-      );
+      if (!res.ok || !data.success) throw new Error(data.error || 'Load failed');
+      setDetail(data);
     } catch (e) {
-      setError(e.message || 'Update failed');
+      setError(e.message || 'Load failed');
+      setReviewId(null);
     } finally {
-      setToggling(null);
+      setDetailLoading(false);
     }
   };
 
-  const statusCls = {
-    pending: 'bg-blue-500/15 text-blue-300',
-    approved: 'bg-green-500/15 text-green-300',
-    declined: 'bg-red-500/15 text-red-300',
-    expired: 'bg-orange-500/15 text-orange-300',
+  const closeReview = () => {
+    setReviewId(null);
+    setDetail(null);
+    setShowRejectForm(false);
+    setNotes('');
+    setRejectionReason('');
+  };
+
+  const submitReview = async (action) => {
+    if (!reviewId) return;
+    if (action === 'reject' && !rejectionReason) {
+      setError(isFr ? 'Choisissez un motif de rejet.' : 'Select a rejection reason.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(reviewId)}/kyc-review`,
+        {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            action,
+            notes,
+            rejectionReason: action === 'reject' ? rejectionReason : undefined,
+          }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Review failed');
+
+      setRows((prev) =>
+        prev.map((r) => {
+          const match =
+            r.investorId === reviewId ||
+            r.investorEmail === reviewId ||
+            r.investorEmail === detail?.profile?.email;
+          if (!match) return r;
+          return {
+            ...r,
+            tradingApproved: Boolean(data.tradingApproved),
+            diditStatus: data.diditStatus,
+            kycRejectionReason: data.kycRejectionReason,
+            kycReviewNotes: data.kycReviewNotes,
+            kycReviewedAt: data.kycReviewedAt,
+          };
+        })
+      );
+      closeReview();
+      // Refresh audit log
+      fetch(`${API_BASE_URL}/api/admin/investors/kyc-audit-log`, { headers: authHeaders() })
+        .then((r) => r.json())
+        .then((a) => {
+          if (a.success) setAuditLogs(a.logs || []);
+        })
+        .catch(() => {});
+    } catch (e) {
+      setError(e.message || 'Review failed');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -200,87 +299,360 @@ function DiditVerificationsPanel({ isFr }) {
     );
   }
 
+  const extracted = detail?.extracted || {};
+  const docWarning =
+    extracted.documentType &&
+    extracted.documentTypeAcceptable === false;
+
   return (
-    <div
-      className="space-y-3 rounded-xl p-4 md:p-5 mb-6 text-gray-100 [&_th]:text-gray-400 [&_td]:text-gray-100 [&_p]:text-gray-400"
-      style={{ background: '#0d1f17' }}
-    >
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h3 className="text-white font-bold text-sm">
-            {isFr ? 'Vérifications Didit' : 'Didit Verifications'}
-          </h3>
-          <p className="text-gray-400 text-xs mt-0.5">
-            {isFr
-              ? 'Activez tradingApproved après validation Didit pour débloquer l\'investisseur.'
-              : 'Toggle tradingApproved after Didit approval to unlock the investor.'}
-          </p>
+    <div className="space-y-6 mb-6">
+      <div
+        className="space-y-3 rounded-xl p-4 md:p-5 text-gray-100 [&_th]:text-gray-400 [&_td]:text-gray-100 [&_p]:text-gray-400"
+        style={{ background: '#0d1f17' }}
+      >
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="text-white font-bold text-sm">
+              {isFr ? 'File de revue KYC (Didit)' : 'KYC review queue (Didit)'}
+            </h3>
+            <p className="text-gray-400 text-xs mt-0.5">
+              {isFr
+                ? 'Examinez chaque dossier Didit, validez le type de document, puis approuvez ou rejetez le trading.'
+                : 'Review each Didit file, validate document type, then approve or reject trading access.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={load}
+            className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 hover:text-white"
+          >
+            {isFr ? 'Actualiser' : 'Refresh'}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={load}
-          className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 hover:text-white"
-        >
-          {isFr ? 'Actualiser' : 'Refresh'}
-        </button>
-      </div>
 
-      {error ? <p className="!text-red-400 text-xs">{error}</p> : null}
+        {error ? <p className="!text-red-400 text-xs">{error}</p> : null}
 
-      {rows.length === 0 ? (
-        <p className="text-gray-400 text-sm text-center py-6">
-          {isFr ? 'Aucune vérification Didit pour le moment.' : 'No Didit verifications yet.'}
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-white/10">
-          <table className="min-w-full text-sm text-gray-100">
-            <thead className="bg-white/5 text-left text-gray-400 text-xs uppercase">
-              <tr>
-                <th className="px-3 py-2 font-semibold text-gray-400">{isFr ? 'Nom' : 'Name'}</th>
-                <th className="px-3 py-2 font-semibold text-gray-400">Email</th>
-                <th className="px-3 py-2 font-semibold text-gray-400">Didit</th>
-                <th className="px-3 py-2 font-semibold text-gray-400">Trading</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const busy = toggling === (row.investorId || row.investorEmail);
-                return (
+        {rows.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-6">
+            {isFr ? 'Aucune vérification Didit pour le moment.' : 'No Didit verifications yet.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-white/10">
+            <table className="min-w-full text-sm text-gray-100">
+              <thead className="bg-white/5 text-left text-gray-400 text-xs uppercase">
+                <tr>
+                  <th className="px-3 py-2 font-semibold text-gray-400">
+                    {isFr ? 'Investisseur' : 'Investor'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">
+                    {isFr ? 'Type' : 'Type'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">Didit</th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">
+                    {isFr ? 'Document' : 'Document'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">
+                    {isFr ? 'Soumis' : 'Submitted'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">Trading</th>
+                  <th className="px-3 py-2 font-semibold text-gray-400" />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
                   <tr key={row.investorEmail} className="border-t border-white/10">
-                    <td className="px-3 py-2.5 text-gray-100 font-medium">
-                      {row.investorName || '—'}
+                    <td className="px-3 py-2.5">
+                      <p className="!text-gray-100 font-medium m-0">{row.investorName || '—'}</p>
+                      <p className="!text-gray-400 text-xs m-0 mt-0.5">{row.investorEmail}</p>
                     </td>
-                    <td className="px-3 py-2.5 text-gray-300 text-xs">{row.investorEmail}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-gray-300">
+                          {row.countryOfResidence || '—'}
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold w-fit ${
+                            TYPE_BADGE[row.investorType] || 'bg-white/10 text-gray-300'
+                          }`}
+                        >
+                          {row.investorType || '—'}
+                        </span>
+                      </div>
+                    </td>
                     <td className="px-3 py-2.5">
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                          statusCls[row.diditStatus] || 'bg-white/10 text-gray-300'
+                          DIDIT_STATUS_CLS[row.diditStatus] || 'bg-white/10 text-gray-300'
                         }`}
                       >
                         {row.diditStatus || '—'}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-gray-100">
-                      <label className="inline-flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(row.tradingApproved)}
-                          disabled={busy}
-                          onChange={(e) => toggleTrading(row, e.target.checked)}
-                          className="rounded border-white/30"
-                        />
-                        <span className="text-xs text-gray-300">
-                          {row.tradingApproved
-                            ? (isFr ? 'Approuvé' : 'Approved')
-                            : (isFr ? 'En attente' : 'Pending')}
+                    <td className="px-3 py-2.5 text-gray-300 text-xs capitalize">
+                      {formatDocType(row.documentType)}
+                      {row.documentTypeAcceptable === false ? (
+                        <span className="block text-amber-300 text-[10px] mt-0.5">
+                          {isFr ? 'À vérifier' : 'Needs review'}
                         </span>
-                      </label>
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-2.5 text-gray-400 text-xs">
+                      {formatDate(row.submissionDate)}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                          row.tradingApproved
+                            ? 'bg-green-500/15 text-green-300'
+                            : 'bg-white/10 text-gray-400'
+                        }`}
+                      >
+                        {row.tradingApproved
+                          ? isFr
+                            ? 'Approuvé'
+                            : 'Approved'
+                          : isFr
+                            ? 'En attente'
+                            : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => openReview(row)}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#B5850A] text-black hover:opacity-90"
+                      >
+                        {isFr ? 'Réviser' : 'Review'}
+                      </button>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Audit log */}
+      <div
+        className="rounded-xl p-4 md:p-5 text-gray-100 [&_th]:text-gray-400 [&_td]:text-gray-100 [&_p]:text-gray-400"
+        style={{ background: '#0d1f17' }}
+      >
+        <h3 className="text-white font-bold text-sm mb-1">
+          {isFr ? 'Journal d\'audit KYC' : 'KYC audit log'}
+        </h3>
+        <p className="text-gray-400 text-xs mb-3">
+          {isFr ? '20 dernières actions de revue.' : 'Last 20 review actions.'}
+        </p>
+        {auditLogs.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-4">
+            {isFr ? 'Aucune action pour le moment.' : 'No actions yet.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-white/10">
+            <table className="min-w-full text-sm">
+              <thead className="bg-white/5 text-left text-gray-400 text-xs uppercase">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Admin</th>
+                  <th className="px-3 py-2 font-semibold">
+                    {isFr ? 'Investisseur' : 'Investor'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold">Action</th>
+                  <th className="px-3 py-2 font-semibold">
+                    {isFr ? 'Date' : 'When'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs.map((log) => (
+                  <tr key={log._id} className="border-t border-white/10">
+                    <td className="px-3 py-2 text-gray-300 text-xs">{log.adminEmail}</td>
+                    <td className="px-3 py-2">
+                      <p className="!text-gray-100 text-xs m-0 font-medium">
+                        {log.investorName || '—'}
+                      </p>
+                      <p className="!text-gray-500 text-[10px] m-0">{log.investorEmail}</p>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                          log.action === 'approved'
+                            ? 'bg-green-500/15 text-green-300'
+                            : log.action === 'rejected'
+                              ? 'bg-red-500/15 text-red-300'
+                              : 'bg-amber-500/15 text-amber-300'
+                        }`}
+                      >
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-400 text-xs">
+                      {formatDate(log.timestamp)}
+                    </td>
+                    <td className="px-3 py-2 text-gray-400 text-xs max-w-[220px] truncate">
+                      {log.notes || '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Review modal */}
+      {(reviewId || detailLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+          <div
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-white/15 p-5 space-y-4"
+            style={{ background: '#0d1f17' }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-white font-bold text-base">
+                  {isFr ? 'Revue KYC' : 'KYC Review'}
+                </h3>
+                <p className="text-gray-400 text-xs mt-0.5">
+                  {detail?.profile?.email || '…'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeReview}
+                className="text-gray-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {detailLoading || !detail ? (
+              <p className="text-gray-400 text-sm py-8 text-center">
+                {isFr ? 'Chargement…' : 'Loading…'}
+              </p>
+            ) : (
+              <>
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-1 text-sm">
+                  <p className="!text-white font-semibold m-0">{detail.profile?.name}</p>
+                  <p className="!text-gray-400 text-xs m-0">{detail.profile?.email}</p>
+                  <p className="!text-gray-300 text-xs m-0">
+                    {detail.profile?.country} · {detail.profile?.investorType} ·{' '}
+                    {(detail.profile?.preferredLanguage || 'fr').toUpperCase()}
+                  </p>
+                  <p className="!text-gray-400 text-xs m-0">
+                    Didit: {detail.kyc?.diditStatus || '—'} ·{' '}
+                    {isFr ? 'Vérifié' : 'Verified'}:{' '}
+                    {formatDate(detail.kyc?.diditVerifiedAt)}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2 text-sm">
+                  <p className="!text-white font-semibold text-xs uppercase tracking-wide m-0">
+                    {isFr ? 'Données Didit extraites' : 'Extracted Didit fields'}
+                  </p>
+                  {[
+                    [isFr ? 'Nom complet' : 'Full name', extracted.fullName || '—'],
+                    [isFr ? 'Type de document' : 'Document type', formatDocType(extracted.documentType)],
+                    [isFr ? 'N° document' : 'Document no.', extracted.documentNumberMasked || '—'],
+                    [isFr ? 'Nationalité' : 'Nationality', extracted.nationality || '—'],
+                    [isFr ? 'Date de naissance' : 'Date of birth', extracted.dateOfBirth || '—'],
+                    [isFr ? 'Expiration' : 'Expiry', extracted.expiryDate || '—'],
+                    [
+                      isFr ? 'Score de confiance' : 'Confidence',
+                      extracted.confidence != null ? String(extracted.confidence) : '—',
+                    ],
+                  ].map(([label, val]) => (
+                    <div key={label} className="flex justify-between gap-3 text-xs">
+                      <span className="text-gray-400">{label}</span>
+                      <span className="text-gray-100 text-right capitalize">{val}</span>
+                    </div>
+                  ))}
+                  {docWarning ? (
+                    <div className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200 text-xs">
+                      {isFr
+                        ? 'Type de document susceptible de ne pas répondre aux exigences AfriYield.'
+                        : 'Document type may not meet AfriYield requirements.'}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">
+                    {isFr ? 'Notes admin' : 'Admin notes'}
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-lg bg-black/30 border border-white/15 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/60 resize-none"
+                    placeholder={isFr ? 'Commentaires internes…' : 'Internal comments…'}
+                  />
+                </div>
+
+                {showRejectForm ? (
+                  <div className="space-y-2">
+                    <label className="block text-xs text-gray-400">
+                      {isFr ? 'Motif de rejet' : 'Rejection reason'}
+                    </label>
+                    <select
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      className="w-full rounded-lg bg-black/30 border border-white/15 px-3 py-2 text-sm text-white focus:outline-none"
+                    >
+                      <option value="">
+                        {isFr ? '— Choisir —' : '— Select —'}
+                      </option>
+                      {REJECTION_REASONS.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => submitReview('reject')}
+                        className="flex-1 rounded-lg bg-red-600 text-white text-sm font-bold py-2.5 disabled:opacity-60"
+                      >
+                        {submitting
+                          ? '…'
+                          : isFr
+                            ? 'Confirmer le rejet'
+                            : 'Confirm reject'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectForm(false)}
+                        className="rounded-lg bg-white/10 text-gray-300 text-sm px-4"
+                      >
+                        {isFr ? 'Annuler' : 'Cancel'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => submitReview('approve')}
+                      className="flex-1 rounded-lg bg-green-600 text-white text-sm font-bold py-2.5 disabled:opacity-60"
+                    >
+                      {submitting ? '…' : isFr ? 'Approuver' : 'Approve'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => setShowRejectForm(true)}
+                      className="flex-1 rounded-lg bg-red-600/90 text-white text-sm font-bold py-2.5 disabled:opacity-60"
+                    >
+                      {isFr ? 'Rejeter' : 'Reject'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

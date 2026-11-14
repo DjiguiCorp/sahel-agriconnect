@@ -3,6 +3,12 @@ import crypto from 'crypto';
 import Investor from '../models/Investor.js';
 import InvestorKYC, { getCountryCategory } from '../models/InvestorKYC.js';
 import { authenticateInvestor } from '../middleware/auth.js';
+import {
+  extractDocumentType,
+  isAcceptableDocumentType,
+  isNonIdentityDocument,
+} from '../utils/diditPayload.js';
+import KYCAuditLog from '../models/KYCAuditLog.js';
 
 const router = express.Router();
 
@@ -241,21 +247,78 @@ router.post('/webhook', async (req, res) => {
       return res.status(200).json({ received: true, matched: false });
     }
 
-    kyc.diditStatus = diditStatus;
     kyc.diditRawPayload = payload;
     if (sessionId) kyc.diditSessionId = sessionId;
     if (vendorData) kyc.diditVendorData = vendorData;
+
+    const documentType = extractDocumentType(payload);
+    let finalStatus = diditStatus;
+    let autoFlagged = false;
+
+    // Only auto-approve when Didit says approved AND document type is acceptable
     if (diditStatus === 'approved') {
-      kyc.diditVerifiedAt = new Date();
-      // Align legacy status when Didit approves identity
-      if (kyc.status !== 'approved') {
-        kyc.status = 'approved';
-        kyc.reviewedAt = new Date();
+      if (documentType && isNonIdentityDocument(documentType) && !isAcceptableDocumentType(documentType)) {
+        finalStatus = 'pending';
+        autoFlagged = true;
+        kyc.kycReviewNotes =
+          'Auto-flagged: document type may not meet AfriYield requirements';
+      } else if (documentType && !isAcceptableDocumentType(documentType)) {
+        finalStatus = 'pending';
+        autoFlagged = true;
+        kyc.kycReviewNotes =
+          'Auto-flagged: document type may not meet AfriYield requirements';
+      } else if (!documentType) {
+        // Unknown type — hold for admin rather than auto-approve blindly
+        finalStatus = 'pending';
+        autoFlagged = true;
+        kyc.kycReviewNotes =
+          kyc.kycReviewNotes ||
+          'Auto-flagged: document type missing from Didit payload — admin review required';
+      } else {
+        finalStatus = 'approved';
+        kyc.diditVerifiedAt = new Date();
+        if (kyc.status !== 'approved') {
+          kyc.status = 'approved';
+          kyc.reviewedAt = new Date();
+        }
       }
     }
+
+    kyc.diditStatus = finalStatus;
     await kyc.save();
 
-    return res.status(200).json({ received: true, matched: true, diditStatus });
+    if (autoFlagged) {
+      let investorId = null;
+      try {
+        const inv = await Investor.findOne({
+          email: String(kyc.investorEmail).toLowerCase(),
+        })
+          .select('_id')
+          .lean();
+        investorId = inv?._id || null;
+      } catch {
+        /* ignore */
+      }
+      KYCAuditLog.create({
+        investorId,
+        investorEmail: kyc.investorEmail,
+        investorName: kyc.investorName,
+        adminEmail: 'system@didit-webhook',
+        action: 'flagged',
+        notes: kyc.kycReviewNotes,
+        timestamp: new Date(),
+        diditStatusAtReview: finalStatus,
+        documentType: documentType || '',
+      }).catch((err) => console.error('[Didit] audit log failed:', err.message));
+    }
+
+    return res.status(200).json({
+      received: true,
+      matched: true,
+      diditStatus: finalStatus,
+      documentType: documentType || null,
+      autoFlagged,
+    });
   } catch (e) {
     console.error('[Didit] webhook error:', e.message);
     return res.status(500).json({ success: false, error: e.message });

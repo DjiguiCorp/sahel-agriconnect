@@ -191,7 +191,10 @@ router.get('/kyc-status', authenticateInvestor, async (req, res) => {
   try {
     const email = String(req.investorEmail || '').toLowerCase().trim();
     const kyc = await InvestorKYC.findOne({ investorEmail: email })
-      .select('diditStatus tradingApproved diditVerifiedAt diditSessionId status')
+      .select(
+        'diditStatus tradingApproved diditVerifiedAt diditSessionId status ' +
+          'kycRejectionReason kycReviewNotes kycReviewedAt'
+      )
       .lean();
 
     // No KYC record, or Didit never started → diditStatus null (show "required" banner)
@@ -202,6 +205,7 @@ router.get('/kyc-status', authenticateInvestor, async (req, res) => {
         tradingApproved: false,
         kycComplete: false,
         diditVerifiedAt: null,
+        kycRejectionReason: null,
         legacyStatus: kyc?.status || null,
       });
     }
@@ -215,6 +219,8 @@ router.get('/kyc-status', authenticateInvestor, async (req, res) => {
       tradingApproved,
       kycComplete: diditStatus === 'approved' && tradingApproved === true,
       diditVerifiedAt: kyc.diditVerifiedAt || null,
+      kycRejectionReason: kyc.kycRejectionReason || null,
+      kycReviewNotes: kyc.kycReviewNotes || null,
       legacyStatus: kyc.status || null,
     });
   } catch (e) {

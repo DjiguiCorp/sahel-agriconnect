@@ -1363,6 +1363,7 @@ export default function InvestorPortal() {
   const [kyc, setKyc] = useState(null);
   const [diditStatus, setDiditStatus] = useState(null); // pending | approved | declined | expired
   const [tradingApproved, setTradingApproved] = useState(false);
+  const [kycRejectionReason, setKycRejectionReason] = useState(null);
   const [diditStarting, setDiditStarting] = useState(false);
 
   const fetchDiditStatus = useCallback(async () => {
@@ -1377,6 +1378,7 @@ export default function InvestorPortal() {
         // Keep null when Didit has not been started (do not coerce to 'pending')
         setDiditStatus(d.diditStatus === undefined ? null : d.diditStatus);
         setTradingApproved(Boolean(d.tradingApproved));
+        setKycRejectionReason(d.kycRejectionReason || null);
       }
     } catch {
       /* ignore */
@@ -1722,14 +1724,24 @@ export default function InvestorPortal() {
               border: '1px solid rgba(239,68,68,0.45)',
             }}
           >
-            <p className="text-sm font-semibold text-red-300">
-              Vérification refusée — veuillez réessayer / Verification declined — please try again
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-red-300">
+                {kycRejectionReason
+                  ? `Vérification refusée: ${kycRejectionReason} / Verification declined: ${kycRejectionReason}`
+                  : 'Vérification refusée — veuillez réessayer / Verification declined — please try again'}
+              </p>
+              <a
+                href="mailto:support@sahelagriconnect.com"
+                className="text-xs font-medium text-red-200/80 underline hover:text-red-100"
+              >
+                Contacter le support / Contact support
+              </a>
+            </div>
             <button
               type="button"
               disabled={diditStarting}
               onClick={startDiditVerification}
-              className="rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+              className="rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-60 shrink-0"
               style={{ background: '#EF4444' }}
             >
               {diditStarting ? (isFr ? 'Ouverture…' : 'Opening…') : (isFr ? 'Réessayer' : 'Retry')}

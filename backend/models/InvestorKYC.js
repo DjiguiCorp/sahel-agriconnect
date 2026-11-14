@@ -95,6 +95,11 @@ const investorKYCSchema = new mongoose.Schema({
   diditVerifiedAt: { type: Date },
   diditRawPayload: { type: mongoose.Schema.Types.Mixed },
   tradingApproved: { type: Boolean, default: false },
+  tradingApprovedAt: { type: Date },
+  tradingApprovedBy: { type: String, trim: true },
+  kycReviewNotes: { type: String, default: '' },
+  kycRejectionReason: { type: String, default: '' },
+  kycReviewedAt: { type: Date },
   /** Didit vendor_data = Investor Mongo _id */
   diditVendorData: { type: String, index: true },
 

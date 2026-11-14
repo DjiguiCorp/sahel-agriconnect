@@ -1211,21 +1211,45 @@ function OpportunityCard({ opp, isFr }) {
       <div className="p-5 pb-0">
         <div className="mb-3 flex items-start justify-between">
           <div>
-            <div className="mb-1 flex items-center gap-2">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
               <span
                 className="rounded-full px-2 py-0.5 text-xs font-bold text-white"
                 style={{ background: trackColor }}
               >
                 {opp.track}
               </span>
-              {opp.verified && (
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs font-bold"
-                  style={{ background: '#B5850A20', color: '#B5850A' }}
-                >
-                  ✓ Vérifié
-                </span>
-              )}
+              {(() => {
+                const level = opp.certificationLevel || (opp.verified ? 'verified' : 'none');
+                if (level === 'verified' || level === 'premium' || opp.verified) {
+                  return (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-bold"
+                      style={{ background: '#22c55e22', color: '#4ade80' }}
+                      title={isFr ? 'Certification AfriYield' : 'AfriYield certification'}
+                    >
+                      ✓ {level === 'premium' ? 'Premium' : isFr ? 'Vérifié' : 'Verified'}
+                    </span>
+                  );
+                }
+                if (level === 'basic') {
+                  return (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-bold"
+                      style={{ background: '#B5850A20', color: '#B5850A' }}
+                    >
+                      {isFr ? 'Certification de base' : 'Basic certified'}
+                    </span>
+                  );
+                }
+                return (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-xs font-bold"
+                    style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }}
+                  >
+                    {isFr ? 'Certification en attente' : 'Certification pending'}
+                  </span>
+                );
+              })()}
             </div>
             <h3 className="text-lg font-bold leading-snug text-white">{opp.centerName}</h3>
             <p className="mt-0.5 text-sm text-white/40">
