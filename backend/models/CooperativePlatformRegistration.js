@@ -29,6 +29,9 @@ const cooperativePlatformRegistrationSchema = new mongoose.Schema({
   paymentDate: { type: Date },
   paymentMethod: { type: String },
   activatedAt: { type: Date },
+  /** Growth subscription window (optional; set on Stripe activation) */
+  subscriptionExpiresAt: { type: Date },
+  subscriptionRenewedAt: { type: Date },
   emailVerified: { type: Boolean, default: false },
   verifiedAt: Date,
   passwordHash: { type: String },

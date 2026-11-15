@@ -4,6 +4,7 @@ import CooperativeInvitation from '../models/CooperativeInvitation.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import Farmer from '../models/Farmer.js';
 import PendingNotification from '../models/PendingNotification.js';
+import { maybeUpgradeCoopAt51 } from '../services/coopMemberUpgrade.js';
 
 const router = express.Router();
 
@@ -118,6 +119,9 @@ router.post('/accept/:code', async (req, res) => {
       $inc: { memberCount: 1 },
       $push: { invitedMembers: { name: farmerName, phone: farmerPhone, email: farmerEmail, joinedAt: new Date() } },
     });
+
+    // Fire Growth upgrade when memberCount crosses 51
+    await maybeUpgradeCoopAt51(invitation.cooperativeId);
 
     await PendingNotification.create({
       recipientName: invitation.cooperativeLeader,

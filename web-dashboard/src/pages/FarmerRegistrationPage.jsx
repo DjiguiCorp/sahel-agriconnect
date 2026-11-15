@@ -168,63 +168,53 @@ export default function FarmerRegistrationPage() {
     }
   };
 
-  const loadNearbyCoops = async (country, region) => {
+  const loadNearbyCoops = async (country, region, crops = []) => {
     setLoadingCoops(true);
     try {
+      const params = new URLSearchParams();
+      if (country) params.set('country', country);
+      if (region) params.set('region', region);
+      const cropType = Array.isArray(crops) && crops.length ? crops[0] : '';
+      if (cropType) params.set('cropType', cropType);
+
       const res = await fetch(
-        `${API_BASE_URL}/api/cooperatives/nearby?country=${encodeURIComponent(country)}&region=${encodeURIComponent(region)}`
+        `${API_BASE_URL}/api/cooperatives/discover?${params.toString()}`
       );
       const data = await res.json();
-      if (data.success && data.cooperatives?.length > 0) {
+      if (data.success && Array.isArray(data.cooperatives)) {
         setNearbyCoops(data.cooperatives);
       } else {
-        setNearbyCoops([
-          {
-            _id: 'demo1',
-            cooperativeName: `Coopérative Agricole ${region || country}`,
-            memberCount: 45,
-            primaryCrops: ['Shea Butter', 'Sesame'],
-            certificationStatus: 'Regional',
-            leaderName: 'Mamadou Kouyaté',
-            phone: '+223 76 000 001',
-            regionCity: region || country,
-            country,
-          },
-          {
-            _id: 'demo2',
-            cooperativeName: `Union Paysanne ${country}`,
-            memberCount: 120,
-            primaryCrops: ['Millet', 'Cotton'],
-            certificationStatus: 'Local',
-            leaderName: 'Fatoumata Diallo',
-            phone: '+223 77 000 002',
-            regionCity: region || country,
-            country,
-          },
-        ]);
+        setNearbyCoops([]);
       }
     } catch (e) {
       console.error('Could not load nearby coops:', e);
+      setNearbyCoops([]);
     } finally {
       setLoadingCoops(false);
     }
   };
 
-  const requestJoinCoop = async (coopId, coopName) => {
+  const requestJoinCoop = async (coopId) => {
+    if (!successId || !coopId) return;
     setJoiningCoop(coopId);
     try {
-      await fetch(`${API_BASE_URL}/api/cooperatives/join-request`, {
+      const res = await fetch(`${API_BASE_URL}/api/cooperatives/join-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           farmerId: successId,
           cooperativeId: coopId,
-          cooperativeName: coopName,
+          message: '',
         }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Join request failed');
+      }
       setJoinSuccess(coopId);
     } catch (e) {
       console.error('Join request failed:', e);
+      alert(e.message || 'Join request failed');
     } finally {
       setJoiningCoop(null);
     }
@@ -265,7 +255,9 @@ export default function FarmerRegistrationPage() {
               {nearbyCoops.length === 0 && !loadingCoops && (
                 <button
                   type="button"
-                  onClick={() => loadNearbyCoops(watch('country'), watch('region'))}
+                  onClick={() =>
+                    loadNearbyCoops(watch('country'), watch('region'), watch('crops') || [])
+                  }
                   className="w-full py-3 rounded-xl border border-green-500/30
                     bg-green-500/5 text-green-400 text-sm font-semibold
                     flex items-center justify-center gap-2 hover:bg-green-500/10
@@ -350,7 +342,7 @@ export default function FarmerRegistrationPage() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => requestJoinCoop(coop._id, coop.cooperativeName)}
+                            onClick={() => requestJoinCoop(coop._id || coop.id)}
                             disabled={joiningCoop === coop._id}
                             className="flex-1 py-2 rounded-lg font-semibold text-xs disabled:opacity-50"
                             style={{ backgroundColor: '#1D9E75', color: 'white' }}

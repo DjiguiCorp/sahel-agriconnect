@@ -70,11 +70,18 @@ export default function CooperativePortal() {
   });
   const [inviteState, setInviteState] = useState({ loading: false, ok: false, err: '' });
   const [showInvite, setShowInvite] = useState(false);
+  const [trainings, setTrainings] = useState([]);
+  const [trainingsLoading, setTrainingsLoading] = useState(false);
+  const [joinReviewBusy, setJoinReviewBusy] = useState(null);
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  const declaredMembers = Number(
+    data?.cooperative?.memberCount ?? data?.stats?.declaredMemberCount ?? 0
+  );
+  const pendingJoinCount = (data?.joinRequests || []).length;
 
-  useEffect(() => {
-    if (!token || !coop) return;
+  const refreshPortal = () => {
+    if (!token) return;
     setLoading(true);
     fetch(`${API}/api/cooperatives/my-portal`, { headers })
       .then((r) => r.json())
@@ -83,7 +90,51 @@ export default function CooperativePortal() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!token || !coop) return;
+    refreshPortal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, coop]);
+
+  useEffect(() => {
+    if (activeTab !== 'formations' || !token || !isGrowth) return;
+    setTrainingsLoading(true);
+    fetch(`${API}/api/trainings`, { headers })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setTrainings(d.trainings || []);
+        else setTrainings([]);
+      })
+      .catch(() => setTrainings([]))
+      .finally(() => setTrainingsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, token, isGrowth]);
+
+  const reviewJoinRequest = async (requestId, action) => {
+    const coopId = data?.cooperative?.id;
+    if (!coopId || !requestId) return;
+    setJoinReviewBusy(requestId);
+    try {
+      const r = await fetch(
+        `${API}/api/cooperatives/${coopId}/join-requests/${requestId}/review`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ action }),
+        }
+      );
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Review failed');
+      refreshPortal();
+    } catch (e) {
+      console.error(e);
+      alert(e.message || 'Error');
+    } finally {
+      setJoinReviewBusy(null);
+    }
+  };
 
   const login = async (e) => {
     e.preventDefault();
@@ -364,7 +415,15 @@ export default function CooperativePortal() {
     },
     {
       key: 'invitations',
-      label: isFr ? `📨 Invitations (${data?.invitations?.length ?? '—'})` : `📨 Invitations (${data?.invitations?.length ?? '—'})`,
+      label: isFr
+        ? `📨 Invitations (${data?.invitations?.length ?? '—'})${pendingJoinCount ? ` · ${pendingJoinCount} demandes` : ''}`
+        : `📨 Invitations (${data?.invitations?.length ?? '—'})${pendingJoinCount ? ` · ${pendingJoinCount} requests` : ''}`,
+    },
+    {
+      key: 'formations',
+      label: isFr
+        ? `🎓 Formations${isGrowth ? '' : ' 🔒'}`
+        : `🎓 Training${isGrowth ? '' : ' 🔒'}`,
     },
   ];
 
@@ -848,6 +907,71 @@ export default function CooperativePortal() {
               </button>
             </div>
 
+            {/* Incoming join requests */}
+            <div className="mb-8">
+              <h4 className="text-sm font-bold text-[#1a3c2e] mb-3 uppercase tracking-wide">
+                {isFr ? 'Demandes d\'adhésion' : 'Join requests'}
+                {pendingJoinCount > 0 ? (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500 text-black text-xs font-bold">
+                    {pendingJoinCount}
+                  </span>
+                ) : null}
+              </h4>
+              {pendingJoinCount === 0 ? (
+                <p className="text-sm text-gray-500 bg-white rounded-xl border border-gray-200 px-4 py-6 text-center">
+                  {isFr ? 'Aucune demande en attente.' : 'No pending join requests.'}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {(data.joinRequests || []).map((jr) => (
+                    <div
+                      key={jr._id}
+                      className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                    >
+                      <div>
+                        <p className="font-semibold text-[#1a3c2e] text-sm">{jr.farmerName || '—'}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {jr.farmerRegion || '—'}
+                          {' · '}
+                          {(jr.farmerCropTypes || []).slice(0, 3).join(', ') || '—'}
+                        </p>
+                        {jr.message ? (
+                          <p className="text-xs text-gray-600 mt-1 italic">&ldquo;{jr.message}&rdquo;</p>
+                        ) : null}
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          {jr.requestedAt ? new Date(jr.requestedAt).toLocaleString() : ''}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          type="button"
+                          disabled={joinReviewBusy === jr._id}
+                          onClick={() => reviewJoinRequest(jr._id, 'approve')}
+                          className="px-3 py-2 rounded-lg bg-green-600 text-white text-xs font-bold disabled:opacity-50"
+                        >
+                          {isFr ? 'Approuver' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={joinReviewBusy === jr._id}
+                          onClick={() => reviewJoinRequest(jr._id, 'decline')}
+                          className="px-3 py-2 rounded-lg bg-red-600 text-white text-xs font-bold disabled:opacity-50"
+                        >
+                          {isFr ? 'Refuser' : 'Decline'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-[#1a3c2e] uppercase tracking-wide">
+                {isFr ? 'Invitations envoyées' : 'Sent invitations'}
+              </h4>
+            </div>
+
             {(data?.invitations || []).length === 0 ? (
               <div className="text-center py-14 bg-white rounded-2xl border border-gray-200">
                 <p className="text-5xl mb-3">📨</p>
@@ -899,6 +1023,80 @@ export default function CooperativePortal() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'formations' && (
+          <div>
+            {!isGrowth || declaredMembers < 51 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-200 px-6">
+                <span className="text-4xl mb-4">🔒</span>
+                <p className="text-[#1a3c2e] font-semibold mb-2 max-w-md">
+                  {isFr
+                    ? 'Les formations sont disponibles à partir de 51 membres avec un abonnement actif'
+                    : 'Training unlocks at 51 members with an active subscription'}
+                </p>
+                <p className="text-amber-700 font-bold text-lg mb-2">
+                  {declaredMembers} / 51 {isFr ? 'membres' : 'members'}
+                </p>
+                <div className="w-full max-w-xs h-2 rounded-full bg-gray-100 mb-6 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-amber-500 transition-all"
+                    style={{ width: `${Math.min(100, Math.round((declaredMembers / 51) * 100))}%` }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/cooperative-upgrade')}
+                  className="px-6 py-3 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition-all"
+                >
+                  {isFr ? 'Passer au plan Croissance' : 'Upgrade to Growth'}
+                </button>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-xl font-bold text-[#1a3c2e] mb-4">
+                  🎓 {isFr ? 'Formations disponibles' : 'Available training'}
+                </h3>
+                {trainingsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#1a3c2e]" />
+                  </div>
+                ) : trainings.length === 0 ? (
+                  <p className="text-center text-gray-500 py-12 bg-white rounded-2xl border border-gray-200">
+                    {isFr ? 'Aucune formation planifiée pour le moment.' : 'No trainings scheduled yet.'}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {trainings.map((t) => (
+                      <div
+                        key={t._id}
+                        className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                      >
+                        <div>
+                          <p className="font-semibold text-[#1a3c2e]">{t.titre || t.sujet || 'Formation'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {[t.region, t.niveau, t.format].filter(Boolean).join(' · ')}
+                          </p>
+                          {t.description ? (
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{t.description}</p>
+                          ) : null}
+                        </div>
+                        <a
+                          href={`mailto:support@sahelagriconnect.com?subject=${encodeURIComponent(
+                            `Inscription formation: ${t.titre || t.sujet || ''}`
+                          )}`}
+                          className="shrink-0 px-4 py-2 rounded-lg text-white text-xs font-bold text-center"
+                          style={{ background: '#1a3c2e' }}
+                        >
+                          {isFr ? 'S\'inscrire' : 'Register'}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

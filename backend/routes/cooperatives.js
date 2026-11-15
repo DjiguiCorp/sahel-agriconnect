@@ -6,6 +6,7 @@ import { Resend } from 'resend';
 import Cooperative from '../models/Cooperative.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import CooperativeInvitation from '../models/CooperativeInvitation.js';
+import CooperativeJoinRequest from '../models/CooperativeJoinRequest.js';
 import PendingNotification from '../models/PendingNotification.js';
 import ProduceListing from '../models/ProduceListing.js';
 import Farmer from '../models/Farmer.js';
@@ -17,6 +18,11 @@ import { confirmCooperativeRegistration, notifyAdminNewCooperative } from '../se
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import { dispatchNotification } from './notifications.js';
 import DeviceSession from '../models/DeviceSession.js';
+import {
+  maybeUpgradeCoopAt51,
+  sendJoinRequestToLeaderEmail,
+  sendJoinRequestOutcomeEmail,
+} from '../services/coopMemberUpgrade.js';
 
 const router = express.Router();
 
@@ -32,7 +38,7 @@ export function deriveCoopTier(memberCount) {
   };
 }
 
-const authCoop = async (req, res, next) => {
+export const authCoop = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Not authenticated' });
@@ -158,6 +164,240 @@ router.post('/register-platform', async (req, res) => {
       success: false,
       error: error.message || 'Erreur lors de l’enregistrement',
     });
+  }
+});
+
+/**
+ * Shared discover handler — platform coops for farmer discovery.
+ * GET /api/cooperatives/discover and /nearby (alias)
+ */
+async function discoverCooperatives(req, res) {
+  try {
+    const region = String(req.query.region || '').trim();
+    const cropType = String(req.query.cropType || req.query.crop || '').trim();
+    const country = String(req.query.country || '').trim();
+
+    const filter = {
+      $or: [
+        { status: 'active' },
+        { status: 'pending_payment', memberCount: { $lt: 51 } },
+      ],
+    };
+    if (country) {
+      filter.country = new RegExp(`^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    }
+    if (region) {
+      filter.regionCity = new RegExp(region.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    }
+    if (cropType) {
+      filter.primaryCrops = {
+        $elemMatch: {
+          $regex: new RegExp(cropType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+        },
+      };
+    }
+
+    const rows = await CooperativePlatformRegistration.find(filter)
+      .sort({ memberCount: -1, createdAt: -1 })
+      .limit(20)
+      .select(
+        'cooperativeName regionCity country primaryCrops memberCount tier leaderName certificationStatus'
+      )
+      .lean();
+
+    const cooperatives = rows.map((c) => ({
+      id: c._id,
+      _id: c._id,
+      cooperativeName: c.cooperativeName,
+      regionCity: c.regionCity,
+      country: c.country,
+      primaryCrops: c.primaryCrops || [],
+      memberCount: c.memberCount,
+      tier: c.tier,
+      leaderName: c.leaderName,
+      certificationStatus: c.certificationStatus || null,
+    }));
+
+    return res.json({ success: true, cooperatives });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+router.get('/discover', discoverCooperatives);
+router.get('/nearby', discoverCooperatives);
+
+/**
+ * POST /api/cooperatives/join-request
+ * Body: { cooperativeId, farmerId, message? }
+ */
+router.post('/join-request', async (req, res) => {
+  try {
+    const cooperativeId = String(req.body?.cooperativeId || '').trim();
+    const farmerId = String(req.body?.farmerId || '').trim();
+    const message = String(req.body?.message || '').trim();
+
+    if (!cooperativeId || !farmerId) {
+      return res.status(400).json({
+        success: false,
+        error: 'cooperativeId and farmerId are required',
+      });
+    }
+
+    const [coop, farmer] = await Promise.all([
+      CooperativePlatformRegistration.findById(cooperativeId),
+      Farmer.findById(farmerId),
+    ]);
+    if (!coop) {
+      return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    }
+    if (!farmer) {
+      return res.status(404).json({ success: false, error: 'Farmer not found' });
+    }
+
+    const existing = await CooperativeJoinRequest.findOne({
+      cooperativeId,
+      farmerId,
+      status: 'pending',
+    });
+    if (existing) {
+      return res.json({
+        success: true,
+        requestId: existing._id,
+        status: 'pending',
+        alreadyPending: true,
+      });
+    }
+
+    const joinReq = await CooperativeJoinRequest.create({
+      cooperativeId,
+      farmerId,
+      farmerName: farmer.nom,
+      farmerRegion: farmer.region || '',
+      farmerCropTypes: farmer.cultures || [],
+      message,
+      status: 'pending',
+      requestedAt: new Date(),
+    });
+
+    await sendJoinRequestToLeaderEmail({
+      leaderEmail: coop.email,
+      leaderName: coop.leaderName,
+      cooperativeName: coop.cooperativeName,
+      farmerName: farmer.nom,
+      farmerRegion: farmer.region,
+      farmerCrops: farmer.cultures,
+      message,
+    }).catch((err) => console.error('[join-request] leader email failed:', err.message));
+
+    return res.status(201).json({
+      success: true,
+      requestId: joinReq._id,
+      status: 'pending',
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * GET /api/cooperatives/:id/join-requests — pending requests for this coop (leader auth)
+ */
+router.get('/:id/join-requests', authCoop, async (req, res) => {
+  try {
+    if (String(req.coop._id) !== String(req.params.id)) {
+      return res.status(403).json({ success: false, error: 'Not your cooperative' });
+    }
+    const status = String(req.query.status || 'pending');
+    const filter = { cooperativeId: req.coop._id };
+    if (status !== 'all') filter.status = status;
+
+    const requests = await CooperativeJoinRequest.find(filter)
+      .sort({ requestedAt: -1 })
+      .lean();
+    return res.json({ success: true, requests });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * POST /api/cooperatives/:id/join-requests/:requestId/review
+ * Body: { action: 'approve' | 'decline' }
+ */
+router.post('/:id/join-requests/:requestId/review', authCoop, async (req, res) => {
+  try {
+    if (String(req.coop._id) !== String(req.params.id)) {
+      return res.status(403).json({ success: false, error: 'Not your cooperative' });
+    }
+    const action = String(req.body?.action || '').toLowerCase();
+    if (!['approve', 'decline'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        error: "action must be 'approve' or 'decline'",
+      });
+    }
+
+    const joinReq = await CooperativeJoinRequest.findOne({
+      _id: req.params.requestId,
+      cooperativeId: req.coop._id,
+    });
+    if (!joinReq) {
+      return res.status(404).json({ success: false, error: 'Join request not found' });
+    }
+    if (joinReq.status !== 'pending') {
+      return res.status(409).json({
+        success: false,
+        error: `Request already ${joinReq.status}`,
+      });
+    }
+
+    const farmer = await Farmer.findById(joinReq.farmerId);
+    const now = new Date();
+    joinReq.reviewedAt = now;
+    joinReq.reviewedBy = req.coop.email || req.coop.leaderName || 'cooperative_leader';
+
+    if (action === 'approve') {
+      joinReq.status = 'approved';
+      await joinReq.save();
+
+      if (farmer) {
+        farmer.cooperativeId = req.coop._id;
+        farmer.lienCooperative = 'Oui';
+        farmer.nomCooperative = req.coop.cooperativeName;
+        await farmer.save();
+      }
+
+      await CooperativePlatformRegistration.findByIdAndUpdate(req.coop._id, {
+        $inc: { memberCount: 1 },
+      });
+      await maybeUpgradeCoopAt51(req.coop._id);
+
+      await sendJoinRequestOutcomeEmail({
+        farmerEmail: farmer?.email,
+        farmerName: farmer?.nom || joinReq.farmerName,
+        cooperativeName: req.coop.cooperativeName,
+        approved: true,
+      }).catch((err) => console.error('[join-review] approve email failed:', err.message));
+    } else {
+      joinReq.status = 'declined';
+      await joinReq.save();
+
+      await sendJoinRequestOutcomeEmail({
+        farmerEmail: farmer?.email,
+        farmerName: farmer?.nom || joinReq.farmerName,
+        cooperativeName: req.coop.cooperativeName,
+        approved: false,
+      }).catch((err) => console.error('[join-review] decline email failed:', err.message));
+    }
+
+    return res.json({
+      success: true,
+      status: joinReq.status,
+      requestId: joinReq._id,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
   }
 });
 
@@ -441,7 +681,7 @@ router.get('/my-portal', authCoop, async (req, res) => {
     const coopName = req.coop.cooperativeName || req.coop.nomCooperative;
     const country = req.coop.country;
 
-    const [memberFarmers, produceListings, invitations, projects] = await Promise.all([
+    const [memberFarmers, produceListings, invitations, projects, joinRequests] = await Promise.all([
       Farmer.find({
         $or: [{ nomCooperative: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }, { cooperativeId: req.coop._id }],
       })
@@ -458,6 +698,9 @@ router.get('/my-portal', authCoop, async (req, res) => {
           'title titleFr description descriptionFr projectType priority incentives requirements startDate endDate createdByName organization responses'
         )
         .lean(),
+      CooperativeJoinRequest.find({ cooperativeId: req.coop._id, status: 'pending' })
+        .sort({ requestedAt: -1 })
+        .lean(),
     ]);
 
     const projectsWithMine = projects.map((p) => {
@@ -468,11 +711,13 @@ router.get('/my-portal', authCoop, async (req, res) => {
 
     const stats = {
       memberCount: memberFarmers.length,
+      declaredMemberCount: req.coop.memberCount,
       totalAreaHa: memberFarmers.reduce((s, f) => s + (Number(f.superficie) || 0), 0),
       pendingListings: produceListings.filter((l) => !l.cooperativeApproved).length,
       promotedListings: produceListings.filter((l) => l.promotedToMarketplace).length,
       invitationsSent: invitations.length,
       invitationsAccepted: invitations.filter((i) => i.status === 'accepted').length,
+      pendingJoinRequests: joinRequests.length,
       activeProjects: projectsWithMine.length,
     };
 
@@ -486,15 +731,18 @@ router.get('/my-portal', authCoop, async (req, res) => {
         cooperativeName: req.coop.cooperativeName,
         country: req.coop.country,
         memberCount: req.coop.memberCount,
+        status: req.coop.status,
         tier,
         certificationEligible: isGrowth || Boolean(req.coop.certificationEligible),
         afriyieldEligible: isGrowth || Boolean(req.coop.afriyieldEligible),
         exportEligible: isGrowth || Boolean(req.coop.exportEligible),
+        subscriptionExpiresAt: req.coop.subscriptionExpiresAt || null,
       },
       stats,
       memberFarmers,
       produceListings,
       invitations,
+      joinRequests,
       nationalProjects: projectsWithMine,
     });
   } catch (e) {

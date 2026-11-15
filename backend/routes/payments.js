@@ -476,16 +476,19 @@ router.post('/stripe/webhook', async (req, res) => {
         emailNorm
       ) {
         const memberCountMeta = Number(session.metadata?.memberCount);
+        const now = new Date();
         const update = {
           paymentReceived: true,
-          paymentDate: new Date(),
+          paymentDate: now,
           paymentMethod: 'stripe',
           status: 'active',
-          activatedAt: new Date(),
+          activatedAt: now,
           tier: 'growth',
           certificationEligible: true,
           afriyieldEligible: true,
           exportEligible: true,
+          subscriptionRenewedAt: now,
+          subscriptionExpiresAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
         };
         if (Number.isFinite(memberCountMeta) && memberCountMeta > 0) {
           update.memberCount = memberCountMeta;
