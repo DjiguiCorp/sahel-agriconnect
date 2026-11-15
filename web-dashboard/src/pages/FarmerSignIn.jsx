@@ -121,7 +121,7 @@ export default function FarmerSignIn() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-white/15 rounded-xl px-4 py-3 text-sm bg-black/30 text-white placeholder-white/30 focus:outline-none focus:border-[#4CAF50]/60"
+                  className="w-full rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-sm !text-white placeholder:!text-gray-500 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/40 caret-white"
                   placeholder={isFr ? 'votre@email.com' : 'you@email.com'}
                 />
               </div>
@@ -165,7 +165,8 @@ export default function FarmerSignIn() {
                   required
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full border border-white/15 rounded-xl px-4 py-3 text-sm bg-black/30 text-white placeholder-white/30 focus:outline-none focus:border-[#4CAF50]/60 tracking-widest text-center font-mono"
+                  placeholder="••••••"
+                  className="w-full rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-sm !text-white placeholder:!text-gray-500 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/40 tracking-widest text-center font-mono caret-white"
                 />
               </div>
               {error && <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 p-2 rounded-lg">{error}</p>}

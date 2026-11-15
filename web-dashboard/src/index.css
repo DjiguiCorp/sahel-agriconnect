@@ -16,16 +16,21 @@
   }
 
   /*
-   * body { color: white } would otherwise make typed text invisible on light cards.
-   * Dark-themed forms already set text-white / placeholder-white, or use .registration-dark-zone.
+   * body { color: white } makes typed text invisible on light cards.
+   * Only force dark text on light field surfaces; dark forms keep white via text-white.
    */
-  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not([type='hidden']):not([type='range']):not([type='color']),
-  textarea,
-  select {
+  input.bg-white:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not([type='hidden']),
+  input.bg-gray-50:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not([type='hidden']),
+  textarea.bg-white,
+  textarea.bg-gray-50,
+  select.bg-white,
+  select.bg-gray-50 {
     color: #111827; /* gray-900 */
   }
-  input::placeholder,
-  textarea::placeholder {
+  input.bg-white::placeholder,
+  input.bg-gray-50::placeholder,
+  textarea.bg-white::placeholder,
+  textarea.bg-gray-50::placeholder {
     color: #9ca3af; /* gray-400 */
     opacity: 1;
   }
