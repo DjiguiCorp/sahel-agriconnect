@@ -34,6 +34,14 @@ const cooperativePlatformRegistrationSchema = new mongoose.Schema({
   subscriptionRenewedAt: { type: Date },
   emailVerified: { type: Boolean, default: false },
   verifiedAt: Date,
+  /** Admin membership / legitimacy verification (Growth) */
+  verificationStatus: {
+    type: String,
+    enum: ['unverified', 'verified', 'flagged'],
+    default: 'unverified',
+  },
+  verifiedBy: { type: String, trim: true },
+  verificationNotes: { type: String, trim: true },
   passwordHash: { type: String },
   tempPassword: { type: String },
   /** Linked transformation / processing partner */

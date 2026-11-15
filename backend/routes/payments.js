@@ -508,6 +508,46 @@ router.post('/stripe/webhook', async (req, res) => {
           } catch (certErr) {
             console.error('[payments] coop certification check failed:', certErr.message);
           }
+
+          // Admin verification alert after Growth payment activation
+          try {
+            const { getVerifiedMemberCount } = await import('../services/coopMemberUpgrade.js');
+            const { Resend } = await import('resend');
+            const verifiedMemberCount = await getVerifiedMemberCount(coopUpdated._id);
+            const declaredMemberCount = Number(coopUpdated.memberCount) || 0;
+            if (process.env.RESEND_API_KEY) {
+              const resend = new Resend(process.env.RESEND_API_KEY);
+              await resend.emails.send({
+                from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+                to: 'info@djiguicorporation.org',
+                subject:
+                  'Nouvelle coopérative Growth activée — vérification requise / New Growth cooperative activated — verification required',
+                html: `
+                  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+                    <div style="background:#1a3c2e;padding:20px;border-radius:8px 8px 0 0;">
+                      <h1 style="color:#B5850A;margin:0;font-size:18px;">Growth activation</h1>
+                    </div>
+                    <div style="padding:24px;background:#f9f9f9;border:1px solid #e0e0e0;">
+                      <p><strong>${coopUpdated.cooperativeName || ''}</strong></p>
+                      <p>Leader: ${coopUpdated.leaderName || '—'} · ${coopUpdated.email || ''}</p>
+                      <p>Country / Region: ${coopUpdated.country || '—'} / ${coopUpdated.regionCity || '—'}</p>
+                      <p>Declared members: <strong>${declaredMemberCount}</strong></p>
+                      <p>Verified platform members: <strong>${verifiedMemberCount}</strong></p>
+                      <p>Payment: Stripe · ${coopUpdated.paymentDate ? new Date(coopUpdated.paymentDate).toISOString() : 'now'}</p>
+                      <p style="margin-top:16px;">
+                        <a href="https://sahelagriconnect.com/admin/central"
+                          style="background:#1a3c2e;color:white;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;">
+                          Open admin panel
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                `,
+              });
+            }
+          } catch (adminMailErr) {
+            console.error('[payments] growth admin verify email failed:', adminMailErr.message);
+          }
         }
       }
 

@@ -24,6 +24,10 @@ import {
   sendKYCRejected,
 } from '../services/kycEmailService.js';
 import { applyCooperativeCertification } from '../services/certificationService.js';
+import {
+  getVerifiedMemberCount,
+  sendCoopFlaggedEmail,
+} from '../services/coopMemberUpgrade.js';
 
 const router = express.Router();
 
@@ -456,6 +460,61 @@ router.post('/cooperatives/:id/activate', authenticateToken, async (req, res) =>
     return res.json({ success: true, cooperative: coop });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/admin/cooperatives/growth — Growth coops with declared vs verified counts
+router.get('/cooperatives/growth', authenticateToken, async (req, res) => {
+  try {
+    const coops = await CooperativePlatformRegistration.find({ tier: 'growth' })
+      .sort({ paymentDate: -1, activatedAt: -1, createdAt: -1 })
+      .lean();
+    const enriched = await Promise.all(
+      coops.map(async (c) => {
+        const verifiedMemberCount = await getVerifiedMemberCount(c._id);
+        return {
+          ...c,
+          declaredMemberCount: c.memberCount,
+          verifiedMemberCount,
+          verificationStatus: c.verificationStatus || 'unverified',
+        };
+      })
+    );
+    res.json({ success: true, cooperatives: enriched });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/admin/cooperatives/:id/verify — mark membership as verified
+router.post('/cooperatives/:id/verify', authenticateToken, async (req, res) => {
+  try {
+    const coop = await CooperativePlatformRegistration.findById(req.params.id);
+    if (!coop) return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    coop.verificationStatus = 'verified';
+    coop.verifiedAt = new Date();
+    coop.verifiedBy = req.user?.email || req.body?.adminEmail || 'admin';
+    if (req.body?.notes) coop.verificationNotes = String(req.body.notes);
+    await coop.save();
+    res.json({ success: true, cooperative: coop });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/admin/cooperatives/:id/flag — flag for review + email leader
+router.post('/cooperatives/:id/flag', authenticateToken, async (req, res) => {
+  try {
+    const coop = await CooperativePlatformRegistration.findById(req.params.id);
+    if (!coop) return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    coop.verificationStatus = 'flagged';
+    coop.verifiedBy = req.user?.email || req.body?.adminEmail || 'admin';
+    if (req.body?.notes) coop.verificationNotes = String(req.body.notes);
+    await coop.save();
+    sendCoopFlaggedEmail(coop).catch(console.error);
+    res.json({ success: true, cooperative: coop });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
   }
 });
 

@@ -28,9 +28,53 @@ import { dispatchNotification } from './notifications.js';
 import DeviceSession from '../models/DeviceSession.js';
 import {
   maybeUpgradeCoopAt51,
+  getVerifiedMemberCount,
   sendJoinRequestToLeaderEmail,
   sendJoinRequestOutcomeEmail,
+  sendCoopFlaggedEmail,
 } from '../services/coopMemberUpgrade.js';
+
+const ADMIN_VERIFY_EMAIL = 'info@djiguicorporation.org';
+
+function emailDomain(email) {
+  const s = String(email || '').toLowerCase().trim();
+  const at = s.lastIndexOf('@');
+  return at > 0 ? s.slice(at + 1) : '';
+}
+
+/** Simple edit-distance (Levenshtein); used for soft name similarity flags */
+function editDistance(a, b) {
+  const s = String(a || '').toLowerCase().trim();
+  const t = String(b || '').toLowerCase().trim();
+  if (!s || !t) return 99;
+  const m = s.length;
+  const n = t.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+async function sendAdminSoftFlagAlert({ subject, html }) {
+  try {
+    if (!process.env.RESEND_API_KEY) return;
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+      to: ADMIN_VERIFY_EMAIL,
+      subject,
+      html,
+    });
+  } catch (e) {
+    console.error('[coop soft-flag email]', e.message);
+  }
+}
 
 const router = express.Router();
 
@@ -127,6 +171,37 @@ router.post('/register-platform', async (req, res) => {
     // Eligibility unlocks with Growth tier; unpaid Growth stays pending_payment (cannot login until paid).
     const paidGrowth = tier === 'growth' && (req.body.paymentReceived === true || req.body.skipPayment === true);
 
+    // Soft fraud checks (do not block activation)
+    const softFlags = [];
+    if (memberCount > 100) {
+      softFlags.push(`Declared memberCount ${memberCount} > 100`);
+    }
+    const domain = emailDomain(req.body.email);
+    if (domain) {
+      const domainCount = await CooperativePlatformRegistration.countDocuments({
+        email: new RegExp(`@${domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+      });
+      if (domainCount >= 3) {
+        softFlags.push(`Email domain @${domain} already used by ${domainCount} cooperatives`);
+      }
+    }
+    const regionCity = String(req.body.regionCity || '').trim();
+    const coopName = String(req.body.cooperativeName || '').trim();
+    if (coopName && regionCity) {
+      const sameRegion = await CooperativePlatformRegistration.find({
+        regionCity: new RegExp(`^${regionCity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+      })
+        .select('cooperativeName regionCity')
+        .limit(50)
+        .lean();
+      const similar = sameRegion.find((c) => editDistance(c.cooperativeName, coopName) <= 3);
+      if (similar) {
+        softFlags.push(
+          `Name similar to existing "${similar.cooperativeName}" in ${similar.regionCity} (≤3 chars)`
+        );
+      }
+    }
+
     const cooperative = await CooperativePlatformRegistration.create({
       cooperativeName: req.body.cooperativeName,
       country: req.body.country,
@@ -148,7 +223,22 @@ router.post('/register-platform', async (req, res) => {
       paymentMethod: tier === 'starter' ? 'free_starter' : paidGrowth ? (req.body.paymentMethod || 'stripe') : undefined,
       activatedAt: tier === 'starter' || paidGrowth ? new Date() : undefined,
       emailVerified: false,
+      verificationStatus: softFlags.length ? 'flagged' : 'unverified',
+      verificationNotes: softFlags.length ? softFlags.join('; ') : undefined,
     });
+
+    if (softFlags.length) {
+      sendAdminSoftFlagAlert({
+        subject: `Alerte inscription coopérative / Soft-flagged registration — ${cooperative.cooperativeName}`,
+        html: `
+          <p><strong>${cooperative.cooperativeName}</strong> (${cooperative.country} / ${cooperative.regionCity})</p>
+          <p>Leader: ${cooperative.leaderName} · ${cooperative.email}</p>
+          <p>Declared members: ${memberCount} · Tier: ${tier}</p>
+          <ul>${softFlags.map((f) => `<li>${f}</li>`).join('')}</ul>
+          <p><a href="https://sahelagriconnect.com/admin/central">Open admin panel</a></p>
+        `,
+      }).catch(console.error);
+    }
 
     notifyAdminNewCooperative(cooperative).catch(console.error);
     confirmCooperativeRegistration(cooperative).catch(console.error);
@@ -738,6 +828,7 @@ router.get('/my-portal', authCoop, async (req, res) => {
       memberPayments,
       pendingEquipmentApps,
       pendingCertifications,
+      verifiedMemberCount,
     ] = await Promise.all([
       Farmer.find({
         $or: [{ nomCooperative: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }, { cooperativeId: req.coop._id }],
@@ -774,6 +865,7 @@ router.get('/my-portal', authCoop, async (req, res) => {
           { name: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
         ],
       }),
+      getVerifiedMemberCount(req.coop._id),
     ]);
 
     const projectsWithMine = projects.map((p) => {
@@ -785,6 +877,7 @@ router.get('/my-portal', authCoop, async (req, res) => {
     const stats = {
       memberCount: memberFarmers.length,
       declaredMemberCount: req.coop.memberCount,
+      verifiedMemberCount,
       totalAreaHa: memberFarmers.reduce((s, f) => s + (Number(f.superficie) || 0), 0),
       pendingListings: produceListings.filter((l) => !l.cooperativeApproved).length,
       promotedListings: produceListings.filter((l) => l.promotedToMarketplace).length,
@@ -810,6 +903,7 @@ router.get('/my-portal', authCoop, async (req, res) => {
         status: req.coop.status,
         tier,
         emailVerified: Boolean(req.coop.emailVerified),
+        verificationStatus: req.coop.verificationStatus || 'unverified',
         certificationEligible: isGrowth || Boolean(req.coop.certificationEligible),
         afriyieldEligible: isGrowth || Boolean(req.coop.afriyieldEligible),
         exportEligible: isGrowth || Boolean(req.coop.exportEligible),

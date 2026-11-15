@@ -8,8 +8,39 @@ import { countryFilter } from '../middleware/countryFilter.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import { normalizePhone, farmerTelephoneQuery } from '../utils/phone.js';
 import DeviceSession from '../models/DeviceSession.js';
+import { authCoop } from './cooperatives.js';
 
 const router = express.Router();
+
+// GET /api/farmers/lookup — cooperative leader lookup by email or phone (limited fields)
+router.get('/lookup', authCoop, async (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim().toLowerCase();
+    const phone = String(req.query.phone || '').trim();
+    if (!email && !phone) {
+      return res.status(400).json({ found: false, error: 'email or phone required' });
+    }
+
+    const q = email ? { email } : farmerTelephoneQuery(phone);
+    const farmer = await Farmer.findOne(q)
+      .sort({ createdAt: -1 })
+      .select('nom region cultures emailVerified')
+      .lean();
+
+    if (!farmer) return res.json({ found: false });
+
+    return res.json({
+      found: true,
+      farmerId: farmer._id,
+      farmerName: farmer.nom || '',
+      region: farmer.region || '',
+      primaryCrops: Array.isArray(farmer.cultures) ? farmer.cultures : [],
+      emailVerified: Boolean(farmer.emailVerified),
+    });
+  } catch (e) {
+    res.status(500).json({ found: false, error: e.message });
+  }
+});
 
 // GET /api/farmers/public-stats — public summary stats, no auth required
 router.get('/public-stats', async (req, res) => {

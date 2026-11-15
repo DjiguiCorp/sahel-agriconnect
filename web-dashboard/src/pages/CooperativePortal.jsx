@@ -80,9 +80,11 @@ export default function CooperativePortal() {
     inviteePhone: '',
     inviteeEmail: '',
     inviteeRegion: '',
+    inviteeCrops: [],
     message: '',
   });
   const [inviteState, setInviteState] = useState({ loading: false, ok: false, err: '' });
+  const [inviteLookup, setInviteLookup] = useState({ status: 'idle', found: null }); // idle|loading|done
   const [showInvite, setShowInvite] = useState(false);
   const [trainings, setTrainings] = useState([]);
   const [trainingsLoading, setTrainingsLoading] = useState(false);
@@ -109,7 +111,8 @@ export default function CooperativePortal() {
     data?.cooperative?.memberCount ?? data?.stats?.declaredMemberCount ?? 0
   );
   const linkedMemberCount = Number(data?.stats?.memberCount ?? 0);
-  const progressMembers = Math.max(linkedMemberCount, declaredMembers);
+  const verifiedMemberCount = Number(data?.stats?.verifiedMemberCount ?? 0);
+  const progressMembers = verifiedMemberCount;
   const pendingJoinCount = (data?.joinRequests || []).length;
   const processorId = data?.cooperative?.processorId || null;
   const processorName = data?.cooperative?.processorName || '';
@@ -120,6 +123,7 @@ export default function CooperativePortal() {
       (data?.produceListings || []).filter((l) => l.cooperativeApproved).length
   );
   const specialUnlocked = isGrowth && progressMembers >= 51 && Boolean(processorId);
+  const verificationStatus = data?.cooperative?.verificationStatus || 'unverified';
 
   const refreshPortal = () => {
     if (!token) return;
@@ -401,18 +405,64 @@ export default function CooperativePortal() {
     }));
   };
 
+  const lookupFarmerContact = async (field) => {
+    const email = inviteForm.inviteeEmail.trim().toLowerCase();
+    const phone = inviteForm.inviteePhone.trim();
+    if (field === 'email' && !email) return;
+    if (field === 'phone' && !phone) return;
+    if (!token) return;
+
+    setInviteLookup({ status: 'loading', found: null });
+    try {
+      const qs = field === 'email' ? `email=${encodeURIComponent(email)}` : `phone=${encodeURIComponent(phone)}`;
+      const r = await fetch(`${API}/api/farmers/lookup?${qs}`, { headers });
+      const d = await r.json().catch(() => ({}));
+      if (d.found) {
+        setInviteForm((f) => ({
+          ...f,
+          inviteeName: d.farmerName || f.inviteeName,
+          inviteeRegion: d.region || f.inviteeRegion,
+          inviteeCrops: Array.isArray(d.primaryCrops) ? d.primaryCrops : [],
+        }));
+        setInviteLookup({ status: 'done', found: true });
+      } else {
+        setInviteLookup({ status: 'done', found: false });
+      }
+    } catch {
+      setInviteLookup({ status: 'done', found: false });
+    }
+  };
+
   const sendInvite = async () => {
     setInviteState({ loading: true, ok: false, err: '' });
     try {
+      const cropsNote =
+        inviteForm.inviteeCrops?.length > 0
+          ? `\n[${isFr ? 'Cultures' : 'Crops'}: ${inviteForm.inviteeCrops.join(', ')}]`
+          : '';
       const r = await fetch(`${API}/api/cooperatives/my-portal/invite`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(inviteForm),
+        body: JSON.stringify({
+          inviteeName: inviteForm.inviteeName,
+          inviteePhone: inviteForm.inviteePhone,
+          inviteeEmail: inviteForm.inviteeEmail,
+          inviteeRegion: inviteForm.inviteeRegion,
+          message: `${inviteForm.message || ''}${cropsNote}`.trim(),
+        }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setInviteState({ loading: false, ok: true, err: '' });
-      setInviteForm({ inviteeName: '', inviteePhone: '', inviteeEmail: '', inviteeRegion: '', message: '' });
+      setInviteForm({
+        inviteeName: '',
+        inviteePhone: '',
+        inviteeEmail: '',
+        inviteeRegion: '',
+        inviteeCrops: [],
+        message: '',
+      });
+      setInviteLookup({ status: 'idle', found: null });
       setTimeout(() => setShowInvite(false), 1500);
     } catch (e) {
       setInviteState({ loading: false, ok: false, err: e.message });
@@ -581,7 +631,14 @@ export default function CooperativePortal() {
         <div className="flex items-center gap-3">
           <img src="/sahel-logo.png" alt="SA" className="w-9 h-9 rounded-lg object-cover" />
           <div>
-            <p className="text-white font-bold text-sm">{coop.cooperativeName}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-white font-bold text-sm">{coop.cooperativeName}</p>
+              {verificationStatus === 'verified' ? (
+                <span className="inline-flex items-center rounded-full bg-green-400/20 text-green-300 text-[10px] font-bold px-2 py-0.5">
+                  ✓ {isFr ? 'Coopérative Vérifiée' : 'Verified Cooperative'}
+                </span>
+              ) : null}
+            </div>
             <p className="text-white/50 text-xs">
               🌍 {coop.country} · {isFr ? 'Portail coopérative' : 'Cooperative portal'}
             </p>
@@ -618,6 +675,13 @@ export default function CooperativePortal() {
       )}
 
       <div className="max-w-5xl mx-auto px-4 pt-4">
+        {verificationStatus === 'flagged' ? (
+          <div className="mb-2 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {isFr
+              ? 'Votre compte est en cours de révision — contactez support@sahelagriconnect.com'
+              : 'Your account is under review — contact support@sahelagriconnect.com'}
+          </div>
+        ) : null}
         {!isGrowth ? (
           <div className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 bg-white mb-2 shadow-sm">
             <span className="text-2xl">🌱</span>
@@ -627,8 +691,8 @@ export default function CooperativePortal() {
               </p>
               <p className="text-gray-500 text-xs">
                 {isFr
-                  ? 'Certification, AfriYield et export disponibles à partir de 51 membres (plan Croissance $199/an)'
-                  : 'Certification, AfriYield & export available from 51 members (Growth plan $199/year)'}
+                  ? 'Certification, AfriYield et export disponibles à partir de 51 membres vérifiés (plan Croissance $199/an)'
+                  : 'Certification, AfriYield & export available from 51 verified members (Growth plan $199/year)'}
               </p>
             </div>
             <button
@@ -696,9 +760,14 @@ export default function CooperativePortal() {
                     {isFr ? 'Progression des membres' : 'Member progress'}
                   </h3>
                   <p className="text-sm text-gray-500 mt-0.5">
-                    {linkedMemberCount} {isFr ? 'membres liés' : 'linked members'}
-                    {declaredMembers !== linkedMemberCount
+                    {isFr
+                      ? `${verifiedMemberCount} membres vérifiés sur la plateforme`
+                      : `${verifiedMemberCount} verified members on the platform`}
+                    {declaredMembers
                       ? ` · ${declaredMembers} ${isFr ? 'déclarés' : 'declared'}`
+                      : ''}
+                    {linkedMemberCount
+                      ? ` · ${linkedMemberCount} ${isFr ? 'liés' : 'linked'}`
                       : ''}
                   </p>
                 </div>
@@ -723,8 +792,8 @@ export default function CooperativePortal() {
               </div>
               <p className="text-xs text-gray-600 mb-3">
                 {isFr
-                  ? `${Math.min(progressMembers, 51)} / 51 membres pour débloquer les formations, la certification et l'export`
-                  : `${Math.min(progressMembers, 51)} / 51 members to unlock training, certification and export`}
+                  ? `${Math.min(progressMembers, 51)} / 51 membres vérifiés pour débloquer les formations, la certification et l'export`
+                  : `${Math.min(progressMembers, 51)} / 51 verified members to unlock training, certification and export`}
               </p>
               {progressMembers >= 51 && coopTier === 'starter' ? (
                 <div className="rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1532,21 +1601,21 @@ export default function CooperativePortal() {
 
         {activeTab === 'formations' && (
           <div>
-            {!isGrowth || declaredMembers < 51 ? (
+            {!isGrowth || progressMembers < 51 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-200 px-6">
                 <span className="text-4xl mb-4">🔒</span>
                 <p className="text-[#1a3c2e] font-semibold mb-2 max-w-md">
                   {isFr
-                    ? 'Les formations sont disponibles à partir de 51 membres avec un abonnement actif'
-                    : 'Training unlocks at 51 members with an active subscription'}
+                    ? 'Les formations sont disponibles à partir de 51 membres vérifiés avec un abonnement actif'
+                    : 'Training unlocks at 51 verified members with an active subscription'}
                 </p>
                 <p className="text-amber-700 font-bold text-lg mb-2">
-                  {declaredMembers} / 51 {isFr ? 'membres' : 'members'}
+                  {progressMembers} / 51 {isFr ? 'membres vérifiés' : 'verified members'}
                 </p>
                 <div className="w-full max-w-xs h-2 rounded-full bg-gray-100 mb-6 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-amber-500 transition-all"
-                    style={{ width: `${Math.min(100, Math.round((declaredMembers / 51) * 100))}%` }}
+                    style={{ width: `${Math.min(100, Math.round((progressMembers / 51) * 100))}%` }}
                   />
                 </div>
                 <button
@@ -1624,23 +1693,85 @@ export default function CooperativePortal() {
               </div>
             ) : (
               <div className="space-y-3">
-                {[
-                  { key: 'inviteeName', label: isFr ? "Nom de l'agriculteur" : 'Farmer name' },
-                  { key: 'inviteePhone', label: isFr ? 'Téléphone (WhatsApp)' : 'Phone (WhatsApp)' },
-                  { key: 'inviteeEmail', label: 'Email' },
-                  { key: 'inviteeRegion', label: isFr ? 'Région' : 'Region' },
-                ].map(({ key, label }) => (
-                  <div key={key}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                    <input
-                      value={inviteForm[key]}
-                      onChange={(e) => setInviteForm((f) => ({ ...f, [key]: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
-                    />
-                  </div>
-                ))}
+                <p className="text-xs text-gray-500">
+                  {isFr
+                    ? 'Entrez un email ou un téléphone — nous recherchons le profil automatiquement.'
+                    : 'Enter an email or phone — we look up the profile automatically.'}
+                </p>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Message personnel' : 'Personal message'}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {isFr ? 'Téléphone (WhatsApp)' : 'Phone (WhatsApp)'}
+                  </label>
+                  <input
+                    value={inviteForm.inviteePhone}
+                    onChange={(e) => {
+                      setInviteLookup({ status: 'idle', found: null });
+                      setInviteForm((f) => ({ ...f, inviteePhone: e.target.value }));
+                    }}
+                    onBlur={() => lookupFarmerContact('phone')}
+                    className={INPUT_LIGHT}
+                    placeholder="+223 …"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={inviteForm.inviteeEmail}
+                    onChange={(e) => {
+                      setInviteLookup({ status: 'idle', found: null });
+                      setInviteForm((f) => ({ ...f, inviteeEmail: e.target.value }));
+                    }}
+                    onBlur={() => lookupFarmerContact('email')}
+                    className={INPUT_LIGHT}
+                    placeholder="farmer@…"
+                  />
+                </div>
+                {inviteLookup.status === 'loading' ? (
+                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    {isFr ? 'Recherche…' : 'Looking up…'}
+                  </p>
+                ) : null}
+                {inviteLookup.status === 'done' && inviteLookup.found === true ? (
+                  <p className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    ✓ {isFr ? 'Profil trouvé' : 'Profile found'}
+                    {inviteForm.inviteeCrops?.length
+                      ? ` · ${inviteForm.inviteeCrops.slice(0, 4).join(', ')}`
+                      : ''}
+                  </p>
+                ) : null}
+                {inviteLookup.status === 'done' && inviteLookup.found === false ? (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    {isFr
+                      ? 'Pas encore inscrit — une invitation sera envoyée'
+                      : 'Not yet registered — an invitation will be sent'}
+                  </p>
+                ) : null}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {isFr ? "Nom de l'agriculteur" : 'Farmer name'}
+                  </label>
+                  <input
+                    value={inviteForm.inviteeName}
+                    onChange={(e) => setInviteForm((f) => ({ ...f, inviteeName: e.target.value }))}
+                    className={INPUT_LIGHT}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {isFr ? 'Région' : 'Region'}
+                  </label>
+                  <input
+                    value={inviteForm.inviteeRegion}
+                    onChange={(e) => setInviteForm((f) => ({ ...f, inviteeRegion: e.target.value }))}
+                    className={INPUT_LIGHT}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {isFr ? 'Message personnel' : 'Personal message'}
+                  </label>
                   <textarea
                     value={inviteForm.message}
                     onChange={(e) => setInviteForm((f) => ({ ...f, message: e.target.value }))}
@@ -1650,7 +1781,7 @@ export default function CooperativePortal() {
                         ? 'Ex: Nous cherchons des producteurs de karité dans votre zone...'
                         : 'Ex: We are looking for shea producers in your area...'
                     }
-                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20 resize-none"
+                    className={`${INPUT_LIGHT} resize-none`}
                   />
                 </div>
                 {inviteState.err && <p className="text-red-500 text-xs">{inviteState.err}</p>}

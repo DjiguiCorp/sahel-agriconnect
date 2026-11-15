@@ -125,6 +125,8 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
   const [viewMode, setViewMode] = useState('list');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activating, setActivating] = useState(null);
+  const [growthCoops, setGrowthCoops] = useState([]);
+  const [growthBusy, setGrowthBusy] = useState(null);
 
   const headers = useMemo(
     () => ({
@@ -133,6 +135,17 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     }),
     [token]
   );
+
+  const fetchGrowthCoops = async () => {
+    if (!token) return;
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/admin/cooperatives/growth`, { headers });
+      const d = await r.json().catch(() => ({}));
+      setGrowthCoops(d.cooperatives || []);
+    } catch {
+      setGrowthCoops([]);
+    }
+  };
 
   const fetchCooperatives = async () => {
     if (!token) return;
@@ -145,6 +158,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
       const coopList = Array.isArray(coops) ? coops : coops.cooperatives || coops.registrations || [];
       setCooperatives(coopList);
       setFarmers(Array.isArray(farm) ? farm : farm.farmers || []);
+      await fetchGrowthCoops();
     } catch {
       /* ignore */
     } finally {
@@ -156,6 +170,31 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     fetchCooperatives();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, headers]);
+
+  const setVerification = async (coopId, action) => {
+    setGrowthBusy(coopId);
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/admin/cooperatives/${coopId}/${action}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({}),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+      await fetchGrowthCoops();
+      setCooperatives((prev) =>
+        prev.map((c) =>
+          c._id === coopId
+            ? { ...c, verificationStatus: action === 'verify' ? 'verified' : 'flagged' }
+            : c
+        )
+      );
+    } catch (e) {
+      alert(e.message || 'Error');
+    } finally {
+      setGrowthBusy(null);
+    }
+  };
 
   const handleManualActivate = async (coopId, email) => {
     if (!window.confirm(`Activer la coopérative ${email || coopId} manuellement (paiement reçu hors-ligne) ?`)) return;
@@ -569,6 +608,14 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
       ? cooperativesForView
       : cooperativesForView.filter((c) => (c.status || 'pending') === statusFilter);
 
+  const growthForView = useMemo(() => {
+    if (!globalCountryFilter) return growthCoops;
+    const cf = globalCountryFilter.toLowerCase();
+    return growthCoops.filter((c) =>
+      `${c.country || ''} ${c.regionCity || ''}`.toLowerCase().includes(cf)
+    );
+  }, [growthCoops, globalCountryFilter]);
+
   return (
     <div className="p-4 space-y-5">
       <div className="flex items-center justify-between">
@@ -582,6 +629,121 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
               : 'Each cooperative has its own data space and programs'}
           </p>
         </div>
+      </div>
+
+      {/* Growth cooperatives — admin membership verification */}
+      <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-amber-100 bg-amber-50/60 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-brand-forest">
+              {isFr ? 'Coopératives Growth' : 'Growth Cooperatives'}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {isFr
+                ? 'Vérifiez le nombre de membres déclarés vs vérifiés après paiement'
+                : 'Verify declared vs platform-verified members after payment'}
+            </p>
+          </div>
+          <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full">
+            {growthForView.length}
+          </span>
+        </div>
+        {growthForView.length === 0 ? (
+          <p className="text-sm text-gray-500 px-5 py-8 text-center">
+            {isFr ? 'Aucune coopérative Growth pour le moment.' : 'No Growth cooperatives yet.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  {[
+                    isFr ? 'Coopérative' : 'Cooperative',
+                    isFr ? 'Pays / Région' : 'Country / Region',
+                    isFr ? 'Leader' : 'Leader',
+                    isFr ? 'Déclarés' : 'Declared',
+                    isFr ? 'Vérifiés' : 'Verified',
+                    isFr ? 'Paiement' : 'Payment',
+                    isFr ? 'Statut' : 'Status',
+                    isFr ? 'Actions' : 'Actions',
+                  ].map((h) => (
+                    <th key={h} className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {growthForView.map((c, i) => {
+                  const vs = c.verificationStatus || 'unverified';
+                  const statusLabel =
+                    vs === 'verified'
+                      ? isFr
+                        ? 'Vérifiée'
+                        : 'Verified'
+                      : vs === 'flagged'
+                        ? isFr
+                          ? 'Signalée'
+                          : 'Flagged'
+                        : isFr
+                          ? 'En attente'
+                          : 'Pending';
+                  return (
+                    <tr key={c._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                      <td className="px-3 py-3 font-semibold text-brand-forest">{c.cooperativeName || '—'}</td>
+                      <td className="px-3 py-3 text-xs text-gray-600">
+                        {c.country || '—'}
+                        <br />
+                        {c.regionCity || '—'}
+                      </td>
+                      <td className="px-3 py-3 text-xs text-gray-600">{c.leaderName || '—'}</td>
+                      <td className="px-3 py-3 font-mono text-xs">{c.declaredMemberCount ?? c.memberCount ?? 0}</td>
+                      <td className="px-3 py-3 font-mono text-xs font-bold text-[#1a3c2e]">
+                        {c.verifiedMemberCount ?? 0}
+                      </td>
+                      <td className="px-3 py-3 text-xs text-gray-500">
+                        {c.paymentDate ? new Date(c.paymentDate).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                            vs === 'verified'
+                              ? 'bg-green-100 text-green-700'
+                              : vs === 'flagged'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          <button
+                            type="button"
+                            disabled={growthBusy === c._id || vs === 'verified'}
+                            onClick={() => setVerification(c._id, 'verify')}
+                            className="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-green-600 text-white disabled:opacity-40"
+                          >
+                            {isFr ? 'Vérifier' : 'Verify'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={growthBusy === c._id || vs === 'flagged'}
+                            onClick={() => setVerification(c._id, 'flag')}
+                            className="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-red-600 text-white disabled:opacity-40"
+                          >
+                            {isFr ? 'Signaler' : 'Flag'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

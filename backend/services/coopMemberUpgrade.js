@@ -1,5 +1,7 @@
 import { createRequire } from 'module';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import Farmer from '../models/Farmer.js';
+import CooperativeJoinRequest from '../models/CooperativeJoinRequest.js';
 
 const require = createRequire(import.meta.url);
 
@@ -13,33 +15,45 @@ const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 const FRONTEND = (process.env.FRONTEND_URL || 'https://sahelagriconnect.com').replace(/\/$/, '');
 
 /**
- * After memberCount is incremented, if the coop just hit 51 while still on starter,
+ * Platform-verified members: max of email-verified Farmers linked by cooperativeId
+ * and approved CooperativeJoinRequests.
+ */
+export async function getVerifiedMemberCount(cooperativeId) {
+  if (!cooperativeId) return 0;
+  const [verifiedFarmers, approvedJoins] = await Promise.all([
+    Farmer.countDocuments({ cooperativeId, emailVerified: true }),
+    CooperativeJoinRequest.countDocuments({ cooperativeId, status: 'approved' }),
+  ]);
+  return Math.max(verifiedFarmers, approvedJoins);
+}
+
+/**
+ * After membership changes, if verified count hits 51 while still on starter,
  * auto-upgrade to growth + pending_payment and email the leader.
- * Returns the updated coop document (or null if no upgrade).
  */
 export async function maybeUpgradeCoopAt51(coopId) {
   if (!coopId) return null;
 
   const updatedCoop = await CooperativePlatformRegistration.findById(coopId);
   if (!updatedCoop) return null;
+  if (updatedCoop.tier !== 'starter') return null;
 
-  if (updatedCoop.memberCount === 51 && updatedCoop.tier === 'starter') {
-    await CooperativePlatformRegistration.findByIdAndUpdate(coopId, {
-      tier: 'growth',
-      status: 'pending_payment',
-      certificationEligible: true,
-      afriyieldEligible: true,
-      exportEligible: true,
-    });
+  const verifiedCount = await getVerifiedMemberCount(coopId);
+  if (verifiedCount < 51) return null;
 
-    const fresh = await CooperativePlatformRegistration.findById(coopId);
-    await sendGrowthUpgradePromptEmail(fresh).catch((err) =>
-      console.error('[coopMemberUpgrade] email failed:', err.message)
-    );
-    return fresh;
-  }
+  await CooperativePlatformRegistration.findByIdAndUpdate(coopId, {
+    tier: 'growth',
+    status: 'pending_payment',
+    certificationEligible: true,
+    afriyieldEligible: true,
+    exportEligible: true,
+  });
 
-  return null;
+  const fresh = await CooperativePlatformRegistration.findById(coopId);
+  await sendGrowthUpgradePromptEmail(fresh).catch((err) =>
+    console.error('[coopMemberUpgrade] email failed:', err.message)
+  );
+  return fresh;
 }
 
 export async function sendGrowthUpgradePromptEmail(coop) {
@@ -64,11 +78,11 @@ export async function sendGrowthUpgradePromptEmail(coop) {
           <p>Bonjour <strong>${name}</strong>,</p>
           <p>
             Félicitations — <strong>${coop.cooperativeName || ''}</strong> a atteint
-            <strong>51 membres</strong>. Votre plan passe au niveau
+            <strong>51 membres vérifiés</strong> sur la plateforme. Votre plan passe au niveau
             <strong>Croissance (Growth)</strong>.
           </p>
           <p style="color:#555;font-size:14px;">
-            Congratulations — your cooperative has reached <strong>51 members</strong>.
+            Congratulations — your cooperative has reached <strong>51 verified members</strong>.
             Your plan is now eligible for the <strong>Growth</strong> tier.
           </p>
           <div style="background:#fffbeb;border:1px solid #B5850A;border-radius:8px;padding:16px;margin:20px 0;">
@@ -184,6 +198,33 @@ export async function sendJoinRequestOutcomeEmail({
               : `<p>Votre demande d'adhésion à <strong>${cooperativeName}</strong> a été <strong>refusée</strong>.</p>
                  <p style="color:#555;">Your join request to <strong>${cooperativeName}</strong> was <strong>declined</strong>.</p>`
           }
+        </div>
+      </div>
+    `,
+  });
+}
+
+/** Notify coop leader that admin flagged their account for review */
+export async function sendCoopFlaggedEmail(coop) {
+  const resend = getResend();
+  if (!resend || !coop?.email) return;
+  await resend.emails.send({
+    from: FROM,
+    to: coop.email,
+    subject: 'Compte coopérative en révision / Cooperative account under review',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#7f1d1d;padding:20px;border-radius:8px 8px 0 0;">
+          <h1 style="color:white;margin:0;font-size:18px;">Sahel AgriConnect</h1>
+        </div>
+        <div style="padding:24px;background:#f9f9f9;border:1px solid #e0e0e0;">
+          <p>Bonjour ${coop.leaderName || ''},</p>
+          <p>Le compte de <strong>${coop.cooperativeName || ''}</strong> est <strong>en cours de révision</strong>.</p>
+          <p style="color:#555;">Your cooperative account is <strong>under review</strong>.</p>
+          <p style="color:#555;font-size:14px;">
+            Contactez <a href="mailto:support@sahelagriconnect.com">support@sahelagriconnect.com</a>
+            pour plus d'informations.
+          </p>
         </div>
       </div>
     `,
