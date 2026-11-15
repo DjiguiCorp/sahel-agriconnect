@@ -5,7 +5,7 @@ import CertificationProgramApplication from '../models/CertificationProgramAppli
 import Farmer from '../models/Farmer.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateCertification } from '../middleware/validation.js';
-import { createNotification, messageTemplates } from '../services/notificationService.js';
+import { queueNotification, messageTemplates } from '../services/notificationService.js';
 
 const require = createRequire(import.meta.url);
 const router = express.Router();
@@ -76,7 +76,7 @@ router.post('/apply', async (req, res) => {
       email: req.body.email,
       phone: req.body.phone || '',
     });
-    createNotification({
+    queueNotification({
       name: req.body.name,
       phone: req.body.phone,
       email: req.body.email,
