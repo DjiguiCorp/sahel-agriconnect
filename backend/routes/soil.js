@@ -50,7 +50,8 @@ async function callGeminiJson(prompt) {
 // Returns: { score, rating, recommendedCrops, fertilizers, amendments, warnings, cooperativeBenefit }
 router.post('/diagnose', async (req, res) => {
   try {
-    const { soilColor, texture, humidity, country, region, season, lastCrop } = req.body || {};
+    const { soilColor, texture, humidity, country, region, season, lastCrop, lang } = req.body || {};
+    const L = String(lang || '').toLowerCase().startsWith('en') ? 'en' : 'fr';
 
     if (!soilColor || !texture || !humidity || !country || !region || !season || !lastCrop) {
       return res.status(400).json({
@@ -58,6 +59,11 @@ router.post('/diagnose', async (req, res) => {
           'Missing required fields: soilColor, texture, humidity, country, region, season, lastCrop',
       });
     }
+
+    const langLine =
+      L === 'en'
+        ? 'Write summary, fertilizers, amendments, warnings, and cooperativeBenefit in English. rating may stay Excellent|Good|Average|Poor.'
+        : 'Écris summary, fertilizers, amendments, warnings et cooperativeBenefit en français. rating: Excellent|Bon|Moyen|Faible.';
 
     const prompt = `You are an expert agronomist for West and pan-African agriculture. Analyze this soil profile:
 - Color: ${soilColor}
@@ -67,10 +73,12 @@ router.post('/diagnose', async (req, res) => {
 - Season: ${season}
 - Last crop grown: ${lastCrop}
 
+${langLine}
+
 Respond ONLY with JSON:
 {
   "score": 0-100,
-  "rating": "Excellent|Bon|Moyen|Faible",
+  "rating": "Excellent|Bon|Moyen|Faible|Good|Average|Poor",
   "summary": "One sentence soil health summary",
   "recommendedCrops": ["crop1", "crop2", "crop3"],
   "sheaCompatible": true/false,

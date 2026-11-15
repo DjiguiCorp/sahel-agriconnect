@@ -1,0 +1,30 @@
+/** Canonical crop list for Sahel AgriConnect (public config). */
+export const CROPS = [
+  'Shea Butter',
+  'Sesame',
+  'Millet',
+  'Sorghum',
+  'Maize/Corn',
+  'Rice',
+  'Cowpea',
+  'Groundnut/Peanut',
+  'Cashew',
+  'Mango',
+  'Cotton',
+  'Moringa',
+  'Hibiscus/Bissap',
+  'Fonio',
+  'Yam',
+  'Cassava',
+  'Sweet Potato',
+  'Onion',
+  'Tomato',
+  'Pepper',
+  'Watermelon',
+  'Cowpea Leaves',
+  'Baobab',
+  'Gum Arabic',
+  'Karité',
+];
+
+export default CROPS;

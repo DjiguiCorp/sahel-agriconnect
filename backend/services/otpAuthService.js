@@ -342,80 +342,95 @@ export async function confirmMagicCode({
     );
   }
 
-  record.used = true;
-  await record.save();
-
   const recEmail = record.email || emailNorm;
   const recPhone = record.phone || phoneNorm;
 
-  if (purposeNorm === 'farmer_verify') {
-    const farmer = await findFarmerByContact(recEmail, recPhone);
-    if (recEmail) {
-      await Farmer.findOneAndUpdate(
-        { email: recEmail },
-        { emailVerified: true, verifiedAt: new Date() },
+  // Only invalidate the magic/OTP code AFTER successful JWT / verification outcome
+  const markUsed = async () => {
+    record.used = true;
+    await record.save();
+  };
+
+  try {
+    if (purposeNorm === 'farmer_verify') {
+      const farmer = await findFarmerByContact(recEmail, recPhone);
+      if (recEmail) {
+        await Farmer.findOneAndUpdate(
+          { email: recEmail },
+          { emailVerified: true, verifiedAt: new Date() },
+        );
+      }
+      if (!farmer) {
+        await markUsed();
+        return {
+          success: true,
+          verified: true,
+          isNewUser: true,
+          role: 'farmer',
+          pendingRegistrationId: record._id.toString(),
+          email: recEmail,
+        };
+      }
+      const token = jwt.sign(
+        {
+          role: 'farmer',
+          id: farmer._id.toString(),
+          email: farmer.email || recEmail,
+          nom: farmer.nom,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '90d' },
       );
-    }
-    if (!farmer) {
+      const sessionSeed = await DeviceSession.issue(
+        farmer._id.toString(),
+        'farmer',
+        deviceHint,
+      );
+      await markUsed();
       return {
         success: true,
         verified: true,
-        isNewUser: true,
+        isNewUser: false,
         role: 'farmer',
-        pendingRegistrationId: record._id.toString(),
+        token,
+        sessionSeed,
+        user: farmerSummary(farmer),
+        accountStatus: farmer.statut === 'Actif' ? 'active' : 'pending_vetting',
       };
     }
-    const token = jwt.sign(
-      {
-        role: 'farmer',
-        id: farmer._id.toString(),
-        email: farmer.email || recEmail,
-        nom: farmer.nom,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '90d' },
-    );
-    const sessionSeed = await DeviceSession.issue(
-      farmer._id.toString(),
-      'farmer',
-      deviceHint,
-    );
-    return {
-      success: true,
-      verified: true,
-      isNewUser: false,
-      role: 'farmer',
-      token,
-      sessionSeed,
-      user: farmerSummary(farmer),
-      accountStatus: farmer.statut === 'Actif' ? 'active' : 'pending_vetting',
-    };
-  }
 
-  if (purposeNorm === 'login') {
-    await assertAccountExistsForLogin({
-      role: roleNorm,
-      email: recEmail,
-      phone: recPhone,
-    });
-    const result = await issueRoleLoginToken(
-      roleNorm,
-      recEmail,
-      recPhone,
-      deviceHint,
-    );
-    const appRole = roleNorm === 'cooperative' ? 'cooperative' : roleNorm;
-    return { ...result, role: appRole };
-  }
+    if (purposeNorm === 'login') {
+      await assertAccountExistsForLogin({
+        role: roleNorm,
+        email: recEmail,
+        phone: recPhone,
+      });
+      const result = await issueRoleLoginToken(
+        roleNorm,
+        recEmail,
+        recPhone,
+        deviceHint,
+      );
+      const appRole = roleNorm === 'cooperative' ? 'cooperative' : roleNorm;
+      await markUsed();
+      return { ...result, role: appRole };
+    }
 
-  if (purposeNorm === 'coop_verify' && recEmail) {
-    await CooperativePlatformRegistration.findOneAndUpdate(
-      { email: recEmail },
-      { emailVerified: true, verifiedAt: new Date() },
-    );
-  }
+    if (purposeNorm === 'coop_verify' && recEmail) {
+      await CooperativePlatformRegistration.findOneAndUpdate(
+        { email: recEmail },
+        { emailVerified: true, verifiedAt: new Date() },
+      );
+      await markUsed();
+      return { success: true, verified: true, role: 'cooperative', email: recEmail };
+    }
 
-  return { success: true, verified: true };
+    await markUsed();
+    return { success: true, verified: true };
+  } catch (err) {
+    // Leave code unused so the user can retry the same magic link
+    throw err;
+  }
 }
 
 export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {

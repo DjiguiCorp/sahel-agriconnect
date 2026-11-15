@@ -13,16 +13,32 @@ const BENEFIT_KEYS = ['recruitment', 'equipment', 'certification', 'investor', '
 const BENEFIT_ICONS = [Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe];
 const CERT_KEYS = ['none', 'local', 'regional', 'international'];
 const CERT_VALUES = ['None', 'Local', 'Regional', 'International'];
-const CROP_KEYS = ['shea', 'sesame', 'cashew', 'mango', 'rice', 'cotton', 'millet', 'sorghum', 'other'];
-const CROP_VALUES = [
+const FALLBACK_CROP_VALUES = [
   'Shea Butter',
   'Sesame',
-  'Cashew',
-  'Mango',
-  'Rice',
-  'Cotton',
   'Millet',
   'Sorghum',
+  'Maize/Corn',
+  'Rice',
+  'Cowpea',
+  'Groundnut/Peanut',
+  'Cashew',
+  'Mango',
+  'Cotton',
+  'Moringa',
+  'Hibiscus/Bissap',
+  'Fonio',
+  'Yam',
+  'Cassava',
+  'Sweet Potato',
+  'Onion',
+  'Tomato',
+  'Pepper',
+  'Watermelon',
+  'Cowpea Leaves',
+  'Baobab',
+  'Gum Arabic',
+  'Karité',
   'Other',
 ];
 const INTEREST_KEYS = ['equipment', 'certification', 'diaspora', 'export'];
@@ -68,6 +84,18 @@ export default function CooperativeRegistration() {
     paymentPath: null,
   });
   const [benefitsOpen, setBenefitsOpen] = useState(false);
+  const [cropValues, setCropValues] = useState(FALLBACK_CROP_VALUES);
+
+  useEffect(() => {
+    fetch(`${API}/api/config/crops`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.crops) && d.crops.length) {
+          setCropValues([...d.crops, 'Other']);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const memberCountNum = Number(form.memberCount || 0);
   const isGrowthTier = memberCountNum > 50;
@@ -657,14 +685,14 @@ export default function CooperativeRegistration() {
                     <p className={`${LABEL_CLS} mb-3`}>
                       {t('cooperativeReg.form.primaryCrops')}
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {CROP_KEYS.map((k, i) => {
-                        const on = form.primaryCrops.includes(CROP_VALUES[i]);
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {cropValues.map((crop) => {
+                        const on = form.primaryCrops.includes(crop);
                         return (
                           <button
-                            key={k}
+                            key={crop}
                             type="button"
-                            onClick={() => toggleArrayItem('primaryCrops', CROP_VALUES[i])}
+                            onClick={() => toggleArrayItem('primaryCrops', crop)}
                             className="text-sm rounded-xl px-3 py-2.5 text-center font-medium transition"
                             style={
                               on
@@ -676,7 +704,7 @@ export default function CooperativeRegistration() {
                                   }
                             }
                           >
-                            {t(`cooperativeReg.form.crops.${k}`)}
+                            {crop}
                           </button>
                         );
                       })}

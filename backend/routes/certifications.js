@@ -1,12 +1,44 @@
 import express from 'express';
+import { createRequire } from 'module';
 import Certification from '../models/Certification.js';
 import CertificationProgramApplication from '../models/CertificationProgramApplication.js';
 import Farmer from '../models/Farmer.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateCertification } from '../middleware/validation.js';
-import { queueNotification, messageTemplates } from '../services/notificationService.js';
+import { createNotification, messageTemplates } from '../services/notificationService.js';
 
+const require = createRequire(import.meta.url);
 const router = express.Router();
+
+async function notifyAdminCertificationApplication(app) {
+  if (!process.env.RESEND_API_KEY) return;
+  const { Resend } = require('resend');
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const from = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+  await resend.emails.send({
+    from,
+    to: 'info@djiguicorporation.org',
+    subject: `Certification application — ${app.name} (${app.crop})`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3c2e;padding:20px;">
+          <h1 style="color:#B5850A;margin:0;font-size:18px;">New certification application</h1>
+        </div>
+        <div style="padding:20px;background:#f9f9f9;border:1px solid #e0e0e0;font-size:14px;">
+          <p><strong>Type:</strong> ${app.applicantType}</p>
+          <p><strong>Name:</strong> ${app.name}</p>
+          <p><strong>Email:</strong> ${app.email}</p>
+          <p><strong>Phone:</strong> ${app.phone || '—'}</p>
+          <p><strong>Location:</strong> ${app.country} / ${app.region}</p>
+          <p><strong>Crop:</strong> ${app.crop}</p>
+          <p><strong>Hectares:</strong> ${app.totalHectares ?? '—'}</p>
+          <p><strong>ID:</strong> ${app.farmerOrCooperativeId}</p>
+          <p><strong>Transformation center:</strong> ${app.transformationCenterName || '—'}</p>
+        </div>
+      </div>
+    `,
+  });
+}
 
 router.post('/apply', async (req, res) => {
   try {
@@ -25,30 +57,41 @@ router.post('/apply', async (req, res) => {
         error: 'Transformation center name is required for individual applicants.',
       });
     }
-    await CertificationProgramApplication.create({
+    const totalHectares = Number(req.body.totalHectares);
+    if (Number.isFinite(totalHectares) && totalHectares < 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'Minimum 10 hectares required / Le minimum requis est de 10 hectares',
+      });
+    }
+    const application = await CertificationProgramApplication.create({
       applicantType,
       name: req.body.name,
       country: req.body.country,
       region: req.body.region,
       crop: req.body.crop || req.body.cropType,
+      totalHectares: Number.isFinite(totalHectares) ? totalHectares : undefined,
       farmerOrCooperativeId: req.body.farmerOrCooperativeId || req.body.applicantId,
       transformationCenterName: transformationCenterName.trim(),
       email: req.body.email,
       phone: req.body.phone || '',
     });
-    queueNotification({
+    createNotification({
       name: req.body.name,
       phone: req.body.phone,
       email: req.body.email,
       message: messageTemplates.certificationReceived(req.body.name),
       source: 'certification_apply',
     }).catch(console.error);
+    notifyAdminCertificationApplication(application).catch((err) =>
+      console.error('[certifications/apply] admin email failed:', err.message)
+    );
     res.status(201).json({ success: true });
   } catch (error) {
     console.error('Erreur candidature certification export:', error);
     res.status(400).json({
       success: false,
-      error: error.message || 'Erreur lors de l’enregistrement',
+      error: error.message || 'Erreur lors de l enregistrement',
     });
   }
 });
@@ -56,7 +99,6 @@ router.post('/apply', async (req, res) => {
 // POST /api/certifications - Demande de certification (protégée admin)
 router.post('/', authenticateToken, validateCertification, async (req, res) => {
   try {
-    // Vérifier que l'agriculteur existe
     const farmer = await Farmer.findById(req.body.farmerId);
     if (!farmer) {
       return res.status(404).json({ error: 'Agriculteur non trouvé' });
@@ -77,9 +119,9 @@ router.post('/', authenticateToken, validateCertification, async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur création certification:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Erreur serveur lors de la création',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -89,7 +131,7 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const { niveau, statut } = req.query;
     const query = {};
-    
+
     if (niveau) query.niveau = niveau;
     if (statut) query.statut = statut;
 
@@ -107,8 +149,6 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/certifications/stats/by-level - Statistiques par niveau (protégée admin)
-// Must be registered before /:id so "stats" is not captured as an ObjectId
 router.get('/stats/by-level', authenticateToken, async (req, res) => {
   try {
     const stats = await Certification.aggregate([
@@ -136,7 +176,6 @@ router.get('/stats/by-level', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/certifications/:id - Détails d'une certification (protégée admin)
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const certification = await Certification.findById(req.params.id)
@@ -156,11 +195,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/certifications/:id - Mise à jour d'une certification (protégée admin)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { statut, conformite, notes, inspecteur } = req.body;
-    
+
     const updateData = {};
     if (statut) updateData.statut = statut;
     if (conformite) updateData.conformite = conformite;
@@ -192,4 +230,3 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 export default router;
-

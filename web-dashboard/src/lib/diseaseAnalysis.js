@@ -1,18 +1,35 @@
 /**
- * Analyse maladies — ordre : API Vercel (Gemini Vision) → Plant.id → estimation locale.
+ * Analyse maladies — ordre : backend Gemini Vision → Vercel fn → Plant.id → estimation locale.
  */
+import { API_BASE_URL } from '../config/api';
 
 /**
- * @param {string} base64Data - sans préfixe data:
- * @param {string} mediaType ex: image/jpeg
  * @returns {Promise<{disease_name:string,confidence:number,symptoms:string,treatment:string,prevention:string,source:string}>}
  */
-export async function analyzeDiseaseImage(file) {
+export async function analyzeDiseaseImage(file, { lang = 'fr' } = {}) {
   const dataUrl = await fileToDataUrl(file);
   const base64 = dataUrl.split(',')[1];
   const mediaType = file.type || 'image/jpeg';
+  const L = String(lang || '').toLowerCase().startsWith('en') ? 'en' : 'fr';
 
-  // 1) Route serveur Vercel (Gemini Vision — clé serveur GEMINI_API_KEY)
+  // 1) Backend Render API (GEMINI_API_KEY)
+  try {
+    const r = await fetch(`${API_BASE_URL}/api/disease/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: base64, mediaType, lang: L }),
+    });
+    if (r.ok) {
+      const j = await r.json();
+      if (j?.disease_name && !j.error) {
+        return { ...j, source: j.source || 'gemini-vision' };
+      }
+    }
+  } catch {
+    /* continue */
+  }
+
+  // 2) Vercel serverless (local / alternate deploy)
   try {
     const r = await fetch('/api/analyze-disease', {
       method: 'POST',
@@ -26,10 +43,10 @@ export async function analyzeDiseaseImage(file) {
       }
     }
   } catch {
-    /* dev local sans fonction serverless */
+    /* continue */
   }
 
-  // 2) Plant.id — identification (clé gratuite limitée)
+  // 3) Plant.id — identification (clé gratuite limitée)
   const plantKey = import.meta.env.VITE_PLANT_ID_API_KEY;
   if (plantKey) {
     try {

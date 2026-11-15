@@ -10,6 +10,7 @@ const certificationProgramApplicationSchema = new mongoose.Schema({
   country: { type: String, required: true, trim: true },
   region: { type: String, required: true, trim: true },
   crop: { type: String, required: true, trim: true },
+  totalHectares: { type: Number, min: 0 },
   farmerOrCooperativeId: { type: String, required: true, trim: true },
   transformationCenterName: { type: String, trim: true },
   email: { type: String, required: true, trim: true, lowercase: true },

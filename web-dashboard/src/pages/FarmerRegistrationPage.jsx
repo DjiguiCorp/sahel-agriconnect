@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   farmerRegistrationSchema,
-  cropOptions,
+  cropOptions as defaultCropOptions,
   step1Fields,
   step2Fields,
 } from '../schemas/farmerRegistrationSchema';
@@ -57,6 +57,18 @@ export default function FarmerRegistrationPage() {
   const [joiningCoop, setJoiningCoop] = useState(null);
   const [joinSuccess, setJoinSuccess] = useState('');
   const [wantContact, setWantContact] = useState(false);
+  const [cropOptions, setCropOptions] = useState(defaultCropOptions);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/config/crops`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.crops) && d.crops.length) {
+          setCropOptions([...d.crops, 'Autre']);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const {
     register,

@@ -101,8 +101,11 @@ export const API_ENDPOINTS = {
     BASE: `${API_BASE_URL}/api/service-bookings`,
     BY_ID: (id) => `${API_BASE_URL}/api/service-bookings/${id}`,
   },
-  // Détection de maladies
-  PLANT_DISEASE: `${API_BASE_URL}/api/detect-plant-disease`,
+  // Détection de maladies (Gemini Vision via backend)
+  PLANT_DISEASE: `${API_BASE_URL}/api/disease/analyze`,
+  CONFIG: {
+    CROPS: `${API_BASE_URL}/api/config/crops`,
+  },
   // Health check
   HEALTH: `${API_BASE_URL}/api/health`,
   // Centres agricoles

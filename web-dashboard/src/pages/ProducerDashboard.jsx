@@ -5,7 +5,6 @@ import { Loader2, X } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import { useWebSession } from '../hooks/useWebSession';
 import { API_ENDPOINTS } from '../config/api';
-import { isStripeCheckoutAvailable, createCheckoutSession } from '../lib/stripeCheckout';
 import { CROP_EMOJIS } from './producer-dashboard/constants';
 
 function hasProducerProStatus(profile) {
@@ -24,34 +23,7 @@ function hasProducerProStatus(profile) {
   );
 }
 
-function ProUpgradeBanner({ isFr, email, onDismiss }) {
-  const [loading, setLoading] = useState(false);
-
-  const handleUpgrade = async () => {
-    if (!isStripeCheckoutAvailable()) {
-      alert(isFr ? 'Paiement indisponible.' : 'Checkout unavailable.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await createCheckoutSession('producer_pro', {
-        email: email || '',
-        billingInterval: 'month',
-        amountUsd: 29.99,
-        successUrl: `${window.location.origin}/my-dashboard?upgrade=success`,
-        cancelUrl: `${window.location.origin}/my-dashboard?upgrade=cancelled`,
-      });
-      if (result?.error) {
-        alert(isFr ? 'Erreur de paiement. Veuillez réessayer.' : 'Payment error. Please try again.');
-      }
-    } catch (e) {
-      console.error('Upgrade checkout error:', e);
-      alert(isFr ? 'Erreur de connexion. Veuillez réessayer.' : 'Connection error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function ProUpgradeBanner({ isFr, onDismiss }) {
   return (
     <div
       className="relative rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
@@ -64,21 +36,17 @@ function ProUpgradeBanner({ isFr, email, onDismiss }) {
     >
       <p className="flex-1 text-sm text-amber-100/95 leading-snug pr-6 sm:pr-0">
         {isFr
-          ? '🌟 Débloquez Producteur Pro — 29,99$/mois ou 299$/an. Accès marché prioritaire, outils export & prévisions de rendement.'
-          : '🌟 Unlock Producer Pro — $29.99/mo or $299/year. Priority market access, export tools & yield forecasting.'}
+          ? '🌟 Débloquez Producteur Pro — accès marché prioritaire, outils export & prévisions de rendement. Paiement bientôt disponible.'
+          : '🌟 Unlock Producer Pro — priority market access, export tools & yield forecasting. Checkout coming soon.'}
       </p>
       <div className="flex items-center gap-2 shrink-0">
-        <button
-          type="button"
-          onClick={handleUpgrade}
-          disabled={loading}
-          className="px-4 py-2 rounded-xl text-sm font-bold transition disabled:opacity-60"
+        <a
+          href="mailto:support@sahelagriconnect.com?subject=Producer%20Pro%20Waitlist"
+          className="px-4 py-2 rounded-xl text-sm font-bold transition inline-block"
           style={{ background: '#B5850A', color: '#0f1a10' }}
         >
-          {loading
-            ? (isFr ? 'Redirection...' : 'Redirecting...')
-            : (isFr ? 'Mettre à niveau' : 'Upgrade Now')}
-        </button>
+          {isFr ? 'Rejoindre la liste d\'attente' : 'Join waitlist'}
+        </a>
         <button
           type="button"
           onClick={onDismiss}
@@ -498,7 +466,6 @@ function ProducerDashboard() {
       {showProUpgrade ? (
         <ProUpgradeBanner
           isFr={isFr}
-          email={userEmail}
           onDismiss={() => {
             setUpgradeBannerDismissed(true);
             try {
