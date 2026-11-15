@@ -585,7 +585,7 @@ export default function BenefitsTab({ token, isFr }) {
                 <select
                   value={grantForm.coopId}
                   onChange={(e) => setGrantForm((f) => ({ ...f, coopId: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">{isFr ? 'Sélectionner...' : 'Select...'}</option>
                   {cooperatives.map((c) => (
@@ -602,7 +602,7 @@ export default function BenefitsTab({ token, isFr }) {
                 <select
                   value={grantForm.benefitType}
                   onChange={(e) => setGrantForm((f) => ({ ...f, benefitType: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">{isFr ? 'Sélectionner...' : 'Select...'}</option>
                   {benefitTypes.map((b) => (
@@ -620,7 +620,7 @@ export default function BenefitsTab({ token, isFr }) {
                   value={grantForm.description}
                   onChange={(e) => setGrantForm((f) => ({ ...f, description: e.target.value }))}
                   rows={2}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest resize-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -632,7 +632,7 @@ export default function BenefitsTab({ token, isFr }) {
                     value={grantForm.value}
                     onChange={(e) => setGrantForm((f) => ({ ...f, value: e.target.value }))}
                     placeholder="ex: $500, 2 formations"
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -643,7 +643,7 @@ export default function BenefitsTab({ token, isFr }) {
                     type="date"
                     value={grantForm.expiry}
                     onChange={(e) => setGrantForm((f) => ({ ...f, expiry: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               </div>

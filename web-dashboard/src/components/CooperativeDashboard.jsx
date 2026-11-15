@@ -193,13 +193,13 @@ export default function CooperativeDashboard() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isFr ? 'Rechercher...' : 'Search...'}
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
             />
           </div>
           <select
             value={countryFilter}
             onChange={(e) => setCountryFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
           >
             <option value="">{isFr ? '🌍 Tous les pays' : '🌍 All countries'}</option>
             {countries.map((c) => (
@@ -211,7 +211,7 @@ export default function CooperativeDashboard() {
           <select
             value={cropFilter}
             onChange={(e) => setCropFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
           >
             <option value="">{isFr ? '🌾 Toutes les cultures' : '🌾 All crops'}</option>
             {allCrops.map((c) => (
@@ -223,7 +223,7 @@ export default function CooperativeDashboard() {
           <select
             value={certFilter}
             onChange={(e) => setCertFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
           >
             <option value="">{isFr ? '⭐ Toutes certifications' : '⭐ All certifications'}</option>
             <option value="Local">⭐ Local</option>

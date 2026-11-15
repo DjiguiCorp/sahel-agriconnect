@@ -194,7 +194,7 @@ export default function FarmerNeedsTab({ token, isFr }) {
           <select
             value={countryFilter}
             onChange={(e) => setCountryFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white outline-none focus:ring-2 focus:ring-brand-forest"
           >
             <option value="">{isFr ? '🌍 Tous les pays' : '🌍 All countries'}</option>
             {COUNTRIES.map((c) => (
@@ -206,7 +206,7 @@ export default function FarmerNeedsTab({ token, isFr }) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white outline-none focus:ring-2 focus:ring-brand-forest"
           >
             <option value="all">{isFr ? 'Tous statuts' : 'All statuses'}</option>
             <option value="submitted">{isFr ? 'Soumis' : 'Submitted'}</option>
@@ -218,7 +218,7 @@ export default function FarmerNeedsTab({ token, isFr }) {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white outline-none focus:ring-2 focus:ring-brand-forest"
           >
             <option value="all">{isFr ? 'Tous types' : 'All types'}</option>
             <option value="equipment">🚜 {isFr ? 'Équipement' : 'Equipment'}</option>
@@ -352,7 +352,7 @@ export default function FarmerNeedsTab({ token, isFr }) {
                       ? "Message envoyé par WhatsApp à l'agriculteur..."
                       : 'Message sent by WhatsApp to the farmer...'
                   }
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-brand-forest resize-none"
                 />
               </div>
             </div>

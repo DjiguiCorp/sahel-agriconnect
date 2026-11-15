@@ -298,7 +298,7 @@ export default function CooperativePortal() {
                     required
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                   />
                 </div>
                 {loginError && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{loginError}</p>}
@@ -334,7 +334,7 @@ export default function CooperativePortal() {
                     required
                     value={loginCode}
                     onChange={(e) => setLoginCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] tracking-widest text-center font-mono"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20 tracking-widest text-center font-mono"
                   />
                 </div>
                 {loginError && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{loginError}</p>}
@@ -1133,7 +1133,7 @@ export default function CooperativePortal() {
                     <input
                       value={inviteForm[key]}
                       onChange={(e) => setInviteForm((f) => ({ ...f, [key]: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                   </div>
                 ))}
@@ -1148,7 +1148,7 @@ export default function CooperativePortal() {
                         ? 'Ex: Nous cherchons des producteurs de karité dans votre zone...'
                         : 'Ex: We are looking for shea producers in your area...'
                     }
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] resize-none"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20 resize-none"
                   />
                 </div>
                 {inviteState.err && <p className="text-red-500 text-xs">{inviteState.err}</p>}
@@ -1183,7 +1183,7 @@ export default function CooperativePortal() {
                   value={newPw}
                   onChange={(e) => setNewPw(e.target.value)}
                   placeholder={isFr ? 'Nouveau mot de passe (min 8 caractères)' : 'New password (min 8 chars)'}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm mb-3 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 mb-3 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                 />
                 {pwState.err && <p className="text-red-500 text-xs mb-3">{pwState.err}</p>}
                 <div className="flex gap-3">

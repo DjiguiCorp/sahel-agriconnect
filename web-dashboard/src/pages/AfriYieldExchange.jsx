@@ -1070,7 +1070,7 @@ export default function AfriYieldExchange() {
                 </label>
                 <input
                   required
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
                   value={kycData.fullName}
                   onChange={(e) => setKycData((d) => ({ ...d, fullName: e.target.value }))}
                 />
@@ -1081,7 +1081,7 @@ export default function AfriYieldExchange() {
                 </label>
                 <select
                   required
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   value={kycData.country}
                   onChange={(e) => setKycData((d) => ({ ...d, country: e.target.value }))}
                 >
@@ -1099,7 +1099,7 @@ export default function AfriYieldExchange() {
                 </label>
                 <input
                   required
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
                   value={kycData.idNumber}
                   onChange={(e) => setKycData((d) => ({ ...d, idNumber: e.target.value }))}
                 />

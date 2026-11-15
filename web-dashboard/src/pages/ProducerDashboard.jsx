@@ -336,7 +336,7 @@ function ProducerDashboard() {
               value={identEmail}
               onChange={(e) => setIdentEmail(e.target.value)}
               placeholder={isFr ? 'votre@email.com' : 'your@email.com'}
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
             />
             {identError && <p className="text-red-500 text-xs">{identError}</p>}
             <button

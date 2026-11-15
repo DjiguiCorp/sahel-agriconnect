@@ -1700,7 +1700,7 @@ export default function AfriYieldManagement() {
                             <select
                               value={INVESTOR_STATUSES.includes(inv.status) ? inv.status : (inv.status || 'New')}
                               onChange={(e) => updateInvestorStatus(inv._id, e.target.value)}
-                              className="rounded border border-gray-300 px-2 py-1 text-xs bg-white"
+                              className="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
                               aria-label={`Status for ${inv.fullName}`}
                             >
                               {INVESTOR_STATUSES.map((s) => (
@@ -1985,7 +1985,7 @@ export default function AfriYieldManagement() {
                 <span className="font-medium text-gray-700">Center Name *</span>
                 <input
                   required
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.centerName}
                   onChange={(e) => setForm((p) => ({ ...p, centerName: e.target.value }))}
                 />
@@ -1994,7 +1994,7 @@ export default function AfriYieldManagement() {
                 <span className="font-medium text-gray-700">Location (city and country) *</span>
                 <input
                   required
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.location}
                   onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))}
                 />
@@ -2002,7 +2002,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Country *</span>
                 <select
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                   value={form.country}
                   onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
                 >
@@ -2017,7 +2017,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Commodity *</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={form.commodity}
                     onChange={(e) => setForm((p) => ({ ...p, commodity: e.target.value }))}
                   >
@@ -2029,7 +2029,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Track *</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={form.track}
                     onChange={(e) => setForm((p) => ({ ...p, track: e.target.value }))}
                   >
@@ -2042,7 +2042,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Certification Status</span>
                 <select
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                   value={form.certificationStatus}
                   onChange={(e) => setForm((p) => ({ ...p, certificationStatus: e.target.value }))}
                 >
@@ -2057,7 +2057,7 @@ export default function AfriYieldManagement() {
                   type="number"
                   required
                   min={0}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.amountSought}
                   onChange={(e) => setForm((p) => ({ ...p, amountSought: e.target.value }))}
                 />
@@ -2067,7 +2067,7 @@ export default function AfriYieldManagement() {
                 <textarea
                   required
                   rows={3}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.description}
                   onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 />
@@ -2077,7 +2077,7 @@ export default function AfriYieldManagement() {
                 <input
                   type="number"
                   min={0}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.memberFarmers}
                   onChange={(e) => setForm((p) => ({ ...p, memberFarmers: e.target.value }))}
                 />
@@ -2085,7 +2085,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Contact Name</span>
                 <input
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.contactName}
                   onChange={(e) => setForm((p) => ({ ...p, contactName: e.target.value }))}
                 />
@@ -2094,7 +2094,7 @@ export default function AfriYieldManagement() {
                 <span className="font-medium text-gray-700">Contact Email</span>
                 <input
                   type="email"
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.contactEmail}
                   onChange={(e) => setForm((p) => ({ ...p, contactEmail: e.target.value }))}
                 />
@@ -2102,7 +2102,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Contact Phone</span>
                 <input
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.contactPhone}
                   onChange={(e) => setForm((p) => ({ ...p, contactPhone: e.target.value }))}
                 />
@@ -2110,7 +2110,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Existing Buyers</span>
                 <input
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. Japan, France"
                   value={form.existingBuyers}
                   onChange={(e) => setForm((p) => ({ ...p, existingBuyers: e.target.value }))}
@@ -2128,7 +2128,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Status</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={form.status}
                     onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
                   >
@@ -2171,7 +2171,7 @@ export default function AfriYieldManagement() {
                 <input
                   required
                   list="investor-emails"
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={invForm.investorEmail}
                   onChange={(e) => setInvForm((p) => ({ ...p, investorEmail: e.target.value }))}
                 />
@@ -2186,7 +2186,7 @@ export default function AfriYieldManagement() {
                 <span className="font-medium text-gray-700">Opportunity *</span>
                 <select
                   required
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                   value={invForm.opportunityId}
                   onChange={(e) => setInvForm((p) => ({ ...p, opportunityId: e.target.value }))}
                 >
@@ -2207,7 +2207,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Track *</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={invForm.track}
                     onChange={(e) => setInvForm((p) => ({ ...p, track: e.target.value }))}
                   >
@@ -2221,7 +2221,7 @@ export default function AfriYieldManagement() {
                     required
                     type="number"
                     min="1"
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={invForm.amountDeployed}
                     onChange={(e) => setInvForm((p) => ({ ...p, amountDeployed: e.target.value }))}
                   />
@@ -2235,7 +2235,7 @@ export default function AfriYieldManagement() {
                     type="number"
                     min="0"
                     step="0.1"
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={invForm.expectedROIPercent}
                     onChange={(e) => setInvForm((p) => ({ ...p, expectedROIPercent: e.target.value }))}
                   />
@@ -2244,7 +2244,7 @@ export default function AfriYieldManagement() {
                   <span className="font-medium text-gray-700">Deployment date</span>
                   <input
                     type="date"
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={invForm.deploymentDate}
                     onChange={(e) => setInvForm((p) => ({ ...p, deploymentDate: e.target.value }))}
                   />
@@ -2340,7 +2340,7 @@ export default function AfriYieldManagement() {
                   <span className="font-medium text-gray-700">Commodity *</span>
                   <input
                     required
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={batchForm.commodity}
                     onChange={(e) => setBatchForm((p) => ({ ...p, commodity: e.target.value }))}
                   />
@@ -2348,7 +2348,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Status</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={batchForm.status}
                     onChange={(e) => setBatchForm((p) => ({ ...p, status: e.target.value }))}
                   >
@@ -2364,59 +2364,59 @@ export default function AfriYieldManagement() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Farmer name</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerName} onChange={(e) => setBatchForm((p) => ({ ...p, farmerName: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.farmerName} onChange={(e) => setBatchForm((p) => ({ ...p, farmerName: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Farmer country</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, farmerCountry: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.farmerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, farmerCountry: e.target.value }))} />
                 </label>
                 <label className="block sm:col-span-2">
                   <span className="font-medium text-gray-700">Farmer region</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerRegion} onChange={(e) => setBatchForm((p) => ({ ...p, farmerRegion: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.farmerRegion} onChange={(e) => setBatchForm((p) => ({ ...p, farmerRegion: e.target.value }))} />
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Cooperative name</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.cooperativeName} onChange={(e) => setBatchForm((p) => ({ ...p, cooperativeName: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.cooperativeName} onChange={(e) => setBatchForm((p) => ({ ...p, cooperativeName: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Processor name</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.processorName} onChange={(e) => setBatchForm((p) => ({ ...p, processorName: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.processorName} onChange={(e) => setBatchForm((p) => ({ ...p, processorName: e.target.value }))} />
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Harvest date</span>
-                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.harvestDate} onChange={(e) => setBatchForm((p) => ({ ...p, harvestDate: e.target.value }))} />
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.harvestDate} onChange={(e) => setBatchForm((p) => ({ ...p, harvestDate: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Processing date</span>
-                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.processingDate} onChange={(e) => setBatchForm((p) => ({ ...p, processingDate: e.target.value }))} />
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.processingDate} onChange={(e) => setBatchForm((p) => ({ ...p, processingDate: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Export date</span>
-                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.exportDate} onChange={(e) => setBatchForm((p) => ({ ...p, exportDate: e.target.value }))} />
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.exportDate} onChange={(e) => setBatchForm((p) => ({ ...p, exportDate: e.target.value }))} />
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Quantity harvested (kg)</span>
-                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.quantityHarvestedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityHarvestedKg: e.target.value }))} />
+                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.quantityHarvestedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityHarvestedKg: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Quantity processed (kg)</span>
-                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.quantityProcessedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityProcessedKg: e.target.value }))} />
+                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.quantityProcessedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityProcessedKg: e.target.value }))} />
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Certification status</span>
-                  <select className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white" value={batchForm.certificationStatus} onChange={(e) => setBatchForm((p) => ({ ...p, certificationStatus: e.target.value }))}>
+                  <select className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white" value={batchForm.certificationStatus} onChange={(e) => setBatchForm((p) => ({ ...p, certificationStatus: e.target.value }))}>
                     <option value="None">None</option>
                     <option value="Local">Local</option>
                     <option value="Regional">Regional</option>
@@ -2426,7 +2426,7 @@ export default function AfriYieldManagement() {
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Quality grade</span>
-                  <select className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white" value={batchForm.qualityGrade} onChange={(e) => setBatchForm((p) => ({ ...p, qualityGrade: e.target.value }))}>
+                  <select className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white" value={batchForm.qualityGrade} onChange={(e) => setBatchForm((p) => ({ ...p, qualityGrade: e.target.value }))}>
                     <option value="A">A</option>
                     <option value="B">B</option>
                     <option value="C">C</option>
@@ -2438,27 +2438,27 @@ export default function AfriYieldManagement() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Buyer name</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.buyerName} onChange={(e) => setBatchForm((p) => ({ ...p, buyerName: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.buyerName} onChange={(e) => setBatchForm((p) => ({ ...p, buyerName: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Buyer country</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.buyerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, buyerCountry: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.buyerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, buyerCountry: e.target.value }))} />
                 </label>
               </div>
 
               <label className="block">
                 <span className="font-medium text-gray-700">Export value (USD)</span>
-                <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.exportValueUSD} onChange={(e) => setBatchForm((p) => ({ ...p, exportValueUSD: e.target.value }))} />
+                <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.exportValueUSD} onChange={(e) => setBatchForm((p) => ({ ...p, exportValueUSD: e.target.value }))} />
               </label>
 
               <label className="block">
                 <span className="font-medium text-gray-700">Documents (one per line URL/path)</span>
-                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.documents} onChange={(e) => setBatchForm((p) => ({ ...p, documents: e.target.value }))} />
+                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.documents} onChange={(e) => setBatchForm((p) => ({ ...p, documents: e.target.value }))} />
               </label>
 
               <label className="block">
                 <span className="font-medium text-gray-700">Admin notes</span>
-                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.adminNotes} onChange={(e) => setBatchForm((p) => ({ ...p, adminNotes: e.target.value }))} />
+                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.adminNotes} onChange={(e) => setBatchForm((p) => ({ ...p, adminNotes: e.target.value }))} />
               </label>
 
               <div className="flex justify-end gap-2 pt-2">

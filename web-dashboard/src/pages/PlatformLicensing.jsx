@@ -319,7 +319,7 @@ export default function PlatformLicensing() {
                             ? 'Ex: FAO, CARE International...'
                             : 'Ex: AgroTrade Corp Ltd'
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                   </div>
 
@@ -343,7 +343,7 @@ export default function PlatformLicensing() {
                             ? 'director@organization.org'
                             : 'procurement@company.com'
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                     <p className="text-xs text-gray-400 mt-1">
                       {selectedType.key === 'government'
@@ -367,7 +367,7 @@ export default function PlatformLicensing() {
                       value={form.contactName}
                       onChange={onChange}
                       required
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                   </div>
                   <div>
@@ -376,7 +376,7 @@ export default function PlatformLicensing() {
                       name="phone"
                       value={form.phone}
                       onChange={onChange}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                   </div>
 
@@ -396,7 +396,7 @@ export default function PlatformLicensing() {
                             : 'Ex: Director General, Minister...'
                           : 'Ex: Country Director, CEO...'
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                   </div>
                   <div>
@@ -408,7 +408,7 @@ export default function PlatformLicensing() {
                       value={form.website}
                       onChange={onChange}
                       placeholder="https://"
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                   </div>
 
@@ -431,7 +431,7 @@ export default function PlatformLicensing() {
                         value={form.targetCountries}
                         onChange={onChange}
                         placeholder={isFr ? 'Ex: Mali, Sénégal, Burkina Faso...' : 'Ex: Mali, Senegal, Burkina Faso...'}
-                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                       />
                     </div>
                   )}
@@ -459,7 +459,7 @@ export default function PlatformLicensing() {
                               ? 'Ex: Sourcer 100 tonnes de karité certifié USDA par trimestre, accéder aux coopératives vérifiées...'
                               : 'Ex: Source 100 tonnes of USDA-certified shea per quarter, access verified cooperatives...'
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] resize-none"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20 resize-none"
                     />
                   </div>
                 </div>

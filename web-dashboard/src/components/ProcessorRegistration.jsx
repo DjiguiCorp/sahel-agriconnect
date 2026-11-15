@@ -320,7 +320,7 @@ const ProcessorRegistration = ({ onProcessorAdded }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-orange focus:border-green-600"
               placeholder="Ex: contact@centre-transformation.ml"
             />
           </div>

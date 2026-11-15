@@ -209,7 +209,7 @@ const CertificationManagement = () => {
                   <td className="py-4 px-4">
                     <div className="flex flex-col sm:flex-row gap-2 items-start">
                       <select
-                        className="rounded-lg border border-gray-200 px-2 py-1 text-sm max-w-[160px]"
+                        className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 max-w-[160px]"
                         value={product.statut}
                         disabled={savingId === (product._id || product.id)}
                         onChange={(e) =>

@@ -333,7 +333,7 @@ export default function AfriYieldAdminTab({ token, isFr }) {
                     type={type || 'text'}
                     value={form[key]}
                     onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   />
                 </div>
               ))}
@@ -355,7 +355,7 @@ export default function AfriYieldAdminTab({ token, isFr }) {
                   <select
                     value={form[key]}
                     onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   >
                     {opts.map((o) => (
                       <option key={o} value={o}>
@@ -381,7 +381,7 @@ export default function AfriYieldAdminTab({ token, isFr }) {
                     type="number"
                     value={form[key]}
                     onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   />
                 </div>
               ))}
@@ -393,7 +393,7 @@ export default function AfriYieldAdminTab({ token, isFr }) {
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A] resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30 resize-none"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -402,7 +402,7 @@ export default function AfriYieldAdminTab({ token, isFr }) {
                   value={form.descriptionFr}
                   onChange={(e) => setForm((f) => ({ ...f, descriptionFr: e.target.value }))}
                   rows={3}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A] resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30 resize-none"
                 />
               </div>
               <div className="sm:col-span-2 flex flex-wrap gap-4">

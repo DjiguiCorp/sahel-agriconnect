@@ -655,7 +655,7 @@ function OverviewControlTower({ onGoTab }) {
               required
               value={investorForm.fullName}
               onChange={(e) => setInvestorForm((p) => ({ ...p, fullName: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-primary-orange"
             />
           </label>
           <label className="block space-y-1">
@@ -665,7 +665,7 @@ function OverviewControlTower({ onGoTab }) {
               required
               value={investorForm.email}
               onChange={(e) => setInvestorForm((p) => ({ ...p, email: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-primary-orange"
             />
           </label>
           <label className="block space-y-1">
@@ -673,7 +673,7 @@ function OverviewControlTower({ onGoTab }) {
             <select
               value={investorForm.countryOfResidence}
               onChange={(e) => setInvestorForm((p) => ({ ...p, countryOfResidence: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange bg-white"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-primary-orange"
             >
               {INVESTOR_RESIDENCE_COUNTRIES.map((c) => (
                 <option key={c} value={c}>
@@ -687,7 +687,7 @@ function OverviewControlTower({ onGoTab }) {
             <input
               value={investorForm.investmentRange}
               onChange={(e) => setInvestorForm((p) => ({ ...p, investmentRange: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-primary-orange"
               placeholder="$50k-$100k"
             />
           </label>

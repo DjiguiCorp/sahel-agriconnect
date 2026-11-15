@@ -757,7 +757,7 @@ export default function CommodityMarketplace() {
                         required
                         value={quoteForm.buyerName}
                         onChange={(e) => setQuoteForm((f) => ({ ...f, buyerName: e.target.value }))}
-                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                        className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                       />
                     </div>
                     <div>
@@ -767,7 +767,7 @@ export default function CommodityMarketplace() {
                         required
                         value={quoteForm.email}
                         onChange={(e) => setQuoteForm((f) => ({ ...f, email: e.target.value }))}
-                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                        className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                       />
                     </div>
                   </div>
@@ -780,7 +780,7 @@ export default function CommodityMarketplace() {
                         type="number"
                         value={quoteForm.quantityKg}
                         onChange={(e) => setQuoteForm((f) => ({ ...f, quantityKg: e.target.value }))}
-                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                        className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                       />
                     </div>
                     <div>
@@ -791,7 +791,7 @@ export default function CommodityMarketplace() {
                         value={quoteForm.deliveryCountry}
                         onChange={(e) => setQuoteForm((f) => ({ ...f, deliveryCountry: e.target.value }))}
                         placeholder="USA, France..."
-                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                        className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                       />
                     </div>
                   </div>
@@ -803,7 +803,7 @@ export default function CommodityMarketplace() {
                       rows={3}
                       value={quoteForm.message}
                       onChange={(e) => setQuoteForm((f) => ({ ...f, message: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A] resize-none"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30 resize-none"
                     />
                   </div>
                   {quoteState.err && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{quoteState.err}</p>}
@@ -841,7 +841,7 @@ export default function CommodityMarketplace() {
               value={notifyEmail}
               onChange={(e) => setNotifyEmail(e.target.value)}
               placeholder={isFr ? 'votre@email.com' : 'your@email.com'}
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm mb-3 outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 mb-3 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
             />
             <div className="flex gap-2">
               <button

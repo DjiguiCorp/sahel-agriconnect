@@ -270,7 +270,7 @@ export default function InvestorRelations() {
                       value={form[field]}
                       onChange={onChange}
                       required={field !== 'org'}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                     />
                   </label>
                 ))}
@@ -280,7 +280,7 @@ export default function InvestorRelations() {
                     name="range"
                     value={form.range}
                     onChange={onChange}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A] bg-white"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30 bg-white"
                   >
                     {Array.isArray(ranges) && ranges.map((r) => <option key={r}>{r}</option>)}
                   </select>
@@ -292,7 +292,7 @@ export default function InvestorRelations() {
                     value={form.message}
                     onChange={onChange}
                     rows={3}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A] resize-none"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30 resize-none"
                   />
                 </label>
                 <div className="sm:col-span-2">

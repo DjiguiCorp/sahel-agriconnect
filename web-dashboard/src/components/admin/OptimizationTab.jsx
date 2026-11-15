@@ -255,7 +255,7 @@ export default function OptimizationTab({ token, isFr }) {
             <select
               value={selectedCoop}
               onChange={(e) => setSelectedCoop(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
             >
               <option value="">{isFr ? 'Toutes les coopératives' : 'All cooperatives'}</option>
               {cooperatives.map((c) => (
@@ -272,7 +272,7 @@ export default function OptimizationTab({ token, isFr }) {
             <select
               value={commodity}
               onChange={(e) => setCommodity(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
             >
               {['Shea Butter', 'Sesame', 'Cashew', 'Mango', 'Rice', 'Cotton', 'Millet', 'Sorghum'].map(
                 (c) => (
@@ -290,7 +290,7 @@ export default function OptimizationTab({ token, isFr }) {
             <select
               value={season}
               onChange={(e) => setSeason(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
             >
               <option value="rainy">
                 {isFr ? '🌧️ Saison des pluies (Juin–Oct)' : '🌧️ Rainy Season (Jun–Oct)'}
@@ -310,7 +310,7 @@ export default function OptimizationTab({ token, isFr }) {
               placeholder={
                 selectedCoopData?.regionCity || (isFr ? 'ex: Sikasso, Mali' : 'e.g. Sikasso, Mali')
               }
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
             />
           </div>
         </div>

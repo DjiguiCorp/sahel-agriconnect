@@ -54,7 +54,7 @@ function InviteFarmersSection({ coop, isFr }) {
             <input
               value={form[key]}
               onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-brand-forest"
             />
           </div>
         ))}
@@ -69,7 +69,7 @@ function InviteFarmersSection({ coop, isFr }) {
                 ? 'Ex: Bonjour, nous cherchons des producteurs de karité dans votre région...'
                 : 'Ex: Hello, we are looking for shea producers in your region...'
             }
-            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-brand-forest resize-none"
           />
         </div>
       </div>

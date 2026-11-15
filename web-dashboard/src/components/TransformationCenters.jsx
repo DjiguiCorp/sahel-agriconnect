@@ -59,7 +59,7 @@ const TransformationCenters = () => {
         <select
           value={selectedRegion}
           onChange={(e) => setSelectedRegion(e.target.value)}
-          className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+          className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-orange focus:border-green-600"
         >
           <option value="">Toutes les régions</option>
           {regions.map(region => (
@@ -257,7 +257,7 @@ const CertificationRequestForm = ({ centerId, centerName, onClose, onSubmit }) =
                 type="text"
                 value={centerName}
                 disabled
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 placeholder:text-gray-400"
               />
             </div>
 
@@ -271,7 +271,7 @@ const CertificationRequestForm = ({ centerId, centerName, onClose, onSubmit }) =
                 value={formData.capaciteActuelle}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-orange focus:border-green-600"
                 placeholder="Ex: 50"
               />
             </div>
@@ -285,7 +285,7 @@ const CertificationRequestForm = ({ centerId, centerName, onClose, onSubmit }) =
                 name="inspectionPrevue"
                 value={formData.inspectionPrevue}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-orange focus:border-green-600"
               />
             </div>
 
@@ -298,7 +298,7 @@ const CertificationRequestForm = ({ centerId, centerName, onClose, onSubmit }) =
                 value={formData.message}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-orange focus:border-green-600"
                 placeholder="Décrivez votre centre et vos besoins de certification..."
               />
             </div>

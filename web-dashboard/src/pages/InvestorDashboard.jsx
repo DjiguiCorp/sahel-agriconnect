@@ -99,7 +99,7 @@ export default function InvestorDashboard() {
                 value={email}
                 onChange={(ev) => setEmail(ev.target.value)}
                 placeholder="Email"
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#B5850A]"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]"
               />
               <button
                 type="submit"

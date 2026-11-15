@@ -15,6 +15,21 @@
     /* No background-image on body — sections define their own */
   }
 
+  /*
+   * body { color: white } would otherwise make typed text invisible on light cards.
+   * Dark-themed forms already set text-white / placeholder-white, or use .registration-dark-zone.
+   */
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not([type='hidden']):not([type='range']):not([type='color']),
+  textarea,
+  select {
+    color: #111827; /* gray-900 */
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af; /* gray-400 */
+    opacity: 1;
+  }
+
   .text-gradient {
     background: linear-gradient(135deg, #4ade80 0%, #B5850A 100%);
     -webkit-background-clip: text;

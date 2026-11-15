@@ -121,7 +121,7 @@ export default function CooperativeInquiryModal({ cooperative, onClose }) {
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder={isFr ? 'Ex: Amadou Coulibaly' : 'Ex: Amadou Coulibaly'}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                 />
               </div>
 
@@ -135,7 +135,7 @@ export default function CooperativeInquiryModal({ cooperative, onClose }) {
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                   placeholder="+223 76 12 34 56"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                 />
               </div>
 
@@ -148,7 +148,7 @@ export default function CooperativeInquiryModal({ cooperative, onClose }) {
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   placeholder={isFr ? 'votre@email.com' : 'your@email.com'}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                 />
               </div>
 
@@ -165,7 +165,7 @@ export default function CooperativeInquiryModal({ cooperative, onClose }) {
                       ? 'Parlez-nous de votre exploitation, vos cultures, vos besoins...'
                       : 'Tell us about your farm, crops, needs...'
                   }
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20 resize-none"
                 />
               </div>
 
