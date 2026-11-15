@@ -36,6 +36,13 @@ const cooperativePlatformRegistrationSchema = new mongoose.Schema({
   verifiedAt: Date,
   passwordHash: { type: String },
   tempPassword: { type: String },
+  /** Linked transformation / processing partner */
+  processorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Processor',
+    default: null,
+  },
+  processorName: { type: String, trim: true, default: '' },
   createdAt: { type: Date, default: Date.now },
   fcmToken: { type: String },
   fcmUpdatedAt: Date,

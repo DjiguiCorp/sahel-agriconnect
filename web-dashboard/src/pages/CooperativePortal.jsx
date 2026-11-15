@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Loader2, Check, X, Plus } from 'lucide-react';
+import { LogOut, Loader2, Check, X, Plus, Lock } from 'lucide-react';
 import { API_ENDPOINTS } from '../config/api';
+import CooperativeFinanceForm from '../components/CooperativeFinanceForm';
 
 const API = import.meta.env.VITE_API_BASE_URL;
+
+const PAYMENT_METHODS = [
+  'Orange Money',
+  'MTN Mobile Money',
+  'Cash',
+  'Virement bancaire',
+  'Autre',
+];
+
+const INPUT_LIGHT =
+  'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20';
 
 function GrowthLockedPanel({ isFr, navigate }) {
   return (
@@ -36,6 +48,7 @@ export default function CooperativePortal() {
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState(() => sessionStorage.getItem(COOP_TOKEN));
   const [coop, setCoop] = useState(() => {
     try {
@@ -49,6 +62,7 @@ export default function CooperativePortal() {
   const [activeTab, setActiveTab] = useState('overview');
   const coopTier = data?.cooperative?.tier || 'starter';
   const isGrowth = coopTier === 'growth';
+  const coopStatus = data?.cooperative?.status || '';
 
   const [loginStep, setLoginStep] = useState('email'); // email | code
   const [loginEmail, setLoginEmail] = useState('');
@@ -74,11 +88,38 @@ export default function CooperativePortal() {
   const [trainingsLoading, setTrainingsLoading] = useState(false);
   const [joinReviewBusy, setJoinReviewBusy] = useState(null);
 
+  const [membersSubTab, setMembersSubTab] = useState('active'); // active | pending | payments
+  const [paymentModal, setPaymentModal] = useState(null); // { farmerId, farmerName }
+  const [paymentForm, setPaymentForm] = useState({
+    amount: '',
+    paymentMethod: 'Orange Money',
+    reference: '',
+    date: new Date().toISOString().slice(0, 10),
+  });
+  const [paymentState, setPaymentState] = useState({ loading: false, err: '' });
+  const [showProcessorModal, setShowProcessorModal] = useState(false);
+  const [processors, setProcessors] = useState([]);
+  const [processorsLoading, setProcessorsLoading] = useState(false);
+  const [linkProcessorBusy, setLinkProcessorBusy] = useState(false);
+  const [showFinanceForm, setShowFinanceForm] = useState(false);
+  const [verifyToast, setVerifyToast] = useState('');
+
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
   const declaredMembers = Number(
     data?.cooperative?.memberCount ?? data?.stats?.declaredMemberCount ?? 0
   );
+  const linkedMemberCount = Number(data?.stats?.memberCount ?? 0);
+  const progressMembers = Math.max(linkedMemberCount, declaredMembers);
   const pendingJoinCount = (data?.joinRequests || []).length;
+  const processorId = data?.cooperative?.processorId || null;
+  const processorName = data?.cooperative?.processorName || '';
+  const pendingEquipmentApps = Number(data?.stats?.pendingEquipmentApps ?? 0);
+  const pendingCertifications = Number(data?.stats?.pendingCertifications ?? 0);
+  const activeProduceCount = Number(
+    data?.stats?.activeProduceListings ??
+      (data?.produceListings || []).filter((l) => l.cooperativeApproved).length
+  );
+  const specialUnlocked = isGrowth && progressMembers >= 51 && Boolean(processorId);
 
   const refreshPortal = () => {
     if (!token) return;
@@ -97,6 +138,40 @@ export default function CooperativePortal() {
     refreshPortal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, coop]);
+
+  // Email verification from registration link ?verify=<token>
+  useEffect(() => {
+    const verifyToken = searchParams.get('verify');
+    if (!verifyToken) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`${API}/api/cooperatives/verify-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: verifyToken }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (cancelled) return;
+        if (r.ok && d.success) {
+          setVerifyToast(isFr ? 'Email vérifié' : 'Email verified');
+        } else {
+          setVerifyToast(d.error || (isFr ? 'Lien de vérification invalide' : 'Invalid verification link'));
+        }
+      } catch {
+        if (!cancelled) setVerifyToast(isFr ? 'Échec de la vérification' : 'Verification failed');
+      } finally {
+        const next = new URLSearchParams(searchParams);
+        next.delete('verify');
+        setSearchParams(next, { replace: true });
+        setTimeout(() => setVerifyToast(''), 5000);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (activeTab !== 'formations' || !token || !isGrowth) return;
@@ -133,6 +208,79 @@ export default function CooperativePortal() {
       alert(e.message || 'Error');
     } finally {
       setJoinReviewBusy(null);
+    }
+  };
+
+  const openPaymentModal = (farmer) => {
+    setPaymentForm({
+      amount: '',
+      paymentMethod: 'Orange Money',
+      reference: '',
+      date: new Date().toISOString().slice(0, 10),
+    });
+    setPaymentState({ loading: false, err: '' });
+    setPaymentModal({ farmerId: farmer._id, farmerName: farmer.nom || '' });
+  };
+
+  const submitMemberPayment = async (e) => {
+    e.preventDefault();
+    if (!paymentModal?.farmerId) return;
+    setPaymentState({ loading: true, err: '' });
+    try {
+      const r = await fetch(`${API}/api/cooperatives/my-portal/record-member-payment`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          farmerId: paymentModal.farmerId,
+          farmerName: paymentModal.farmerName,
+          amount: Number(paymentForm.amount),
+          paymentMethod: paymentForm.paymentMethod,
+          reference: paymentForm.reference,
+          date: paymentForm.date,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+      setPaymentModal(null);
+      setMembersSubTab('payments');
+      refreshPortal();
+    } catch (err) {
+      setPaymentState({ loading: false, err: err.message || 'Error' });
+      return;
+    }
+    setPaymentState({ loading: false, err: '' });
+  };
+
+  const openProcessorModal = async () => {
+    setShowProcessorModal(true);
+    setProcessorsLoading(true);
+    try {
+      const r = await fetch(`${API}/api/cooperatives/my-portal/processors`, { headers });
+      const d = await r.json().catch(() => ({}));
+      setProcessors(d.processors || []);
+    } catch {
+      setProcessors([]);
+    } finally {
+      setProcessorsLoading(false);
+    }
+  };
+
+  const linkProcessor = async (id) => {
+    setLinkProcessorBusy(true);
+    try {
+      const r = await fetch(`${API}/api/cooperatives/my-portal/link-processor`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ processorId: id }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Link failed');
+      setShowProcessorModal(false);
+      refreshPortal();
+    } catch (err) {
+      alert(err.message || 'Error');
+    } finally {
+      setLinkProcessorBusy(false);
     }
   };
 
@@ -533,170 +681,524 @@ export default function CooperativePortal() {
         )}
 
         {activeTab === 'overview' && !loading && (
-          <div className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                <h3 className="font-bold text-[#1a3c2e] mb-3">
-                  🌾 {isFr ? "Productions en attente d'approbation" : 'Produce awaiting approval'}
-                </h3>
-                {(data?.produceListings?.filter((l) => !l.cooperativeApproved) || []).length === 0 ? (
-                  <p className="text-gray-400 text-sm">{isFr ? 'Aucune production en attente.' : 'No pending produce.'}</p>
+          <div className="space-y-5">
+            {verifyToast ? (
+              <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+                ✓ {verifyToast}
+              </div>
+            ) : null}
+
+            {/* Member Progress Card */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div>
+                  <h3 className="font-bold text-[#1a3c2e] text-lg">
+                    {isFr ? 'Progression des membres' : 'Member progress'}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {linkedMemberCount} {isFr ? 'membres liés' : 'linked members'}
+                    {declaredMembers !== linkedMemberCount
+                      ? ` · ${declaredMembers} ${isFr ? 'déclarés' : 'declared'}`
+                      : ''}
+                  </p>
+                </div>
+                {isGrowth && coopStatus === 'active' ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 text-green-800 text-xs font-bold px-3 py-1.5">
+                    ✓ {isFr ? 'Plan Croissance actif' : 'Growth Plan active'}
+                  </span>
                 ) : (
-                  (data?.produceListings?.filter((l) => !l.cooperativeApproved) || [])
-                    .slice(0, 3)
-                    .map((l) => (
-                      <div key={l._id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                        <div>
-                          <p className="text-sm font-medium text-[#1a3c2e]">{l.commodity}</p>
-                          <p className="text-xs text-gray-400">
-                            {l.quantityKg ? `${l.quantityKg} kg` : ''} · {l.farmerName || '—'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => approveListing(l._id)}
-                          className="text-xs font-bold px-3 py-1.5 rounded-lg text-white"
-                          style={{ background: '#1a3c2e' }}
-                        >
-                          ✓ {isFr ? 'Approuver' : 'Approve'}
-                        </button>
-                      </div>
-                    ))
+                  <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1.5">
+                    {isFr ? 'Plan Démarrage' : 'Starter Plan'}
+                  </span>
                 )}
               </div>
-
-              <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                <h3 className="font-bold text-[#1a3c2e] mb-3">
-                  📋 {isFr ? 'Projets gouvernementaux actifs' : 'Active government projects'}
-                </h3>
-                {(data?.nationalProjects || []).length === 0 ? (
-                  <p className="text-gray-400 text-sm">
-                    {isFr ? 'Aucun projet national pour votre pays.' : 'No national projects for your country.'}
+              <div className="h-3 rounded-full bg-gray-100 overflow-hidden mb-2">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, (progressMembers / 51) * 100)}%`,
+                    background: progressMembers >= 51 ? '#B5850A' : '#1a3c2e',
+                  }}
+                />
+              </div>
+              <p className="text-xs text-gray-600 mb-3">
+                {isFr
+                  ? `${Math.min(progressMembers, 51)} / 51 membres pour débloquer les formations, la certification et l'export`
+                  : `${Math.min(progressMembers, 51)} / 51 members to unlock training, certification and export`}
+              </p>
+              {progressMembers >= 51 && coopTier === 'starter' ? (
+                <div className="rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <p className="text-sm font-semibold text-amber-900">
+                    {isFr
+                      ? 'Vous avez atteint 51 membres — passez au plan Croissance pour tout débloquer'
+                      : "You've reached 51 members — upgrade to unlock everything"}
                   </p>
-                ) : (
-                  (data?.nationalProjects || []).slice(0, 3).map((p) => (
-                    <div key={p._id} className="py-2 border-b border-gray-50 last:border-0">
-                      <p className="text-sm font-medium text-[#1a3c2e]">{isFr && p.titleFr ? p.titleFr : p.title}</p>
-                      <p className="text-xs text-gray-400">{p.organization}</p>
-                      {p.myResponse ? (
-                        <span className="text-xs text-green-600 font-semibold">✓ {p.myResponse}</span>
-                      ) : (
-                        <div className="flex gap-2 mt-1.5">
-                          <button
-                            type="button"
-                            onClick={() => respondProject(p._id, 'interested')}
-                            className="text-xs px-2 py-1 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
-                          >
-                            👍 {isFr ? 'Intéressé' : 'Interested'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => respondProject(p._id, 'declined')}
-                            className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
-                          >
-                            {isFr ? 'Décliner' : 'Decline'}
-                          </button>
-                        </div>
-                      )}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/cooperative-upgrade')}
+                    className="shrink-0 px-4 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400"
+                  >
+                    {isFr ? 'Mettre à niveau' : 'Upgrade'}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Quick Stats Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { label: isFr ? 'Membres' : 'Members', value: linkedMemberCount, icon: '👩‍🌾' },
+                { label: isFr ? 'Demandes en attente' : 'Pending requests', value: pendingJoinCount, icon: '📨' },
+                { label: isFr ? 'Productions actives' : 'Active produce', value: activeProduceCount, icon: '🌾' },
+                {
+                  label: isFr ? 'Certifications en cours' : 'Pending certifications',
+                  value: pendingCertifications,
+                  icon: '🏅',
+                },
+              ].map((s) => (
+                <div key={s.label} className="bg-white rounded-2xl border border-gray-200 p-4">
+                  <p className="text-xs text-gray-500 mb-1">
+                    {s.icon} {s.label}
+                  </p>
+                  <p className="text-2xl font-extrabold text-[#1a3c2e]">{s.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Feature Preview Grid */}
+            <div>
+              <h3 className="font-bold text-[#1a3c2e] mb-3">
+                {isFr ? 'Fonctionnalités' : 'Features'}
+              </h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  {
+                    key: 'formations',
+                    icon: '🎓',
+                    title: isFr ? 'Formations' : 'Training',
+                    desc: isFr
+                      ? 'Programmes de formation pour vos membres'
+                      : 'Training programs for your members',
+                    locked: !isGrowth || progressMembers < 51,
+                    action: () => setActiveTab('formations'),
+                    actionLabel: isFr ? 'Voir' : 'Open',
+                  },
+                  {
+                    key: 'certification',
+                    icon: '🏅',
+                    title: isFr ? 'Certification' : 'Certification',
+                    desc: isFr ? 'Qualifiez vos productions pour les marchés' : 'Qualify produce for markets',
+                    locked: !isGrowth,
+                    action: () => setActiveTab('certification'),
+                    actionLabel: isFr ? 'Voir' : 'Open',
+                  },
+                  {
+                    key: 'afriyield',
+                    icon: '🌍',
+                    title: 'AfriYield Exchange',
+                    desc: isFr ? 'Connectez-vous aux investisseurs diaspora' : 'Connect with diaspora investors',
+                    locked: !isGrowth,
+                    action: () =>
+                      isGrowth ? window.open('/afri-yield/opportunities', '_blank') : setActiveTab('afriyield'),
+                    actionLabel: isFr ? 'Ouvrir' : 'Open',
+                  },
+                  {
+                    key: 'export',
+                    icon: '📦',
+                    title: isFr ? 'Export International' : 'International Export',
+                    desc: isFr ? 'Préparez vos produits pour l’export' : 'Prepare products for export',
+                    locked: !isGrowth,
+                    action: () => setActiveTab('export'),
+                    actionLabel: isFr ? 'Voir' : 'Open',
+                  },
+                  {
+                    key: 'financing',
+                    icon: '💰',
+                    title: isFr ? 'Financement' : 'Financing',
+                    desc: isFr
+                      ? `Fonds équipements${pendingEquipmentApps ? ` · ${pendingEquipmentApps} en cours` : ''}`
+                      : `Equipment fund${pendingEquipmentApps ? ` · ${pendingEquipmentApps} pending` : ''}`,
+                    locked: false,
+                    action: () => setShowFinanceForm(true),
+                    secondary: () => navigate('/equipment-fund'),
+                    secondaryLabel: isFr ? 'Fonds équipements' : 'Equipment fund',
+                    actionLabel: isFr ? 'Demander' : 'Apply',
+                  },
+                  {
+                    key: 'processor',
+                    icon: '🏭',
+                    title: isFr ? 'Centre de Transformation' : 'Transformation Center',
+                    desc: processorId
+                      ? processorName || (isFr ? 'Centre associé' : 'Linked center')
+                      : isFr
+                        ? 'Associez un centre pour l’export transformé'
+                        : 'Link a center for processed export',
+                    locked: false,
+                    action: openProcessorModal,
+                    actionLabel: processorId
+                      ? isFr
+                        ? 'Changer'
+                        : 'Change'
+                      : isFr
+                        ? 'Associer un centre'
+                        : 'Link a center',
+                    directory: () => navigate('/centres-transformation'),
+                  },
+                ].map((card) => (
+                  <div
+                    key={card.key}
+                    className={`rounded-2xl border p-4 flex flex-col ${
+                      card.locked
+                        ? 'bg-gray-50 border-gray-200 opacity-75'
+                        : 'bg-white border-gray-200 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <span className={`text-2xl ${card.locked ? 'grayscale' : ''}`}>{card.icon}</span>
+                      {card.locked ? <Lock className="w-4 h-4 text-gray-400 shrink-0" /> : null}
                     </div>
-                  ))
-                )}
+                    <h4 className={`font-bold text-sm mb-1 ${card.locked ? 'text-gray-500' : 'text-[#1a3c2e]'}`}>
+                      {card.title}
+                    </h4>
+                    <p className="text-xs text-gray-500 flex-1 mb-3">{card.desc}</p>
+                    {card.locked ? (
+                      <p className="text-[11px] text-gray-400 leading-snug">
+                        {isFr
+                          ? 'Disponible avec 51+ membres et Plan Croissance'
+                          : 'Available with 51+ members and Growth Plan'}
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={card.action}
+                          className="text-xs font-bold px-3 py-2 rounded-lg text-white"
+                          style={{ background: '#1a3c2e' }}
+                        >
+                          {card.actionLabel}
+                        </button>
+                        {card.secondary ? (
+                          <button
+                            type="button"
+                            onClick={card.secondary}
+                            className="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                          >
+                            {card.secondaryLabel}
+                          </button>
+                        ) : null}
+                        {card.directory ? (
+                          <button
+                            type="button"
+                            onClick={card.directory}
+                            className="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                          >
+                            {isFr ? 'Annuaire' : 'Directory'}
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <h3 className="font-bold text-[#1a3c2e] mb-4">⚡ {isFr ? 'Actions rapides' : 'Quick actions'}</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Special Opportunities */}
+            <div>
+              <h3 className="font-bold text-[#1a3c2e] mb-3">
+                {isFr ? 'Opportunités spéciales' : 'Special Opportunities'}
+              </h3>
+              <div className="grid md:grid-cols-3 gap-3">
                 {[
                   {
-                    icon: '📨',
-                    label: isFr ? 'Inviter un agriculteur' : 'Invite a farmer',
-                    action: () => {
-                      setActiveTab('invitations');
-                      setShowInvite(true);
-                    },
+                    icon: '🎓',
+                    title: isFr ? 'Formation aux États-Unis' : 'US Training Program',
+                    desc: isFr
+                      ? 'Accès aux programmes de formation agricole aux États-Unis pour les leaders de coopératives'
+                      : 'Access to US agricultural training programs for cooperative leaders',
+                    lock: isFr ? '51+ membres requis' : '51+ members required',
+                    unlockCond: isGrowth && progressMembers >= 51,
                   },
-                  { icon: '🌾', label: isFr ? 'Voir les productions' : 'View produce', action: () => setActiveTab('produce') },
-                  { icon: '📋', label: isFr ? 'Projets nationaux' : 'National projects', action: () => setActiveTab('projects') },
+                  {
+                    icon: '🏆',
+                    title: isFr ? 'Certification USDA/UE' : 'USDA/EU Certification',
+                    desc: isFr
+                      ? "Certifiez vos productions pour l'export vers les marchés américains et européens"
+                      : 'Certify your production for export to US and European markets',
+                    lock: isFr ? 'Plan Croissance requis' : 'Growth Plan required',
+                    unlockCond: isGrowth,
+                  },
                   {
                     icon: '🌍',
-                    label: 'AfriYield Exchange',
-                    action: () =>
-                      isGrowth
-                        ? window.open('/afri-yield/opportunities', '_blank')
-                        : setActiveTab('afriyield'),
+                    title: isFr ? 'Export Produits Transformés' : 'Processed Products Export',
+                    desc: isFr
+                      ? 'Exportez vos produits transformés, pas comme matière première'
+                      : 'Export your processed products, not as raw materials',
+                    lock: isFr
+                      ? 'Partenariat centre de transformation requis'
+                      : 'Transformation center partnership required',
+                    unlockCond: Boolean(processorId),
                   },
-                ].map(({ icon, label, action }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={action}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-[#1a3c2e]/20 hover:border-[#1a3c2e] hover:bg-[#1a3c2e]/5 transition text-center"
-                  >
-                    <span className="text-2xl">{icon}</span>
-                    <span className="text-xs font-semibold text-[#1a3c2e]">{label}</span>
-                  </button>
-                ))}
+                ].map((op) => {
+                  const unlocked = specialUnlocked && op.unlockCond;
+                  return (
+                    <div
+                      key={op.title}
+                      className={`rounded-2xl border p-4 ${
+                        unlocked ? 'bg-white border-green-200' : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-2xl ${unlocked ? '' : 'grayscale opacity-70'}`}>{op.icon}</span>
+                        {!unlocked ? <Lock className="w-4 h-4 text-gray-400" /> : null}
+                      </div>
+                      <h4 className={`font-bold text-sm mb-1 ${unlocked ? 'text-[#1a3c2e]' : 'text-gray-500'}`}>
+                        {op.title}
+                      </h4>
+                      <p className="text-xs text-gray-500 mb-3 leading-relaxed">{op.desc}</p>
+                      {unlocked ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(
+                              `mailto:support@woneapp.com?subject=${encodeURIComponent(op.title)}`,
+                              '_blank'
+                            )
+                          }
+                          className="text-xs font-bold px-3 py-2 rounded-lg text-white"
+                          style={{ background: '#B5850A' }}
+                        >
+                          {isFr ? 'Postuler' : 'Apply'}
+                        </button>
+                      ) : (
+                        <p className="text-[11px] text-gray-400">{op.lock}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+              {!specialUnlocked ? (
+                <p className="text-xs text-gray-400 mt-2">
+                  {isFr
+                    ? 'Débloquez les 3 opportunités avec Plan Croissance, 51+ membres et un centre de transformation associé.'
+                    : 'Unlock all 3 with Growth Plan, 51+ members, and a linked transformation center.'}
+                </p>
+              ) : null}
             </div>
           </div>
         )}
 
         {activeTab === 'farmers' && !loading && (
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-bold text-[#1a3c2e]">👩‍🌾 {isFr ? 'Agriculteurs membres' : 'Member farmers'}</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('invitations');
-                  setShowInvite(true);
-                }}
-                className="flex items-center gap-1.5 text-sm font-semibold text-white px-3 py-2 rounded-xl"
-                style={{ background: '#1a3c2e' }}
-              >
-                <Plus className="w-4 h-4" /> {isFr ? 'Inviter' : 'Invite'}
-              </button>
-            </div>
-            {(data?.memberFarmers || []).length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-4xl mb-3">👩‍🌾</p>
-                <p className="text-gray-500 text-sm">
-                  {isFr ? 'Aucun membre pour le moment. Invitez des agriculteurs.' : 'No members yet. Invite farmers.'}
-                </p>
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                <h3 className="font-bold text-[#1a3c2e]">👩‍🌾 {isFr ? 'Gestion des membres' : 'Member management'}</h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('invitations');
+                    setShowInvite(true);
+                  }}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-white px-3 py-2 rounded-xl"
+                  style={{ background: '#1a3c2e' }}
+                >
+                  <Plus className="w-4 h-4" /> {isFr ? 'Inviter' : 'Invite'}
+                </button>
               </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {[isFr ? 'Nom' : 'Name', isFr ? 'Cultures' : 'Crops', isFr ? 'Superficie' : 'Area', isFr ? 'Région' : 'Region', isFr ? 'Vérifié' : 'Verified'].map(
-                      (h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                          {h}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(data?.memberFarmers || []).map((f, i) => (
-                    <tr key={f._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                      <td className="px-4 py-3 font-medium text-[#1a3c2e]">{f.nom || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{Array.isArray(f.cultures) ? f.cultures.join(', ') : '—'}</td>
-                      <td className="px-4 py-3 font-mono">{f.superficie ? `${f.superficie} ha` : '—'}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{f.region || '—'}</td>
-                      <td className="px-4 py-3">
-                        {f.emailVerified ? (
-                          <span className="text-green-600 text-xs font-semibold">✓ {isFr ? 'Vérifié' : 'Verified'}</span>
-                        ) : (
-                          <span className="text-gray-300 text-xs">{isFr ? 'Non vérifié' : 'Unverified'}</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+
+              <div className="px-4 pt-3 flex flex-wrap gap-2 border-b border-gray-100">
+                {[
+                  { key: 'active', label: isFr ? 'Membres actifs' : 'Active Members' },
+                  {
+                    key: 'pending',
+                    label: `${isFr ? 'Demandes en attente' : 'Pending Requests'}${
+                      pendingJoinCount ? ` (${pendingJoinCount})` : ''
+                    }`,
+                  },
+                  { key: 'payments', label: isFr ? 'Paiements membres' : 'Member Payments' },
+                ].map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setMembersSubTab(t.key)}
+                    className={`px-3 py-2 text-xs font-bold rounded-t-lg border-b-2 ${
+                      membersSubTab === t.key
+                        ? 'border-[#1a3c2e] text-[#1a3c2e]'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {membersSubTab === 'active' && (
+                <>
+                  {(data?.memberFarmers || []).length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-4xl mb-3">👩‍🌾</p>
+                      <p className="text-gray-500 text-sm">
+                        {isFr
+                          ? 'Aucun membre pour le moment. Invitez des agriculteurs.'
+                          : 'No members yet. Invite farmers.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {[
+                              isFr ? 'Nom' : 'Name',
+                              isFr ? 'Cultures' : 'Crops',
+                              isFr ? 'Superficie' : 'Area',
+                              isFr ? 'Région' : 'Region',
+                              isFr ? 'Vérifié' : 'Verified',
+                              isFr ? 'Paiement' : 'Payment',
+                            ].map((h) => (
+                              <th
+                                key={h}
+                                className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase"
+                              >
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(data?.memberFarmers || []).map((f, i) => (
+                            <tr key={f._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                              <td className="px-4 py-3 font-medium text-[#1a3c2e]">{f.nom || '—'}</td>
+                              <td className="px-4 py-3 text-gray-600 text-xs">
+                                {Array.isArray(f.cultures) ? f.cultures.join(', ') : '—'}
+                              </td>
+                              <td className="px-4 py-3 font-mono">
+                                {f.superficie ? `${f.superficie} ha` : '—'}
+                              </td>
+                              <td className="px-4 py-3 text-gray-500 text-xs">{f.region || '—'}</td>
+                              <td className="px-4 py-3">
+                                {f.emailVerified ? (
+                                  <span className="text-green-600 text-xs font-semibold">
+                                    ✓ {isFr ? 'Vérifié' : 'Verified'}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-300 text-xs">
+                                    {isFr ? 'Non vérifié' : 'Unverified'}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => openPaymentModal(f)}
+                                  className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[#1a3c2e]/30 text-[#1a3c2e] hover:bg-[#1a3c2e]/5"
+                                >
+                                  {isFr ? 'Enregistrer un paiement' : 'Record Payment'}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {membersSubTab === 'pending' && (
+                <div className="p-4 space-y-3">
+                  {pendingJoinCount === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-10">
+                      {isFr ? 'Aucune demande en attente.' : 'No pending join requests.'}
+                    </p>
+                  ) : (
+                    (data.joinRequests || []).map((jr) => (
+                      <div
+                        key={jr._id}
+                        className="rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                      >
+                        <div>
+                          <p className="font-semibold text-[#1a3c2e] text-sm">{jr.farmerName || '—'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {jr.farmerRegion || '—'}
+                            {' · '}
+                            {(jr.farmerCropTypes || []).slice(0, 3).join(', ') || '—'}
+                          </p>
+                          {jr.message ? (
+                            <p className="text-xs text-gray-600 mt-1 italic">&ldquo;{jr.message}&rdquo;</p>
+                          ) : null}
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            type="button"
+                            disabled={joinReviewBusy === jr._id}
+                            onClick={() => reviewJoinRequest(jr._id, 'approve')}
+                            className="px-3 py-2 rounded-lg bg-green-600 text-white text-xs font-bold disabled:opacity-50"
+                          >
+                            {isFr ? 'Approuver' : 'Approve'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={joinReviewBusy === jr._id}
+                            onClick={() => reviewJoinRequest(jr._id, 'decline')}
+                            className="px-3 py-2 rounded-lg bg-red-600 text-white text-xs font-bold disabled:opacity-50"
+                          >
+                            {isFr ? 'Refuser' : 'Decline'}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {membersSubTab === 'payments' && (
+                <div className="overflow-x-auto">
+                  {(data?.memberPayments || []).length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-10">
+                      {isFr
+                        ? 'Aucun paiement enregistré. Utilisez « Enregistrer un paiement » sur un membre.'
+                        : 'No payments recorded yet. Use “Record Payment” on a member.'}
+                    </p>
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          {[
+                            isFr ? 'Membre' : 'Member',
+                            isFr ? 'Montant' : 'Amount',
+                            isFr ? 'Méthode' : 'Method',
+                            isFr ? 'Référence' : 'Reference',
+                            isFr ? 'Date' : 'Date',
+                          ].map((h) => (
+                            <th
+                              key={h}
+                              className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase"
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.memberPayments || []).map((p, i) => (
+                          <tr key={p._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                            <td className="px-4 py-3 font-medium text-[#1a3c2e]">{p.farmerName || '—'}</td>
+                            <td className="px-4 py-3 font-mono">
+                              {Number(p.amount).toLocaleString()} {p.currency || 'XOF'}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-gray-600">{p.paymentMethod}</td>
+                            <td className="px-4 py-3 text-xs text-gray-500">{p.reference || '—'}</td>
+                            <td className="px-4 py-3 text-xs text-gray-500">
+                              {p.date ? new Date(p.date).toLocaleDateString() : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1166,6 +1668,152 @@ export default function CooperativePortal() {
           </div>
         </div>
       )}
+
+      {paymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-[#1a3c2e] text-lg">
+                💰 {isFr ? 'Enregistrer un paiement' : 'Record Payment'}
+              </h3>
+              <button type="button" onClick={() => setPaymentModal(null)}>
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <form onSubmit={submitMemberPayment} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isFr ? 'Membre' : 'Member'}
+                </label>
+                <input value={paymentModal.farmerName} readOnly className={`${INPUT_LIGHT} bg-gray-50`} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isFr ? 'Montant (XOF)' : 'Amount (XOF)'}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+                  value={paymentForm.amount}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
+                  className={INPUT_LIGHT}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isFr ? 'Méthode de paiement' : 'Payment method'}
+                </label>
+                <select
+                  value={paymentForm.paymentMethod}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, paymentMethod: e.target.value }))}
+                  className={INPUT_LIGHT}
+                >
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isFr ? 'Référence / note (optionnel)' : 'Reference / note (optional)'}
+                </label>
+                <input
+                  value={paymentForm.reference}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, reference: e.target.value }))}
+                  className={INPUT_LIGHT}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Date' : 'Date'}</label>
+                <input
+                  type="date"
+                  required
+                  value={paymentForm.date}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, date: e.target.value }))}
+                  className={INPUT_LIGHT}
+                />
+              </div>
+              {paymentState.err ? <p className="text-red-500 text-xs">{paymentState.err}</p> : null}
+              <button
+                type="submit"
+                disabled={paymentState.loading}
+                className="w-full py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50"
+                style={{ background: '#1a3c2e' }}
+              >
+                {paymentState.loading ? '...' : isFr ? 'Enregistrer' : 'Save'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showProcessorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-[#1a3c2e] text-lg">
+                🏭 {isFr ? 'Associer un centre' : 'Link a center'}
+              </h3>
+              <button type="button" onClick={() => setShowProcessorModal(false)}>
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            {processorsLoading ? (
+              <div className="py-10 text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-[#1a3c2e] mx-auto" />
+              </div>
+            ) : processors.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-gray-500 mb-4">
+                  {isFr
+                    ? 'Aucun centre actif dans votre pays pour le moment.'
+                    : 'No active centers in your country yet.'}
+                </p>
+                <Link
+                  to="/centres-transformation"
+                  className="text-sm font-bold text-[#1a3c2e] underline"
+                  onClick={() => setShowProcessorModal(false)}
+                >
+                  {isFr ? 'Voir l’annuaire' : 'Browse directory'}
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {processors.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    disabled={linkProcessorBusy}
+                    onClick={() => linkProcessor(p.id)}
+                    className="w-full text-left rounded-xl border border-gray-200 px-4 py-3 hover:border-[#1a3c2e] hover:bg-[#1a3c2e]/5 disabled:opacity-50"
+                  >
+                    <p className="font-semibold text-sm text-[#1a3c2e]">{p.name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {p.regionCity || '—'}
+                      {p.processingTypes?.length ? ` · ${p.processingTypes.slice(0, 3).join(', ')}` : ''}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showFinanceForm ? (
+        <CooperativeFinanceForm
+          cooperativeId={data?.cooperative?.id}
+          onClose={() => setShowFinanceForm(false)}
+          onSubmit={() => {
+            setShowFinanceForm(false);
+            refreshPortal();
+          }}
+        />
+      ) : null}
 
       {showChangePw && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>

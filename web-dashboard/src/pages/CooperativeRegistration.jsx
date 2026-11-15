@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { isStripeCheckoutAvailable } from '../lib/stripeCheckout';
@@ -56,6 +56,7 @@ const ERR_CLS = 'text-sm text-red-400 bg-red-500/10 border border-red-500/20 rou
 export default function CooperativeRegistration() {
   const { t, i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
+  const navigate = useNavigate();
   const { registerCooperative } = useRegisteredUser();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -107,22 +108,18 @@ export default function CooperativeRegistration() {
 
   const showStripeSuccess =
     state.ok && state.paymentPath === 'stripe';
-  const showManualSuccess = state.ok && !showStripeSuccess;
+  const showManualSuccess = state.ok && state.paymentPath === 'manual';
   const showFreeSuccess = state.ok && state.paymentPath === 'free';
 
   useEffect(() => {
     const payment = searchParams.get('payment');
     if (payment === 'success') {
-      setState({
-        loading: false,
-        ok: true,
-        err: '',
-        paymentPath: stripeCheckout ? 'stripe' : 'manual',
-      });
       if (form.email && form.leaderName) {
         registerCooperative(form.email, form.leaderName);
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Stripe success → go straight to cooperative portal
+      navigate('/cooperative-portal', { replace: true });
+      return;
     } else if (payment === 'cancelled') {
       setState((s) => ({
         ...s,
@@ -133,7 +130,7 @@ export default function CooperativeRegistration() {
       setStep(4);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [searchParams, form.email, form.leaderName, registerCooperative, isFr, stripeCheckout]);
+  }, [searchParams, form.email, form.leaderName, registerCooperative, isFr, navigate]);
 
   useEffect(() => {
     if (!state.ok) {
@@ -218,12 +215,16 @@ export default function CooperativeRegistration() {
         }
       }
 
-      // Starter (≤50): free registration — no Stripe
+      // Starter (≤50): free — redirect to portal. Growth manual: keep success screen.
+      if (!growth) {
+        navigate('/cooperative-portal', { replace: true });
+        return;
+      }
       setState({
         loading: false,
         ok: true,
         err: '',
-        paymentPath: growth ? 'manual' : 'free',
+        paymentPath: 'manual',
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {

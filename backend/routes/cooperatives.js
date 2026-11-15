@@ -7,14 +7,22 @@ import Cooperative from '../models/Cooperative.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import CooperativeInvitation from '../models/CooperativeInvitation.js';
 import CooperativeJoinRequest from '../models/CooperativeJoinRequest.js';
+import CooperativeMemberPayment from '../models/CooperativeMemberPayment.js';
 import PendingNotification from '../models/PendingNotification.js';
 import ProduceListing from '../models/ProduceListing.js';
 import Farmer from '../models/Farmer.js';
 import NationalProject from '../models/NationalProject.js';
+import Processor from '../models/Processor.js';
+import EquipmentFundApplication from '../models/EquipmentFundApplication.js';
+import CertificationProgramApplication from '../models/CertificationProgramApplication.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { countryFilter } from '../middleware/countryFilter.js';
 import { requireGrowthTier } from '../middleware/requireGrowthTier.js';
-import { confirmCooperativeRegistration, notifyAdminNewCooperative } from '../services/emailService.js';
+import {
+  confirmCooperativeRegistration,
+  notifyAdminNewCooperative,
+  sendCooperativeEmailVerification,
+} from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import { dispatchNotification } from './notifications.js';
 import DeviceSession from '../models/DeviceSession.js';
@@ -139,10 +147,28 @@ router.post('/register-platform', async (req, res) => {
       paymentReceived: tier === 'starter' || paidGrowth,
       paymentMethod: tier === 'starter' ? 'free_starter' : paidGrowth ? (req.body.paymentMethod || 'stripe') : undefined,
       activatedAt: tier === 'starter' || paidGrowth ? new Date() : undefined,
+      emailVerified: false,
     });
 
     notifyAdminNewCooperative(cooperative).catch(console.error);
     confirmCooperativeRegistration(cooperative).catch(console.error);
+
+    // Starter (free): send email verification link to portal
+    if (tier === 'starter' && cooperative.email) {
+      try {
+        const verifyToken = jwt.sign(
+          { purpose: 'coop_email_verify', coopId: String(cooperative._id), email: cooperative.email },
+          process.env.JWT_SECRET,
+          { expiresIn: '7d' }
+        );
+        const frontendBase = (process.env.FRONTEND_URL || 'https://sahelagriconnect.com').replace(/\/$/, '');
+        const verifyUrl = `${frontendBase}/cooperative-portal?verify=${encodeURIComponent(verifyToken)}`;
+        sendCooperativeEmailVerification(cooperative, verifyUrl).catch(console.error);
+      } catch (verifyErr) {
+        console.error('coop verify token error:', verifyErr);
+      }
+    }
+
     queueNotification({
       name: cooperative.leaderName || cooperative.nomResponsable || '',
       phone: cooperative.phone,
@@ -675,13 +701,44 @@ router.post('/set-password', authCoop, async (req, res) => {
   }
 });
 
+// POST /api/cooperatives/verify-email — confirm leader email via JWT from registration email
+router.post('/verify-email', async (req, res) => {
+  try {
+    const token = String(req.body?.token || '').trim();
+    if (!token) return res.status(400).json({ success: false, error: 'token required' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.purpose !== 'coop_email_verify' || !decoded.coopId) {
+      return res.status(400).json({ success: false, error: 'Invalid verification token' });
+    }
+    const coop = await CooperativePlatformRegistration.findByIdAndUpdate(
+      decoded.coopId,
+      { emailVerified: true, verifiedAt: new Date() },
+      { new: true }
+    );
+    if (!coop) return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    res.json({ success: true, emailVerified: true, email: coop.email });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message || 'Invalid or expired token' });
+  }
+});
+
 // GET /api/cooperatives/my-portal — full cooperative dashboard data
 router.get('/my-portal', authCoop, async (req, res) => {
   try {
     const coopName = req.coop.cooperativeName || req.coop.nomCooperative;
     const country = req.coop.country;
+    const coopIdStr = String(req.coop._id);
 
-    const [memberFarmers, produceListings, invitations, projects, joinRequests] = await Promise.all([
+    const [
+      memberFarmers,
+      produceListings,
+      invitations,
+      projects,
+      joinRequests,
+      memberPayments,
+      pendingEquipmentApps,
+      pendingCertifications,
+    ] = await Promise.all([
       Farmer.find({
         $or: [{ nomCooperative: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }, { cooperativeId: req.coop._id }],
       })
@@ -701,6 +758,22 @@ router.get('/my-portal', authCoop, async (req, res) => {
       CooperativeJoinRequest.find({ cooperativeId: req.coop._id, status: 'pending' })
         .sort({ requestedAt: -1 })
         .lean(),
+      CooperativeMemberPayment.find({ cooperativeId: req.coop._id }).sort({ date: -1 }).limit(100).lean(),
+      EquipmentFundApplication.countDocuments({
+        status: { $in: ['pending', 'reviewing'] },
+        $or: [
+          { cooperativeName: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+          { email: (req.coop.email || '').toLowerCase() },
+        ],
+      }),
+      CertificationProgramApplication.countDocuments({
+        status: { $in: ['new', 'reviewing'] },
+        $or: [
+          { farmerOrCooperativeId: coopIdStr },
+          { email: (req.coop.email || '').toLowerCase() },
+          { name: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+        ],
+      }),
     ]);
 
     const projectsWithMine = projects.map((p) => {
@@ -719,6 +792,9 @@ router.get('/my-portal', authCoop, async (req, res) => {
       invitationsAccepted: invitations.filter((i) => i.status === 'accepted').length,
       pendingJoinRequests: joinRequests.length,
       activeProjects: projectsWithMine.length,
+      pendingEquipmentApps,
+      pendingCertifications,
+      activeProduceListings: produceListings.filter((l) => l.cooperativeApproved).length,
     };
 
     const tier = req.coop.tier || deriveCoopTier(req.coop.memberCount).tier;
@@ -733,20 +809,114 @@ router.get('/my-portal', authCoop, async (req, res) => {
         memberCount: req.coop.memberCount,
         status: req.coop.status,
         tier,
+        emailVerified: Boolean(req.coop.emailVerified),
         certificationEligible: isGrowth || Boolean(req.coop.certificationEligible),
         afriyieldEligible: isGrowth || Boolean(req.coop.afriyieldEligible),
         exportEligible: isGrowth || Boolean(req.coop.exportEligible),
         subscriptionExpiresAt: req.coop.subscriptionExpiresAt || null,
+        processorId: req.coop.processorId || null,
+        processorName: req.coop.processorName || '',
       },
       stats,
       memberFarmers,
       produceListings,
       invitations,
       joinRequests,
+      memberPayments,
       nationalProjects: projectsWithMine,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/cooperatives/my-portal/record-member-payment
+router.post('/my-portal/record-member-payment', authCoop, async (req, res) => {
+  try {
+    const { farmerId, amount, paymentMethod, reference, date } = req.body || {};
+    if (!farmerId || amount == null || !paymentMethod) {
+      return res.status(400).json({ success: false, error: 'farmerId, amount, and paymentMethod required' });
+    }
+    const allowed = ['Orange Money', 'MTN Mobile Money', 'Cash', 'Virement bancaire', 'Autre'];
+    if (!allowed.includes(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Invalid paymentMethod' });
+    }
+    const farmer = await Farmer.findById(farmerId).select('nom').lean();
+    if (!farmer) return res.status(404).json({ success: false, error: 'Farmer not found' });
+
+    const payment = await CooperativeMemberPayment.create({
+      cooperativeId: req.coop._id,
+      farmerId,
+      farmerName: farmer.nom || req.body.farmerName || '',
+      amount: Number(amount),
+      currency: req.body.currency || 'XOF',
+      paymentMethod,
+      reference: reference || '',
+      date: date ? new Date(date) : new Date(),
+      recordedBy: req.coop.email || req.coop.leaderName || '',
+    });
+
+    res.status(201).json({ success: true, payment });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/processors — active processors in same country
+router.get('/my-portal/processors', authCoop, async (req, res) => {
+  try {
+    const country = String(req.coop.country || '').trim();
+    const filter = {
+      statut: { $in: ['Opérationnelle', 'En construction'] },
+    };
+    if (country) {
+      filter.$or = [
+        { country: new RegExp(`^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+        { countryCode: new RegExp(`^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      ];
+    }
+    const processors = await Processor.find(filter)
+      .select('nom region country produitsTransformes email telephone statut')
+      .sort({ nom: 1 })
+      .limit(100)
+      .lean();
+
+    res.json({
+      success: true,
+      processors: processors.map((p) => ({
+        id: p._id,
+        name: p.nom,
+        regionCity: p.region || '',
+        processingTypes: p.produitsTransformes || [],
+        contactEmail: p.email || '',
+        phone: p.telephone || '',
+        status: p.statut,
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/cooperatives/my-portal/link-processor
+router.post('/my-portal/link-processor', authCoop, async (req, res) => {
+  try {
+    const processorId = req.body?.processorId;
+    if (!processorId) return res.status(400).json({ success: false, error: 'processorId required' });
+    const processor = await Processor.findById(processorId).select('nom').lean();
+    if (!processor) return res.status(404).json({ success: false, error: 'Processor not found' });
+
+    req.coop.processorId = processor._id;
+    req.coop.processorName = processor.nom;
+    await req.coop.save();
+
+    res.json({
+      success: true,
+      processorId: processor._id,
+      processorName: processor.nom,
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
   }
 });
 

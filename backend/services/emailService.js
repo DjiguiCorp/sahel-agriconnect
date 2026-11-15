@@ -489,3 +489,33 @@ export async function confirmCooperativeRegistration(cooperative) {
   });
 }
 
+/** Starter-plan email verification link for cooperative leaders */
+export async function sendCooperativeEmailVerification(cooperative, verifyUrl) {
+  const resend = getResend();
+  if (!resend || !cooperative?.email || !verifyUrl) return;
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: cooperative.email,
+    subject: 'Sahel AgriConnect — Vérifiez votre email / Verify your email',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+          <h1 style="color:white;margin:0;">Sahel AgriConnect</h1>
+          <p style="color:#B5850A;margin:4px 0 0;">Vérification email</p>
+        </div>
+        <div style="padding:32px;background:white;border:1px solid #e0e0e0;">
+          <p style="color:#333;font-size:16px;">Bonjour <strong>${cooperative.leaderName || ''}</strong>,</p>
+          <p style="color:#555;">Confirmez l'adresse email de <strong>${cooperative.cooperativeName || 'votre coopérative'}</strong> pour activer toutes les notifications.</p>
+          <p style="margin:28px 0;text-align:center;">
+            <a href="${verifyUrl}" style="display:inline-block;background:#1a3c2e;color:white;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:bold;">
+              Vérifier mon email
+            </a>
+          </p>
+          <p style="color:#888;font-size:12px;">Or open this link:<br/><a href="${verifyUrl}" style="color:#1a3c2e;word-break:break-all;">${verifyUrl}</a></p>
+          <p style="color:#333;margin-top:32px;">Cordialement,<br><strong>L'équipe Sahel AgriConnect</strong></p>
+        </div>
+      </div>
+    `,
+  });
+}
+
