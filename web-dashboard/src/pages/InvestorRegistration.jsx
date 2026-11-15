@@ -338,68 +338,37 @@ export default function InvestorRegistration() {
         >
           {success && !kycPhase && !paymentDone && (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">✅</div>
+              <AppReturnBanner role="investor" />
+              <div className="text-5xl mb-4">✉️</div>
               <h3 className="text-white font-bold text-xl mb-2">
                 {isFr ? 'Inscription enregistrée !' : 'Registration Received!'}
               </h3>
-              <p className="text-white/60 text-sm mb-6 max-w-sm mx-auto">
-                {isFr
-                  ? "Pour accéder à AfriYield Exchange, une cotisation d'accès annuelle est requise. Elle couvre la vérification KYC et donne accès à toutes les opportunités."
-                  : 'To access AfriYield Exchange, an annual access fee is required. It covers KYC verification and grants access to all opportunities.'}
+              <p className="text-white/70 text-sm mb-2 max-w-md mx-auto font-semibold">
+                {isFr ? 'Vérifiez votre email' : 'Check your email'}
               </p>
-              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 mb-6 max-w-sm mx-auto text-left">
-                <p className="text-amber-400 font-bold text-base mb-3">
-                  AfriYield Exchange — $99/{isFr ? 'an' : 'year'}
-                </p>
-                <p className="text-white/50 text-xs mb-3">
-                  Accès annuel complet · Full annual access
-                </p>
-                <ul className="space-y-2 text-xs text-white/60 mb-4">
-                  <li>✓ {isFr ? 'Vérification KYC incluse' : 'KYC verification included'}</li>
-                  <li>✓ {isFr ? 'Accès à toutes les opportunités Track A et B' : 'Access to all Track A and B opportunities'}</li>
-                  <li>✓ {isFr ? 'Rapports de marché mensuels' : 'Monthly market reports'}</li>
-                  <li>✓ {isFr ? 'Protection escrow sur tous les deals' : 'Escrow protection on all deals'}</li>
-                  <li>✓ {isFr ? 'Couverture complète du cycle agricole de 12 mois' : 'Full 12-month agricultural cycle coverage'}</li>
-                </ul>
-                <p className="text-white font-bold text-2xl text-center">$99 / {isFr ? 'an' : 'year'}</p>
-              </div>
+              <p className="text-white/55 text-sm mb-6 max-w-md mx-auto leading-relaxed">
+                {isFr
+                  ? `Nous avons envoyé un lien de vérification à ${form.email || 'votre adresse'}. Ensuite : identité (KYC) → abonnement $99/an → accès investissement.`
+                  : `We sent a verification link to ${form.email || 'your email'}. Next: identity (KYC) → $99/year subscription → invest access.`}
+              </p>
+              <ol className="text-left text-xs text-white/50 max-w-sm mx-auto mb-6 space-y-2">
+                <li>1. {isFr ? 'Vérifier l’email' : 'Verify email'}</li>
+                <li>2. {isFr ? 'Vérification d’identité (Didit)' : 'Identity verification (Didit)'}</li>
+                <li>3. {isFr ? 'Abonnement $99/an' : '$99/year subscription'}</li>
+                <li>4. {isFr ? 'Accès complet' : 'Full access'}</li>
+              </ol>
               <button
                 type="button"
-                onClick={async () => {
-                  try {
-                    const API = import.meta.env.VITE_API_BASE_URL || '';
-                    // AfriYield access: $99/year only (dynamic Stripe price_data — no fixed Price ID).
-                    // FLAG: if you add a Stripe Dashboard Price ID for AfriYield $99/year, wire it in payments.js.
-                    const r = await fetch(`${API}/api/payments/stripe/create-session`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        type: 'afriyield_access',
-                        tierKey: 'investor',
-                        tierName: 'AfriYield Exchange',
-                        amountUsd: 99,
-                        billingInterval: 'year',
-                        email: form.email,
-                        name: form.fullName,
-                        successUrl: `${window.location.origin}/afri-yield/register?payment=success&step=kyc&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
-                        cancelUrl: `${window.location.href.split('?')[0]}?payment=cancelled&from=${fromApp ? 'app' : 'web'}&lang=${urlLang}`,
-                      }),
-                    });
-                    const data = await r.json();
-                    if (data.url) window.location.href = data.url;
-                  } catch (e) {
-                    console.error('Stripe checkout error:', e);
-                  }
-                }}
+                onClick={() => navigate('/afri-yield/portal')}
                 className="w-full max-w-sm mx-auto block py-4 rounded-xl font-bold text-black text-sm"
                 style={{ backgroundColor: '#B5850A' }}
               >
-                {isFr ? '→ Payer et accéder à AfriYield' : '→ Pay and access AfriYield'} — $99 / {isFr ? 'an' : 'year'}
+                {isFr ? '→ Aller au portail investisseur' : '→ Go to investor portal'}
               </button>
               <p className="mt-3 text-white/30 text-xs text-center">
                 {isFr
-                  ? 'Paiement sécurisé via Stripe · Visa, Mastercard, Amex'
-                  : 'Secure payment via Stripe · Visa, Mastercard, Amex'}
+                  ? 'Aucun paiement avant validation email + identité'
+                  : 'No payment until email + identity are verified'}
               </p>
             </div>
           )}

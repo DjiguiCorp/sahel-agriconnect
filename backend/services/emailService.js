@@ -328,49 +328,49 @@ export async function confirmInvestorRegistration(investor) {
           <p style="color:#555;line-height:1.7;">Nous avons bien reçu votre inscription en tant qu'investisseur AfriYield Exchange. Votre intérêt pour <strong>${investor.investmentTrack}</strong> dans le secteur <strong>${investor.commodityInterest}</strong> correspond parfaitement aux opportunités disponibles sur notre plateforme.</p>
           <div style="background:#f0f9f4;border:1px solid #1a3c2e;border-radius:8px;padding:20px;margin:24px 0;">
             <p style="margin:0 0 16px;font-weight:bold;color:#1a3c2e;font-size:16px;">📋 Vos prochaines étapes :</p>
-            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
-              <tr>
-                <td width="36" valign="top" style="padding:0 12px 14px 0;">
-                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">1</div>
-                </td>
-                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
-                  <strong>Dans les 24 heures</strong> — Un membre de notre équipe vous contactera personnellement pour discuter de vos objectifs
-                </td>
-              </tr>
-              <tr>
-                <td width="36" valign="top" style="padding:0 12px 14px 0;">
-                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">2</div>
-                </td>
-                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
-                  <strong>Appel de découverte</strong> — 15 minutes pour comprendre vos préférences et vous présenter les opportunités correspondantes
-                </td>
-              </tr>
-              <tr>
-                <td width="36" valign="top" style="padding:0 12px 14px 0;">
-                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">3</div>
-                </td>
-                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
-                  <strong>Opportunités personnalisées</strong> — Vous recevrez 2 à 3 fiches d'opportunités adaptées à votre track et budget
-                </td>
-              </tr>
-              <tr>
-                <td width="36" valign="top" style="padding:0 12px 0 0;">
-                  <div style="background:#B5850A;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">4</div>
-                </td>
-                <td valign="top" style="padding:0;color:#555;font-size:14px;line-height:1.5;">
-                  <strong>Premier investissement</strong> — Déployez votre capital avec notre accompagnement complet
-                </td>
-              </tr>
-            </table>
+            <ol style="margin:0;padding-left:20px;color:#555;line-height:1.8;font-size:14px;">
+              <li><strong>Vérifiez votre email</strong> (lien envoyé séparément)</li>
+              <li><strong>Vérification d'identité</strong> (Didit KYC) dans le portail</li>
+              <li><strong>Abonnement $99/an</strong> pour activer l'accès investisseur</li>
+              <li><strong>Investissez</strong> une fois l'accès validé</li>
+            </ol>
           </div>
-          <p style="color:#555;">En attendant notre contact, vous pouvez parcourir les opportunités disponibles dès maintenant.</p>
           <div style="text-align:center;margin-top:24px;">
-            <a href="${process.env.FRONTEND_URL}/afri-yield/opportunities" style="background:#B5850A;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block;">Voir les opportunités →</a>
+            <a href="${process.env.FRONTEND_URL || 'https://sahelagriconnect.com'}/afri-yield/portal" style="background:#B5850A;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block;">Ouvrir le portail →</a>
           </div>
           <p style="color:#333;margin-top:32px;">Avec enthousiasme,<br><strong>L'équipe AfriYield Exchange</strong><br><span style="color:#555;font-size:14px;">Powered by Sahel AgriConnect</span></p>
         </div>
       </div>
     `
+  });
+}
+
+/** Investor email verification link (registration / resend) */
+export async function sendInvestorEmailVerification(investor, verifyUrl) {
+  const resend = getResend();
+  if (!resend || !investor?.email || !verifyUrl) return;
+  await resend.emails.send({
+    from: AFRIYIELD_FROM,
+    to: investor.email,
+    subject: 'AfriYield — Vérifiez votre email / Verify your email',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+          <h1 style="color:#B5850A;margin:0;">AfriYield Exchange</h1>
+          <p style="color:white;margin:8px 0 0;">Email verification</p>
+        </div>
+        <div style="padding:32px;background:white;border:1px solid #e0e0e0;">
+          <p style="color:#333;">Bonjour <strong>${investor.fullName || ''}</strong>,</p>
+          <p style="color:#555;">Confirmez votre adresse email pour continuer l'accès AfriYield (KYC → abonnement → investissement).</p>
+          <p style="text-align:center;margin:28px 0;">
+            <a href="${verifyUrl}" style="display:inline-block;background:#B5850A;color:white;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:bold;">
+              Vérifier mon email
+            </a>
+          </p>
+          <p style="color:#888;font-size:12px;word-break:break-all;">${verifyUrl}</p>
+        </div>
+      </div>
+    `,
   });
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Home,
   Wallet,
@@ -18,11 +18,17 @@ import {
   X,
   Trash2,
   LogOut,
+  Loader2,
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import { API_ENDPOINTS } from '../config/api';
 import TransactionTracker from '../components/TransactionTracker';
 import InvestorAccountStatus from '../components/InvestorAccountStatus';
+import {
+  fetchInvestorOnboardingStatus,
+  onboardingStepLabel,
+} from '../lib/investorOnboarding';
+import OnboardingGateModal from '../components/OnboardingGateModal';
 
 const API = API_BASE_URL.replace(/\/$/, '');
 const EUR_RATE = 0.92;
@@ -1353,6 +1359,7 @@ function PremiumModal({ t, onClose }) {
 export default function InvestorPortal() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isFr = i18n.language === 'fr';
   const [investor, setInvestor] = useState(null);
   const [investments, setInvestments] = useState([]);
@@ -1365,6 +1372,11 @@ export default function InvestorPortal() {
   const [tradingApproved, setTradingApproved] = useState(false);
   const [kycRejectionReason, setKycRejectionReason] = useState(null);
   const [diditStarting, setDiditStarting] = useState(false);
+  const [onboarding, setOnboarding] = useState(null);
+  const [verifyToast, setVerifyToast] = useState('');
+  const [resendBusy, setResendBusy] = useState(false);
+  const [payBusy, setPayBusy] = useState(false);
+  const [gateModal, setGateModal] = useState(null);
 
   const fetchDiditStatus = useCallback(async () => {
     try {
@@ -1380,6 +1392,17 @@ export default function InvestorPortal() {
         setTradingApproved(Boolean(d.tradingApproved));
         setKycRejectionReason(d.kycRejectionReason || null);
       }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const refreshOnboarding = useCallback(async () => {
+    try {
+      const d = await fetchInvestorOnboardingStatus();
+      setOnboarding(d);
+      if (d.diditStatus !== undefined) setDiditStatus(d.diditStatus);
+      setTradingApproved(Boolean(d.tradingApproved));
     } catch {
       /* ignore */
     }
@@ -1427,8 +1450,88 @@ export default function InvestorPortal() {
       setInvestor({ email, fullName: name || email });
       loadData(email);
       fetchDiditStatus();
+      refreshOnboarding();
     }
-  }, [fetchDiditStatus, loadData]);
+  }, [fetchDiditStatus, loadData, refreshOnboarding]);
+
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      setVerifyToast(isFr ? 'Email vérifié' : 'Email verified');
+      const next = new URLSearchParams(searchParams);
+      next.delete('verified');
+      setSearchParams(next, { replace: true });
+      refreshOnboarding();
+      setTimeout(() => setVerifyToast(''), 4500);
+    }
+    if (searchParams.get('payment') === 'success') {
+      refreshOnboarding();
+      const next = new URLSearchParams(searchParams);
+      next.delete('payment');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const resendVerification = async () => {
+    setResendBusy(true);
+    try {
+      const token = sessionStorage.getItem('afriyield_token');
+      const r = await fetch(`${API}/api/investors/resend-verification`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+      setVerifyToast(isFr ? 'Email de vérification renvoyé' : 'Verification email resent');
+      setTimeout(() => setVerifyToast(''), 4000);
+    } catch (e) {
+      alert(e.message || 'Error');
+    } finally {
+      setResendBusy(false);
+    }
+  };
+
+  const startAccessPayment = async () => {
+    setPayBusy(true);
+    try {
+      const r = await fetch(`${API}/api/payments/stripe/create-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'afriyield_access',
+          tierKey: 'investor',
+          tierName: 'AfriYield Exchange',
+          amountUsd: 99,
+          billingInterval: 'year',
+          email: investor?.email,
+          name: investor?.fullName,
+          successUrl: `${window.location.origin}/afri-yield/portal?payment=success`,
+          cancelUrl: `${window.location.origin}/afri-yield/portal?payment=cancelled`,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error(data.error || 'Stripe checkout failed');
+    } catch (e) {
+      alert(e.message || 'Payment error');
+    } finally {
+      setPayBusy(false);
+    }
+  };
+
+  const requireCompleteAccess = (actionLabel) => {
+    const step = onboarding?.step || 'email_verification';
+    if (step === 'complete' && onboarding?.tradingApproved) return true;
+    setGateModal({
+      step,
+      actionLabel,
+      message: onboardingStepLabel(step, isFr),
+    });
+    return false;
+  };
 
   const startDiditVerification = async () => {
     setDiditStarting(true);
@@ -1477,6 +1580,7 @@ export default function InvestorPortal() {
     setInvestor(inv);
     loadData(inv.email);
     fetchDiditStatus();
+    refreshOnboarding();
   };
 
   const signOut = () => {
@@ -1665,109 +1769,146 @@ export default function InvestorPortal() {
           </div>
         </header>
 
-        {/* Didit identity verification banners — distinct states */}
-        {(diditStatus == null) && (
-          <div
-            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            style={{
-              background: 'rgba(234,179,8,0.12)',
-              border: '1px solid rgba(234,179,8,0.45)',
-            }}
-          >
-            <p className="text-sm font-semibold text-amber-200">
-              Vérification d&apos;identité requise / Identity verification required
+        {verifyToast ? (
+          <div className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 bg-green-500/15 border border-green-500/40 text-green-200 text-sm font-semibold">
+            ✓ {verifyToast}
+          </div>
+        ) : null}
+
+        {/* Onboarding step indicator — always visible */}
+        <div className="mx-4 mt-3 md:mx-6 rounded-xl px-3 py-3 border border-white/10 bg-white/5">
+          <div className="flex items-center justify-between gap-1">
+            {[
+              { n: 1, fr: 'Email', en: 'Email' },
+              { n: 2, fr: 'Identité', en: 'Identity' },
+              { n: 3, fr: 'Paiement', en: 'Payment' },
+              { n: 4, fr: 'Accès complet', en: 'Full access' },
+            ].map((s) => {
+              const current = onboarding?.currentStep || 1;
+              const active =
+                current === s.n ||
+                (onboarding?.step === 'complete' && !onboarding?.tradingApproved && s.n === 4);
+              const completed =
+                (s.n === 1 && onboarding?.emailVerified) ||
+                (s.n === 2 && onboarding?.diditStatus === 'approved') ||
+                (s.n === 3 && onboarding?.subscriptionActive) ||
+                (s.n === 4 && onboarding?.step === 'complete' && onboarding?.tradingApproved);
+              return (
+                <div key={s.n} className="flex-1 flex flex-col items-center min-w-0">
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mb-1 ${
+                      completed
+                        ? 'bg-green-500 text-white'
+                        : active
+                          ? 'bg-[#B5850A] text-[#0d1f17]'
+                          : 'bg-white/10 text-white/40'
+                    }`}
+                  >
+                    {completed ? <Check className="w-3.5 h-3.5" /> : s.n}
+                  </div>
+                  <p
+                    className={`text-[10px] text-center truncate w-full ${
+                      active || completed ? 'text-white/90 font-semibold' : 'text-white/35'
+                    }`}
+                  >
+                    {isFr ? s.fr : s.en}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Gate action banners */}
+        {onboarding?.step === 'email_verification' && (
+          <div className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-amber-500/15 border border-amber-500/45">
+            <p className="text-sm font-semibold text-amber-100">
+              {isFr
+                ? 'Vérifiez votre email pour continuer'
+                : 'Verify your email to continue'}
             </p>
             <button
               type="button"
-              disabled={diditStarting}
-              onClick={startDiditVerification}
+              disabled={resendBusy}
+              onClick={resendVerification}
               className="rounded-lg px-4 py-2 text-sm font-bold text-[#0d1f17] disabled:opacity-60"
               style={{ background: '#EAB308' }}
             >
-              {diditStarting
-                ? (isFr ? 'Ouverture…' : 'Opening…')
-                : 'Commencer la vérification / Start Verification'}
+              {resendBusy
+                ? '…'
+                : isFr
+                  ? 'Renvoyer l’email'
+                  : 'Resend verification email'}
             </button>
           </div>
         )}
-        {diditStatus === 'pending' && (
-          <div
-            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3"
-            style={{
-              background: 'rgba(59,130,246,0.12)',
-              border: '1px solid rgba(59,130,246,0.45)',
-            }}
-          >
-            <p className="text-sm font-semibold text-blue-200">
-              Votre vérification est en cours d&apos;examen / Your verification is under review
-            </p>
-          </div>
-        )}
-        {diditStatus === 'approved' && !tradingApproved && (
-          <div
-            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3"
-            style={{
-              background: 'rgba(59,130,246,0.12)',
-              border: '1px solid rgba(59,130,246,0.45)',
-            }}
-          >
-            <p className="text-sm font-semibold text-blue-200">
-              Identité vérifiée — approbation de trading en attente / Identity verified — trading approval pending
-            </p>
-          </div>
-        )}
-        {diditStatus === 'declined' && (
-          <div
-            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            style={{
-              background: 'rgba(239,68,68,0.12)',
-              border: '1px solid rgba(239,68,68,0.45)',
-            }}
-          >
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-red-300">
-                {kycRejectionReason
-                  ? `Vérification refusée: ${kycRejectionReason} / Verification declined: ${kycRejectionReason}`
-                  : 'Vérification refusée — veuillez réessayer / Verification declined — please try again'}
-              </p>
-              <a
-                href="mailto:support@sahelagriconnect.com"
-                className="text-xs font-medium text-red-200/80 underline hover:text-red-100"
-              >
-                Contacter le support / Contact support
-              </a>
-            </div>
-            <button
-              type="button"
-              disabled={diditStarting}
-              onClick={startDiditVerification}
-              className="rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-60 shrink-0"
-              style={{ background: '#EF4444' }}
-            >
-              {diditStarting ? (isFr ? 'Ouverture…' : 'Opening…') : (isFr ? 'Réessayer' : 'Retry')}
-            </button>
-          </div>
-        )}
-        {diditStatus === 'expired' && (
-          <div
-            className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            style={{
-              background: 'rgba(249,115,22,0.12)',
-              border: '1px solid rgba(249,115,22,0.45)',
-            }}
-          >
-            <p className="text-sm font-semibold text-orange-300">
-              Session expirée — veuillez recommencer / Session expired — please restart
+
+        {onboarding?.step === 'kyc' && diditStatus !== 'pending' && (
+          <div className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-blue-500/15 border border-blue-500/45">
+            <p className="text-sm font-semibold text-blue-100">
+              {diditStatus === 'declined' || diditStatus === 'expired'
+                ? kycRejectionReason
+                  ? `${isFr ? 'Vérification refusée' : 'Verification declined'}: ${kycRejectionReason}`
+                  : isFr
+                    ? 'Vérification d’identité à reprendre'
+                    : 'Identity verification required again'
+                : isFr
+                  ? 'Vérification d’identité requise'
+                  : 'Identity verification required'}
             </p>
             <button
               type="button"
               disabled={diditStarting}
               onClick={startDiditVerification}
               className="rounded-lg px-4 py-2 text-sm font-bold text-[#0d1f17] disabled:opacity-60"
-              style={{ background: '#F97316' }}
+              style={{ background: '#60A5FA' }}
             >
-              {diditStarting ? (isFr ? 'Ouverture…' : 'Opening…') : (isFr ? 'Recommencer' : 'Restart')}
+              {diditStarting
+                ? isFr
+                  ? 'Ouverture…'
+                  : 'Opening…'
+                : isFr
+                  ? 'Commencer la vérification'
+                  : 'Start verification'}
             </button>
+          </div>
+        )}
+
+        {onboarding?.step === 'kyc' && diditStatus === 'pending' && (
+          <div className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex items-center gap-3 bg-blue-500/15 border border-blue-500/45">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-200" />
+            <p className="text-sm font-semibold text-blue-100">
+              {isFr ? 'Vérification en cours' : 'Verification in progress'}
+            </p>
+          </div>
+        )}
+
+        {onboarding?.step === 'payment' && (
+          <div className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-green-500/15 border border-green-500/40">
+            <p className="text-sm font-semibold text-green-100">
+              {isFr
+                ? 'Identité vérifiée — activez votre accès investisseur'
+                : 'Identity verified — activate your investor access'}
+            </p>
+            <button
+              type="button"
+              disabled={payBusy}
+              onClick={startAccessPayment}
+              className="rounded-lg px-4 py-2 text-sm font-bold text-[#0d1f17] disabled:opacity-60"
+              style={{ background: '#22C55E' }}
+            >
+              {payBusy ? '…' : isFr ? 'S’abonner — 99$/an' : 'Subscribe — $99/year'}
+            </button>
+          </div>
+        )}
+
+        {onboarding?.step === 'complete' && !onboarding?.tradingApproved && (
+          <div className="mx-4 mt-3 md:mx-6 rounded-xl px-4 py-3 bg-blue-500/15 border border-blue-500/45">
+            <p className="text-sm font-semibold text-blue-100">
+              {isFr
+                ? 'Compte en cours de validation — notre équipe validera votre accès dans les 24h'
+                : 'Account under final review — our team will validate your access within 24h'}
+            </p>
           </div>
         )}
 
@@ -1826,8 +1967,12 @@ export default function InvestorPortal() {
         </div>
       )}
 
-        {/* Scrollable content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
+        {/* Scrollable content — greyed until email verified */}
+        <main
+          className={`flex-1 overflow-y-auto overflow-x-hidden min-w-0 ${
+            onboarding?.step === 'email_verification' ? 'opacity-40 pointer-events-none select-none' : ''
+          }`}
+        >
           <div className="mx-auto w-full max-w-[375px] md:max-w-none min-w-0 overflow-x-hidden">
             {activeTab === 'home' && (
               <HomeTab
@@ -1880,6 +2025,31 @@ export default function InvestorPortal() {
         </nav>
 
         {showPremiumModal && <PremiumModal t={t} onClose={() => setShowPremiumModal(false)} />}
+
+        <OnboardingGateModal
+          open={Boolean(gateModal)}
+          onClose={() => setGateModal(null)}
+          onboarding={onboarding || { step: gateModal?.step, currentStep: 1 }}
+          isFr={isFr}
+          actionLabel={gateModal?.actionLabel}
+          onContinue={() => {
+            const step = gateModal?.step || onboarding?.step;
+            setGateModal(null);
+            if (step === 'email_verification') {
+              resendVerification();
+              return;
+            }
+            if (step === 'kyc') {
+              startDiditVerification();
+              return;
+            }
+            if (step === 'payment') {
+              startAccessPayment();
+              return;
+            }
+            setActiveTab('home');
+          }}
+        />
       </div>
     </div>
   );

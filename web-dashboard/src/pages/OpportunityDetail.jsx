@@ -3,7 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../config/api';
 import { useInvestorKYCStatus } from '../hooks/useInvestorKYCStatus';
-import { Loader2, X } from 'lucide-react';
+import {
+  fetchInvestorOnboardingStatus,
+  investButtonLabel,
+} from '../lib/investorOnboarding';
+import OnboardingGateModal, { hasFullInvestAccess } from '../components/OnboardingGateModal';
+import { Loader2, Lock, X } from 'lucide-react';
 
 const CARD_STYLE = {
   background: 'rgba(255,255,255,0.08)',
@@ -86,6 +91,8 @@ export default function OpportunityDetail() {
   const [error, setError] = useState(null);
   const [opportunity, setOpportunity] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [onboarding, setOnboarding] = useState(null);
+  const [gateOpen, setGateOpen] = useState(false);
   const [form, setForm] = useState({
     investorName: '',
     investorEmail: '',
@@ -95,6 +102,21 @@ export default function OpportunityDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState(null);
   const [formError, setFormError] = useState(null);
+
+  useEffect(() => {
+    if (!kycState.isRegistered) return;
+    let cancelled = false;
+    fetchInvestorOnboardingStatus()
+      .then((d) => {
+        if (!cancelled) setOnboarding(d);
+      })
+      .catch(() => {
+        if (!cancelled) setOnboarding(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [kycState.isRegistered]);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,17 +189,9 @@ export default function OpportunityDetail() {
       navigate('/afri-yield/register');
       return;
     }
-    if (kycState.needsKYC) {
+    if (!hasFullInvestAccess(onboarding)) {
       localStorage.setItem('afriyield_invest_return', investPath);
-      navigate('/afri-yield/register?step=kyc');
-      return;
-    }
-    if (kycState.kycUnderReview && kycState.category !== 'african') {
-      alert(
-        isFr
-          ? 'Votre vérification KYC est en cours. Vous serez notifié par email sous 24-48h.'
-          : 'Your KYC verification is under review. You will be notified by email within 24-48h.'
-      );
+      setGateOpen(true);
       return;
     }
     navigate(investPath);
@@ -214,7 +228,8 @@ export default function OpportunityDetail() {
   const amt = Number(opportunity.amountSought ?? opportunity.amountTarget);
   const amountLine = Number.isFinite(amt) ? `$${amt.toLocaleString()} USD` : String(opportunity.amountSought ?? '—');
   const certStyle = certBadgeStyle[tone] || certBadgeStyle.gray;
-  const investBtnActive = kycState.canInvest || !kycState.isRegistered;
+  const investBtnActive = !kycState.isRegistered || hasFullInvestAccess(onboarding);
+  const lockedStep = onboarding?.step || 'email_verification';
   const fundingTarget = opportunity.amountTarget || opportunity.amountSought || 0;
   const fundingPct =
     fundingTarget > 0
@@ -477,38 +492,66 @@ export default function OpportunityDetail() {
                 color: investBtnActive ? 'black' : 'rgba(255,255,255,0.5)',
               }}
             >
-              {!kycState.isRegistered
-                ? `💰 ${isFr ? "S'inscrire pour investir" : 'Register to Invest'}`
-                : kycState.needsKYC
-                  ? `🪪 ${isFr ? 'Compléter le KYC' : 'Complete KYC'}`
-                  : kycState.kycUnderReview && kycState.category !== 'african'
-                    ? `⏳ ${isFr ? 'KYC en cours...' : 'KYC Under Review...'}`
-                    : `💰 ${isFr ? 'Investir maintenant' : 'Invest Now'}`}
+              {!investBtnActive ? <Lock className="w-4 h-4" /> : null}
+              {`💰 ${investButtonLabel(onboarding, isFr, { registered: kycState.isRegistered })}`}
             </button>
           </div>
 
-          {kycState.isRegistered && !kycState.canInvest && (kycState.needsKYC || kycState.kycUnderReview) && (
+          {kycState.isRegistered && !hasFullInvestAccess(onboarding) && onboarding && (
             <div
               className="rounded-xl border p-3 text-xs"
               style={{
-                background: kycState.kycUnderReview ? 'rgba(59,130,246,0.08)' : 'rgba(245,158,11,0.08)',
-                borderColor: kycState.kycUnderReview ? 'rgba(59,130,246,0.3)' : 'rgba(245,158,11,0.3)',
-                color: kycState.kycUnderReview ? '#60a5fa' : '#B5850A',
+                background:
+                  lockedStep === 'payment'
+                    ? 'rgba(34,197,94,0.08)'
+                    : lockedStep === 'kyc'
+                      ? 'rgba(59,130,246,0.08)'
+                      : 'rgba(245,158,11,0.08)',
+                borderColor:
+                  lockedStep === 'payment'
+                    ? 'rgba(34,197,94,0.3)'
+                    : lockedStep === 'kyc'
+                      ? 'rgba(59,130,246,0.3)'
+                      : 'rgba(245,158,11,0.3)',
+                color:
+                  lockedStep === 'payment'
+                    ? '#4ade80'
+                    : lockedStep === 'kyc'
+                      ? '#60a5fa'
+                      : '#B5850A',
               }}
             >
-              {kycState.needsKYC
+              {lockedStep === 'email_verification'
                 ? isFr
-                  ? '⚠️ Complétez votre vérification KYC pour accéder aux investissements.'
-                  : '⚠️ Complete your KYC verification to access investments.'
-                : kycState.kycUnderReview
+                  ? '⚠️ Vérifiez votre email pour continuer.'
+                  : '⚠️ Verify your email to continue.'
+                : lockedStep === 'kyc'
                   ? isFr
-                    ? `⏳ KYC en cours de révision. Délai: ${kycState.category === 'diaspora' ? '24 heures' : '48-72 heures'}.`
-                    : `⏳ KYC under review. Timeline: ${kycState.category === 'diaspora' ? '24 hours' : '48-72 hours'}.`
-                  : ''}
+                    ? '⚠️ Vérification d’identité requise avant d’investir.'
+                    : '⚠️ Identity verification required before investing.'
+                  : lockedStep === 'payment'
+                    ? isFr
+                      ? '⚠️ Abonnement requis ($99/an) pour investir.'
+                      : '⚠️ Subscription required ($99/year) to invest.'
+                    : isFr
+                      ? '⏳ Compte en cours de validation — accès sous 24h.'
+                      : '⏳ Account under final review — access within 24h.'}
             </div>
           )}
         </div>
       </section>
+
+      <OnboardingGateModal
+        open={gateOpen}
+        onClose={() => setGateOpen(false)}
+        onboarding={onboarding || { step: 'email_verification', currentStep: 1 }}
+        isFr={isFr}
+        actionLabel={isFr ? 'Investir' : 'Invest'}
+        onContinue={() => {
+          setGateOpen(false);
+          navigate('/afri-yield/portal');
+        }}
+      />
 
       {modalOpen ? (
         <div

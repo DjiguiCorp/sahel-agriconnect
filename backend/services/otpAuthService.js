@@ -4,6 +4,8 @@ import { Resend } from 'resend';
 import VerificationCode from '../models/VerificationCode.js';
 import Farmer from '../models/Farmer.js';
 import Investor from '../models/Investor.js';
+import InvestorKYC from '../models/InvestorKYC.js';
+import PremiumSubscription from '../models/PremiumSubscription.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import GovernmentAdmin from '../models/GovernmentAdmin.js';
 import Processor from '../models/Processor.js';
@@ -491,8 +493,35 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
         { status: 404, code: 'not_registered' },
       );
     }
+    const [kyc, sub] = await Promise.all([
+      InvestorKYC.findOne({ investorEmail: investor.email })
+        .select('diditStatus tradingApproved diditSessionId diditVerifiedAt')
+        .lean(),
+      PremiumSubscription.findOne({
+        investorEmail: String(investor.email).toLowerCase().trim(),
+        status: 'active',
+      })
+        .sort({ endDate: -1 })
+        .lean(),
+    ]);
+    let diditStatus = null;
+    if (kyc && (kyc.diditSessionId || kyc.diditVerifiedAt || kyc.diditStatus)) {
+      diditStatus = kyc.diditStatus || 'pending';
+    }
+    const subscriptionActive = Boolean(
+      sub && (!sub.endDate || new Date(sub.endDate) >= new Date())
+    );
+
     const token = jwt.sign(
-      { role: 'investor', email: investor.email, name: investor.fullName },
+      {
+        role: 'investor',
+        email: investor.email,
+        name: investor.fullName,
+        emailVerified: Boolean(investor.emailVerified),
+        diditStatus,
+        subscriptionActive,
+        tradingApproved: Boolean(kyc?.tradingApproved),
+      },
       process.env.JWT_SECRET,
       { expiresIn: '90d' },
     );
@@ -507,7 +536,15 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
       token,
       sessionSeed,
       accountStatus: 'active',
-      user: { email: investor.email, name: investor.fullName, status: investor.status },
+      user: {
+        email: investor.email,
+        name: investor.fullName,
+        status: investor.status,
+        emailVerified: Boolean(investor.emailVerified),
+        diditStatus,
+        subscriptionActive,
+        tradingApproved: Boolean(kyc?.tradingApproved),
+      },
     };
   }
 

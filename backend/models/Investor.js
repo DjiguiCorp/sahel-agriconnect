@@ -13,6 +13,8 @@ const investorSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
   },
+  emailVerified: { type: Boolean, default: false },
+  verifiedAt: { type: Date },
   phone: { type: String, trim: true },
   countryOfResidence: { type: String, trim: true },
   investmentTrack: {
