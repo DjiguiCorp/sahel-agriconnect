@@ -110,6 +110,18 @@ async function authCoopOrProcessor(req, res, next) {
 async function activateCooperativeGrowth(payment) {
   const now = new Date();
   const expires = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+  let existing = null;
+  if (payment.entityId && /^[a-fA-F0-9]{24}$/.test(payment.entityId)) {
+    existing = await CooperativePlatformRegistration.findById(payment.entityId).lean();
+  }
+  if (!existing && payment.entityEmail) {
+    existing = await CooperativePlatformRegistration.findOne({
+      email: String(payment.entityEmail).toLowerCase(),
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+  const provisional = Boolean(existing?.pendingFullVerification);
   const update = {
     paymentReceived: true,
     paymentDate: now,
@@ -118,8 +130,12 @@ async function activateCooperativeGrowth(payment) {
     activatedAt: now,
     tier: 'growth',
     certificationEligible: true,
-    afriyieldEligible: true,
+    afriyieldEligible: !provisional,
     exportEligible: true,
+    pendingFullVerification: provisional,
+    ...(provisional
+      ? { gracePeriodStartDate: existing?.gracePeriodStartDate || now }
+      : { gracePeriodStartDate: null }),
     subscriptionRenewedAt: now,
     subscriptionExpiresAt: expires,
   };
@@ -136,6 +152,14 @@ async function activateCooperativeGrowth(payment) {
       update,
       { sort: { createdAt: -1 }, new: true }
     );
+  }
+  if (coop?._id) {
+    try {
+      const { syncPendingFullVerification } = await import('../services/coopMemberUpgrade.js');
+      await syncPendingFullVerification(coop._id);
+    } catch {
+      /* best-effort */
+    }
   }
   if (coop?._id) {
     try {

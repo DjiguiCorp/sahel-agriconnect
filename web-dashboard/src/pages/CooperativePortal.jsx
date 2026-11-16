@@ -18,16 +18,41 @@ const API = import.meta.env.VITE_API_BASE_URL;
 const INPUT_LIGHT =
   'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20';
 
+function growthEligibilityTip(isFr, verifiedCount = 0, declaredCount = 0) {
+  const v = Number(verifiedCount) || 0;
+  const d = Number(declaredCount) || 0;
+  if (v < 10) {
+    return isFr
+      ? `Vous avez ${v} membres vérifiés. Atteignez 10 membres vérifiés + 51 déclarés, ou 51 vérifiés, pour débloquer le plan Croissance.`
+      : `You have ${v} verified members. Reach 10 verified + 51 declared, or 51 verified, to unlock the Growth plan.`;
+  }
+  if (d < 51) {
+    return isFr
+      ? `Vous avez ${v} membres vérifiés. Déclarez 51 membres pour débloquer l’accès provisoire au plan Croissance.`
+      : `You have ${v} verified members. Declare 51 members to unlock provisional Growth access.`;
+  }
+  return isFr
+    ? `Vous êtes éligible au plan Croissance (accès provisoire ou complet).`
+    : `You are eligible for the Growth plan (provisional or full access).`;
+}
+
+function isGrowthEligible(verifiedCount = 0, declaredCount = 0) {
+  const v = Number(verifiedCount) || 0;
+  const d = Number(declaredCount) || 0;
+  return v >= 51 || (d >= 51 && v >= 10);
+}
+
 function GrowthUpgradeButton({
   isFr,
   navigate,
   verifiedCount = 0,
+  declaredCount = 0,
   className = '',
   labelFr = 'Mettre à niveau',
   labelEn = 'Upgrade',
   showPrice = false,
 }) {
-  const ready = Number(verifiedCount) >= 51;
+  const ready = isGrowthEligible(verifiedCount, declaredCount);
   const label = showPrice
     ? isFr
       ? `${labelFr} — $199/an`
@@ -35,9 +60,7 @@ function GrowthUpgradeButton({
     : isFr
       ? labelFr
       : labelEn;
-  const tip = isFr
-    ? `Vous avez ${verifiedCount} membres vérifiés. Atteignez 51 pour débloquer le plan Croissance.`
-    : `You have ${verifiedCount} verified members. Reach 51 to unlock Growth.`;
+  const tip = growthEligibilityTip(isFr, verifiedCount, declaredCount);
 
   if (!ready) {
     return (
@@ -65,7 +88,7 @@ function GrowthUpgradeButton({
   );
 }
 
-function GrowthLockedPanel({ isFr, navigate, verifiedCount = 0 }) {
+function GrowthLockedPanel({ isFr, navigate, verifiedCount = 0, declaredCount = 0 }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-200 px-6">
       <span className="text-4xl mb-4">🔒</span>
@@ -73,14 +96,13 @@ function GrowthLockedPanel({ isFr, navigate, verifiedCount = 0 }) {
         {isFr ? 'Disponible avec le plan Croissance' : 'Available on Growth Plan'}
       </p>
       <p className="text-gray-500 text-sm mb-6 max-w-sm">
-        {isFr
-          ? "Les petites coopératives (≤50 membres) ne sont pas éligibles à la certification car l'export requiert quantité et qualité. Passez à 51+ membres vérifiés et mettez à niveau pour débloquer."
-          : 'Smaller cooperatives (≤50 members) are not eligible for certification because export requires both quantity and quality. Grow to 51+ verified members and upgrade to unlock.'}
+        {growthEligibilityTip(isFr, verifiedCount, declaredCount)}
       </p>
       <GrowthUpgradeButton
         isFr={isFr}
         navigate={navigate}
         verifiedCount={verifiedCount}
+        declaredCount={declaredCount}
         showPrice
         className="px-6 py-3"
         labelFr="Mettre à niveau"
@@ -175,8 +197,14 @@ export default function CooperativePortal() {
   );
   const pendingHarvestCount = harvestLogs.filter((h) => !h.verifiedByCoop).length;
   const verifiedHarvestCount = harvestLogs.filter((h) => h.verifiedByCoop).length;
-  const specialUnlocked = isGrowth && progressMembers >= 51 && Boolean(processorId);
+  const pendingFullVerification = Boolean(data?.cooperative?.pendingFullVerification);
+  const afriyieldUnlocked =
+    data?.cooperative?.afriyieldUnlocked != null
+      ? Boolean(data.cooperative.afriyieldUnlocked)
+      : isGrowth && !pendingFullVerification;
+  const specialUnlocked = isGrowth && Boolean(processorId);
   const verificationStatus = data?.cooperative?.verificationStatus || 'unverified';
+  const growthReady = isGrowthEligible(verifiedMemberCount, declaredMembers);
 
   const refreshPortal = () => {
     if (!token) return;
@@ -697,7 +725,16 @@ export default function CooperativePortal() {
     },
     {
       key: 'afriyield',
-      label: `🌍 AfriYield${isGrowth ? '' : ' 🔒'}`,
+      label: `🌍 AfriYield${afriyieldUnlocked ? '' : ' 🔒'}`,
+      title: !afriyieldUnlocked
+        ? isFr
+          ? isGrowth && pendingFullVerification
+            ? `Disponible à 25 membres vérifiés (actuellement ${verifiedMemberCount}/25)`
+            : 'Disponible avec le plan Croissance'
+          : isGrowth && pendingFullVerification
+            ? `Available at 25 verified members (currently ${verifiedMemberCount}/25)`
+            : 'Available on Growth Plan'
+        : undefined,
     },
     {
       key: 'export',
@@ -772,6 +809,16 @@ export default function CooperativePortal() {
         </div>
       )}
 
+      {isGrowth && pendingFullVerification ? (
+        <div className="max-w-5xl mx-auto px-4 pt-3">
+          <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 font-semibold">
+            {isFr
+              ? `⏳ Accès provisoire — Atteignez 25 membres vérifiés pour débloquer AfriYield. ${verifiedMemberCount} / 25 membres vérifiés actuellement.`
+              : `⏳ Provisional Access — Reach 25 verified members to unlock AfriYield. ${verifiedMemberCount} / 25 verified members currently.`}
+          </div>
+        </div>
+      ) : null}
+
       <div className="max-w-5xl mx-auto px-4 pt-4">
         {verificationStatus === 'flagged' ? (
           <div className="mb-2 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -789,14 +836,15 @@ export default function CooperativePortal() {
               </p>
               <p className="text-gray-500 text-xs">
                 {isFr
-                  ? 'Certification, AfriYield et export disponibles à partir de 51 membres vérifiés (plan Croissance $199/an)'
-                  : 'Certification, AfriYield & export available from 51 verified members (Growth plan $199/year)'}
+                  ? 'Certification & export : 51 vérifiés, ou 10 vérifiés + 51 déclarés (AfriYield à 25 vérifiés en accès provisoire). Plan Croissance $199/an.'
+                  : 'Certification & export: 51 verified, or 10 verified + 51 declared (AfriYield at 25 verified on provisional access). Growth $199/year.'}
               </p>
             </div>
             <GrowthUpgradeButton
               isFr={isFr}
               navigate={navigate}
               verifiedCount={verifiedMemberCount}
+              declaredCount={declaredMembers}
               className="px-4 py-2 text-xs shrink-0"
               labelFr="Mettre à niveau"
               labelEn="Upgrade"
@@ -825,6 +873,7 @@ export default function CooperativePortal() {
             <button
               key={tab.key}
               type="button"
+              title={tab.title || undefined}
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition ${
                 activeTab === tab.key ? 'bg-[#1a3c2e] text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -930,41 +979,66 @@ export default function CooperativePortal() {
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
-                    width: `${Math.min(100, (progressMembers / 51) * 100)}%`,
-                    background: progressMembers >= 51 ? '#B5850A' : '#1a3c2e',
+                    width: pendingFullVerification
+                      ? `${Math.min(100, (progressMembers / 25) * 100)}%`
+                      : `${Math.min(100, (progressMembers / 51) * 100)}%`,
+                    background: pendingFullVerification
+                      ? '#d97706'
+                      : progressMembers >= 51
+                        ? '#16a34a'
+                        : '#1a3c2e',
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-600 mb-3">
-                {isFr
-                  ? `${Math.min(progressMembers, 51)} / 51 membres vérifiés pour débloquer les formations, la certification et l'export`
-                  : `${Math.min(progressMembers, 51)} / 51 verified members to unlock training, certification and export`}
+              <p
+                className={`text-xs mb-3 font-semibold ${
+                  pendingFullVerification
+                    ? 'text-amber-700'
+                    : isGrowth && progressMembers >= 51
+                      ? 'text-green-700'
+                      : 'text-gray-600'
+                }`}
+              >
+                {pendingFullVerification
+                  ? isFr
+                    ? `${progressMembers} membres vérifiés · ${declaredMembers} déclarés — Accès provisoire actif`
+                    : `${progressMembers} verified members · ${declaredMembers} declared — Provisional access active`
+                  : isGrowth && progressMembers >= 51
+                    ? isFr
+                      ? `${progressMembers} membres vérifiés — Accès complet`
+                      : `${progressMembers} verified members — Full access`
+                    : isFr
+                      ? `${Math.min(progressMembers, 51)} / 51 vérifiés · ou 10 vérifiés + 51 déclarés pour le plan Croissance`
+                      : `${Math.min(progressMembers, 51)} / 51 verified · or 10 verified + 51 declared for Growth`}
               </p>
               {coopTier === 'starter' ? (
                 <div
                   className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
-                    progressMembers >= 51
+                    growthReady
                       ? 'border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50'
                       : 'border-gray-200 bg-gray-50'
                   }`}
                 >
                   <p
                     className={`text-sm font-semibold ${
-                      progressMembers >= 51 ? 'text-amber-900' : 'text-gray-600'
+                      growthReady ? 'text-amber-900' : 'text-gray-600'
                     }`}
                   >
-                    {progressMembers >= 51
+                    {growthReady
                       ? isFr
-                        ? 'Vous avez atteint 51 membres — passez au plan Croissance pour tout débloquer'
-                        : "You've reached 51 members — upgrade to unlock everything"
-                      : isFr
-                        ? `Vous avez ${progressMembers} membres vérifiés. Atteignez 51 pour débloquer le plan Croissance.`
-                        : `You have ${progressMembers} verified members. Reach 51 to unlock the Growth plan.`}
+                        ? progressMembers >= 51
+                          ? 'Vous avez atteint 51 membres vérifiés — passez au plan Croissance pour tout débloquer'
+                          : 'Éligible à l’accès provisoire Croissance (AfriYield à 25 vérifiés)'
+                        : progressMembers >= 51
+                          ? "You've reached 51 verified members — upgrade to unlock everything"
+                          : 'Eligible for provisional Growth access (AfriYield at 25 verified)'
+                      : growthEligibilityTip(isFr, progressMembers, declaredMembers)}
                   </p>
                   <GrowthUpgradeButton
                     isFr={isFr}
                     navigate={navigate}
                     verifiedCount={progressMembers}
+                    declaredCount={declaredMembers}
                     className="shrink-0 px-4 py-2.5"
                     labelFr="Mettre à niveau"
                     labelEn="Upgrade"
@@ -1010,7 +1084,7 @@ export default function CooperativePortal() {
                     desc: isFr
                       ? 'Programmes de formation pour vos membres'
                       : 'Training programs for your members',
-                    locked: !isGrowth || progressMembers < 51,
+                    locked: !isGrowth,
                     action: () => setActiveTab('formations'),
                     actionLabel: isFr ? 'Voir' : 'Open',
                   },
@@ -1028,9 +1102,11 @@ export default function CooperativePortal() {
                     icon: '🌍',
                     title: 'AfriYield Exchange',
                     desc: isFr ? 'Connectez-vous aux investisseurs diaspora' : 'Connect with diaspora investors',
-                    locked: !isGrowth,
+                    locked: !afriyieldUnlocked,
                     action: () =>
-                      isGrowth ? window.open('/afri-yield/opportunities', '_blank') : setActiveTab('afriyield'),
+                      afriyieldUnlocked
+                        ? window.open('/afri-yield/opportunities', '_blank')
+                        : setActiveTab('afriyield'),
                     actionLabel: isFr ? 'Ouvrir' : 'Open',
                   },
                   {
@@ -1147,7 +1223,7 @@ export default function CooperativePortal() {
                       ? 'Accès aux programmes de formation agricole aux États-Unis pour les leaders de coopératives'
                       : 'Access to US agricultural training programs for cooperative leaders',
                     lock: isFr ? '51+ membres requis' : '51+ members required',
-                    unlockCond: isGrowth && progressMembers >= 51,
+                    unlockCond: isGrowth,
                   },
                   {
                     icon: '🏆',
@@ -1460,12 +1536,17 @@ export default function CooperativePortal() {
               </Link>
             </div>
           ) : (
-            <GrowthLockedPanel isFr={isFr} navigate={navigate} verifiedCount={verifiedMemberCount} />
+            <GrowthLockedPanel
+              isFr={isFr}
+              navigate={navigate}
+              verifiedCount={verifiedMemberCount}
+              declaredCount={declaredMembers}
+            />
           )
         )}
 
         {activeTab === 'afriyield' && !loading && (
-          isGrowth ? (
+          afriyieldUnlocked ? (
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h3 className="font-bold text-[#1a3c2e] mb-2">🌍 AfriYield Exchange</h3>
               <p className="text-gray-600 text-sm mb-4">
@@ -1483,8 +1564,33 @@ export default function CooperativePortal() {
                 {isFr ? 'Ouvrir AfriYield →' : 'Open AfriYield →'}
               </a>
             </div>
+          ) : isGrowth && pendingFullVerification ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-amber-200 px-6">
+              <span className="text-4xl mb-4">🔒</span>
+              <p className="text-[#1a3c2e] font-semibold mb-2">
+                {isFr ? 'AfriYield — Accès provisoire' : 'AfriYield — Provisional access'}
+              </p>
+              <p className="text-amber-800 text-sm mb-4 max-w-sm font-semibold">
+                {isFr
+                  ? `Disponible à 25 membres vérifiés (actuellement ${verifiedMemberCount}/25)`
+                  : `Available at 25 verified members (currently ${verifiedMemberCount}/25)`}
+              </p>
+              <div className="w-full max-w-xs h-2 rounded-full bg-gray-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-amber-500 transition-all"
+                  style={{
+                    width: `${Math.min(100, Math.round((verifiedMemberCount / 25) * 100))}%`,
+                  }}
+                />
+              </div>
+            </div>
           ) : (
-            <GrowthLockedPanel isFr={isFr} navigate={navigate} verifiedCount={verifiedMemberCount} />
+            <GrowthLockedPanel
+              isFr={isFr}
+              navigate={navigate}
+              verifiedCount={verifiedMemberCount}
+              declaredCount={declaredMembers}
+            />
           )
         )}
 
@@ -1499,7 +1605,12 @@ export default function CooperativePortal() {
               </p>
             </div>
           ) : (
-            <GrowthLockedPanel isFr={isFr} navigate={navigate} verifiedCount={verifiedMemberCount} />
+            <GrowthLockedPanel
+              isFr={isFr}
+              navigate={navigate}
+              verifiedCount={verifiedMemberCount}
+              declaredCount={declaredMembers}
+            />
           )
         )}
 
@@ -1865,27 +1976,21 @@ export default function CooperativePortal() {
 
         {activeTab === 'formations' && (
           <div>
-            {!isGrowth || progressMembers < 51 ? (
+            {!isGrowth ? (
               <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-200 px-6">
                 <span className="text-4xl mb-4">🔒</span>
                 <p className="text-[#1a3c2e] font-semibold mb-2 max-w-md">
-                  {isFr
-                    ? 'Les formations sont disponibles à partir de 51 membres vérifiés avec un abonnement actif'
-                    : 'Training unlocks at 51 verified members with an active subscription'}
+                  {growthEligibilityTip(isFr, progressMembers, declaredMembers)}
                 </p>
                 <p className="text-amber-700 font-bold text-lg mb-2">
-                  {progressMembers} / 51 {isFr ? 'membres vérifiés' : 'verified members'}
+                  {progressMembers} {isFr ? 'vérifiés' : 'verified'} · {declaredMembers}{' '}
+                  {isFr ? 'déclarés' : 'declared'}
                 </p>
-                <div className="w-full max-w-xs h-2 rounded-full bg-gray-100 mb-6 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-amber-500 transition-all"
-                    style={{ width: `${Math.min(100, Math.round((progressMembers / 51) * 100))}%` }}
-                  />
-                </div>
                 <GrowthUpgradeButton
                   isFr={isFr}
                   navigate={navigate}
                   verifiedCount={progressMembers}
+                  declaredCount={declaredMembers}
                   className="px-6 py-3"
                   labelFr="Passer au plan Croissance"
                   labelEn="Upgrade to Growth"

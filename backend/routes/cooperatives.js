@@ -31,7 +31,13 @@ import DeviceSession from '../models/DeviceSession.js';
 import {
   maybeUpgradeCoopAt51,
   getVerifiedMemberCount,
+  syncPendingFullVerification,
+  evaluateGrowthPaths,
+  isAfriYieldUnlocked,
   GROWTH_MIN_VERIFIED_MEMBERS,
+  GROWTH_PATH_B_DECLARED,
+  GROWTH_PATH_B_VERIFIED,
+  AFRIYIELD_UNLOCK_VERIFIED,
   GROWTH_GATE_ERROR_FR,
   sendJoinRequestToLeaderEmail,
   sendJoinRequestOutcomeEmail,
@@ -491,6 +497,7 @@ router.post('/:id/join-requests/:requestId/review', authCoop, async (req, res) =
         $inc: { memberCount: 1 },
       });
       await maybeUpgradeCoopAt51(req.coop._id);
+      await syncPendingFullVerification(req.coop._id);
 
       await sendJoinRequestOutcomeEmail({
         farmerEmail: farmer?.email,
@@ -896,6 +903,13 @@ router.get('/my-portal', authCoop, async (req, res) => {
     const tier = req.coop.tier || deriveCoopTier(req.coop.memberCount).tier;
     const isGrowth = tier === 'growth';
 
+    // Auto-clear Path B provisional lock when verifiedCount >= 25
+    const sync = await syncPendingFullVerification(req.coop._id, verifiedMemberCount);
+    const pendingFullVerification = Boolean(
+      sync?.pendingFullVerification ?? req.coop.pendingFullVerification
+    );
+    const afriyieldUnlocked = isGrowth && !pendingFullVerification;
+
     res.json({
       success: true,
       cooperative: {
@@ -908,7 +922,10 @@ router.get('/my-portal', authCoop, async (req, res) => {
         emailVerified: Boolean(req.coop.emailVerified),
         verificationStatus: req.coop.verificationStatus || 'unverified',
         certificationEligible: isGrowth || Boolean(req.coop.certificationEligible),
-        afriyieldEligible: isGrowth || Boolean(req.coop.afriyieldEligible),
+        afriyieldEligible: afriyieldUnlocked,
+        afriyieldUnlocked,
+        pendingFullVerification,
+        gracePeriodStartDate: sync?.coop?.gracePeriodStartDate || req.coop.gracePeriodStartDate || null,
         exportEligible: isGrowth || Boolean(req.coop.exportEligible),
         subscriptionExpiresAt: req.coop.subscriptionExpiresAt || null,
         processorId: req.coop.processorId || null,
@@ -974,8 +991,11 @@ router.patch('/my-portal/update-count', authCoop, async (req, res) => {
       req.coop._id,
       { memberCount },
       { new: true }
-    ).select('memberCount');
+    ).select('memberCount tier pendingFullVerification');
     if (!coop) return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    // Declared count change can unlock Path B (51 declared + 10 verified)
+    await maybeUpgradeCoopAt51(req.coop._id);
+    await syncPendingFullVerification(req.coop._id);
     return res.json({ success: true, memberCount: coop.memberCount });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
@@ -1307,6 +1327,21 @@ router.post('/my-portal/link-processor', authCoop, async (req, res) => {
 // PUT /api/cooperatives/my-portal/promote-listing/:id — AfriYield marketplace (Growth only)
 router.put('/my-portal/promote-listing/:id', authCoop, requireGrowthTier, async (req, res) => {
   try {
+    await syncPendingFullVerification(req.coop._id);
+    const fresh = await CooperativePlatformRegistration.findById(req.coop._id)
+      .select('tier pendingFullVerification')
+      .lean();
+    if (!isAfriYieldUnlocked(fresh || req.coop)) {
+      return res.status(403).json({
+        success: false,
+        error: 'AFRIYIELD_LOCKED',
+        message:
+          'AfriYield requires 25 verified members while on provisional Growth access.',
+        messageFr:
+          'AfriYield nécessite 25 membres vérifiés pendant l’accès provisoire Croissance.',
+        requiredVerified: AFRIYIELD_UNLOCK_VERIFIED,
+      });
+    }
     const listing = await ProduceListing.findOneAndUpdate(
       { _id: req.params.id, cooperativeId: req.coop._id },
       {
@@ -1357,23 +1392,49 @@ router.post('/my-portal/upgrade', authCoop, async (req, res) => {
     if (req.coop.tier === 'growth' && req.coop.paymentReceived) {
       return res.json({ success: true, tier: 'growth', alreadyActive: true });
     }
-    const verifiedMemberCount = await getVerifiedMemberCount(req.coop._id);
-    if (verifiedMemberCount < GROWTH_MIN_VERIFIED_MEMBERS) {
+    const verifiedCount = await getVerifiedMemberCount(req.coop._id);
+    const declaredCount = Number(req.coop.memberCount) || 0;
+    const { pathA, pathB, eligible } = evaluateGrowthPaths({ verifiedCount, declaredCount });
+
+    if (!eligible) {
       return res.status(403).json({
         success: false,
-        error: GROWTH_GATE_ERROR_FR,
-        verifiedMemberCount,
-        required: GROWTH_MIN_VERIFIED_MEMBERS,
+        error: 'NOT_ELIGIBLE',
+        errorFr: GROWTH_GATE_ERROR_FR,
+        verifiedCount,
+        declaredCount,
+        verifiedMemberCount: verifiedCount,
+        requiredVerified: GROWTH_MIN_VERIFIED_MEMBERS,
+        requiredDeclaredForPathB: GROWTH_PATH_B_DECLARED,
+        requiredVerifiedForPathB: GROWTH_PATH_B_VERIFIED,
         requiresCheckout: false,
       });
     }
+
+    if (!pathA && pathB) {
+      req.coop.pendingFullVerification = true;
+      req.coop.gracePeriodStartDate = new Date();
+      req.coop.afriyieldEligible = false;
+      await req.coop.save();
+    } else if (pathA) {
+      req.coop.pendingFullVerification = false;
+      req.coop.gracePeriodStartDate = undefined;
+      req.coop.afriyieldEligible = true;
+      await req.coop.save();
+    }
+
     res.json({
       success: true,
       tier: req.coop.tier || 'starter',
       requiresCheckout: true,
       amountUsd: 199,
       tierKey: 'cooperative_growth',
-      verifiedMemberCount,
+      verifiedCount,
+      declaredCount,
+      verifiedMemberCount: verifiedCount,
+      pathA,
+      pathB,
+      pendingFullVerification: Boolean(req.coop.pendingFullVerification),
       required: GROWTH_MIN_VERIFIED_MEMBERS,
     });
   } catch (e) {
@@ -1384,14 +1445,30 @@ router.post('/my-portal/upgrade', authCoop, async (req, res) => {
 // GET /api/cooperatives/my-portal/growth-eligibility
 router.get('/my-portal/growth-eligibility', authCoop, async (req, res) => {
   try {
-    const verifiedMemberCount = await getVerifiedMemberCount(req.coop._id);
-    const eligible = verifiedMemberCount >= GROWTH_MIN_VERIFIED_MEMBERS;
+    const verifiedCount = await getVerifiedMemberCount(req.coop._id);
+    await syncPendingFullVerification(req.coop._id, verifiedCount);
+    const declaredCount = Number(req.coop.memberCount) || 0;
+    const { pathA, pathB, eligible } = evaluateGrowthPaths({ verifiedCount, declaredCount });
+    const fresh = await CooperativePlatformRegistration.findById(req.coop._id)
+      .select('pendingFullVerification afriyieldEligible tier')
+      .lean();
     res.json({
       success: true,
       eligible,
-      verifiedMemberCount,
+      pathA,
+      pathB,
+      verifiedCount,
+      declaredCount,
+      verifiedMemberCount: verifiedCount,
       required: GROWTH_MIN_VERIFIED_MEMBERS,
-      error: eligible ? null : GROWTH_GATE_ERROR_FR,
+      requiredVerified: GROWTH_MIN_VERIFIED_MEMBERS,
+      requiredDeclaredForPathB: GROWTH_PATH_B_DECLARED,
+      requiredVerifiedForPathB: GROWTH_PATH_B_VERIFIED,
+      afriyieldUnlockAt: AFRIYIELD_UNLOCK_VERIFIED,
+      pendingFullVerification: Boolean(fresh?.pendingFullVerification),
+      afriyieldUnlocked: isAfriYieldUnlocked(fresh || req.coop),
+      error: eligible ? null : 'NOT_ELIGIBLE',
+      errorFr: eligible ? null : GROWTH_GATE_ERROR_FR,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

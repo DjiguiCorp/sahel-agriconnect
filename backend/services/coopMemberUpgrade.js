@@ -38,53 +38,150 @@ export async function getVerifiedMemberCount(cooperativeId) {
   return ids.size;
 }
 
+/** Path A — full unlock */
 export const GROWTH_MIN_VERIFIED_MEMBERS = 51;
+/** Path B — grace unlock thresholds */
+export const GROWTH_PATH_B_DECLARED = 51;
+export const GROWTH_PATH_B_VERIFIED = 10;
+/** AfriYield unlock while on Path B grace */
+export const AFRIYIELD_UNLOCK_VERIFIED = 25;
 
 export const GROWTH_GATE_ERROR_FR =
-  'Vous devez avoir 51 membres vérifiés pour accéder au plan Croissance.';
+  'Vous devez avoir 51 membres vérifiés, ou 51 déclarés avec au moins 10 vérifiés, pour accéder au plan Croissance.';
+
+export function evaluateGrowthPaths({ verifiedCount = 0, declaredCount = 0 }) {
+  const verified = Number(verifiedCount) || 0;
+  const declared = Number(declaredCount) || 0;
+  const pathA = verified >= GROWTH_MIN_VERIFIED_MEMBERS;
+  const pathB = declared >= GROWTH_PATH_B_DECLARED && verified >= GROWTH_PATH_B_VERIFIED;
+  return {
+    pathA,
+    pathB,
+    eligible: pathA || pathB,
+    verifiedCount: verified,
+    declaredCount: declared,
+  };
+}
+
+/** AfriYield unlocked only on Growth without provisional Path B lock */
+export function isAfriYieldUnlocked(coop) {
+  if (!coop) return false;
+  const tier = coop.tier || coop.subscriptionPlan;
+  if (tier !== 'growth') return false;
+  return !Boolean(coop.pendingFullVerification);
+}
 
 /**
- * Resolve coop + verified count; used to gate Growth Stripe checkout.
+ * Clear Path B provisional lock once verified members reach 25.
+ * Also syncs afriyieldEligible accordingly.
+ */
+export async function syncPendingFullVerification(cooperativeId, verifiedCountOpt) {
+  if (!cooperativeId) return null;
+  const coop = await CooperativePlatformRegistration.findById(cooperativeId);
+  if (!coop) return null;
+
+  const verifiedCount =
+    verifiedCountOpt != null
+      ? Number(verifiedCountOpt)
+      : await getVerifiedMemberCount(cooperativeId);
+
+  let changed = false;
+  if (coop.pendingFullVerification && verifiedCount >= AFRIYIELD_UNLOCK_VERIFIED) {
+    coop.pendingFullVerification = false;
+    coop.gracePeriodStartDate = undefined;
+    coop.afriyieldEligible = true;
+    changed = true;
+  } else if (coop.tier === 'growth' && !coop.pendingFullVerification && !coop.afriyieldEligible) {
+    coop.afriyieldEligible = true;
+    changed = true;
+  } else if (coop.pendingFullVerification && coop.afriyieldEligible) {
+    coop.afriyieldEligible = false;
+    changed = true;
+  }
+
+  if (changed) await coop.save();
+  return {
+    coop,
+    verifiedCount,
+    pendingFullVerification: Boolean(coop.pendingFullVerification),
+    afriyieldUnlocked: isAfriYieldUnlocked(coop),
+  };
+}
+
+/**
+ * Resolve coop + hybrid Path A/B eligibility; used to gate Growth Stripe checkout.
  */
 export async function assertCoopGrowthCheckoutAllowed({ email, cooperativeId }) {
   let coop = null;
   if (cooperativeId) {
-    coop = await CooperativePlatformRegistration.findById(cooperativeId).lean();
+    coop = await CooperativePlatformRegistration.findById(cooperativeId);
   }
   if (!coop && email) {
     const emailNorm = String(email).toLowerCase().trim();
-    coop = await CooperativePlatformRegistration.findOne({ email: emailNorm })
-      .sort({ createdAt: -1 })
-      .lean();
+    coop = await CooperativePlatformRegistration.findOne({ email: emailNorm }).sort({
+      createdAt: -1,
+    });
   }
   if (!coop) {
     return {
       ok: false,
       status: 404,
       error: 'Cooperative not found for Growth checkout.',
+      errorCode: 'NOT_FOUND',
       verifiedMemberCount: 0,
+      verifiedCount: 0,
+      declaredCount: 0,
     };
   }
-  const verifiedMemberCount = await getVerifiedMemberCount(coop._id);
-  if (verifiedMemberCount < GROWTH_MIN_VERIFIED_MEMBERS) {
+
+  const verifiedCount = await getVerifiedMemberCount(coop._id);
+  const declaredCount = Number(coop.memberCount) || 0;
+  const { pathA, pathB, eligible } = evaluateGrowthPaths({ verifiedCount, declaredCount });
+
+  if (!eligible) {
     return {
       ok: false,
       status: 403,
-      error: GROWTH_GATE_ERROR_FR,
-      verifiedMemberCount,
+      error: 'NOT_ELIGIBLE',
+      errorCode: 'NOT_ELIGIBLE',
+      errorFr: GROWTH_GATE_ERROR_FR,
+      verifiedMemberCount: verifiedCount,
+      verifiedCount,
+      declaredCount,
+      requiredVerified: GROWTH_MIN_VERIFIED_MEMBERS,
+      requiredDeclaredForPathB: GROWTH_PATH_B_DECLARED,
+      requiredVerifiedForPathB: GROWTH_PATH_B_VERIFIED,
       cooperativeId: String(coop._id),
     };
   }
+
+  if (!pathA && pathB) {
+    coop.pendingFullVerification = true;
+    coop.gracePeriodStartDate = new Date();
+    coop.afriyieldEligible = false;
+    await coop.save();
+  } else if (pathA) {
+    coop.pendingFullVerification = false;
+    coop.gracePeriodStartDate = undefined;
+    coop.afriyieldEligible = true;
+    await coop.save();
+  }
+
   return {
     ok: true,
-    verifiedMemberCount,
+    verifiedMemberCount: verifiedCount,
+    verifiedCount,
+    declaredCount,
+    pathA,
+    pathB,
+    pendingFullVerification: Boolean(coop.pendingFullVerification),
     cooperativeId: String(coop._id),
-    coop,
+    coop: coop.toObject(),
   };
 }
 
 /**
- * After membership changes, if verified count hits 51 while still on starter,
+ * After membership changes, if Path A or Path B is met while still on starter,
  * auto-upgrade to growth + pending_payment and email the leader.
  */
 export async function maybeUpgradeCoopAt51(coopId) {
@@ -92,17 +189,25 @@ export async function maybeUpgradeCoopAt51(coopId) {
 
   const updatedCoop = await CooperativePlatformRegistration.findById(coopId);
   if (!updatedCoop) return null;
-  if (updatedCoop.tier !== 'starter') return null;
+  if (updatedCoop.tier !== 'starter') {
+    await syncPendingFullVerification(coopId);
+    return null;
+  }
 
   const verifiedCount = await getVerifiedMemberCount(coopId);
-  if (verifiedCount < 51) return null;
+  const declaredCount = Number(updatedCoop.memberCount) || 0;
+  const { pathA, pathB, eligible } = evaluateGrowthPaths({ verifiedCount, declaredCount });
+  if (!eligible) return null;
 
+  const isGrace = !pathA && pathB;
   await CooperativePlatformRegistration.findByIdAndUpdate(coopId, {
     tier: 'growth',
     status: 'pending_payment',
     certificationEligible: true,
-    afriyieldEligible: true,
     exportEligible: true,
+    afriyieldEligible: !isGrace,
+    pendingFullVerification: isGrace,
+    ...(isGrace ? { gracePeriodStartDate: new Date() } : { gracePeriodStartDate: null }),
   });
 
   const fresh = await CooperativePlatformRegistration.findById(coopId);
@@ -118,42 +223,35 @@ export async function sendGrowthUpgradePromptEmail(coop) {
 
   const name = coop.leaderName || coop.cooperativeName || '';
   const upgradeUrl = `${FRONTEND}/cooperative-upgrade`;
+  const provisional = Boolean(coop.pendingFullVerification);
 
   await resend.emails.send({
     from: FROM,
     to: coop.email,
-    subject:
-      'Votre coopérative a atteint 51 membres / Your cooperative has reached 51 members',
+    subject: provisional
+      ? 'Accès provisoire Croissance / Provisional Growth access'
+      : 'Votre coopérative a atteint 51 membres / Your cooperative has reached 51 members',
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
           <h1 style="color:#B5850A;margin:0;">Sahel AgriConnect</h1>
-          <p style="color:white;margin:8px 0 0;">51 membres atteints 🎉</p>
+          <p style="color:white;margin:8px 0 0;">${
+            provisional ? 'Accès provisoire Croissance' : '51 membres atteints 🎉'
+          }</p>
         </div>
         <div style="padding:28px;background:#f9f9f9;border:1px solid #e0e0e0;">
           <p>Bonjour <strong>${name}</strong>,</p>
           <p>
-            Félicitations — <strong>${coop.cooperativeName || ''}</strong> a atteint
-            <strong>51 membres vérifiés</strong> sur la plateforme. Votre plan passe au niveau
+            Félicitations — <strong>${coop.cooperativeName || ''}</strong> est éligible au plan
             <strong>Croissance (Growth)</strong>.
           </p>
-          <p style="color:#555;font-size:14px;">
-            Congratulations — your cooperative has reached <strong>51 verified members</strong>.
-            Your plan is now eligible for the <strong>Growth</strong> tier.
-          </p>
-          <div style="background:#fffbeb;border:1px solid #B5850A;border-radius:8px;padding:16px;margin:20px 0;">
-            <p style="margin:0 0 8px;font-weight:bold;color:#92400e;">Débloquez / Unlock:</p>
-            <ul style="margin:0;padding-left:18px;color:#78350f;font-size:14px;">
-              <li>Formations / Training</li>
-              <li>AfriYield Exchange</li>
-              <li>Certification</li>
-              <li>Export readiness</li>
-            </ul>
-          </div>
-          <p style="color:#555;font-size:14px;">
-            Activez l'abonnement Growth ($199/an) pour conserver l'accès au portail et débloquer ces fonctionnalités.
-            <br/>Activate Growth ($199/year) to keep portal access and unlock these features.
-          </p>
+          ${
+            provisional
+              ? `<p style="color:#92400e;background:#fffbeb;border:1px solid #fbbf24;padding:12px;border-radius:8px;">
+                   Accès provisoire : AfriYield se débloque à <strong>25 membres vérifiés</strong>.
+                 </p>`
+              : ''
+          }
           <div style="margin-top:24px;text-align:center;">
             <a href="${upgradeUrl}"
               style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;
@@ -161,9 +259,6 @@ export async function sendGrowthUpgradePromptEmail(coop) {
               Mettre à niveau / Upgrade →
             </a>
           </div>
-          <p style="color:#999;font-size:12px;margin-top:16px;text-align:center;">
-            ${upgradeUrl}
-          </p>
         </div>
       </div>
     `,

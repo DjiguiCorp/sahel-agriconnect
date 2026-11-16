@@ -321,12 +321,21 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
         return res.status(gate.status || 403).json({
           success: false,
           error: gate.error,
+          errorCode: gate.errorCode || gate.error,
           verifiedMemberCount: gate.verifiedMemberCount ?? 0,
+          verifiedCount: gate.verifiedCount ?? gate.verifiedMemberCount ?? 0,
+          declaredCount: gate.declaredCount ?? 0,
+          requiredVerified: gate.requiredVerified ?? 51,
+          requiredDeclaredForPathB: gate.requiredDeclaredForPathB ?? 51,
+          requiredVerifiedForPathB: gate.requiredVerifiedForPathB ?? 10,
           required: 51,
         });
       }
       extraMeta.verifiedMemberCount = String(gate.verifiedMemberCount);
       extraMeta.cooperativeId = gate.cooperativeId;
+      if (gate.pendingFullVerification) {
+        extraMeta.pendingFullVerification = 'true';
+      }
     }
 
     const baseFront = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
@@ -723,6 +732,12 @@ router.post('/stripe/webhook', async (req, res) => {
       ) {
         const memberCountMeta = Number(session.metadata?.memberCount);
         const now = new Date();
+        const existingCoop = await CooperativePlatformRegistration.findOne({ email: emailNorm })
+          .sort({ createdAt: -1 })
+          .lean();
+        const provisional =
+          Boolean(existingCoop?.pendingFullVerification) ||
+          String(session.metadata?.pendingFullVerification || '') === 'true';
         const update = {
           paymentReceived: true,
           paymentDate: now,
@@ -731,8 +746,12 @@ router.post('/stripe/webhook', async (req, res) => {
           activatedAt: now,
           tier: 'growth',
           certificationEligible: true,
-          afriyieldEligible: true,
+          afriyieldEligible: !provisional,
           exportEligible: true,
+          pendingFullVerification: provisional,
+          ...(provisional
+            ? { gracePeriodStartDate: existingCoop?.gracePeriodStartDate || now }
+            : { gracePeriodStartDate: null }),
           subscriptionRenewedAt: now,
           subscriptionExpiresAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
         };
@@ -757,9 +776,12 @@ router.post('/stripe/webhook', async (req, res) => {
 
           // Admin verification alert after Growth payment activation
           try {
-            const { getVerifiedMemberCount } = await import('../services/coopMemberUpgrade.js');
+            const { getVerifiedMemberCount, syncPendingFullVerification } = await import(
+              '../services/coopMemberUpgrade.js'
+            );
             const { Resend } = await import('resend');
             const verifiedMemberCount = await getVerifiedMemberCount(coopUpdated._id);
+            await syncPendingFullVerification(coopUpdated._id, verifiedMemberCount);
             const declaredMemberCount = Number(coopUpdated.memberCount) || 0;
             if (process.env.RESEND_API_KEY) {
               const resend = new Resend(process.env.RESEND_API_KEY);

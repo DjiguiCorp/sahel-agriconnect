@@ -13,6 +13,9 @@ const cooperativePlatformRegistrationSchema = new mongoose.Schema({
   certificationEligible: { type: Boolean, default: false },
   afriyieldEligible: { type: Boolean, default: false },
   exportEligible: { type: Boolean, default: false },
+  /** Path B Growth: provisional access until verifiedCount >= 25 */
+  pendingFullVerification: { type: Boolean, default: false },
+  gracePeriodStartDate: { type: Date },
   primaryCrops: [{ type: String, trim: true }],
   autresCrops: { type: String, trim: true },
   certificationStatus: { type: String, trim: true },
