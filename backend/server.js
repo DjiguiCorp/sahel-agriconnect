@@ -54,7 +54,10 @@ import diditRouter from './routes/didit.js';
 import adminRouter from './routes/admin.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger.js';
-import { syncCommodityPrices } from './services/commodityPriceSyncService.js';
+import {
+  seedMissingCropPrices,
+  startCommodityPriceSync,
+} from './services/commodityPriceSyncService.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -466,29 +469,17 @@ const startServer = async () => {
       console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);
       console.log(`🌐 API disponible sur http://localhost:${PORT}/api`);
 
-      // Commodity price sync — non-blocking on boot, then every 24h
+      // Commodity prices — seed missing rows, then background sync; repeat every 24h
       setTimeout(() => {
-        syncCommodityPrices({ force: false })
-          .then((r) =>
-            console.log(
-              `📈 Commodity prices sync: synced=${r.synced} skipped=${r.skipped}${r.cached ? ' (cached)' : ''}`
-            )
-          )
-          .catch((e) => console.warn('📈 Commodity price sync failed:', e.message));
+        seedMissingCropPrices()
+          .then((r) => console.log(`📈 CropPrice seed: seeded=${r.seeded}`))
+          .catch((e) => console.warn('📈 CropPrice seed failed:', e.message));
+        startCommodityPriceSync({ force: false });
       }, 5000);
 
-      setInterval(
-        () => {
-          syncCommodityPrices({ force: false })
-            .then((r) =>
-              console.log(
-                `📈 Commodity prices sync: synced=${r.synced} skipped=${r.skipped}${r.cached ? ' (cached)' : ''}`
-              )
-            )
-            .catch((e) => console.warn('📈 Commodity price sync failed:', e.message));
-        },
-        24 * 60 * 60 * 1000
-      );
+      setInterval(() => {
+        startCommodityPriceSync({ force: false });
+      }, 24 * 60 * 60 * 1000);
     });
 
     // Self-ping keepalive — prevents Render free tier from sleeping

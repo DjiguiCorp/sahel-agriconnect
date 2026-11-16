@@ -1,7 +1,8 @@
 /**
  * Sync live commodity reference prices into CropPrice.
- * 1) World Bank Indicators API (requested indicator codes)
- * 2) Fallback: World Bank Pink Sheet monthly Excel (CMO Historical Data)
+ * 1) World Bank Indicators API (short timeout)
+ * 2) Pink Sheet Excel fallback (short timeout)
+ * 3) Static West African reference prices if feeds fail
  */
 import * as XLSX from 'xlsx';
 import CropPrice from '../models/CropPrice.js';
@@ -14,11 +15,9 @@ const PINK_SHEET_URL =
 
 const XOF_PER_USD = 600;
 const CACHE_MS = 23 * 60 * 60 * 1000;
+const FETCH_TIMEOUT_MS = 10_000;
 
-/**
- * Live-feed crops. `indicators` = World Bank/IMF-style codes.
- * `pinkSheet` = Pink Sheet column matchers + unit.
- */
+/** Live-feed crops with static fallbacks if World Bank / Pink Sheet fails. */
 const FEED_MAP = [
   {
     commodity: 'Cotton',
@@ -26,6 +25,7 @@ const FEED_MAP = [
     emoji: '☁️',
     indicators: ['PCOTTIND'],
     pinkSheet: { match: /^cotton/i, unit: 'kg' },
+    fallback: { pricePerKgUsd: 0.95, pricePerKgXof: 570 },
   },
   {
     commodity: 'Maize/Corn',
@@ -33,6 +33,7 @@ const FEED_MAP = [
     emoji: '🌽',
     indicators: ['PMAIZMMT', 'PMAIZMT'],
     pinkSheet: { match: /^maize/i, unit: 'mt' },
+    fallback: { pricePerKgUsd: 0.22, pricePerKgXof: 132 },
   },
   {
     commodity: 'Rice',
@@ -40,6 +41,7 @@ const FEED_MAP = [
     emoji: '🌾',
     indicators: ['PRICENPQ'],
     pinkSheet: { match: /^rice,\s*thai\s*5%/i, unit: 'mt' },
+    fallback: { pricePerKgUsd: 0.42, pricePerKgXof: 252 },
   },
   {
     commodity: 'Groundnut/Peanut',
@@ -47,6 +49,7 @@ const FEED_MAP = [
     emoji: '🥜',
     indicators: ['PGNUTOIL', 'PGNUTS'],
     pinkSheet: { match: /^groundnuts?\b/i, unit: 'mt' },
+    fallback: { pricePerKgUsd: 1.1, pricePerKgXof: 660 },
   },
   {
     commodity: 'Sorghum',
@@ -54,6 +57,67 @@ const FEED_MAP = [
     emoji: '🌾',
     indicators: ['PSORGHMMT', 'PSORUM'],
     pinkSheet: { match: /^sorghum/i, unit: 'mt' },
+    fallback: { pricePerKgUsd: 0.19, pricePerKgXof: 114 },
+  },
+];
+
+/** Reference crops with no live feed — seed only if missing. */
+const REFERENCE_SEEDS = [
+  {
+    commodity: 'Shea Butter',
+    commodityFr: 'Karité',
+    emoji: '🫙',
+    pricePerKgUsd: 1.8,
+    pricePerKgXof: 1080,
+  },
+  {
+    commodity: 'Sesame',
+    commodityFr: 'Sésame',
+    emoji: '🌾',
+    pricePerKgUsd: 1.4,
+    pricePerKgXof: 840,
+  },
+  {
+    commodity: 'Millet',
+    commodityFr: 'Mil',
+    emoji: '🌾',
+    pricePerKgUsd: 0.18,
+    pricePerKgXof: 108,
+  },
+  {
+    commodity: 'Cowpea',
+    commodityFr: 'Niébé',
+    emoji: '🌱',
+    pricePerKgUsd: 0.85,
+    pricePerKgXof: 510,
+  },
+  {
+    commodity: 'Cashew',
+    commodityFr: 'Anacarde',
+    emoji: '🥜',
+    pricePerKgUsd: 2.2,
+    pricePerKgXof: 1320,
+  },
+  {
+    commodity: 'Mango',
+    commodityFr: 'Mangue',
+    emoji: '🥭',
+    pricePerKgUsd: 0.35,
+    pricePerKgXof: 210,
+  },
+  {
+    commodity: 'Moringa',
+    commodityFr: 'Moringa',
+    emoji: '🌿',
+    pricePerKgUsd: 3.5,
+    pricePerKgXof: 2100,
+  },
+  {
+    commodity: 'Fonio',
+    commodityFr: 'Fonio',
+    emoji: '🌾',
+    pricePerKgUsd: 1.2,
+    pricePerKgXof: 720,
   },
 ];
 
@@ -85,7 +149,7 @@ function parseWorldBankSeries(payload) {
     .sort((a, b) => String(a.date).localeCompare(String(b.date)));
 }
 
-async function fetchJson(url, timeoutMs = 20000) {
+async function fetchJson(url, timeoutMs = FETCH_TIMEOUT_MS) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -106,18 +170,18 @@ async function fetchJson(url, timeoutMs = 20000) {
 async function fetchSeriesForIndicator(code) {
   try {
     const wbDataUrl = `${WB_DATA_BASE}${encodeURIComponent(code)}?format=json&mrnev=24&per_page=60`;
-    const wbData = await fetchJson(wbDataUrl);
+    const wbData = await fetchJson(wbDataUrl, FETCH_TIMEOUT_MS);
     const series = parseWorldBankSeries(wbData);
-    if (series.length >= 1) return { series, source: 'World Bank API', unit: 'mt' };
+    if (series.length >= 1) return { series, source: 'World Bank', unit: 'mt' };
   } catch {
     /* next */
   }
 
   try {
     const wbIndUrl = `${WB_INDICATOR_BASE}${encodeURIComponent(code)}?format=json&mrnev=24`;
-    const wbInd = await fetchJson(wbIndUrl);
+    const wbInd = await fetchJson(wbIndUrl, FETCH_TIMEOUT_MS);
     const series = parseWorldBankSeries(wbInd);
-    if (series.length >= 1) return { series, source: 'World Bank API', unit: 'mt' };
+    if (series.length >= 1) return { series, source: 'World Bank', unit: 'mt' };
   } catch {
     /* next */
   }
@@ -130,7 +194,7 @@ async function loadPinkSheetRows() {
     return pinkSheetCache;
   }
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 45000);
+  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(PINK_SHEET_URL, {
       signal: ctrl.signal,
@@ -189,7 +253,6 @@ async function fetchLatestPair(entry) {
     }
   }
 
-  // Pink Sheet Excel fallback (authoritative for these commodities)
   try {
     const rows = await loadPinkSheetRows();
     const series = seriesFromPinkSheet(rows, entry.pinkSheet.match);
@@ -214,7 +277,7 @@ function toUsdPerKg(value, unit) {
   return value / 1000;
 }
 
-async function upsertCropPrice(entry, latestRaw, previousRaw, unit, sourceLabel) {
+async function upsertLivePrice(entry, latestRaw, previousRaw, unit, sourceLabel) {
   const latestUsdKg = toUsdPerKg(latestRaw, unit);
   const previousUsdKg = previousRaw != null ? toUsdPerKg(previousRaw, unit) : null;
   const pricePerKgUsd = Number(latestUsdKg.toFixed(4));
@@ -236,10 +299,9 @@ async function upsertCropPrice(entry, latestRaw, previousRaw, unit, sourceLabel)
         pricePerKgXof,
         weeklyChangePercent,
         trend,
-        sourceMarket: sourceLabel || 'World Bank Pink Sheet',
+        sourceMarket: sourceLabel || 'World Bank',
         commodityFr: entry.commodityFr,
         emoji: entry.emoji,
-        updatedAt: new Date(),
       },
       $setOnInsert: { commodity: entry.commodity },
     },
@@ -249,15 +311,90 @@ async function upsertCropPrice(entry, latestRaw, previousRaw, unit, sourceLabel)
   return { commodity: entry.commodity, pricePerKgUsd, weeklyChangePercent, trend };
 }
 
+async function upsertStaticPrice(entry, sourceMarket) {
+  const pricePerKgUsd = Number(entry.fallback?.pricePerKgUsd ?? entry.pricePerKgUsd);
+  const pricePerKgXof =
+    entry.fallback?.pricePerKgXof ??
+    entry.pricePerKgXof ??
+    Math.round(pricePerKgUsd * XOF_PER_USD);
+
+  await CropPrice.findOneAndUpdate(
+    { commodity: entry.commodity },
+    {
+      $set: {
+        pricePerKgUsd,
+        pricePerKgXof,
+        weeklyChangePercent: 0,
+        trend: 'stable',
+        sourceMarket,
+        commodityFr: entry.commodityFr,
+        emoji: entry.emoji,
+      },
+      $setOnInsert: { commodity: entry.commodity },
+    },
+    { upsert: true, new: true, runValidators: true }
+  );
+
+  return {
+    commodity: entry.commodity,
+    pricePerKgUsd,
+    pricePerKgXof,
+    weeklyChangePercent: 0,
+    trend: 'stable',
+  };
+}
+
+/** Seed reference + feed fallbacks only when a CropPrice row is missing. */
+export async function seedMissingCropPrices() {
+  let seeded = 0;
+  const catalog = [
+    ...FEED_MAP.map((e) => ({
+      commodity: e.commodity,
+      commodityFr: e.commodityFr,
+      emoji: e.emoji,
+      pricePerKgUsd: e.fallback.pricePerKgUsd,
+      pricePerKgXof: e.fallback.pricePerKgXof,
+      sourceMarket: 'Référence',
+    })),
+    ...REFERENCE_SEEDS.map((e) => ({ ...e, sourceMarket: 'Référence' })),
+  ];
+
+  for (const entry of catalog) {
+    const existing = await CropPrice.findOne({ commodity: entry.commodity }).lean();
+    if (existing && num(existing.pricePerKgUsd) != null) continue;
+
+    await CropPrice.findOneAndUpdate(
+      { commodity: entry.commodity },
+      {
+        $set: {
+          pricePerKgUsd: entry.pricePerKgUsd,
+          pricePerKgXof: entry.pricePerKgXof,
+          weeklyChangePercent: existing?.weeklyChangePercent ?? 0,
+          trend: existing?.trend || 'stable',
+          sourceMarket: existing?.sourceMarket || entry.sourceMarket,
+          commodityFr: entry.commodityFr,
+          emoji: entry.emoji,
+        },
+        $setOnInsert: { commodity: entry.commodity },
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
+    seeded += 1;
+  }
+
+  return { seeded };
+}
+
 /**
  * Sync mapped commodities from live feeds into CropPrice.
- * Unmapped crops (Shea, Sesame, etc.) are left untouched.
+ * Uses static fallbacks when feeds fail. Seeds missing reference crops.
  * @param {{ force?: boolean }} [opts]
  */
 export async function syncCommodityPrices(opts = {}) {
   const force = Boolean(opts.force);
 
   if (!force && lastSyncAt && Date.now() - lastSyncAt.getTime() < CACHE_MS) {
+    await seedMissingCropPrices();
     return {
       synced: 0,
       skipped: FEED_MAP.length,
@@ -270,6 +407,7 @@ export async function syncCommodityPrices(opts = {}) {
   if (syncInFlight) return syncInFlight;
 
   syncInFlight = (async () => {
+    const seed = await seedMissingCropPrices();
     let synced = 0;
     let skipped = 0;
     const results = [];
@@ -277,32 +415,50 @@ export async function syncCommodityPrices(opts = {}) {
     for (const entry of FEED_MAP) {
       try {
         const pair = await fetchLatestPair(entry);
-        if (!pair || pair.latest?.value == null) {
-          skipped += 1;
-          results.push({ commodity: entry.commodity, status: 'skipped', reason: 'no_data' });
-          continue;
+        if (pair && pair.latest?.value != null) {
+          const updated = await upsertLivePrice(
+            entry,
+            pair.latest.value,
+            pair.previous?.value ?? null,
+            pair.unit,
+            pair.source
+          );
+          synced += 1;
+          results.push({ ...updated, status: 'synced', feed: pair.code });
+        } else {
+          const updated = await upsertStaticPrice(entry, 'Référence');
+          synced += 1;
+          results.push({ ...updated, status: 'fallback', reason: 'no_live_data' });
         }
-        const updated = await upsertCropPrice(
-          entry,
-          pair.latest.value,
-          pair.previous?.value ?? null,
-          pair.unit,
-          pair.source
-        );
-        synced += 1;
-        results.push({ ...updated, status: 'synced', feed: pair.code });
       } catch (err) {
-        skipped += 1;
-        results.push({
-          commodity: entry.commodity,
-          status: 'skipped',
-          reason: err?.message || 'error',
-        });
+        try {
+          const updated = await upsertStaticPrice(entry, 'Référence');
+          synced += 1;
+          results.push({
+            ...updated,
+            status: 'fallback',
+            reason: err?.message || 'error',
+          });
+        } catch (inner) {
+          skipped += 1;
+          results.push({
+            commodity: entry.commodity,
+            status: 'skipped',
+            reason: inner?.message || err?.message || 'error',
+          });
+        }
       }
     }
 
     lastSyncAt = new Date();
-    return { synced, skipped, lastSyncAt, cached: false, results };
+    return {
+      synced,
+      skipped,
+      seeded: seed.seeded,
+      lastSyncAt,
+      cached: false,
+      results,
+    };
   })();
 
   try {
@@ -312,8 +468,53 @@ export async function syncCommodityPrices(opts = {}) {
   }
 }
 
+/**
+ * Kick off sync in the background and return immediately (for HTTP handlers).
+ */
+export function startCommodityPriceSync(opts = {}) {
+  const startedAt = new Date();
+  const promise = syncCommodityPrices({ force: Boolean(opts.force) })
+    .then((r) => {
+      console.log(
+        `📈 Commodity prices sync done: synced=${r.synced} skipped=${r.skipped}${r.cached ? ' (cached)' : ''}`
+      );
+      return r;
+    })
+    .catch((e) => {
+      console.warn('📈 Commodity price sync failed:', e.message);
+      throw e;
+    });
+
+  return {
+    status: 'sync started',
+    lastSyncAt: lastSyncAt || startedAt,
+    promise,
+  };
+}
+
 export function getLastCommodityPriceSyncAt() {
   return lastSyncAt;
+}
+
+/** Normalize a CropPrice lean doc for API clients. */
+export function serializeCropPrice(p) {
+  if (!p) return null;
+  const usd = num(p.pricePerKgUsd);
+  const xof =
+    num(p.pricePerKgXof) ?? (usd != null ? Math.round(usd * XOF_PER_USD) : null);
+  return {
+    _id: p._id,
+    commodity: p.commodity,
+    commodityFr: p.commodityFr || p.commodity,
+    emoji: p.emoji || '🌾',
+    pricePerKgUsd: usd,
+    pricePerKgXof: xof,
+    weeklyChangePercent: num(p.weeklyChangePercent) ?? 0,
+    trend: p.trend || 'stable',
+    sourceMarket: p.sourceMarket || 'Référence',
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
 }
 
 export default syncCommodityPrices;

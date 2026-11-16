@@ -5,6 +5,26 @@ import { authHeaders } from '../../utils/adminSession';
 
 const API = (API_BASE_URL || '').replace(/\/$/, '');
 
+function toEditRow(p) {
+  const usd = Number(p.pricePerKgUsd);
+  const xof = Number(p.pricePerKgXof);
+  return {
+    pricePerKgUsd: Number.isFinite(usd) ? String(usd) : '',
+    pricePerKgXof: Number.isFinite(xof) ? String(xof) : '',
+    weeklyChangePercent: Number.isFinite(Number(p.weeklyChangePercent))
+      ? String(p.weeklyChangePercent)
+      : '0',
+    trend: p.trend || 'stable',
+    sourceMarket: p.sourceMarket || (p._id ? 'World Bank' : 'Référence'),
+  };
+}
+
+function sourceLabel(p, isFr) {
+  const s = String(p.sourceMarket || '').trim();
+  if (s) return s;
+  return isFr ? 'Référence' : 'Reference';
+}
+
 export default function MarketPricesTab({ token, isFr }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,20 +41,7 @@ export default function MarketPricesTab({ token, isFr }) {
       const d = await r.json();
       const list = Array.isArray(d.prices) ? d.prices : [];
       setRows(list);
-      setEdit(
-        Object.fromEntries(
-          list.map((p) => [
-            p.commodity,
-            {
-              pricePerKgUsd: p.pricePerKgUsd ?? '',
-              pricePerKgXof: p.pricePerKgXof ?? '',
-              weeklyChangePercent: p.weeklyChangePercent ?? 0,
-              trend: p.trend || 'stable',
-              sourceMarket: p.sourceMarket || '',
-            },
-          ])
-        )
-      );
+      setEdit(Object.fromEntries(list.map((p) => [p.commodity, toEditRow(p)])));
     } catch (e) {
       setErr(e.message || 'Load failed');
     } finally {
@@ -55,17 +62,22 @@ export default function MarketPricesTab({ token, isFr }) {
         method: 'POST',
         headers: authHeaders(token),
       });
-      const d = await r.json();
+      const d = await r.json().catch(() => ({}));
       if (!r.ok || d.success === false) throw new Error(d.error || 'Sync failed');
+
       setMsg(
         isFr
-          ? `Synchronisé: ${d.synced} · ignorés: ${d.skipped}`
-          : `Synced: ${d.synced} · skipped: ${d.skipped}`
+          ? `Synchronisation démarrée${d.seeded ? ` · ${d.seeded} cultures ajoutées` : ''}`
+          : `Sync started${d.seeded ? ` · ${d.seeded} crops seeded` : ''}`
       );
+
+      // Immediate reload (seeded rows), then refresh again after background sync
       await load();
+      setTimeout(() => {
+        load().finally(() => setSyncing(false));
+      }, 4000);
     } catch (e) {
       setErr(e.message || 'Sync failed');
-    } finally {
       setSyncing(false);
     }
   };
@@ -104,7 +116,7 @@ export default function MarketPricesTab({ token, isFr }) {
   const setField = (commodity, field, value) => {
     setEdit((prev) => ({
       ...prev,
-      [commodity]: { ...prev[commodity], [field]: value },
+      [commodity]: { ...(prev[commodity] || toEditRow({})), [field]: value },
     }));
   };
 
@@ -117,8 +129,8 @@ export default function MarketPricesTab({ token, isFr }) {
           </h2>
           <p className="text-sm text-gray-500">
             {isFr
-              ? 'Références CropPrice (World Bank / IMF + édition manuelle)'
-              : 'CropPrice references (World Bank / IMF + manual edit)'}
+              ? 'Références CropPrice (World Bank / Pink Sheet + édition manuelle)'
+              : 'CropPrice references (World Bank / Pink Sheet + manual edit)'}
           </p>
         </div>
         <button
@@ -143,7 +155,7 @@ export default function MarketPricesTab({ token, isFr }) {
         </div>
       ) : null}
 
-      {loading ? (
+      {loading && rows.length === 0 ? (
         <div className="flex justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-[#1a3c2e]" />
         </div>
@@ -157,14 +169,14 @@ export default function MarketPricesTab({ token, isFr }) {
                 <th className="px-3 py-3">XOF/kg</th>
                 <th className="px-3 py-3">Trend</th>
                 <th className="px-3 py-3">Δ %</th>
-                <th className="px-3 py-3">{isFr ? 'Source' : 'Source'}</th>
+                <th className="px-3 py-3">Source</th>
                 <th className="px-3 py-3">updatedAt</th>
                 <th className="px-3 py-3" />
               </tr>
             </thead>
             <tbody>
               {rows.map((p) => {
-                const e = edit[p.commodity] || {};
+                const e = edit[p.commodity] || toEditRow(p);
                 return (
                   <tr key={p.commodity} className="border-t border-gray-100">
                     <td className="px-3 py-2 font-medium text-[#1a3c2e]">
@@ -175,7 +187,7 @@ export default function MarketPricesTab({ token, isFr }) {
                       <input
                         type="number"
                         step="0.0001"
-                        className="w-24 rounded-lg border border-gray-300 px-2 py-1"
+                        className="w-24 rounded-lg border border-gray-300 px-2 py-1 text-gray-900 bg-white"
                         value={e.pricePerKgUsd}
                         onChange={(ev) => setField(p.commodity, 'pricePerKgUsd', ev.target.value)}
                       />
@@ -183,15 +195,15 @@ export default function MarketPricesTab({ token, isFr }) {
                     <td className="px-3 py-2">
                       <input
                         type="number"
-                        className="w-28 rounded-lg border border-gray-300 px-2 py-1"
+                        className="w-28 rounded-lg border border-gray-300 px-2 py-1 text-gray-900 bg-white"
                         value={e.pricePerKgXof}
                         onChange={(ev) => setField(p.commodity, 'pricePerKgXof', ev.target.value)}
                       />
                     </td>
                     <td className="px-3 py-2">
                       <select
-                        className="rounded-lg border border-gray-300 px-2 py-1"
-                        value={e.trend}
+                        className="rounded-lg border border-gray-300 px-2 py-1 text-gray-900 bg-white"
+                        value={e.trend || 'stable'}
                         onChange={(ev) => setField(p.commodity, 'trend', ev.target.value)}
                       >
                         <option value="up">up</option>
@@ -203,7 +215,7 @@ export default function MarketPricesTab({ token, isFr }) {
                       <input
                         type="number"
                         step="0.1"
-                        className="w-20 rounded-lg border border-gray-300 px-2 py-1"
+                        className="w-20 rounded-lg border border-gray-300 px-2 py-1 text-gray-900 bg-white"
                         value={e.weeklyChangePercent}
                         onChange={(ev) =>
                           setField(p.commodity, 'weeklyChangePercent', ev.target.value)
@@ -212,9 +224,10 @@ export default function MarketPricesTab({ token, isFr }) {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        className="w-36 rounded-lg border border-gray-300 px-2 py-1"
-                        value={e.sourceMarket}
+                        className="w-40 rounded-lg border border-gray-300 px-2 py-1 text-gray-900 bg-white"
+                        value={e.sourceMarket || sourceLabel(p, isFr)}
                         onChange={(ev) => setField(p.commodity, 'sourceMarket', ev.target.value)}
+                        placeholder={isFr ? 'Référence' : 'Reference'}
                       />
                     </td>
                     <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">

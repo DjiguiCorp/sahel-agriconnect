@@ -6,7 +6,9 @@ import ProduceListing from '../models/ProduceListing.js';
 import CropPrice from '../models/CropPrice.js';
 import { buildPilotListings } from '../lib/pilotMarketplaceListings.js';
 import {
-  syncCommodityPrices,
+  startCommodityPriceSync,
+  seedMissingCropPrices,
+  serializeCropPrice,
   getLastCommodityPriceSyncAt,
 } from '../services/commodityPriceSyncService.js';
 
@@ -54,34 +56,50 @@ router.get('/listings', async (req, res) => {
 // GET /api/marketplace/prices — weekly reference crop prices (public)
 router.get('/prices', async (req, res) => {
   try {
-    const prices = await CropPrice.find().sort({ commodity: 1 }).lean();
-    if (prices.length === 0) {
-      return res.json({
-        success: true,
-        prices: _defaultPrices(),
-        updatedAt: new Date(),
-      });
+    // Ensure reference crops exist even before first live sync completes
+    try {
+      await seedMissingCropPrices();
+    } catch (seedErr) {
+      console.warn('CropPrice seed on GET failed:', seedErr.message);
     }
+
+    let prices = await CropPrice.find().sort({ commodity: 1 }).lean();
+    if (!prices.length) {
+      prices = _defaultPrices();
+    }
+
+    const normalized = prices
+      .map((p) => serializeCropPrice(p))
+      .filter((p) => p && p.commodity && p.pricePerKgUsd != null);
+
+    const updatedAt =
+      normalized.reduce((latest, p) => {
+        const t = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
+        return t > latest ? t : latest;
+      }, 0) || Date.now();
+
     return res.json({
       success: true,
-      prices,
-      updatedAt: prices[0]?.updatedAt,
+      prices: normalized,
+      updatedAt: new Date(updatedAt),
+      lastSyncAt: getLastCommodityPriceSyncAt(),
     });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
   }
 });
 
-// POST /api/marketplace/prices/sync — admin only, force live feed sync
+// POST /api/marketplace/prices/sync — admin only; responds immediately, syncs in background
 router.post('/prices/sync', authenticateToken, async (req, res) => {
   try {
-    const result = await syncCommodityPrices({ force: true });
+    // Seed missing rows first so the admin table is complete right away
+    const seed = await seedMissingCropPrices();
+    const started = startCommodityPriceSync({ force: true });
     return res.json({
       success: true,
-      synced: result.synced,
-      skipped: result.skipped,
-      lastSyncAt: result.lastSyncAt || getLastCommodityPriceSyncAt(),
-      results: result.results,
+      status: started.status,
+      seeded: seed.seeded,
+      lastSyncAt: started.lastSyncAt || getLastCommodityPriceSyncAt(),
     });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message || 'Sync failed' });
