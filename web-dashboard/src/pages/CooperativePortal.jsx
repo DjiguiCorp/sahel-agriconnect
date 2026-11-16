@@ -18,7 +18,54 @@ const PAYMENT_METHODS = [
 const INPUT_LIGHT =
   'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20';
 
-function GrowthLockedPanel({ isFr, navigate }) {
+function GrowthUpgradeButton({
+  isFr,
+  navigate,
+  verifiedCount = 0,
+  className = '',
+  labelFr = 'Mettre à niveau',
+  labelEn = 'Upgrade',
+  showPrice = false,
+}) {
+  const ready = Number(verifiedCount) >= 51;
+  const label = showPrice
+    ? isFr
+      ? `${labelFr} — $199/an`
+      : `${labelEn} — $199/year`
+    : isFr
+      ? labelFr
+      : labelEn;
+  const tip = isFr
+    ? `Vous avez ${verifiedCount} membres vérifiés. Atteignez 51 pour débloquer le plan Croissance.`
+    : `You have ${verifiedCount} verified members. Reach 51 to unlock Growth.`;
+
+  if (!ready) {
+    return (
+      <button
+        type="button"
+        disabled
+        title={tip}
+        aria-label={tip}
+        className={`inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-300 text-gray-500 font-bold text-sm cursor-not-allowed opacity-80 ${className}`}
+      >
+        <Lock className="w-3.5 h-3.5" />
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('/cooperative-upgrade')}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition-all ${className}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function GrowthLockedPanel({ isFr, navigate, verifiedCount = 0 }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-200 px-6">
       <span className="text-4xl mb-4">🔒</span>
@@ -27,16 +74,18 @@ function GrowthLockedPanel({ isFr, navigate }) {
       </p>
       <p className="text-gray-500 text-sm mb-6 max-w-sm">
         {isFr
-          ? "Les petites coopératives (≤50 membres) ne sont pas éligibles à la certification car l'export requiert quantité et qualité. Passez à 51+ membres et mettez à niveau pour débloquer."
-          : 'Smaller cooperatives (≤50 members) are not eligible for certification because export requires both quantity and quality. Grow to 51+ members and upgrade to unlock.'}
+          ? "Les petites coopératives (≤50 membres) ne sont pas éligibles à la certification car l'export requiert quantité et qualité. Passez à 51+ membres vérifiés et mettez à niveau pour débloquer."
+          : 'Smaller cooperatives (≤50 members) are not eligible for certification because export requires both quantity and quality. Grow to 51+ verified members and upgrade to unlock.'}
       </p>
-      <button
-        type="button"
-        onClick={() => navigate('/cooperative-upgrade')}
-        className="px-6 py-3 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition-all"
-      >
-        {isFr ? 'Mettre à niveau — $199/an' : 'Upgrade — $199/year'}
-      </button>
+      <GrowthUpgradeButton
+        isFr={isFr}
+        navigate={navigate}
+        verifiedCount={verifiedCount}
+        showPrice
+        className="px-6 py-3"
+        labelFr="Mettre à niveau"
+        labelEn="Upgrade"
+      />
     </div>
   );
 }
@@ -695,13 +744,14 @@ export default function CooperativePortal() {
                   : 'Certification, AfriYield & export available from 51 verified members (Growth plan $199/year)'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => navigate('/cooperative-upgrade')}
-              className="px-4 py-2 rounded-lg bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition-all shrink-0"
-            >
-              {isFr ? 'Mettre à niveau' : 'Upgrade'}
-            </button>
+            <GrowthUpgradeButton
+              isFr={isFr}
+              navigate={navigate}
+              verifiedCount={verifiedMemberCount}
+              className="px-4 py-2 text-xs shrink-0"
+              labelFr="Mettre à niveau"
+              labelEn="Upgrade"
+            />
           </div>
         ) : (
           <div className="flex items-center gap-3 p-4 rounded-xl border border-teal-500/40 bg-teal-50 mb-2">
@@ -795,20 +845,35 @@ export default function CooperativePortal() {
                   ? `${Math.min(progressMembers, 51)} / 51 membres vérifiés pour débloquer les formations, la certification et l'export`
                   : `${Math.min(progressMembers, 51)} / 51 verified members to unlock training, certification and export`}
               </p>
-              {progressMembers >= 51 && coopTier === 'starter' ? (
-                <div className="rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <p className="text-sm font-semibold text-amber-900">
-                    {isFr
-                      ? 'Vous avez atteint 51 membres — passez au plan Croissance pour tout débloquer'
-                      : "You've reached 51 members — upgrade to unlock everything"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/cooperative-upgrade')}
-                    className="shrink-0 px-4 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400"
+              {coopTier === 'starter' ? (
+                <div
+                  className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
+                    progressMembers >= 51
+                      ? 'border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50'
+                      : 'border-gray-200 bg-gray-50'
+                  }`}
+                >
+                  <p
+                    className={`text-sm font-semibold ${
+                      progressMembers >= 51 ? 'text-amber-900' : 'text-gray-600'
+                    }`}
                   >
-                    {isFr ? 'Mettre à niveau' : 'Upgrade'}
-                  </button>
+                    {progressMembers >= 51
+                      ? isFr
+                        ? 'Vous avez atteint 51 membres — passez au plan Croissance pour tout débloquer'
+                        : "You've reached 51 members — upgrade to unlock everything"
+                      : isFr
+                        ? `Vous avez ${progressMembers} membres vérifiés. Atteignez 51 pour débloquer le plan Croissance.`
+                        : `You have ${progressMembers} verified members. Reach 51 to unlock the Growth plan.`}
+                  </p>
+                  <GrowthUpgradeButton
+                    isFr={isFr}
+                    navigate={navigate}
+                    verifiedCount={progressMembers}
+                    className="shrink-0 px-4 py-2.5"
+                    labelFr="Mettre à niveau"
+                    labelEn="Upgrade"
+                  />
                 </div>
               ) : null}
             </div>
@@ -1289,7 +1354,7 @@ export default function CooperativePortal() {
               </Link>
             </div>
           ) : (
-            <GrowthLockedPanel isFr={isFr} navigate={navigate} />
+            <GrowthLockedPanel isFr={isFr} navigate={navigate} verifiedCount={verifiedMemberCount} />
           )
         )}
 
@@ -1313,7 +1378,7 @@ export default function CooperativePortal() {
               </a>
             </div>
           ) : (
-            <GrowthLockedPanel isFr={isFr} navigate={navigate} />
+            <GrowthLockedPanel isFr={isFr} navigate={navigate} verifiedCount={verifiedMemberCount} />
           )
         )}
 
@@ -1328,7 +1393,7 @@ export default function CooperativePortal() {
               </p>
             </div>
           ) : (
-            <GrowthLockedPanel isFr={isFr} navigate={navigate} />
+            <GrowthLockedPanel isFr={isFr} navigate={navigate} verifiedCount={verifiedMemberCount} />
           )
         )}
 
@@ -1618,13 +1683,14 @@ export default function CooperativePortal() {
                     style={{ width: `${Math.min(100, Math.round((progressMembers / 51) * 100))}%` }}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate('/cooperative-upgrade')}
-                  className="px-6 py-3 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition-all"
-                >
-                  {isFr ? 'Passer au plan Croissance' : 'Upgrade to Growth'}
-                </button>
+                <GrowthUpgradeButton
+                  isFr={isFr}
+                  navigate={navigate}
+                  verifiedCount={progressMembers}
+                  className="px-6 py-3"
+                  labelFr="Passer au plan Croissance"
+                  labelEn="Upgrade to Growth"
+                />
               </div>
             ) : (
               <div>

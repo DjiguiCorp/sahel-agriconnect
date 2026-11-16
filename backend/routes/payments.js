@@ -19,6 +19,7 @@ import {
   investorNotificationCopy,
 } from '../utils/investorNotificationCopy.js';
 import rateLimit from 'express-rate-limit';
+import { assertCoopGrowthCheckoutAllowed } from '../services/coopMemberUpgrade.js';
 
 const router = express.Router();
 
@@ -304,6 +305,28 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
       ['investor', 'afriyield', 'afriyield_access'].includes(tier.toLowerCase())
     ) {
       extraMeta.type = 'afriyield_access';
+    }
+
+    // Growth upgrade ($199/year) — require 51 verified members before Stripe
+    const tierLower = tier.toLowerCase();
+    if (tierLower === 'cooperative_growth') {
+      const gate = await assertCoopGrowthCheckoutAllowed({
+        email: emailNorm,
+        cooperativeId:
+          req.body?.cooperativeId ||
+          req.body?.metadata?.cooperativeId ||
+          extraMeta.cooperativeId,
+      });
+      if (!gate.ok) {
+        return res.status(gate.status || 403).json({
+          success: false,
+          error: gate.error,
+          verifiedMemberCount: gate.verifiedMemberCount ?? 0,
+          required: 51,
+        });
+      }
+      extraMeta.verifiedMemberCount = String(gate.verifiedMemberCount);
+      extraMeta.cooperativeId = gate.cooperativeId;
     }
 
     const baseFront = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';

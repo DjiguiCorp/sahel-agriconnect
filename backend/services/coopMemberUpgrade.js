@@ -15,16 +15,72 @@ const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 const FRONTEND = (process.env.FRONTEND_URL || 'https://sahelagriconnect.com').replace(/\/$/, '');
 
 /**
- * Platform-verified members: max of email-verified Farmers linked by cooperativeId
- * and approved CooperativeJoinRequests.
+ * Platform-verified members for Growth unlock:
+ * - Farmers linked to the coop with emailVerified: true
+ * - Approved CooperativeJoinRequests
+ * Deduplicated by farmerId (a farmer may appear in both).
  */
 export async function getVerifiedMemberCount(cooperativeId) {
   if (!cooperativeId) return 0;
   const [verifiedFarmers, approvedJoins] = await Promise.all([
-    Farmer.countDocuments({ cooperativeId, emailVerified: true }),
-    CooperativeJoinRequest.countDocuments({ cooperativeId, status: 'approved' }),
+    Farmer.find({ cooperativeId, emailVerified: true }).select('_id').lean(),
+    CooperativeJoinRequest.find({ cooperativeId, status: 'approved' })
+      .select('farmerId')
+      .lean(),
   ]);
-  return Math.max(verifiedFarmers, approvedJoins);
+  const ids = new Set();
+  for (const f of verifiedFarmers) {
+    if (f?._id) ids.add(String(f._id));
+  }
+  for (const j of approvedJoins) {
+    if (j?.farmerId) ids.add(String(j.farmerId));
+  }
+  return ids.size;
+}
+
+export const GROWTH_MIN_VERIFIED_MEMBERS = 51;
+
+export const GROWTH_GATE_ERROR_FR =
+  'Vous devez avoir 51 membres vérifiés pour accéder au plan Croissance.';
+
+/**
+ * Resolve coop + verified count; used to gate Growth Stripe checkout.
+ */
+export async function assertCoopGrowthCheckoutAllowed({ email, cooperativeId }) {
+  let coop = null;
+  if (cooperativeId) {
+    coop = await CooperativePlatformRegistration.findById(cooperativeId).lean();
+  }
+  if (!coop && email) {
+    const emailNorm = String(email).toLowerCase().trim();
+    coop = await CooperativePlatformRegistration.findOne({ email: emailNorm })
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+  if (!coop) {
+    return {
+      ok: false,
+      status: 404,
+      error: 'Cooperative not found for Growth checkout.',
+      verifiedMemberCount: 0,
+    };
+  }
+  const verifiedMemberCount = await getVerifiedMemberCount(coop._id);
+  if (verifiedMemberCount < GROWTH_MIN_VERIFIED_MEMBERS) {
+    return {
+      ok: false,
+      status: 403,
+      error: GROWTH_GATE_ERROR_FR,
+      verifiedMemberCount,
+      cooperativeId: String(coop._id),
+    };
+  }
+  return {
+    ok: true,
+    verifiedMemberCount,
+    cooperativeId: String(coop._id),
+    coop,
+  };
 }
 
 /**

@@ -29,6 +29,8 @@ import DeviceSession from '../models/DeviceSession.js';
 import {
   maybeUpgradeCoopAt51,
   getVerifiedMemberCount,
+  GROWTH_MIN_VERIFIED_MEMBERS,
+  GROWTH_GATE_ERROR_FR,
   sendJoinRequestToLeaderEmail,
   sendJoinRequestOutcomeEmail,
   sendCoopFlaggedEmail,
@@ -1067,12 +1069,41 @@ router.post('/my-portal/upgrade', authCoop, async (req, res) => {
     if (req.coop.tier === 'growth' && req.coop.paymentReceived) {
       return res.json({ success: true, tier: 'growth', alreadyActive: true });
     }
+    const verifiedMemberCount = await getVerifiedMemberCount(req.coop._id);
+    if (verifiedMemberCount < GROWTH_MIN_VERIFIED_MEMBERS) {
+      return res.status(403).json({
+        success: false,
+        error: GROWTH_GATE_ERROR_FR,
+        verifiedMemberCount,
+        required: GROWTH_MIN_VERIFIED_MEMBERS,
+        requiresCheckout: false,
+      });
+    }
     res.json({
       success: true,
       tier: req.coop.tier || 'starter',
       requiresCheckout: true,
       amountUsd: 199,
       tierKey: 'cooperative_growth',
+      verifiedMemberCount,
+      required: GROWTH_MIN_VERIFIED_MEMBERS,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/growth-eligibility
+router.get('/my-portal/growth-eligibility', authCoop, async (req, res) => {
+  try {
+    const verifiedMemberCount = await getVerifiedMemberCount(req.coop._id);
+    const eligible = verifiedMemberCount >= GROWTH_MIN_VERIFIED_MEMBERS;
+    res.json({
+      success: true,
+      eligible,
+      verifiedMemberCount,
+      required: GROWTH_MIN_VERIFIED_MEMBERS,
+      error: eligible ? null : GROWTH_GATE_ERROR_FR,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
