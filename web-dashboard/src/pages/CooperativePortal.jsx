@@ -143,6 +143,9 @@ export default function CooperativePortal() {
   const [loginError, setLoginError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
+  const [dossierBusy, setDossierBusy] = useState(false);
+  const [dossierError, setDossierError] = useState('');
+
   const [showChangePw, setShowChangePw] = useState(false);
   const [newPw, setNewPw] = useState('');
   const [pwState, setPwState] = useState({ loading: false, ok: false, err: '' });
@@ -1529,20 +1532,93 @@ export default function CooperativePortal() {
 
         {activeTab === 'certification' && !loading && (
           isGrowth ? (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h3 className="font-bold text-[#1a3c2e] mb-2">🏅 {isFr ? 'Certification' : 'Certification'}</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                {isFr
-                  ? 'Votre plan Croissance débloque le workflow de certification et le parcours USDA (partenariat DSU).'
-                  : 'Your Growth plan unlocks the certification workflow and USDA pathway (DSU partnership).'}
-              </p>
-              <Link
-                to="/farmer-certification"
-                className="inline-flex px-4 py-2 rounded-xl text-sm font-bold text-white"
-                style={{ background: '#1a3c2e' }}
-              >
-                {isFr ? 'Ouvrir le programme de certification →' : 'Open certification program →'}
-              </Link>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+              <div>
+                <h3 className="font-bold text-[#1a3c2e] mb-2">🏅 {isFr ? 'Certification' : 'Certification'}</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {isFr
+                    ? 'Votre plan Croissance débloque le workflow de certification et le parcours USDA (partenariat DSU).'
+                    : 'Your Growth plan unlocks the certification workflow and USDA pathway (DSU partnership).'}
+                </p>
+                <Link
+                  to="/farmer-certification"
+                  className="inline-flex px-4 py-2 rounded-xl text-sm font-bold text-white"
+                  style={{ background: '#1a3c2e' }}
+                >
+                  {isFr ? 'Ouvrir le programme de certification →' : 'Open certification program →'}
+                </Link>
+              </div>
+
+              <div className="border-t border-gray-100 pt-5">
+                <h4 className="font-bold text-[#1a3c2e] text-sm mb-2">
+                  {isFr ? 'Dossier de certification ICS' : 'ICS certification dossier'}
+                </h4>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 mb-4">
+                  {isFr
+                    ? 'Ce dossier est généré automatiquement à partir des données de votre coopérative. Il peut être soumis directement à Ecocert, Control Union ou tout autre organisme certificateur.'
+                    : 'This dossier is automatically generated from your cooperative data. It can be submitted directly to Ecocert, Control Union or any other certification body.'}
+                </div>
+                {dossierError ? (
+                  <p className="text-sm text-red-600 mb-3">{dossierError}</p>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={dossierBusy || !token}
+                  onClick={async () => {
+                    setDossierBusy(true);
+                    setDossierError('');
+                    try {
+                      const lang = String(i18n.language || 'fr').toLowerCase().startsWith('en')
+                        ? 'en'
+                        : 'fr';
+                      const r = await fetch(
+                        `${API}/api/certification-dossier/generate?lang=${lang}`,
+                        { headers }
+                      );
+                      if (!r.ok) {
+                        throw new Error(
+                          isFr
+                            ? 'Erreur lors de la génération du dossier. Veuillez réessayer.'
+                            : 'Error generating dossier. Please try again.'
+                        );
+                      }
+                      const blob = await r.blob();
+                      const cd = r.headers.get('Content-Disposition') || '';
+                      const match = cd.match(/filename="?([^"]+)"?/i);
+                      const filename =
+                        match?.[1] ||
+                        `dossier-certification-${lang}-${new Date().toISOString().slice(0, 10)}.pdf`;
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = filename;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      setDossierError(
+                        isFr
+                          ? 'Erreur lors de la génération du dossier. Veuillez réessayer.'
+                          : 'Error generating dossier. Please try again.'
+                      );
+                    } finally {
+                      setDossierBusy(false);
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                  style={{ background: '#1a3c2e' }}
+                >
+                  {dossierBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {dossierBusy
+                    ? isFr
+                      ? 'Génération…'
+                      : 'Generating…'
+                    : isFr
+                      ? 'Générer le dossier'
+                      : 'Generate Dossier'}
+                </button>
+              </div>
             </div>
           ) : (
             <GrowthLockedPanel
