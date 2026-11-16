@@ -11,6 +11,7 @@ import {
   DuesPaymentsPanel,
   PaymentStatusDot,
 } from '../components/CoopMemberManagementPanels';
+import ICSScorePanel from '../components/ICSScorePanel';
 import { cropLabel } from '../lib/crops';
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -718,6 +719,10 @@ export default function CooperativePortal() {
       label: isFr
         ? `🌾 Productions (${harvestLogs.length || data?.produceListings?.length || 0})`
         : `🌾 Produce (${harvestLogs.length || data?.produceListings?.length || 0})`,
+    },
+    {
+      key: 'ics',
+      label: isFr ? '📊 Score ICS' : '📊 ICS Score',
     },
     {
       key: 'certification',
@@ -1517,6 +1522,10 @@ export default function CooperativePortal() {
             </div>
           </div>
         )}
+
+        {activeTab === 'ics' && !loading && token ? (
+          <ICSScorePanel API={API} headers={headers} isFr={isFr} />
+        ) : null}
 
         {activeTab === 'certification' && !loading && (
           isGrowth ? (

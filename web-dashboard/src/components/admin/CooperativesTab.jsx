@@ -117,6 +117,13 @@ function InviteFarmersSection({ coop, isFr }) {
   );
 }
 
+const ICS_DOT = {
+  not_ready: '#dc2626',
+  developing: '#ea580c',
+  nearly_ready: '#ca8a04',
+  audit_ready: '#16a34a',
+};
+
 export default function CooperativesTab({ token, isFr, globalCountryFilter = '' }) {
   const [cooperatives, setCooperatives] = useState([]);
   const [farmers, setFarmers] = useState([]);
@@ -127,6 +134,8 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
   const [activating, setActivating] = useState(null);
   const [growthCoops, setGrowthCoops] = useState([]);
   const [growthBusy, setGrowthBusy] = useState(null);
+  const [icsByCoopId, setIcsByCoopId] = useState({});
+  const [icsComputing, setIcsComputing] = useState(null);
 
   const headers = useMemo(
     () => ({
@@ -147,6 +156,67 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     }
   };
 
+  const fetchIcsScores = async () => {
+    if (!token) return;
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/ics-scores/admin/all`, { headers });
+      const d = await r.json().catch(() => ({}));
+      const map = {};
+      for (const s of d.scores || []) {
+        if (s?.cooperativeId) map[String(s.cooperativeId)] = s;
+      }
+      setIcsByCoopId(map);
+    } catch {
+      setIcsByCoopId({});
+    }
+  };
+
+  const computeIcsForCoop = async (coopId, e) => {
+    e?.stopPropagation?.();
+    if (!token || !coopId) return;
+    setIcsComputing(coopId);
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/ics-scores/admin/recompute/${coopId}`, {
+        method: 'POST',
+        headers,
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.score) {
+        setIcsByCoopId((prev) => ({ ...prev, [String(coopId)]: d.score }));
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setIcsComputing(null);
+    }
+  };
+
+  const renderIcsCell = (coopId) => {
+    const ics = icsByCoopId[String(coopId)];
+    if (!ics) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs text-gray-400" onClick={(e) => e.stopPropagation()}>
+          —
+          <button
+            type="button"
+            disabled={icsComputing === coopId}
+            onClick={(e) => computeIcsForCoop(coopId, e)}
+            className="text-[10px] font-semibold text-brand-forest underline disabled:opacity-50"
+          >
+            {icsComputing === coopId ? '…' : isFr ? 'Calculer' : 'Compute'}
+          </button>
+        </span>
+      );
+    }
+    const dot = ICS_DOT[ics.readinessLevel] || ICS_DOT.not_ready;
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-brand-forest">
+        <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} title={ics.readinessLevel} />
+        {ics.scoreTotal ?? 0}/100
+      </span>
+    );
+  };
+
   const fetchCooperatives = async () => {
     if (!token) return;
     setLoading(true);
@@ -158,7 +228,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
       const coopList = Array.isArray(coops) ? coops : coops.cooperatives || coops.registrations || [];
       setCooperatives(coopList);
       setFarmers(Array.isArray(farm) ? farm : farm.farmers || []);
-      await fetchGrowthCoops();
+      await Promise.all([fetchGrowthCoops(), fetchIcsScores()]);
     } catch {
       /* ignore */
     } finally {
@@ -695,6 +765,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                     isFr ? 'Leader' : 'Leader',
                     isFr ? 'Déclarés' : 'Declared',
                     isFr ? 'Vérifiés' : 'Verified',
+                    'ICS',
                     isFr ? 'Paiement' : 'Payment',
                     isFr ? 'Statut' : 'Status',
                     isFr ? 'Actions' : 'Actions',
@@ -733,6 +804,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                       <td className="px-3 py-3 font-mono text-xs font-bold text-[#1a3c2e]">
                         {c.verifiedMemberCount ?? 0}
                       </td>
+                      <td className="px-3 py-3">{renderIcsCell(c._id)}</td>
                       <td className="px-3 py-3 text-xs text-gray-500">
                         {c.paymentDate ? new Date(c.paymentDate).toLocaleDateString() : '—'}
                       </td>
@@ -912,7 +984,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                <div className="grid grid-cols-4 gap-2 mb-3 text-center">
                   <div className="bg-gray-50 rounded-lg p-2">
                     <p className="text-lg font-bold text-brand-forest font-mono">
                       {coop.memberCount || coopFarmers.length || 0}
@@ -922,6 +994,10 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                   <div className="bg-gray-50 rounded-lg p-2">
                     <p className="text-sm font-bold text-amber-600">{cert}</p>
                     <p className="text-xs text-gray-400">{isFr ? 'Certification' : 'Certification'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+                    {renderIcsCell(coop._id)}
+                    <p className="text-xs text-gray-400 mt-1">ICS</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2">
                     <p className="text-lg font-bold text-brand-forest font-mono">
