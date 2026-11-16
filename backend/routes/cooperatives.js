@@ -8,6 +8,8 @@ import CooperativePlatformRegistration from '../models/CooperativePlatformRegist
 import CooperativeInvitation from '../models/CooperativeInvitation.js';
 import CooperativeJoinRequest from '../models/CooperativeJoinRequest.js';
 import CooperativeMemberPayment from '../models/CooperativeMemberPayment.js';
+import ManualCoopMember from '../models/ManualCoopMember.js';
+import MemberDuesPayment from '../models/MemberDuesPayment.js';
 import PendingNotification from '../models/PendingNotification.js';
 import ProduceListing from '../models/ProduceListing.js';
 import Farmer from '../models/Farmer.js';
@@ -296,10 +298,7 @@ async function discoverCooperatives(req, res) {
     const country = String(req.query.country || '').trim();
 
     const filter = {
-      $or: [
-        { status: 'active' },
-        { status: 'pending_payment', memberCount: { $lt: 51 } },
-      ],
+      $or: [{ status: 'active' }, { paymentReceived: true }],
     };
     if (country) {
       filter.country = new RegExp(`^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
@@ -317,9 +316,9 @@ async function discoverCooperatives(req, res) {
 
     const rows = await CooperativePlatformRegistration.find(filter)
       .sort({ memberCount: -1, createdAt: -1 })
-      .limit(20)
+      .limit(50)
       .select(
-        'cooperativeName regionCity country primaryCrops memberCount tier leaderName certificationStatus'
+        'cooperativeName regionCity country primaryCrops memberCount tier leaderName certificationStatus verificationStatus paymentReceived status'
       )
       .lean();
 
@@ -327,6 +326,7 @@ async function discoverCooperatives(req, res) {
       id: c._id,
       _id: c._id,
       cooperativeName: c.cooperativeName,
+      region: c.regionCity,
       regionCity: c.regionCity,
       country: c.country,
       primaryCrops: c.primaryCrops || [],
@@ -334,6 +334,7 @@ async function discoverCooperatives(req, res) {
       tier: c.tier,
       leaderName: c.leaderName,
       certificationStatus: c.certificationStatus || null,
+      verificationStatus: c.verificationStatus || 'unverified',
     }));
 
     return res.json({ success: true, cooperatives });
@@ -955,6 +956,293 @@ router.post('/my-portal/record-member-payment', authCoop, async (req, res) => {
     res.status(201).json({ success: true, payment });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// PATCH /api/cooperatives/my-portal/update-count — edit self-reported memberCount
+router.patch('/my-portal/update-count', authCoop, async (req, res) => {
+  try {
+    const raw = req.body?.memberCount;
+    const memberCount = Number(raw);
+    if (!Number.isFinite(memberCount) || memberCount < 0 || !Number.isInteger(memberCount)) {
+      return res.status(400).json({
+        success: false,
+        error: 'memberCount must be a non-negative integer',
+      });
+    }
+    const coop = await CooperativePlatformRegistration.findByIdAndUpdate(
+      req.coop._id,
+      { memberCount },
+      { new: true }
+    ).select('memberCount');
+    if (!coop) return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    return res.json({ success: true, memberCount: coop.memberCount });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+async function maybeLinkManualMemberByPhone(coopId, phone) {
+  const normalized = String(phone || '').replace(/\s+/g, '').trim();
+  if (!normalized || normalized.length < 6) return false;
+  const digits = normalized.replace(/\D/g, '');
+  const farmer = await Farmer.findOne({
+    telephone: { $regex: new RegExp(digits.slice(-8) + '$') },
+  })
+    .select('_id')
+    .lean();
+  return Boolean(farmer);
+}
+
+// POST /api/cooperatives/my-portal/manual-members
+router.post('/my-portal/manual-members', authCoop, async (req, res) => {
+  try {
+    const fullName = String(req.body?.fullName || '').trim();
+    if (!fullName) {
+      return res.status(400).json({ success: false, error: 'fullName is required' });
+    }
+    const phone = String(req.body?.phone || '').trim();
+    const platformLinked = await maybeLinkManualMemberByPhone(req.coop._id, phone);
+    const member = await ManualCoopMember.create({
+      cooperativeId: req.coop._id,
+      fullName,
+      phone,
+      village: String(req.body?.village || '').trim(),
+      region: String(req.body?.region || '').trim(),
+      cropTypes: Array.isArray(req.body?.cropTypes)
+        ? req.body.cropTypes.map((c) => String(c).trim()).filter(Boolean)
+        : [],
+      hectares:
+        req.body?.hectares != null && req.body.hectares !== ''
+          ? Number(req.body.hectares)
+          : null,
+      notes: String(req.body?.notes || '').trim(),
+      joinedDate: req.body?.joinedDate ? new Date(req.body.joinedDate) : new Date(),
+      platformLinked,
+    });
+    return res.status(201).json({ success: true, member });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/manual-members
+router.get('/my-portal/manual-members', authCoop, async (req, res) => {
+  try {
+    const members = await ManualCoopMember.find({ cooperativeId: req.coop._id })
+      .sort({ createdAt: -1 })
+      .lean();
+    return res.json({ success: true, members, total: members.length });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// PATCH /api/cooperatives/my-portal/manual-members/:id
+router.patch('/my-portal/manual-members/:id', authCoop, async (req, res) => {
+  try {
+    const member = await ManualCoopMember.findOne({
+      _id: req.params.id,
+      cooperativeId: req.coop._id,
+    });
+    if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
+
+    const fields = ['fullName', 'phone', 'village', 'region', 'notes'];
+    for (const f of fields) {
+      if (req.body?.[f] !== undefined) member[f] = String(req.body[f] || '').trim();
+    }
+    if (Array.isArray(req.body?.cropTypes)) {
+      member.cropTypes = req.body.cropTypes.map((c) => String(c).trim()).filter(Boolean);
+    }
+    if (req.body?.hectares !== undefined) {
+      member.hectares =
+        req.body.hectares === '' || req.body.hectares == null
+          ? null
+          : Number(req.body.hectares);
+    }
+    if (req.body?.joinedDate) member.joinedDate = new Date(req.body.joinedDate);
+    if (typeof req.body?.platformLinked === 'boolean') {
+      member.platformLinked = req.body.platformLinked;
+    } else if (req.body?.phone !== undefined) {
+      member.platformLinked = await maybeLinkManualMemberByPhone(req.coop._id, member.phone);
+    }
+    await member.save();
+    return res.json({ success: true, member });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// DELETE /api/cooperatives/my-portal/manual-members/:id
+router.delete('/my-portal/manual-members/:id', authCoop, async (req, res) => {
+  try {
+    const deleted = await ManualCoopMember.findOneAndDelete({
+      _id: req.params.id,
+      cooperativeId: req.coop._id,
+    });
+    if (!deleted) return res.status(404).json({ success: false, error: 'Member not found' });
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+const DUES_METHODS = ['orange_money', 'wave', 'mtn', 'cash', 'bank_transfer', 'other'];
+
+// POST /api/cooperatives/my-portal/dues-payments
+router.post('/my-portal/dues-payments', authCoop, async (req, res) => {
+  try {
+    const memberType = String(req.body?.memberType || '').trim();
+    const memberId = String(req.body?.memberId || '').trim();
+    const memberName = String(req.body?.memberName || '').trim();
+    const amount = Number(req.body?.amount);
+    const paymentMethod = String(req.body?.paymentMethod || '').trim();
+
+    if (!['platform', 'manual'].includes(memberType)) {
+      return res.status(400).json({ success: false, error: 'memberType must be platform or manual' });
+    }
+    if (!memberId || !memberName) {
+      return res.status(400).json({ success: false, error: 'memberId and memberName are required' });
+    }
+    if (!Number.isFinite(amount) || amount < 0) {
+      return res.status(400).json({ success: false, error: 'amount must be a non-negative number' });
+    }
+    if (!DUES_METHODS.includes(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Invalid paymentMethod' });
+    }
+
+    const now = new Date();
+    const periodMonth =
+      req.body?.periodMonth != null ? Number(req.body.periodMonth) : now.getMonth() + 1;
+    const periodYear =
+      req.body?.periodYear != null ? Number(req.body.periodYear) : now.getFullYear();
+
+    if (!Number.isInteger(periodMonth) || periodMonth < 1 || periodMonth > 12) {
+      return res.status(400).json({ success: false, error: 'periodMonth must be 1-12' });
+    }
+    if (!Number.isInteger(periodYear) || periodYear < 2000) {
+      return res.status(400).json({ success: false, error: 'Invalid periodYear' });
+    }
+
+    const payment = await MemberDuesPayment.create({
+      cooperativeId: req.coop._id,
+      memberType,
+      memberId,
+      memberName,
+      amount,
+      currency: String(req.body?.currency || 'XOF').trim() || 'XOF',
+      paymentMethod,
+      paymentReference: String(req.body?.paymentReference || '').trim(),
+      periodMonth,
+      periodYear,
+      notes: String(req.body?.notes || '').trim(),
+      recordedBy: req.coop.email || req.coop.leaderName || '',
+    });
+
+    return res.status(201).json({ success: true, payment });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/dues-payments
+router.get('/my-portal/dues-payments', authCoop, async (req, res) => {
+  try {
+    const filter = { cooperativeId: req.coop._id };
+    if (req.query.memberId) filter.memberId = String(req.query.memberId);
+    if (req.query.month) filter.periodMonth = Number(req.query.month);
+    if (req.query.year) filter.periodYear = Number(req.query.year);
+    if (req.query.method && DUES_METHODS.includes(String(req.query.method))) {
+      filter.paymentMethod = String(req.query.method);
+    }
+    const payments = await MemberDuesPayment.find(filter).sort({ createdAt: -1 }).limit(500).lean();
+    return res.json({ success: true, payments });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// DELETE /api/cooperatives/my-portal/dues-payments/:id
+router.delete('/my-portal/dues-payments/:id', authCoop, async (req, res) => {
+  try {
+    const deleted = await MemberDuesPayment.findOneAndDelete({
+      _id: req.params.id,
+      cooperativeId: req.coop._id,
+    });
+    if (!deleted) return res.status(404).json({ success: false, error: 'Payment not found' });
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/dues-summary
+router.get('/my-portal/dues-summary', authCoop, async (req, res) => {
+  try {
+    const now = new Date();
+    const month = req.query.month != null ? Number(req.query.month) : now.getMonth() + 1;
+    const year = req.query.year != null ? Number(req.query.year) : now.getFullYear();
+
+    const coopName = req.coop.cooperativeName || req.coop.nomCooperative;
+    const [platformMembers, manualMembers, monthPayments, allPayments] = await Promise.all([
+      Farmer.find({
+        $or: [
+          {
+            nomCooperative: new RegExp(
+              String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+              'i'
+            ),
+          },
+          { cooperativeId: req.coop._id },
+        ],
+      })
+        .select('_id')
+        .lean(),
+      ManualCoopMember.find({ cooperativeId: req.coop._id }).select('_id').lean(),
+      MemberDuesPayment.find({
+        cooperativeId: req.coop._id,
+        periodMonth: month,
+        periodYear: year,
+      }).lean(),
+      MemberDuesPayment.find({ cooperativeId: req.coop._id }).lean(),
+    ]);
+
+    const totalMembers = platformMembers.length + manualMembers.length;
+    const paidIds = new Set(monthPayments.map((p) => String(p.memberId)));
+    const paidThisMonth = paidIds.size;
+    const unpaidThisMonth = Math.max(0, totalMembers - paidThisMonth);
+    const totalCollected = monthPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+
+    const byMethod = Object.fromEntries(DUES_METHODS.map((m) => [m, 0]));
+    for (const p of monthPayments) {
+      if (byMethod[p.paymentMethod] != null) byMethod[p.paymentMethod] += 1;
+    }
+
+    const statusByMember = {};
+    const lastMonth = month === 1 ? 12 : month - 1;
+    const lastYear = month === 1 ? year - 1 : year;
+    for (const p of allPayments) {
+      const id = String(p.memberId);
+      const isThis = p.periodMonth === month && p.periodYear === year;
+      const isLast = p.periodMonth === lastMonth && p.periodYear === lastYear;
+      if (!statusByMember[id]) statusByMember[id] = 'none';
+      if (isThis) statusByMember[id] = 'paid';
+      else if (isLast && statusByMember[id] !== 'paid') statusByMember[id] = 'late';
+    }
+
+    return res.json({
+      success: true,
+      totalCollected,
+      totalMembers,
+      paidThisMonth,
+      unpaidThisMonth,
+      byMethod,
+      statusByMember,
+      periodMonth: month,
+      periodYear: year,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
   }
 });
 

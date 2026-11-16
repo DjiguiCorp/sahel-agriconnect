@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import Farmer from '../models/Farmer.js';
+import ManualCoopMember from '../models/ManualCoopMember.js';
 import VerificationCode from '../models/VerificationCode.js';
 import { authenticateToken, authenticateAnyUser } from '../middleware/auth.js';
 import { validateFarmer, validateFarmerUpdate } from '../middleware/validation.js';
@@ -11,6 +12,20 @@ import DeviceSession from '../models/DeviceSession.js';
 import { authCoop } from './cooperatives.js';
 
 const router = express.Router();
+
+/** Mark offline coop members as platform-linked when a matching phone registers. */
+async function linkManualMembersByPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length < 8) return;
+  const tail = digits.slice(-8);
+  await ManualCoopMember.updateMany(
+    {
+      platformLinked: false,
+      phone: { $regex: new RegExp(`${tail}$`) },
+    },
+    { $set: { platformLinked: true } }
+  );
+}
 
 // GET /api/farmers/lookup — cooperative leader lookup by email or phone (limited fields)
 router.get('/lookup', authCoop, async (req, res) => {
@@ -377,6 +392,7 @@ router.post('/register-mobile', async (req, res) => {
       verifiedAt: new Date(),
     });
     await farmer.save();
+    linkManualMembersByPhone(farmer.telephone).catch(() => {});
 
     v.registrationUsed = true;
     await v.save();
@@ -450,6 +466,7 @@ router.post('/', validateFarmer, async (req, res) => {
 
     const farmer = new Farmer(farmerData);
     await farmer.save();
+    linkManualMembersByPhone(farmer.telephone).catch(() => {});
 
     queueNotification({
       name: farmer.nom || '',

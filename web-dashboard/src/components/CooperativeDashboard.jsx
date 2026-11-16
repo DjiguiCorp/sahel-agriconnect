@@ -1,11 +1,32 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Users, MapPin, Search, Filter, CheckCircle, ChevronRight } from 'lucide-react';
+import { Users, MapPin, Search, Filter, CheckCircle, ChevronRight, Loader2, ShieldCheck } from 'lucide-react';
 import CooperativeInquiryModal from './CooperativeInquiryModal';
 import { API_BASE_URL } from '../config/api';
 import { AFRICAN_REGIONS } from '../data/africanRegions';
+import { CROP_CATALOG, cropLabel } from '../lib/crops';
 
 const apiRoot = API_BASE_URL.replace(/\/$/, '');
+
+function verificationBadge(status, isFr) {
+  const s = String(status || 'unverified').toLowerCase();
+  if (s === 'verified' || s === 'approved') {
+    return {
+      label: isFr ? 'Vérifiée' : 'Verified',
+      className: 'bg-green-50 text-green-700 border border-green-200',
+    };
+  }
+  if (s === 'pending' || s === 'in_review') {
+    return {
+      label: isFr ? 'En vérification' : 'Pending review',
+      className: 'bg-amber-50 text-amber-700 border border-amber-200',
+    };
+  }
+  return {
+    label: isFr ? 'Non vérifiée' : 'Unverified',
+    className: 'bg-gray-50 text-gray-600 border border-gray-200',
+  };
+}
 
 export default function CooperativeDashboard() {
   const { i18n } = useTranslation();
@@ -16,55 +37,70 @@ export default function CooperativeDashboard() {
   const [error, setError] = useState(null);
   const [countryFilter, setCountryFilter] = useState('');
   const [cropFilter, setCropFilter] = useState('');
-  const [certFilter, setCertFilter] = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [inquiryCoop, setInquiryCoop] = useState(null);
+  const [farmerId, setFarmerId] = useState('');
+  const [joiningId, setJoiningId] = useState(null);
+  const [joinMsg, setJoinMsg] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token_farmer') || '';
+    if (!token) return;
+    fetch(`${apiRoot}/api/farmers/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        const id = d?.farmer?.id || d?.farmer?._id || d?._id || d?.id || '';
+        if (id) setFarmerId(String(id));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setError(null);
-    fetch(`${apiRoot}/api/cooperatives`)
-      .then((r) => r.json())
-      .then((data) => {
-        const list = Array.isArray(data) ? data : data.cooperatives || [];
-        const active = list.filter((c) => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (countryFilter) params.set('country', countryFilter);
+    if (cropFilter) params.set('crop', cropFilter);
+    if (regionFilter) params.set('region', regionFilter);
+
+    Promise.all([
+      fetch(`${apiRoot}/api/cooperatives/discover?${params}`).then((r) => r.json()).catch(() => ({})),
+      fetch(`${apiRoot}/api/cooperatives`).then((r) => r.json()).catch(() => []),
+    ])
+      .then(([discoverData, legacyData]) => {
+        const fromDiscover = Array.isArray(discoverData?.cooperatives)
+          ? discoverData.cooperatives
+          : [];
+        const legacyList = Array.isArray(legacyData)
+          ? legacyData
+          : legacyData?.cooperatives || [];
+        const legacyActive = legacyList.filter((c) => {
           const st = c.status ?? c.statut;
           if (st === 'Inactive' || st === 'inactive') return false;
-          return (
-            c.status === 'active' ||
-            !c.status ||
-            st === 'Fonctionnelle' ||
-            st === 'En développement' ||
-            st === 'pending'
-          );
+          return true;
         });
-        setCooperatives(active);
+
+        const byId = new Map();
+        for (const c of [...fromDiscover, ...legacyActive]) {
+          const id = String(c._id || c.id || '');
+          const key = id || (c.cooperativeName || c.nom || '').toLowerCase();
+          if (!key) continue;
+          if (!byId.has(key)) byId.set(key, c);
+          else {
+            byId.set(key, { ...byId.get(key), ...c });
+          }
+        }
+        setCooperatives([...byId.values()]);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [countryFilter, cropFilter, regionFilter]);
 
   const countries = useMemo(() => Object.keys(AFRICAN_REGIONS).sort(), []);
-
-  const allCrops = useMemo(
-    () => [
-      'Shea Butter',
-      'Sesame',
-      'Cashew',
-      'Mango',
-      'Rice',
-      'Cotton',
-      'Millet',
-      'Sorghum',
-      'Maize',
-      'Groundnut',
-      'Cowpea',
-      'Yam',
-      'Cassava',
-      'Plantain',
-      'Other',
-    ],
-    []
-  );
+  const allCrops = useMemo(() => CROP_CATALOG.map((c) => c.en), []);
 
   const filtered = useMemo(() => {
     return cooperatives.filter((c) => {
@@ -75,32 +111,22 @@ export default function CooperativeDashboard() {
         ''
       ).toLowerCase();
       const country = c.country || c.pays || '';
-      const crops =
-        c.primaryCrops || c.culturesPrincipales || c.produits || [];
-      const cert = c.certificationStatus || '';
-      const matchSearch = !searchQuery || name.includes(searchQuery.toLowerCase());
+      const region = c.regionCity || c.region || '';
+      const crops = c.primaryCrops || c.culturesPrincipales || c.produits || [];
+      const matchSearch =
+        !searchQuery ||
+        name.includes(searchQuery.toLowerCase()) ||
+        String(region).toLowerCase().includes(searchQuery.toLowerCase());
       const matchCountry = !countryFilter || country === countryFilter;
-      const matchCrop = !cropFilter || crops.includes(cropFilter);
-      const matchCert = !certFilter || cert === certFilter;
-      return matchSearch && matchCountry && matchCrop && matchCert;
+      const matchCrop =
+        !cropFilter ||
+        crops.some((crop) => String(crop).toLowerCase().includes(cropFilter.toLowerCase()));
+      const matchRegion =
+        !regionFilter ||
+        String(region).toLowerCase().includes(regionFilter.toLowerCase());
+      return matchSearch && matchCountry && matchCrop && matchRegion;
     });
-  }, [cooperatives, searchQuery, countryFilter, cropFilter, certFilter]);
-
-  const certBadge = (level) =>
-    ({
-      International: {
-        label: '⭐⭐⭐ International (EU/USDA)',
-        color: 'bg-amber-50 text-amber-700 border border-amber-200',
-      },
-      Regional: {
-        label: '⭐⭐ Regional (ECOWAS)',
-        color: 'bg-blue-50 text-blue-700 border border-blue-200',
-      },
-      Local: {
-        label: '⭐ Local',
-        color: 'bg-green-50 text-green-700 border border-green-200',
-      },
-    }[level] || null);
+  }, [cooperatives, searchQuery, countryFilter, cropFilter, regionFilter]);
 
   const stats = [
     {
@@ -123,10 +149,11 @@ export default function CooperativeDashboard() {
     },
     {
       icon: '⭐',
-      value: cooperatives.filter(
-        (c) => c.certificationStatus && c.certificationStatus !== 'None'
-      ).length,
-      label: isFr ? 'Certifiées' : 'Certified',
+      value: cooperatives.filter((c) => {
+        const v = String(c.verificationStatus || '').toLowerCase();
+        return v === 'verified' || v === 'approved';
+      }).length,
+      label: isFr ? 'Vérifiées' : 'Verified',
     },
   ];
 
@@ -134,7 +161,49 @@ export default function CooperativeDashboard() {
     setSearchQuery('');
     setCountryFilter('');
     setCropFilter('');
-    setCertFilter('');
+    setRegionFilter('');
+  };
+
+  const handleJoin = async (coop) => {
+    const coopId = coop._id || coop.id;
+    if (!coopId) return;
+
+    if (!farmerId) {
+      setInquiryCoop(coop);
+      return;
+    }
+
+    setJoiningId(String(coopId));
+    setJoinMsg('');
+    try {
+      const res = await fetch(`${apiRoot}/api/cooperatives/join-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cooperativeId: coopId,
+          farmerId,
+          message: '',
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Join request failed');
+      }
+      setJoinMsg(
+        data.alreadyPending
+          ? isFr
+            ? 'Demande déjà en attente.'
+            : 'Request already pending.'
+          : isFr
+            ? 'Demande envoyée.'
+            : 'Join request sent.'
+      );
+    } catch (e) {
+      setJoinMsg(e.message || 'Error');
+      setInquiryCoop(coop);
+    } finally {
+      setJoiningId(null);
+    }
   };
 
   return (
@@ -169,13 +238,19 @@ export default function CooperativeDashboard() {
         </div>
       </div>
 
+      {joinMsg ? (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+          ✓ {joinMsg}
+        </div>
+      ) : null}
+
       <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-4 h-4 text-gray-400" />
           <span className="text-sm font-semibold text-gray-700">
             {isFr ? 'Filtrer les coopératives' : 'Filter cooperatives'}
           </span>
-          {(searchQuery || countryFilter || cropFilter || certFilter) && (
+          {(searchQuery || countryFilter || cropFilter || regionFilter) && (
             <button
               type="button"
               onClick={clearFilters}
@@ -192,16 +267,16 @@ export default function CooperativeDashboard() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isFr ? 'Rechercher...' : 'Search...'}
+              placeholder={isFr ? 'Rechercher (nom ou région)…' : 'Search (name or region)…'}
               className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
             />
           </div>
           <select
             value={countryFilter}
             onChange={(e) => setCountryFilter(e.target.value)}
-            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
           >
-            <option value="">{isFr ? '🌍 Tous les pays' : '🌍 All countries'}</option>
+            <option value="">{isFr ? 'Tous les pays' : 'All countries'}</option>
             {countries.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -211,25 +286,22 @@ export default function CooperativeDashboard() {
           <select
             value={cropFilter}
             onChange={(e) => setCropFilter(e.target.value)}
-            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
           >
-            <option value="">{isFr ? '🌾 Toutes les cultures' : '🌾 All crops'}</option>
+            <option value="">{isFr ? 'Toutes les cultures' : 'All crops'}</option>
             {allCrops.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {cropLabel(c, isFr)}
               </option>
             ))}
           </select>
-          <select
-            value={certFilter}
-            onChange={(e) => setCertFilter(e.target.value)}
+          <input
+            type="text"
+            value={regionFilter}
+            onChange={(e) => setRegionFilter(e.target.value)}
+            placeholder={isFr ? 'Région…' : 'Region…'}
             className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
-          >
-            <option value="">{isFr ? '⭐ Toutes certifications' : '⭐ All certifications'}</option>
-            <option value="Local">⭐ Local</option>
-            <option value="Regional">⭐⭐ Regional (ECOWAS)</option>
-            <option value="International">⭐⭐⭐ International (EU/USDA)</option>
-          </select>
+          />
         </div>
       </div>
 
@@ -237,12 +309,6 @@ export default function CooperativeDashboard() {
         <p className="text-sm text-gray-500">
           {filtered.length}{' '}
           {isFr ? 'coopérative(s) trouvée(s)' : 'cooperative(s) found'}
-          {(searchQuery || countryFilter || cropFilter || certFilter) && (
-            <span className="text-gray-400">
-              {' '}
-              {isFr ? 'selon vos filtres' : 'matching your filters'}
-            </span>
-          )}
         </p>
       )}
 
@@ -260,12 +326,8 @@ export default function CooperativeDashboard() {
 
       {error && !loading && (
         <div className="text-center py-16 bg-red-50 rounded-2xl border border-red-200">
-          <p className="text-4xl mb-3">⚠️</p>
           <p className="text-red-700 font-semibold">
             {isFr ? 'Impossible de charger les coopératives.' : 'Unable to load cooperatives.'}
-          </p>
-          <p className="text-red-500 text-sm mt-1">
-            {isFr ? 'Vérifiez votre connexion et réessayez.' : 'Check your connection and try again.'}
           </p>
         </div>
       )}
@@ -279,16 +341,6 @@ export default function CooperativeDashboard() {
           <h3 className="text-2xl font-bold text-[#1a3c2e] mb-3">
             {isFr ? 'Le réseau coopératif se construit' : 'The cooperative network is being built'}
           </h3>
-          <p className="text-gray-600 max-w-lg mx-auto mb-2 leading-relaxed">
-            {isFr
-              ? "Les coopératives vérifiées apparaîtront ici. Rejoignez le réseau maintenant et soyez parmi les premières coopératives visibles par les investisseurs diaspora et les acheteurs internationaux via AfriYield Exchange."
-              : 'Verified cooperatives will appear here. Join the network now and be among the first cooperatives visible to diaspora investors and international buyers via AfriYield Exchange.'}
-          </p>
-          <p className="text-[#B5850A] font-semibold text-sm mb-8">
-            {isFr
-              ? '199$/an · Portail activé après paiement · Accès AfriYield Exchange inclus'
-              : '$199/year · Portal activated after payment · AfriYield Exchange access included'}
-          </p>
           <a
             href="/cooperative-registration"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white text-sm shadow-lg hover:opacity-90 transition"
@@ -301,7 +353,6 @@ export default function CooperativeDashboard() {
 
       {!loading && !error && cooperatives.length > 0 && filtered.length === 0 && (
         <div className="text-center py-16 bg-gray-50 rounded-2xl border border-gray-200">
-          <p className="text-4xl mb-3">🔍</p>
           <p className="text-gray-600 font-semibold">
             {isFr ? 'Aucune coopérative ne correspond à vos filtres.' : 'No cooperatives match your filters.'}
           </p>
@@ -321,34 +372,27 @@ export default function CooperativeDashboard() {
             const name = coop.cooperativeName || coop.nomCooperative || coop.nom;
             const country = coop.country || coop.pays;
             const region = coop.regionCity || coop.region;
-            const leader = coop.leaderName || coop.nomResponsable || coop.responsable;
             const members = coop.memberCount || coop.nombreMembres || coop.membres || 0;
             const crops = coop.primaryCrops || coop.culturesPrincipales || coop.produits || [];
-            const cert = coop.certificationStatus;
-            const interests = coop.interests || [];
-            const badge = cert ? certBadge(cert) : null;
+            const vBadge = verificationBadge(coop.verificationStatus, isFr);
+            const coopId = String(coop._id || coop.id || name);
 
             return (
               <article
-                key={coop._id || coop.id || name}
+                key={coopId}
                 className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-[#1a3c2e]/30 transition-all duration-200 flex flex-col overflow-hidden"
               >
                 <div
                   className="h-1.5 w-full"
-                  style={{
-                    background:
-                      cert === 'International'
-                        ? 'linear-gradient(90deg,#B5850A,#d4a017)'
-                        : cert === 'Regional'
-                          ? 'linear-gradient(90deg,#3b82f6,#60a5fa)'
-                          : 'linear-gradient(90deg,#1a3c2e,#2d5a3d)',
-                  }}
+                  style={{ background: 'linear-gradient(90deg,#1a3c2e,#2d5a3d)' }}
                 />
 
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-[#1a3c2e] leading-snug truncate">{name}</h3>
+                      <h3 className="text-lg font-bold text-[#1a3c2e] leading-snug truncate">
+                        {name}
+                      </h3>
                       <div className="flex items-center gap-1.5 mt-1">
                         <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-500 truncate">
@@ -357,19 +401,25 @@ export default function CooperativeDashboard() {
                         </span>
                       </div>
                     </div>
-                    {badge && (
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${badge.color}`}>
-                        {badge.label}
-                      </span>
-                    )}
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 inline-flex items-center gap-1 ${vBadge.className}`}
+                    >
+                      <ShieldCheck className="w-3 h-3" />
+                      {vBadge.label}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2 mb-4 bg-[#1a3c2e]/5 rounded-xl px-3 py-2.5">
                     <Users className="w-4 h-4 text-[#1a3c2e] flex-shrink-0" />
                     <span className="text-sm font-semibold text-[#1a3c2e]">
                       {Number(members).toLocaleString()}{' '}
-                      {isFr ? 'agriculteurs membres' : 'member farmers'}
+                      {isFr ? 'membres' : 'members'}
                     </span>
+                    {coop.tier ? (
+                      <span className="ml-auto text-[10px] font-bold uppercase text-gray-500">
+                        {coop.tier}
+                      </span>
+                    ) : null}
                   </div>
 
                   {crops.length > 0 && (
@@ -383,7 +433,7 @@ export default function CooperativeDashboard() {
                             key={crop}
                             className="text-xs px-2.5 py-1 rounded-full bg-[#1a3c2e]/8 text-[#1a3c2e] font-medium border border-[#1a3c2e]/10"
                           >
-                            🌾 {crop}
+                            {cropLabel(crop, isFr)}
                           </span>
                         ))}
                         {crops.length > 4 && (
@@ -395,66 +445,29 @@ export default function CooperativeDashboard() {
                     </div>
                   )}
 
-                  {interests.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                        {isFr ? "Programmes d'intérêt" : 'Interest Programs'}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {interests.map((interest) => (
-                          <span
-                            key={interest}
-                            className="text-xs px-2 py-1 rounded-full bg-[#B5850A]/10 text-[#B5850A] font-medium"
-                          >
-                            {interest === 'Equipment Fund'
-                              ? '🔧'
-                              : interest === 'Certification'
-                                ? '⭐'
-                                : interest === 'Diaspora Investment'
-                                  ? '💰'
-                                  : interest === 'Export Program'
-                                    ? '🌍'
-                                    : '📋'}{' '}
-                            {isFr
-                              ? interest === 'Equipment Fund'
-                                ? 'Équipement'
-                                : interest === 'Certification'
-                                  ? 'Certification'
-                                  : interest === 'Diaspora Investment'
-                                    ? 'Investissement diaspora'
-                                    : interest === 'Export Program'
-                                      ? 'Export'
-                                      : interest
-                              : interest}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {leader && (
-                    <p className="text-xs text-gray-400 mb-4">
-                      👤 {isFr ? 'Responsable:' : 'Leader:'}{' '}
-                      <span className="text-gray-600 font-medium">{leader}</span>
-                    </p>
-                  )}
-
                   <div className="flex items-center gap-1.5 mb-5">
                     <CheckCircle className="w-3.5 h-3.5 text-green-500" />
                     <span className="text-xs text-green-600 font-medium">
-                      {isFr ? 'Vérifiée par Sahel AgriConnect' : 'Verified by Sahel AgriConnect'}
+                      {isFr ? 'Visible sur Sahel AgriConnect' : 'Listed on Sahel AgriConnect'}
                     </span>
                   </div>
 
                   <div className="mt-auto">
                     <button
                       type="button"
-                      onClick={() => setInquiryCoop(coop)}
-                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-sm text-white transition hover:opacity-90 active:scale-[0.98]"
+                      disabled={joiningId === coopId}
+                      onClick={() => handleJoin(coop)}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-sm text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
                       style={{ background: 'linear-gradient(135deg, #1a3c2e, #2d5a3d)' }}
                     >
-                      {isFr ? 'Demander à rejoindre' : 'Request to Join'}
-                      <ChevronRight className="w-4 h-4" />
+                      {joiningId === coopId ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          {isFr ? 'Rejoindre' : 'Join'}
+                          <ChevronRight className="w-4 h-4" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

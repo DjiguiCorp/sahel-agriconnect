@@ -1,22 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Loader2, Check, X, Plus, Lock, QrCode } from 'lucide-react';
+import { LogOut, Loader2, Check, X, Plus, Lock, QrCode, Pencil } from 'lucide-react';
 import { API_ENDPOINTS } from '../config/api';
 import CooperativeFinanceForm from '../components/CooperativeFinanceForm';
 import HarvestQrModal from '../components/HarvestQrModal';
 import MarketPricesStrip from '../components/MarketPricesStrip';
+import {
+  ManualMembersPanel,
+  DuesPaymentsPanel,
+  PaymentStatusDot,
+} from '../components/CoopMemberManagementPanels';
 import { cropLabel } from '../lib/crops';
 
 const API = import.meta.env.VITE_API_BASE_URL;
-
-const PAYMENT_METHODS = [
-  'Orange Money',
-  'MTN Mobile Money',
-  'Cash',
-  'Virement bancaire',
-  'Autre',
-];
 
 const INPUT_LIGHT =
   'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20';
@@ -142,15 +139,12 @@ export default function CooperativePortal() {
   const [trainingsLoading, setTrainingsLoading] = useState(false);
   const [joinReviewBusy, setJoinReviewBusy] = useState(null);
 
-  const [membersSubTab, setMembersSubTab] = useState('active'); // active | pending | payments
-  const [paymentModal, setPaymentModal] = useState(null); // { farmerId, farmerName }
-  const [paymentForm, setPaymentForm] = useState({
-    amount: '',
-    paymentMethod: 'Orange Money',
-    reference: '',
-    date: new Date().toISOString().slice(0, 10),
-  });
-  const [paymentState, setPaymentState] = useState({ loading: false, err: '' });
+  const [membersSubTab, setMembersSubTab] = useState('active'); // active | pending | payments | offline
+  const [duesStatusByMember, setDuesStatusByMember] = useState({});
+  const [duesPrefill, setDuesPrefill] = useState(null);
+  const [editingDeclared, setEditingDeclared] = useState(false);
+  const [declaredDraft, setDeclaredDraft] = useState('');
+  const [declaredBusy, setDeclaredBusy] = useState(false);
   const [showProcessorModal, setShowProcessorModal] = useState(false);
   const [processors, setProcessors] = useState([]);
   const [processorsLoading, setProcessorsLoading] = useState(false);
@@ -201,6 +195,21 @@ export default function CooperativePortal() {
     refreshPortal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, coop]);
+
+  useEffect(() => {
+    if (!token || activeTab !== 'members') return;
+    const now = new Date();
+    fetch(
+      `${API}/api/cooperatives/my-portal/dues-summary?month=${now.getMonth() + 1}&year=${now.getFullYear()}`,
+      { headers }
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setDuesStatusByMember(d.statusByMember || {});
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, activeTab, data?.memberFarmers?.length]);
 
   const loadHarvestLogs = () => {
     const coopId = data?.cooperative?._id;
@@ -313,44 +322,33 @@ export default function CooperativePortal() {
     }
   };
 
-  const openPaymentModal = (farmer) => {
-    setPaymentForm({
-      amount: '',
-      paymentMethod: 'Orange Money',
-      reference: '',
-      date: new Date().toISOString().slice(0, 10),
-    });
-    setPaymentState({ loading: false, err: '' });
-    setPaymentModal({ farmerId: farmer._id, farmerName: farmer.nom || '' });
+  const openQuickPay = (member) => {
+    setMembersSubTab('payments');
+    setDuesPrefill(member);
   };
 
-  const submitMemberPayment = async (e) => {
-    e.preventDefault();
-    if (!paymentModal?.farmerId) return;
-    setPaymentState({ loading: true, err: '' });
+  const saveDeclaredCount = async () => {
+    const n = Number(declaredDraft);
+    if (!Number.isInteger(n) || n < 0) {
+      alert(isFr ? 'Entrez un nombre entier ≥ 0.' : 'Enter a whole number ≥ 0.');
+      return;
+    }
+    setDeclaredBusy(true);
     try {
-      const r = await fetch(`${API}/api/cooperatives/my-portal/record-member-payment`, {
-        method: 'POST',
+      const r = await fetch(`${API}/api/cooperatives/my-portal/update-count`, {
+        method: 'PATCH',
         headers,
-        body: JSON.stringify({
-          farmerId: paymentModal.farmerId,
-          farmerName: paymentModal.farmerName,
-          amount: Number(paymentForm.amount),
-          paymentMethod: paymentForm.paymentMethod,
-          reference: paymentForm.reference,
-          date: paymentForm.date,
-        }),
+        body: JSON.stringify({ memberCount: n }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
-      setPaymentModal(null);
-      setMembersSubTab('payments');
+      setEditingDeclared(false);
       refreshPortal();
     } catch (err) {
-      setPaymentState({ loading: false, err: err.message || 'Error' });
-      return;
+      alert(err.message || 'Error');
+    } finally {
+      setDeclaredBusy(false);
     }
-    setPaymentState({ loading: false, err: '' });
   };
 
   const openProcessorModal = async () => {
@@ -860,16 +858,62 @@ export default function CooperativePortal() {
                   <h3 className="font-bold text-[#1a3c2e] text-lg">
                     {isFr ? 'Progression des membres' : 'Member progress'}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    {isFr
-                      ? `${verifiedMemberCount} membres vérifiés sur la plateforme`
-                      : `${verifiedMemberCount} verified members on the platform`}
-                    {declaredMembers
-                      ? ` · ${declaredMembers} ${isFr ? 'déclarés' : 'declared'}`
-                      : ''}
-                    {linkedMemberCount
-                      ? ` · ${linkedMemberCount} ${isFr ? 'liés' : 'linked'}`
-                      : ''}
+                  <p className="text-sm text-gray-500 mt-0.5 flex flex-wrap items-center gap-1">
+                    <span>
+                      {isFr
+                        ? `${verifiedMemberCount} membres vérifiés sur la plateforme`
+                        : `${verifiedMemberCount} verified members on the platform`}
+                    </span>
+                    <span>·</span>
+                    {editingDeclared ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={declaredDraft}
+                          onChange={(e) => setDeclaredDraft(e.target.value)}
+                          className="w-20 rounded-lg border border-gray-300 px-2 py-0.5 text-sm text-gray-900"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          disabled={declaredBusy}
+                          onClick={saveDeclaredCount}
+                          className="text-xs font-bold text-green-700 hover:underline disabled:opacity-50"
+                        >
+                          {declaredBusy ? '...' : isFr ? 'OK' : 'Save'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingDeclared(false)}
+                          className="text-xs text-gray-500 hover:underline"
+                        >
+                          {isFr ? 'Annuler' : 'Cancel'}
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        {declaredMembers} {isFr ? 'déclarés' : 'declared'}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeclaredDraft(String(declaredMembers || 0));
+                            setEditingDeclared(true);
+                          }}
+                          className="p-0.5 rounded text-gray-400 hover:text-[#1a3c2e] hover:bg-gray-100"
+                          aria-label={isFr ? 'Modifier le nombre déclaré' : 'Edit declared count'}
+                          title={isFr ? 'Modifier le nombre déclaré' : 'Edit declared count'}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    )}
+                    {linkedMemberCount ? (
+                      <span>
+                        · {linkedMemberCount} {isFr ? 'liés' : 'linked'}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
                 {isGrowth && coopStatus === 'active' ? (
@@ -1201,6 +1245,10 @@ export default function CooperativePortal() {
                       pendingJoinCount ? ` (${pendingJoinCount})` : ''
                     }`,
                   },
+                  {
+                    key: 'offline',
+                    label: isFr ? 'Membres hors-plateforme' : 'Offline members',
+                  },
                   { key: 'payments', label: isFr ? 'Paiements membres' : 'Member Payments' },
                 ].map((t) => (
                   <button
@@ -1274,13 +1322,44 @@ export default function CooperativePortal() {
                                 )}
                               </td>
                               <td className="px-4 py-3">
-                                <button
-                                  type="button"
-                                  onClick={() => openPaymentModal(f)}
-                                  className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[#1a3c2e]/30 text-[#1a3c2e] hover:bg-[#1a3c2e]/5"
-                                >
-                                  {isFr ? 'Enregistrer un paiement' : 'Record Payment'}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <PaymentStatusDot
+                                    status={duesStatusByMember[String(f._id)] || 'none'}
+                                    title={
+                                      duesStatusByMember[String(f._id)] === 'paid'
+                                        ? isFr
+                                          ? 'Payé ce mois'
+                                          : 'Paid this month'
+                                        : duesStatusByMember[String(f._id)] === 'late'
+                                          ? isFr
+                                            ? 'Payé le mois dernier'
+                                            : 'Paid last month'
+                                          : isFr
+                                            ? 'Aucun paiement'
+                                            : 'No payment'
+                                    }
+                                    onClick={() =>
+                                      openQuickPay({
+                                        memberType: 'platform',
+                                        memberId: String(f._id),
+                                        memberName: f.nom || '',
+                                      })
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      openQuickPay({
+                                        memberType: 'platform',
+                                        memberId: String(f._id),
+                                        memberName: f.nom || '',
+                                      })
+                                    }
+                                    className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[#1a3c2e]/30 text-[#1a3c2e] hover:bg-[#1a3c2e]/5"
+                                  >
+                                    {isFr ? 'Payer' : 'Pay'}
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1338,53 +1417,27 @@ export default function CooperativePortal() {
                 </div>
               )}
 
-              {membersSubTab === 'payments' && (
-                <div className="overflow-x-auto">
-                  {(data?.memberPayments || []).length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-10">
-                      {isFr
-                        ? 'Aucun paiement enregistré. Utilisez « Enregistrer un paiement » sur un membre.'
-                        : 'No payments recorded yet. Use “Record Payment” on a member.'}
-                    </p>
-                  ) : (
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {[
-                            isFr ? 'Membre' : 'Member',
-                            isFr ? 'Montant' : 'Amount',
-                            isFr ? 'Méthode' : 'Method',
-                            isFr ? 'Référence' : 'Reference',
-                            isFr ? 'Date' : 'Date',
-                          ].map((h) => (
-                            <th
-                              key={h}
-                              className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase"
-                            >
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(data.memberPayments || []).map((p, i) => (
-                          <tr key={p._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                            <td className="px-4 py-3 font-medium text-[#1a3c2e]">{p.farmerName || '—'}</td>
-                            <td className="px-4 py-3 font-mono">
-                              {Number(p.amount).toLocaleString()} {p.currency || 'XOF'}
-                            </td>
-                            <td className="px-4 py-3 text-xs text-gray-600">{p.paymentMethod}</td>
-                            <td className="px-4 py-3 text-xs text-gray-500">{p.reference || '—'}</td>
-                            <td className="px-4 py-3 text-xs text-gray-500">
-                              {p.date ? new Date(p.date).toLocaleDateString() : '—'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              )}
+              {membersSubTab === 'offline' && token ? (
+                <ManualMembersPanel
+                  API={API}
+                  headers={headers}
+                  isFr={isFr}
+                  onChanged={refreshPortal}
+                />
+              ) : null}
+
+              {membersSubTab === 'payments' && token ? (
+                <DuesPaymentsPanel
+                  API={API}
+                  headers={headers}
+                  isFr={isFr}
+                  platformMembers={data?.memberFarmers || []}
+                  suggestedAmount=""
+                  prefillMember={duesPrefill}
+                  onPrefillConsumed={() => setDuesPrefill(null)}
+                  onStatusChange={setDuesStatusByMember}
+                />
+              ) : null}
             </div>
           </div>
         )}
@@ -2008,88 +2061,6 @@ export default function CooperativePortal() {
                 </button>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {paymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[#1a3c2e] text-lg">
-                💰 {isFr ? 'Enregistrer un paiement' : 'Record Payment'}
-              </h3>
-              <button type="button" onClick={() => setPaymentModal(null)}>
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
-            </div>
-            <form onSubmit={submitMemberPayment} className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {isFr ? 'Membre' : 'Member'}
-                </label>
-                <input value={paymentModal.farmerName} readOnly className={`${INPUT_LIGHT} bg-gray-50`} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {isFr ? 'Montant (XOF)' : 'Amount (XOF)'}
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  required
-                  value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
-                  className={INPUT_LIGHT}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {isFr ? 'Méthode de paiement' : 'Payment method'}
-                </label>
-                <select
-                  value={paymentForm.paymentMethod}
-                  onChange={(e) => setPaymentForm((f) => ({ ...f, paymentMethod: e.target.value }))}
-                  className={INPUT_LIGHT}
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {isFr ? 'Référence / note (optionnel)' : 'Reference / note (optional)'}
-                </label>
-                <input
-                  value={paymentForm.reference}
-                  onChange={(e) => setPaymentForm((f) => ({ ...f, reference: e.target.value }))}
-                  className={INPUT_LIGHT}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{isFr ? 'Date' : 'Date'}</label>
-                <input
-                  type="date"
-                  required
-                  value={paymentForm.date}
-                  onChange={(e) => setPaymentForm((f) => ({ ...f, date: e.target.value }))}
-                  className={INPUT_LIGHT}
-                />
-              </div>
-              {paymentState.err ? <p className="text-red-500 text-xs">{paymentState.err}</p> : null}
-              <button
-                type="submit"
-                disabled={paymentState.loading}
-                className="w-full py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50"
-                style={{ background: '#1a3c2e' }}
-              >
-                {paymentState.loading ? '...' : isFr ? 'Enregistrer' : 'Save'}
-              </button>
-            </form>
           </div>
         </div>
       )}
