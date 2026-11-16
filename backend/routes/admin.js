@@ -4,6 +4,8 @@ import { randomBytes } from 'crypto';
 import mongoose from 'mongoose';
 import { Resend } from 'resend';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import MobileMoneyPayment from '../models/MobileMoneyPayment.js';
+import PremiumSubscription from '../models/PremiumSubscription.js';
 import Investor from '../models/Investor.js';
 import InvestorKYC from '../models/InvestorKYC.js';
 import KYCAuditLog from '../models/KYCAuditLog.js';
@@ -515,6 +517,172 @@ router.post('/cooperatives/:id/flag', authenticateToken, async (req, res) => {
     res.json({ success: true, cooperative: coop });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * GET /api/admin/payments/ledger
+ * Real payment ledger for admin overview + Paiements tab.
+ * Revenue only from confirmed MobileMoney + Stripe webhook-backed records.
+ * Excludes free_starter and manual admin activations without Stripe/mobile confirmation.
+ */
+router.get('/payments/ledger', authenticateToken, async (req, res) => {
+  try {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+
+    const [mobileAll, stripeSubs, stripeCoops, coopCounts] = await Promise.all([
+      MobileMoneyPayment.find({}).sort({ createdAt: -1 }).limit(500).lean(),
+      PremiumSubscription.find({
+        $or: [
+          { paymentMethod: 'stripe' },
+          { stripePriceId: { $exists: true, $nin: [null, ''] } },
+          { stripeSubscriptionId: { $exists: true, $nin: [null, ''] } },
+          { paymentReference: { $regex: /^cs_/i } },
+        ],
+      })
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .lean(),
+      CooperativePlatformRegistration.find({
+        paymentReceived: true,
+        paymentMethod: 'stripe',
+      })
+        .sort({ paymentDate: -1, activatedAt: -1 })
+        .limit(200)
+        .lean(),
+      Promise.all([
+        CooperativePlatformRegistration.countDocuments({
+          status: 'active',
+          paymentReceived: true,
+        }),
+        CooperativePlatformRegistration.countDocuments({ status: 'pending_payment' }),
+      ]),
+    ]);
+
+    const [activePaidCoops, pendingPaymentCoops] = coopCounts;
+
+    const mobilePayments = mobileAll.map((p) => ({
+      id: String(p._id),
+      source: 'mobile',
+      entityName: p.entityName || '—',
+      entityType: p.entityType,
+      entityEmail: p.entityEmail || '',
+      amount: Number(p.amount) || 0,
+      currency: p.currency || 'USD',
+      method: p.paymentMethod,
+      status: p.status,
+      reference: p.referenceCode,
+      date: p.confirmedAt || p.createdAt,
+      createdAt: p.createdAt,
+      subscriptionType: p.subscriptionType,
+    }));
+
+    const stripeFromSubs = stripeSubs.map((s) => ({
+      id: `sub-${s._id}`,
+      source: 'stripe',
+      entityName: s.tierKey || s.plan || 'Subscription',
+      entityType: s.tierKey || 'subscription',
+      entityEmail: s.investorEmail || '',
+      amount: Number(s.priceUSD) || 0,
+      currency: 'USD',
+      method: 'stripe',
+      status: s.status === 'active' ? 'confirmed' : s.status || 'confirmed',
+      reference: s.paymentReference || s.stripeSubscriptionId || s.stripePriceId || '',
+      date: s.startDate || s.createdAt,
+      createdAt: s.createdAt,
+      subscriptionType: s.tierKey || s.plan,
+    }));
+
+    // Stripe coops not already represented via PremiumSubscription (Growth activates coop only)
+    const subEmails = new Set(
+      stripeFromSubs.map((s) => String(s.entityEmail || '').toLowerCase()).filter(Boolean)
+    );
+    const stripeFromCoops = stripeCoops
+      .filter((c) => !subEmails.has(String(c.email || '').toLowerCase()))
+      .map((c) => ({
+        id: `coop-stripe-${c._id}`,
+        source: 'stripe',
+        entityName: c.cooperativeName || '—',
+        entityType: 'cooperative',
+        entityEmail: c.email || '',
+        amount: 199,
+        currency: 'USD',
+        method: 'stripe',
+        status: 'confirmed',
+        reference: c.paymentMethod || 'stripe',
+        date: c.paymentDate || c.activatedAt || c.createdAt,
+        createdAt: c.createdAt,
+        subscriptionType: 'cooperative_growth',
+      }));
+
+    const stripePayments = [...stripeFromSubs, ...stripeFromCoops].sort(
+      (a, b) => new Date(b.date || 0) - new Date(a.date || 0)
+    );
+
+    const confirmedAmounts = [];
+    for (const p of mobileAll) {
+      if (p.status !== 'confirmed') continue;
+      confirmedAmounts.push({
+        amount: Number(p.amount) || 0,
+        date: p.confirmedAt || p.updatedAt || p.createdAt,
+      });
+    }
+    for (const p of stripePayments) {
+      if (p.status !== 'confirmed' && p.status !== 'active') continue;
+      confirmedAmounts.push({ amount: Number(p.amount) || 0, date: p.date });
+    }
+
+    const inRange = (d, start) => {
+      const t = new Date(d).getTime();
+      return Number.isFinite(t) && t >= start.getTime();
+    };
+
+    const confirmedThisMonth = confirmedAmounts
+      .filter((x) => inRange(x.date, monthStart))
+      .reduce((s, x) => s + x.amount, 0);
+    const confirmedThisYear = confirmedAmounts
+      .filter((x) => inRange(x.date, yearStart))
+      .reduce((s, x) => s + x.amount, 0);
+    const totalConfirmed = confirmedAmounts.reduce((s, x) => s + x.amount, 0);
+
+    // Cooperative annual revenue: only real confirmed coop-related payments this year
+    const coopAnnualRevenue = [
+      ...mobileAll
+        .filter(
+          (p) =>
+            p.status === 'confirmed' &&
+            (p.subscriptionType === 'cooperative_growth' || p.entityType === 'cooperative') &&
+            inRange(p.confirmedAt || p.updatedAt || p.createdAt, yearStart)
+        )
+        .map((p) => Number(p.amount) || 0),
+      ...stripePayments
+        .filter(
+          (p) =>
+            (p.entityType === 'cooperative' ||
+              p.subscriptionType === 'cooperative' ||
+              p.subscriptionType === 'cooperative_growth') &&
+            inRange(p.date, yearStart)
+        )
+        .map((p) => Number(p.amount) || 0),
+    ].reduce((s, n) => s + n, 0);
+
+    return res.json({
+      success: true,
+      mobilePayments,
+      stripePayments,
+      summary: {
+        confirmedThisMonth,
+        confirmedThisYear,
+        totalConfirmed,
+        coopAnnualRevenue,
+        activePaidCoops,
+        pendingPaymentCoops,
+      },
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
   }
 });
 

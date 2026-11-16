@@ -256,12 +256,31 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     });
   }, [cooperatives, globalCountryFilter]);
 
+  const growthForView = useMemo(() => {
+    if (!globalCountryFilter) return growthCoops;
+    const cf = globalCountryFilter.toLowerCase();
+    return growthCoops.filter((c) =>
+      `${c.country || ''} ${c.regionCity || ''}`.toLowerCase().includes(cf)
+    );
+  }, [growthCoops, globalCountryFilter]);
+
   if (selectedCoop && viewMode === 'detail') {
     const coopFarmers = getCoopFarmers(selectedCoop);
-    const name = selectedCoop.cooperativeName || selectedCoop.nomCooperative;
-    const leader = selectedCoop.leaderName || selectedCoop.nomResponsable;
+    const name = selectedCoop.cooperativeName || selectedCoop.nomCooperative || 'N/A';
+    const leader = selectedCoop.leaderName || selectedCoop.nomResponsable || 'N/A';
     const cert = selectedCoop.certificationStatus || 'None';
     const certPct = certProgress(cert);
+    const email = selectedCoop.email || '';
+    const country = selectedCoop.country || selectedCoop.pays || 'N/A';
+    const region = selectedCoop.regionCity || 'N/A';
+    const processorLabel = selectedCoop.processorName || selectedCoop.processorId || 'N/A';
+    const expiresLabel = selectedCoop.subscriptionExpiresAt
+      ? new Date(selectedCoop.subscriptionExpiresAt).toLocaleDateString()
+      : 'N/A';
+    const paymentMethodLabel = selectedCoop.paymentMethod || 'N/A';
+    const paymentDateLabel = selectedCoop.paymentDate
+      ? new Date(selectedCoop.paymentDate).toLocaleDateString()
+      : 'N/A';
 
     return (
       <div className="p-4 space-y-5">
@@ -283,10 +302,17 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
             <div>
               <h2 className="text-2xl font-bold">{name}</h2>
               <p className="text-white/70 text-sm mt-1">
-                🌍 {selectedCoop.country || selectedCoop.pays} · {selectedCoop.regionCity || '—'}
+                🌍 {country} · {region}
               </p>
               <p className="text-white/70 text-sm">
-                👤 {leader} · 📧 {selectedCoop.email}
+                👤 {leader} · 📧 {email || 'N/A'}
+              </p>
+              <p className="text-white/50 text-xs mt-2">
+                {isFr ? 'Processeur' : 'Processor'}: {processorLabel}
+                {' · '}
+                {isFr ? 'Abonnement jusqu’au' : 'Subscription until'}: {expiresLabel}
+                {' · '}
+                {isFr ? 'Paiement' : 'Payment'}: {paymentMethodLabel} ({paymentDateLabel})
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -369,14 +395,14 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
           <p className="text-sm text-brand-forest font-semibold mt-2">
             {isFr ? `Niveau actuel: ${cert}` : `Current level: ${cert}`}
           </p>
-          {cert !== 'International' && (
+          {cert !== 'International' && email ? (
             <a
-              href={`mailto:${selectedCoop.email}?subject=Prochaine étape certification — Sahel AgriConnect`}
+              href={`mailto:${email}?subject=Prochaine étape certification — Sahel AgriConnect`}
               className="inline-block mt-2 text-xs bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition"
             >
               ⭐ {isFr ? 'Initier la prochaine étape' : 'Initiate next step'}
             </a>
-          )}
+          ) : null}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -502,37 +528,49 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                 action: () => updateCoopStatus(selectedCoop._id, 'active'),
                 color: 'bg-green-50 text-green-700 border-green-200',
               },
-              {
-                icon: '📚',
-                href: `mailto:${selectedCoop.email}?subject=Formation disponible — Sahel AgriConnect`,
-                label: isFr ? 'Proposer une formation' : 'Propose Training',
-                color: 'bg-purple-50 text-purple-700 border-purple-200',
-              },
-              {
-                icon: '💰',
-                href: `mailto:${selectedCoop.email}?subject=Opportunité investisseur diaspora — AfriYield Exchange`,
-                label: isFr ? 'Connecter un investisseur' : 'Connect Investor',
-                color: 'bg-[#B5850A]/10 text-[#B5850A] border-[#B5850A]/20',
-              },
-              {
-                icon: '🔧',
-                href: `mailto:${selectedCoop.email}?subject=Fonds équipement — Éligibilité confirmée`,
-                label: isFr ? 'Confirmer fonds équipement' : 'Confirm Equipment Fund',
-                color: 'bg-blue-50 text-blue-700 border-blue-200',
-              },
-              {
-                icon: '🌍',
-                href: `mailto:${selectedCoop.email}?subject=Programme export — Prochaines étapes`,
-                label: isFr ? 'Initier programme export' : 'Initiate Export Program',
-                color: 'bg-red-50 text-red-700 border-red-200',
-              },
-              {
-                icon: '🌾',
-                href: `mailto:${selectedCoop.email}?subject=Production hors-saison — Opportunité`,
-                label: isFr ? 'Production hors-saison' : 'Off-Season Production',
-                color: 'bg-orange-50 text-orange-700 border-orange-200',
-              },
-            ].map((action) =>
+              email
+                ? {
+                    icon: '📚',
+                    href: `mailto:${email}?subject=Formation disponible — Sahel AgriConnect`,
+                    label: isFr ? 'Proposer une formation' : 'Propose Training',
+                    color: 'bg-purple-50 text-purple-700 border-purple-200',
+                  }
+                : null,
+              email
+                ? {
+                    icon: '💰',
+                    href: `mailto:${email}?subject=Opportunité investisseur diaspora — AfriYield Exchange`,
+                    label: isFr ? 'Connecter un investisseur' : 'Connect Investor',
+                    color: 'bg-[#B5850A]/10 text-[#B5850A] border-[#B5850A]/20',
+                  }
+                : null,
+              email
+                ? {
+                    icon: '🔧',
+                    href: `mailto:${email}?subject=Fonds équipement — Éligibilité confirmée`,
+                    label: isFr ? 'Confirmer fonds équipement' : 'Confirm Equipment Fund',
+                    color: 'bg-blue-50 text-blue-700 border-blue-200',
+                  }
+                : null,
+              email
+                ? {
+                    icon: '🌍',
+                    href: `mailto:${email}?subject=Programme export — Prochaines étapes`,
+                    label: isFr ? 'Initier programme export' : 'Initiate Export Program',
+                    color: 'bg-red-50 text-red-700 border-red-200',
+                  }
+                : null,
+              email
+                ? {
+                    icon: '🌾',
+                    href: `mailto:${email}?subject=Production hors-saison — Opportunité`,
+                    label: isFr ? 'Production hors-saison' : 'Off-Season Production',
+                    color: 'bg-orange-50 text-orange-700 border-orange-200',
+                  }
+                : null,
+            ]
+              .filter(Boolean)
+              .map((action) =>
               action.href ? (
                 <a
                   key={action.label}
@@ -606,15 +644,9 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
   const filtered =
     statusFilter === 'all'
       ? cooperativesForView
-      : cooperativesForView.filter((c) => (c.status || 'pending') === statusFilter);
-
-  const growthForView = useMemo(() => {
-    if (!globalCountryFilter) return growthCoops;
-    const cf = globalCountryFilter.toLowerCase();
-    return growthCoops.filter((c) =>
-      `${c.country || ''} ${c.regionCity || ''}`.toLowerCase().includes(cf)
-    );
-  }, [growthCoops, globalCountryFilter]);
+      : statusFilter === 'active'
+        ? cooperativesForView.filter((c) => c.status === 'active' && c.paymentReceived === true)
+        : cooperativesForView.filter((c) => (c.status || 'pending') === statusFilter);
 
   return (
     <div className="p-4 space-y-5">
@@ -756,7 +788,9 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
           },
           {
             label: isFr ? 'Actives' : 'Active',
-            value: cooperativesForView.filter((c) => c.status === 'active').length,
+            value: cooperativesForView.filter(
+              (c) => c.status === 'active' && c.paymentReceived === true
+            ).length,
             bg: 'bg-green-50',
             color: 'text-green-700',
           },
@@ -767,8 +801,8 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
             color: 'text-yellow-700',
           },
           {
-            label: isFr ? '⏳ Paiement en attente' : '⏳ Awaiting Payment',
-            value: cooperativesForView.filter((c) => c.status === 'pending_payment' || c.paymentReceived === false).length,
+            label: isFr ? '⏳ En attente de paiement' : '⏳ Awaiting Payment',
+            value: cooperativesForView.filter((c) => c.status === 'pending_payment').length,
             bg: 'bg-amber-50',
             color: 'text-amber-700',
           },

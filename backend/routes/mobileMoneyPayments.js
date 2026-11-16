@@ -412,6 +412,19 @@ router.get('/pending', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/mobile-money/all — admin: pending + confirmed + rejected
+router.get('/all', authenticateToken, async (req, res) => {
+  try {
+    const status = String(req.query.status || '').trim();
+    const filter = {};
+    if (['pending', 'confirmed', 'rejected'].includes(status)) filter.status = status;
+    const payments = await MobileMoneyPayment.find(filter).sort({ createdAt: -1 }).limit(500).lean();
+    return res.json({ success: true, payments, count: payments.length });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
+  }
+});
+
 // GET /api/mobile-money/my-status — coop or processor
 router.get('/my-status', async (req, res) => {
   try {

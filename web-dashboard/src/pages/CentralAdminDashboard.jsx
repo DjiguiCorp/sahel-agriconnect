@@ -25,6 +25,7 @@ import GovernanceTab from '../components/admin/GovernanceTab';
 import FarmerNeedsTab from '../components/admin/FarmerNeedsTab';
 import MarketPricesTab from '../components/admin/MarketPricesTab';
 import PendingMobilePayments, {
+  AdminPaymentsPanel,
   usePendingMobilePaymentCount,
 } from '../components/admin/PendingMobilePayments';
 import Modal from '../components/Modal';
@@ -126,11 +127,12 @@ function parseMoneyRangePotential(s) {
   return Math.max(...nums);
 }
 
-function MetricCard({ title, value }) {
+function MetricCard({ title, value, subtitle }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <p className="text-sm font-semibold text-gray-600">{title}</p>
       <p className="mt-2 text-2xl font-extrabold text-brand-forest">{value}</p>
+      {subtitle ? <p className="mt-1 text-xs font-semibold text-amber-700">{subtitle}</p> : null}
     </div>
   );
 }
@@ -181,6 +183,7 @@ function OverviewControlTower({ onGoTab }) {
     investors: 0,
     investorPotential: 0,
     activeCoops: 0,
+    pendingPaymentCoops: 0,
     coopAnnual: 0,
     certifiedProducers: 0,
     certificationRevenue: 0,
@@ -229,6 +232,8 @@ function OverviewControlTower({ onGoTab }) {
         pipelineRes,
         farmersAllRes,
         coopActiveRes,
+        coopPendingPayRes,
+        paymentsLedgerRes,
         farmerRecentRes,
         investorRecentRes,
         coopRecentRes,
@@ -245,6 +250,10 @@ function OverviewControlTower({ onGoTab }) {
         fetch(`${API_BASE_URL}/api/investors/status-summary`, { headers }),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=500`, { headers }),
         fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations?status=active`, { headers }),
+        fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations?status=pending_payment`, {
+          headers,
+        }),
+        fetch(`${API_BASE_URL}/api/admin/payments/ledger`, { headers }),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=2`, { headers }),
         fetch(`${API_BASE_URL}/api/investors`, { headers }),
         fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations`, { headers }),
@@ -263,6 +272,8 @@ function OverviewControlTower({ onGoTab }) {
       const pipelineJson = await pipelineRes.json().catch(() => ({}));
       const farmersAllJson = await farmersAllRes.json().catch(() => ({}));
       const coopActiveJson = await coopActiveRes.json().catch(() => ({}));
+      const coopPendingPayJson = await coopPendingPayRes.json().catch(() => ({}));
+      const paymentsLedgerJson = await paymentsLedgerRes.json().catch(() => ({}));
 
       const farmerRecentJson = await farmerRecentRes.json().catch(() => ({}));
       const investorRecentJson = await investorRecentRes.json().catch(() => ({}));
@@ -281,7 +292,13 @@ function OverviewControlTower({ onGoTab }) {
       setPendingOpps(opps.filter((o) => o.status === 'pending').length);
       setNewExpert(Array.isArray(expertNewJson?.requests) ? expertNewJson.requests.length : 0);
       setNewQuotes(Array.isArray(quoteNewJson?.quoteRequests) ? quoteNewJson.quoteRequests.length : 0);
-      setPendingCoops(Array.isArray(coopPendingJson?.registrations) ? coopPendingJson.registrations.length : 0);
+      const pendingReview = Array.isArray(coopPendingJson?.registrations)
+        ? coopPendingJson.registrations.length
+        : 0;
+      const pendingPayList = Array.isArray(coopPendingPayJson?.registrations)
+        ? coopPendingPayJson.registrations
+        : [];
+      setPendingCoops(pendingReview + pendingPayList.length);
 
       const licenses = Array.isArray(licensesJson?.licenses) ? licensesJson.licenses : [];
       const activeLicenses = licenses.filter((l) => l.status === 'active');
@@ -293,15 +310,26 @@ function OverviewControlTower({ onGoTab }) {
       const farmersAll = Array.isArray(farmersAllJson?.farmers) ? farmersAllJson.farmers : [];
       const certifiedProducers = farmersAll.filter((f) => String(f.qualityLevel || '').toLowerCase() === 'international').length;
 
-      const activeCoops = Array.isArray(coopActiveJson?.registrations) ? coopActiveJson.registrations.length : 0;
+      // Only count cooperatives that are active AND have a confirmed payment flag.
+      // pending_payment must never inflate this or revenue.
+      const activeRegs = Array.isArray(coopActiveJson?.registrations)
+        ? coopActiveJson.registrations
+        : [];
+      const activePaidCoops = activeRegs.filter((c) => c.paymentReceived === true).length;
+
+      const ledgerSummary = paymentsLedgerJson?.success ? paymentsLedgerJson.summary : null;
+      const coopAnnual = Number(ledgerSummary?.coopAnnualRevenue) || 0;
+      const pendingPaymentCoops =
+        Number(ledgerSummary?.pendingPaymentCoops) || pendingPayList.length;
 
       setMetrics({
         activeLicenses: activeLicenses.length,
         mrr,
         investors: investors.length,
         investorPotential,
-        activeCoops,
-        coopAnnual: activeCoops * 199,
+        activeCoops: Number(ledgerSummary?.activePaidCoops) || activePaidCoops,
+        pendingPaymentCoops,
+        coopAnnual,
         certifiedProducers,
         certificationRevenue: certifiedProducers * 299,
       });
@@ -459,6 +487,13 @@ function OverviewControlTower({ onGoTab }) {
         <MetricCard
           title={`${t('adminDashboard.activeCooperatives')} • ${t('adminDashboard.annualRevenue')}`}
           value={`${metrics.activeCoops} • ${fmtMoney(metrics.coopAnnual)}`}
+          subtitle={
+            metrics.pendingPaymentCoops
+              ? `${metrics.pendingPaymentCoops} ${
+                  i18n.language === 'fr' ? 'en attente de paiement' : 'awaiting payment'
+                }`
+              : undefined
+          }
         />
         <MetricCard
           title={`${t('adminDashboard.certifiedProducers')} • ${t('adminDashboard.certificationRevenue')}`}
@@ -1887,7 +1922,7 @@ const CentralAdminDashboard = () => {
           </div>
           {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
           {activeTab === 'payments' && (
-            <PendingMobilePayments token={adminToken} isFr={isFr} />
+            <AdminPaymentsPanel token={adminToken} isFr={isFr} />
           )}
           {activeTab === 'notifications' && <NotificationsPanel />}
           {activeTab === 'deletions' && (

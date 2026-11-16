@@ -28,9 +28,15 @@ export default class ErrorBoundary extends Component {
             <p className="text-sm font-medium text-amber-800">
               {this.props.fallbackMessage || 'This section is temporarily unavailable.'}
             </p>
-            <p className="text-xs text-amber-600 mt-1">
-              The server may be starting up — please wait 30 seconds and refresh.
-            </p>
+            {this.state.error?.message ? (
+              <p className="text-xs text-amber-700 mt-1 font-mono break-all">
+                {String(this.state.error.message).slice(0, 180)}
+              </p>
+            ) : (
+              <p className="text-xs text-amber-600 mt-1">
+                Please try again. If it persists, reload the page.
+              </p>
+            )}
             <button
               type="button"
               onClick={() => this.setState({ hasError: false })}
@@ -44,22 +50,27 @@ export default class ErrorBoundary extends Component {
     }
 
     return (
-      <div
-        className="min-h-[50vh] flex items-center justify-center px-4 py-12"
-        style={{ background: 'transparent' }}
-      >
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-amber-400" />
+      <div className="min-h-[50vh] flex items-center justify-center px-4 py-12 bg-gray-50">
+        <div className="text-center max-w-md rounded-2xl border border-amber-200 bg-white p-8 shadow-sm">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-amber-600" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
-          <p className="text-white/60 text-sm mb-6">
-            Our server may be temporarily unavailable. This usually resolves in under a minute.
+          <h2 className="text-xl font-bold text-[#1a3c2e] mb-2">Something went wrong</h2>
+          <p className="text-gray-600 text-sm mb-2">
+            {this.props.fallbackMessage ||
+              'This section hit an unexpected error. Try again or reload the page.'}
           </p>
+          {this.state.error?.message ? (
+            <p className="text-xs text-gray-400 mb-6 font-mono break-all">
+              {String(this.state.error.message).slice(0, 180)}
+            </p>
+          ) : (
+            <div className="mb-6" />
+          )}
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-[#1D9E75] text-white rounded-xl font-semibold text-sm hover:opacity-90 transition"
+            className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-[#1a3c2e] text-white rounded-xl font-semibold text-sm hover:opacity-90 transition"
           >
             <RefreshCw className="w-4 h-4" /> Reload page
           </button>

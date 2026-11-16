@@ -216,7 +216,9 @@ export default function OptimizationTab({ token, isFr }) {
         {[
           {
             label: isFr ? 'Coopératives actives' : 'Active Cooperatives',
-            value: cooperatives.length,
+            value: cooperatives.filter(
+              (c) => c.status === 'active' && c.paymentReceived === true
+            ).length,
             icon: '🤝',
           },
           {
