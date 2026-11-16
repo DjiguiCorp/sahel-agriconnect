@@ -3,6 +3,12 @@ import HarvestLog from '../models/HarvestLog.js';
 import ICSScore from '../models/ICSScore.js';
 import { getVerifiedMemberCount } from './coopMemberUpgrade.js';
 
+/** Encode note key + params for frontend i18n, e.g. note_verified_members|count=12 */
+function noteKey(key, params = {}) {
+  const parts = Object.entries(params).map(([k, v]) => `${k}=${v}`);
+  return parts.length ? `${key}|${parts.join('|')}` : key;
+}
+
 function readinessFromTotal(total) {
   if (total >= 75) return 'audit_ready';
   if (total >= 50) return 'nearly_ready';
@@ -19,7 +25,7 @@ function scoreMemberRecords(verifiedCount) {
   return {
     score,
     maxScore: 20,
-    notes: `${verifiedCount} verified member(s)`,
+    notes: noteKey('note_verified_members', { count: verifiedCount }),
   };
 }
 
@@ -32,7 +38,7 @@ function scoreHarvestLogs(logCount) {
   return {
     score,
     maxScore: 20,
-    notes: `${logCount} harvest log(s)`,
+    notes: noteKey('note_harvest_logs', { count: logCount }),
   };
 }
 
@@ -46,21 +52,21 @@ function scorePctBand(pct, maxScore) {
 function scoreInputTracking(logs) {
   const total = logs.length;
   if (total === 0) {
-    return { score: 0, maxScore: 15, notes: '0% of harvest logs have inputs' };
+    return { score: 0, maxScore: 15, notes: noteKey('note_inputs_none') };
   }
   const withInputs = logs.filter((l) => Array.isArray(l.inputs) && l.inputs.length > 0).length;
   const pct = Math.round((withInputs / total) * 100);
   return {
     score: scorePctBand(pct, 15),
     maxScore: 15,
-    notes: `${pct}% of harvest logs include inputs (${withInputs}/${total})`,
+    notes: noteKey('note_inputs_pct', { pct, with: withInputs, total }),
   };
 }
 
 function scorePlotDocumentation(logs) {
   const total = logs.length;
   if (total === 0) {
-    return { score: 0, maxScore: 15, notes: '0% of harvest logs have plot documentation' };
+    return { score: 0, maxScore: 15, notes: noteKey('note_plot_none') };
   }
   const documented = logs.filter(
     (l) =>
@@ -73,7 +79,7 @@ function scorePlotDocumentation(logs) {
   return {
     score: scorePctBand(pct, 15),
     maxScore: 15,
-    notes: `${pct}% of harvest logs have GPS + plot size (${documented}/${total})`,
+    notes: noteKey('note_plot_pct', { pct, with: documented, total }),
   };
 }
 
@@ -85,32 +91,29 @@ function hasUploadedDocument(coop) {
 }
 
 function scoreCoopVerification(coop) {
-  const parts = [];
   let score = 0;
-
-  if (coop.emailVerified) {
-    score += 5;
-    parts.push('email verified');
-  }
-  if (hasUploadedDocument(coop)) {
-    score += 5;
-    parts.push('document uploaded');
-  }
   const declared = Number(coop.memberCount) || 0;
-  if (declared > 0) {
-    score += 5;
-    parts.push(`declared members: ${declared}`);
-  }
   const plan = String(coop.tier || 'free').toLowerCase();
-  if (plan !== 'free') {
-    score += 5;
-    parts.push(`plan: ${plan}`);
-  }
+  const emailVerified = !!coop.emailVerified;
+  const document = hasUploadedDocument(coop);
 
+  if (emailVerified) score += 5;
+  if (document) score += 5;
+  if (declared > 0) score += 5;
+  if (plan !== 'free') score += 5;
+
+  const any = emailVerified || document || declared > 0 || plan !== 'free';
   return {
     score,
     maxScore: 20,
-    notes: parts.length ? parts.join('; ') : 'No verification criteria met',
+    notes: any
+      ? noteKey('note_coop_verification', {
+          email: emailVerified ? 1 : 0,
+          document: document ? 1 : 0,
+          declared,
+          plan,
+        })
+      : noteKey('note_coop_none'),
   };
 }
 
@@ -121,12 +124,12 @@ function scoreSubscriptionActive(coop) {
     (coop.paymentReceived === true || plan === 'starter' || plan === 'growth');
 
   if (plan === 'growth' && active) {
-    return { score: 10, maxScore: 10, notes: 'Growth plan active' };
+    return { score: 10, maxScore: 10, notes: noteKey('note_subscription_growth') };
   }
   if (plan === 'starter') {
-    return { score: 5, maxScore: 10, notes: 'Starter plan' };
+    return { score: 5, maxScore: 10, notes: noteKey('note_subscription_starter') };
   }
-  return { score: 0, maxScore: 10, notes: 'Free / inactive plan' };
+  return { score: 0, maxScore: 10, notes: noteKey('note_subscription_free') };
 }
 
 function buildGaps(breakdown, verifiedCount, logCount, coop) {
@@ -134,47 +137,43 @@ function buildGaps(breakdown, verifiedCount, logCount, coop) {
   const recommendations = [];
 
   if (breakdown.memberRecords.score < 20) {
-    missingItems.push('Insufficient verified member records');
+    missingItems.push('insufficient_verified_members');
     recommendations.push(
-      verifiedCount < 51
-        ? `Verify more members (currently ${verifiedCount}; target 51+ for full points)`
-        : 'Keep verified member roster up to date'
+      verifiedCount < 51 ? noteKey('verify_more_members', { count: verifiedCount }) : 'keep_roster_up_to_date'
     );
   }
   if (breakdown.harvestLogs.score < 20) {
-    missingItems.push('Insufficient harvest logs');
+    missingItems.push('insufficient_harvest_logs');
     recommendations.push(
-      logCount < 30
-        ? `Record more harvest logs (currently ${logCount}; target 30+)`
-        : 'Continue logging every harvest'
+      logCount < 30 ? noteKey('record_more_harvest_logs', { count: logCount }) : 'continue_logging_harvests'
     );
   }
   if (breakdown.inputTracking.score < 15) {
-    missingItems.push('Incomplete input tracking on harvest logs');
-    recommendations.push('Add fertilizer/pesticide/organic inputs on each harvest log');
+    missingItems.push('incomplete_input_tracking');
+    recommendations.push('add_inputs_to_logs');
   }
   if (breakdown.plotDocumentation.score < 15) {
-    missingItems.push('Incomplete plot GPS / size documentation');
-    recommendations.push('Record plot GPS coordinates and plot size (hectares) on harvest logs');
+    missingItems.push('incomplete_plot_documentation');
+    recommendations.push('record_plot_gps');
   }
   if (!coop.emailVerified) {
-    missingItems.push('Email not verified');
-    recommendations.push('Verify the cooperative leader email address');
+    missingItems.push('email_not_verified');
+    recommendations.push('verify_email');
   }
   if (!hasUploadedDocument(coop)) {
-    missingItems.push('No supporting document uploaded');
-    recommendations.push('Upload at least one cooperative registration or legitimacy document');
+    missingItems.push('no_document_uploaded');
+    recommendations.push('upload_document');
   }
   if (!(Number(coop.memberCount) > 0)) {
-    missingItems.push('Declared member count is zero');
-    recommendations.push('Set the declared member count for the cooperative');
+    missingItems.push('declared_member_count_zero');
+    recommendations.push('set_declared_member_count');
   }
   if (String(coop.tier || 'free').toLowerCase() === 'free') {
-    missingItems.push('No paid subscription plan');
-    recommendations.push('Upgrade from free to Starter or Growth');
+    missingItems.push('no_paid_subscription');
+    recommendations.push('upgrade_from_free');
   }
   if (breakdown.subscriptionActive.score < 10) {
-    recommendations.push('Upgrade to an active Growth subscription for full ICS subscription points');
+    recommendations.push('upgrade_to_growth');
   }
 
   return { missingItems, recommendations };
