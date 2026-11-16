@@ -21,16 +21,20 @@
    */
   input.bg-white:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not([type='hidden']),
   input.bg-gray-50:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not([type='hidden']),
+  input.bg-transparent:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not([type='hidden']),
   textarea.bg-white,
   textarea.bg-gray-50,
+  textarea.bg-transparent,
   select.bg-white,
   select.bg-gray-50 {
-    color: #111827; /* gray-900 */
+    color: #1a3a2a;
   }
   input.bg-white::placeholder,
   input.bg-gray-50::placeholder,
+  input.bg-transparent::placeholder,
   textarea.bg-white::placeholder,
-  textarea.bg-gray-50::placeholder {
+  textarea.bg-gray-50::placeholder,
+  textarea.bg-transparent::placeholder {
     color: #9ca3af; /* gray-400 */
     opacity: 1;
   }

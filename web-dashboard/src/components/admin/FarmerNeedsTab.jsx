@@ -43,8 +43,8 @@ export default function FarmerNeedsTab({ token, isFr }) {
 
       const needsData = needsRes.ok ? await needsRes.json() : {};
       const statsData = statsRes.ok ? await statsRes.json() : {};
-      setNeeds(needsData.needs || []);
-      setStats(statsData);
+      setNeeds(Array.isArray(needsData?.needs) ? needsData.needs : []);
+      setStats(statsData && typeof statsData === 'object' ? statsData : {});
     } catch {
       setNeeds([]);
     }

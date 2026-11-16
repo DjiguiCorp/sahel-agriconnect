@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import DeletionRequest from '../models/DeletionRequest.js';
 import Farmer from '../models/Farmer.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
+import Cooperative from '../models/Cooperative.js';
 import Processor from '../models/Processor.js';
 import Investor from '../models/Investor.js';
 import GovernmentAdmin from '../models/GovernmentAdmin.js';
@@ -65,11 +66,16 @@ async function runAdminHardDelete(type, id, { reason, notify, isFr = false }) {
     return { ok: false, status: 400, error: `Unknown type: ${type}` };
   }
 
-  const Model = MODEL_MAP[type];
-  const user = await Model.findById(id).lean();
+  let Model = MODEL_MAP[type];
+  let user = await Model.findById(id).lean();
+  // Legacy Cooperative collection (admin directory) — searchable + deletable as cooperative
+  if (!user && type === 'cooperative') {
+    user = await Cooperative.findById(id).lean();
+    if (user) Model = Cooperative;
+  }
   if (!user) return { ok: false, status: 404, error: 'User not found' };
 
-  const email = user.email || user.emailContact;
+  const email = user.email || user.emailContact || user.contact || '';
   const name =
     user.nom ||
     user.name ||
@@ -269,7 +275,14 @@ router.get('/admin/users', authenticateToken, async (req, res) => {
     }
 
     const Model = MODEL_MAP[type];
-    const searchRegex = search ? new RegExp(String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
+    const rawSearch = String(search || '').trim();
+    // Allow short queries (2+ chars); empty search lists recent users of that type
+    if (rawSearch && rawSearch.length === 1) {
+      return res.json({ success: true, users: [], type, message: 'Enter at least 2 characters' });
+    }
+    const searchRegex = rawSearch
+      ? new RegExp(rawSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+      : null;
 
     let query = {};
     if (searchRegex) {
@@ -284,6 +297,7 @@ router.get('/admin/users', authenticateToken, async (req, res) => {
             { nomCooperative: searchRegex },
             { email: searchRegex },
             { leaderName: searchRegex },
+            { nom: searchRegex },
           ],
         };
       } else if (type === 'government' || type === 'ngo' || type === 'enterprise') {
@@ -298,6 +312,69 @@ router.get('/admin/users', authenticateToken, async (req, res) => {
       }
     } else if (type === 'government' || type === 'ngo' || type === 'enterprise') {
       query = { orgType: type };
+    }
+
+    // Cooperatives: search BOTH platform registrations and legacy Cooperative directory
+    if (type === 'cooperative') {
+      const platformQuery = searchRegex
+        ? {
+            $or: [
+              { cooperativeName: searchRegex },
+              { nomCooperative: searchRegex },
+              { email: searchRegex },
+              { leaderName: searchRegex },
+            ],
+          }
+        : {};
+      const legacyQuery = searchRegex
+        ? {
+            $or: [
+              { nom: searchRegex },
+              { contact: searchRegex },
+              { responsable: searchRegex },
+              { localisation: searchRegex },
+              { region: searchRegex },
+            ],
+          }
+        : {};
+
+      const [platform, legacy] = await Promise.all([
+        CooperativePlatformRegistration.find(platformQuery)
+          .select(
+            '_id nom name fullName email emailContact cooperativeName nomCooperative leaderName organization country status statut orgType createdAt'
+          )
+          .sort({ createdAt: -1 })
+          .limit(50)
+          .lean(),
+        Cooperative.find(legacyQuery)
+          .select('_id nom contact responsable region country localisation statut createdAt')
+          .sort({ createdAt: -1 })
+          .limit(50)
+          .lean(),
+      ]);
+
+      const platformIds = new Set(platform.map((p) => String(p._id)));
+      const legacyMapped = legacy
+        .filter((c) => !platformIds.has(String(c._id)))
+        .map((c) => ({
+          _id: c._id,
+          cooperativeName: c.nom,
+          nomCooperative: c.nom,
+          nom: c.nom,
+          email: c.contact || '',
+          leaderName: c.responsable || '',
+          country: c.country || '',
+          status: c.statut || '',
+          statut: c.statut || '',
+          createdAt: c.createdAt,
+          _source: 'legacy',
+        }));
+
+      return res.json({
+        success: true,
+        users: [...platform, ...legacyMapped].slice(0, 50),
+        type,
+      });
     }
 
     const users = await Model.find(query)

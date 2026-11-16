@@ -23,7 +23,14 @@ function mapBenefitTypeToPerk(key) {
 }
 
 function perkStatut(p) {
+  if (!p || typeof p !== 'object') return 'pending';
   return p.statut || p.status || 'pending';
+}
+
+function asArray(value, preferredKey) {
+  if (Array.isArray(value)) return value;
+  if (preferredKey && Array.isArray(value?.[preferredKey])) return value[preferredKey];
+  return [];
 }
 
 export default function BenefitsTab({ token, isFr }) {
@@ -62,23 +69,22 @@ export default function BenefitsTab({ token, isFr }) {
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=800`, { headers }).then((r) => r.json()),
       ]);
 
-      const admin = adminJ.cooperatives || [];
-      const plat = platJ.registrations || [];
+      const admin = asArray(adminJ, 'cooperatives');
+      const plat = asArray(platJ, 'registrations');
       setCooperatives(mergeCooperativeSources(admin, plat));
 
-      setPerks(perksJ.perks || perksJ || []);
-      const eq = equipJ.applications || equipJ || [];
-      setEquipmentApps(Array.isArray(eq) ? eq : []);
-      setCertApps(certsJ.certifications || certsJ || []);
-      const tr = trainsJ.trainings || trainsJ || [];
-      setTrainings(Array.isArray(tr) ? tr : []);
-      const fl = Array.isArray(farmersJ) ? farmersJ : farmersJ.farmers || [];
-      setFarmers(fl);
+      setPerks(asArray(perksJ, 'perks'));
+      setEquipmentApps(asArray(equipJ, 'applications'));
+      setCertApps(asArray(certsJ, 'certifications'));
+      setTrainings(asArray(trainsJ, 'trainings'));
+      setFarmers(asArray(farmersJ, 'farmers'));
     } catch {
+      setCooperatives([]);
       setPerks([]);
       setEquipmentApps([]);
       setCertApps([]);
       setTrainings([]);
+      setFarmers([]);
     } finally {
       setLoading(false);
     }
@@ -210,40 +216,47 @@ export default function BenefitsTab({ token, isFr }) {
     }
   };
 
+  const safePerks = Array.isArray(perks) ? perks : [];
+  const safeCooperatives = Array.isArray(cooperatives) ? cooperatives : [];
+
   const filteredPerks = useMemo(() => {
-    if (filter === 'all') return perks;
-    return perks.filter((p) => perkStatut(p) === filter);
-  }, [perks, filter]);
+    if (filter === 'all') return safePerks;
+    return safePerks.filter((p) => perkStatut(p) === filter);
+  }, [safePerks, filter]);
 
   const stats = [
     {
       label: isFr ? 'Total demandes' : 'Total requests',
-      value: perks.length,
+      value: safePerks.length,
       bg: 'bg-gray-50',
       color: 'text-gray-700',
     },
     {
       label: isFr ? 'En attente' : 'Pending',
-      value: perks.filter((p) => perkStatut(p) === 'pending').length,
+      value: safePerks.filter((p) => perkStatut(p) === 'pending').length,
       bg: 'bg-yellow-50',
       color: 'text-yellow-700',
     },
     {
       label: isFr ? 'Approuvés' : 'Approved',
-      value: perks.filter((p) => perkStatut(p) === 'approved').length,
+      value: safePerks.filter((p) => perkStatut(p) === 'approved').length,
       bg: 'bg-green-50',
       color: 'text-green-700',
     },
     {
       label: isFr ? 'Remplis' : 'Fulfilled',
-      value: perks.filter((p) => perkStatut(p) === 'fulfilled').length,
+      value: safePerks.filter((p) => perkStatut(p) === 'fulfilled').length,
       bg: 'bg-blue-50',
       color: 'text-blue-700',
     },
   ];
 
   const perksByBenefitKey = (key) =>
-    perks.filter((p) => (p.type || p.benefitType) === key || (p.details && String(p.notes).includes(key))).length;
+    safePerks.filter(
+      (p) =>
+        (p?.type || p?.benefitType) === key ||
+        (p?.details && String(p?.notes || '').includes(key))
+    ).length;
 
   const coopName = (coop) => coop.cooperativeName || coop.nomCooperative || coop.nom;
 
@@ -314,7 +327,7 @@ export default function BenefitsTab({ token, isFr }) {
           </h3>
         </div>
         <div className="divide-y divide-gray-100">
-          {cooperatives.length === 0 ? (
+          {safeCooperatives.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-4xl mb-3">🎁</p>
               <p className="text-gray-500 text-sm">
@@ -322,23 +335,23 @@ export default function BenefitsTab({ token, isFr }) {
               </p>
             </div>
           ) : (
-            cooperatives.map((coop) => {
+            safeCooperatives.map((coop) => {
               const name = coopName(coop);
-              const coopPerks = perks.filter(
+              const coopPerks = safePerks.filter(
                 (p) =>
-                  String(p.cooperativeId?._id || p.cooperativeId) === String(coop._id)
+                  String(p?.cooperativeId?._id || p?.cooperativeId) === String(coop?._id)
               );
-              const coopEquip = equipmentApps.filter(
+              const coopEquip = (Array.isArray(equipmentApps) ? equipmentApps : []).filter(
                 (e) =>
-                  String(e.cooperativeName || '').toLowerCase() === String(name || '').toLowerCase()
+                  String(e?.cooperativeName || '').toLowerCase() === String(name || '').toLowerCase()
               );
-              const coopCert = certApps.filter((c) => {
-                const fn = c.farmerId?.nomCooperative || c.farmerId?.nom || '';
+              const coopCert = (Array.isArray(certApps) ? certApps : []).filter((c) => {
+                const fn = c?.farmerId?.nomCooperative || c?.farmerId?.nom || '';
                 return name && String(fn).toLowerCase().includes(String(name).slice(0, 8).toLowerCase());
               });
-              const coopTraining = trainings.filter(
+              const coopTraining = (Array.isArray(trainings) ? trainings : []).filter(
                 (t) =>
-                  String(t.cooperativeId || t.cooperative || '') === String(coop._id)
+                  String(t?.cooperativeId || t?.cooperative || '') === String(coop?._id)
               );
               const country = coop.country || coop.pays;
               const certLevel = coop.certificationStatus || 'None';
@@ -394,7 +407,7 @@ export default function BenefitsTab({ token, isFr }) {
                         icon: '🎁',
                         label: isFr ? 'Avantages' : 'Benefits',
                         count: coopPerks.length,
-                        status: perkStatut(coopPerks[0]),
+                        status: coopPerks[0] ? perkStatut(coopPerks[0]) : null,
                       },
                     ].map((item) => (
                       <div key={item.label} className="bg-gray-50 rounded-lg p-2.5 text-center">
@@ -588,7 +601,7 @@ export default function BenefitsTab({ token, isFr }) {
                   className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">{isFr ? 'Sélectionner...' : 'Select...'}</option>
-                  {cooperatives.map((c) => (
+                  {safeCooperatives.map((c) => (
                     <option key={c._id} value={c._id}>
                       {coopName(c)}
                     </option>

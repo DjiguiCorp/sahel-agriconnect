@@ -29,6 +29,7 @@ import PendingMobilePayments, {
   usePendingMobilePaymentCount,
 } from '../components/admin/PendingMobilePayments';
 import Modal from '../components/Modal';
+import { ApiSection } from '../components/ErrorBoundary';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -1199,17 +1200,23 @@ function AdminDeleteUserPanel({ token }) {
   const [selectedUsers, setSelectedUsers] = useState(new Set());
 
   const search = async () => {
+    const q = String(searchQuery || '').trim();
+    if (q && q.length < 2) {
+      setUsers([]);
+      return;
+    }
     setLoading(true);
     setUsers([]);
     setSelectedUsers(new Set());
     try {
       const params = new URLSearchParams({ type: selectedType });
-      if (searchQuery) params.set('search', searchQuery);
+      if (q) params.set('search', q);
       const r = await fetch(`${API_BASE_URL}/api/deletion-requests/admin/users?${params}`, { headers });
-      const d = await r.json();
-      if (d.success) setUsers(d.users || []);
+      const d = await r.json().catch(() => ({}));
+      if (d.success) setUsers(Array.isArray(d.users) ? d.users : []);
+      else setUsers([]);
     } catch {
-      /* ignore */
+      setUsers([]);
     }
     setLoading(false);
   };
@@ -1287,9 +1294,15 @@ function AdminDeleteUserPanel({ token }) {
   };
 
   const displayName = (u) =>
-    u.nom || u.name || u.fullName || u.cooperativeName || u.nomCooperative || u.organization || '—';
-  const displayEmail = (u) => u.email || u.emailContact || '—';
-  const displayStatus = (u) => u.status || u.statut || '—';
+    u?.nom ||
+    u?.name ||
+    u?.fullName ||
+    u?.cooperativeName ||
+    u?.nomCooperative ||
+    u?.organization ||
+    '—';
+  const displayEmail = (u) => u?.email || u?.emailContact || u?.contact || '—';
+  const displayStatus = (u) => u?.status || u?.statut || '—';
 
   const typeInfo = USER_TYPES.find((t) => t.key === selectedType);
 
@@ -1350,13 +1363,14 @@ function AdminDeleteUserPanel({ token }) {
                 ? `Rechercher un ${(typeInfo?.label || 'utilisateur').toLowerCase()} par nom, email...`
                 : `Search ${(typeInfo?.label || 'user').toLowerCase()} by name, email...`
             }
-            className="flex-1 py-3 text-sm outline-none bg-transparent"
+            className="flex-1 py-3 text-sm outline-none bg-white text-gray-900 placeholder:text-gray-400"
+            style={{ color: '#1a3a2a' }}
           />
         </div>
         <button
           type="button"
           onClick={search}
-          disabled={loading}
+          disabled={loading || (String(searchQuery || '').trim().length === 1)}
           className="px-5 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50"
           style={{ background: '#1a3c2e' }}
         >
@@ -1557,7 +1571,8 @@ function AdminDeleteUserPanel({ token }) {
                         ? "Ex: Demande de l'utilisateur, violation des CGU, compte frauduleux..."
                         : 'Ex: User request, ToS violation, fraudulent account...'
                     }
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                    style={{ color: '#1a3a2a' }}
                   />
                 </div>
 
@@ -1920,40 +1935,51 @@ const CentralAdminDashboard = () => {
               </button>
             ) : null}
           </div>
-          {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
-          {activeTab === 'payments' && (
-            <AdminPaymentsPanel token={adminToken} isFr={isFr} />
-          )}
-          {activeTab === 'notifications' && <NotificationsPanel />}
-          {activeTab === 'deletions' && (
-            <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />
-          )}
-          {activeTab === 'deleteUsers' && <AdminDeleteUserPanel token={adminToken} />}
-          {activeTab === 'farmers' && (
-            <RealTimeFarmers globalCountryFilter={globalCountryFilter} adminToken={adminToken} />
-          )}
-          {activeTab === 'farmerNeeds' && <FarmerNeedsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'cooperatives' && (
-            <CooperativesTab token={adminToken} isFr={isFr} globalCountryFilter={globalCountryFilter} />
-          )}
-          {activeTab === 'centers' && <CentersManagement globalCountryFilter={globalCountryFilter} />}
-          {activeTab === 'trainings' && <TrainingsManagement />}
-          {activeTab === 'governance' && <GovernanceTab isFr={isFr} />}
-          {activeTab === 'perks' && <BenefitsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'irrigation' && <IrrigationTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'optimization' && (
-            <OptimizationTab token={adminToken} isFr={isFr} />
-          )}
-          {activeTab === 'expertRequests' && (
-            <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} globalCountryFilter={globalCountryFilter} />
-          )}
-          {activeTab === 'seasonal' && <PlanningTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'marketPrices' && <MarketPricesTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'reports' && <ReportsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'afriyield' && <AfriYieldManagement />}
-          {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}
+          <ApiSection
+            key={activeTab}
+            resetKey={activeTab}
+            isFr={isFr}
+            fallbackMessage={
+              isFr
+                ? 'Une erreur est survenue dans cette section.'
+                : 'An error occurred in this section.'
+            }
+          >
+            {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
+            {activeTab === 'payments' && (
+              <AdminPaymentsPanel token={adminToken} isFr={isFr} />
+            )}
+            {activeTab === 'notifications' && <NotificationsPanel />}
+            {activeTab === 'deletions' && (
+              <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />
+            )}
+            {activeTab === 'deleteUsers' && <AdminDeleteUserPanel token={adminToken} />}
+            {activeTab === 'farmers' && (
+              <RealTimeFarmers globalCountryFilter={globalCountryFilter} adminToken={adminToken} />
+            )}
+            {activeTab === 'farmerNeeds' && <FarmerNeedsTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'cooperatives' && (
+              <CooperativesTab token={adminToken} isFr={isFr} globalCountryFilter={globalCountryFilter} />
+            )}
+            {activeTab === 'centers' && <CentersManagement globalCountryFilter={globalCountryFilter} />}
+            {activeTab === 'trainings' && <TrainingsManagement />}
+            {activeTab === 'governance' && <GovernanceTab isFr={isFr} />}
+            {activeTab === 'perks' && <BenefitsTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'irrigation' && <IrrigationTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'optimization' && (
+              <OptimizationTab token={adminToken} isFr={isFr} />
+            )}
+            {activeTab === 'expertRequests' && (
+              <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} globalCountryFilter={globalCountryFilter} />
+            )}
+            {activeTab === 'seasonal' && <PlanningTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'marketPrices' && <MarketPricesTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'reports' && <ReportsTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'afriyield' && <AfriYieldManagement />}
+            {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}
+          </ApiSection>
         </div>
       </main>
     </div>

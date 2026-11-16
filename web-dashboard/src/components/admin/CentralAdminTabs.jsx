@@ -508,10 +508,11 @@ export function CertificationTab({ token, isFr }) {
         fetch(`${API_BASE_URL}/api/certifications`, { headers }).then((r) => r.json()),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=400`, { headers }).then((r) => r.json()),
       ]);
-      setCertifications(certs.certifications || certs || []);
-      setFarmers(Array.isArray(farm) ? farm : farm.farmers || []);
+      setCertifications(Array.isArray(certs?.certifications) ? certs.certifications : Array.isArray(certs) ? certs : []);
+      setFarmers(Array.isArray(farm) ? farm : Array.isArray(farm?.farmers) ? farm.farmers : []);
     } catch {
       setCertifications([]);
+      setFarmers([]);
     } finally {
       setLoading(false);
     }
@@ -528,10 +529,12 @@ export function CertificationTab({ token, isFr }) {
     { key: 'international', label: 'International (EU/USDA)', stars: '⭐⭐⭐' },
   ];
 
+  const safeCertifications = Array.isArray(certifications) ? certifications : [];
+
   const filtered = useMemo(() => {
-    if (certLevel === 'all') return certifications;
-    return certifications.filter((c) => (c.niveau || '').toLowerCase() === certLevel);
-  }, [certifications, certLevel]);
+    if (certLevel === 'all') return safeCertifications;
+    return safeCertifications.filter((c) => (c?.niveau || '').toLowerCase() === certLevel);
+  }, [safeCertifications, certLevel]);
 
   const saveCert = async () => {
     if (!form.farmerId) {
@@ -621,25 +624,25 @@ export function CertificationTab({ token, isFr }) {
         {[
           {
             label: isFr ? 'Total' : 'Total',
-            value: certifications.length,
+            value: safeCertifications.length,
             color: 'text-gray-700',
             bg: 'bg-gray-50',
           },
           {
             label: 'Local',
-            value: certifications.filter((c) => c.niveau === 'local').length,
+            value: safeCertifications.filter((c) => c?.niveau === 'local').length,
             color: 'text-green-700',
             bg: 'bg-green-50',
           },
           {
             label: 'Regional',
-            value: certifications.filter((c) => c.niveau === 'regional').length,
+            value: safeCertifications.filter((c) => c?.niveau === 'regional').length,
             color: 'text-blue-700',
             bg: 'bg-blue-50',
           },
           {
             label: 'International',
-            value: certifications.filter((c) => c.niveau === 'international').length,
+            value: safeCertifications.filter((c) => c?.niveau === 'international').length,
             color: 'text-amber-700',
             bg: 'bg-amber-50',
           },
@@ -765,21 +768,21 @@ export function CertificationTab({ token, isFr }) {
               </thead>
               <tbody>
                 {filtered.map((cert, i) => {
-                  const uiStat = STATUT_TO_UI[cert.statut] || 'pending';
+                  const uiStat = STATUT_TO_UI[cert?.statut] || 'pending';
                   return (
-                    <tr key={cert._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                      <td className="px-4 py-3 font-medium text-brand-forest">{cert.producteur}</td>
-                      <td className="px-4 py-3 text-gray-600">{cert.produit}</td>
+                    <tr key={cert?._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                      <td className="px-4 py-3 font-medium text-brand-forest">{cert?.producteur || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{cert?.produit || '—'}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs px-2 py-1 rounded-full bg-brand-forest/10 text-brand-forest font-medium">
-                          {cert.niveau}
+                          {cert?.niveau || '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <select
                           value={uiStat}
-                          onChange={(e) => updateStatus(cert._id, e.target.value)}
-                          className={`text-xs px-2 py-1 rounded-full border-0 cursor-pointer font-medium ${statusColor(cert.statut)}`}
+                          onChange={(e) => updateStatus(cert?._id, e.target.value)}
+                          className={`text-xs px-2 py-1 rounded-full border-0 cursor-pointer font-medium ${statusColor(cert?.statut)}`}
                         >
                           <option value="pending">{isFr ? 'En attente' : 'Pending'}</option>
                           <option value="in-progress">{isFr ? 'En cours' : 'In Progress'}</option>
@@ -969,7 +972,7 @@ export function LogisticsTab({ token, isFr }) {
         fetch(API_ENDPOINTS.LOGISTICS.BASE, { headers }).then((r) => r.json()),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=300`, { headers }).then((r) => r.json()),
       ]);
-      setLogistics(d.logistics || []);
+      setLogistics(Array.isArray(d?.logistics) ? d.logistics : []);
       const fl = Array.isArray(f) ? f : f.farmers || [];
       setFarmers(fl);
     } catch {
@@ -1063,25 +1066,27 @@ export function LogisticsTab({ token, isFr }) {
 
   const modeIcon = (m) => ({ road: '🚛', rail: '🚂', air: '✈️', sea: '🚢' }[m] || '🚛');
 
-  const rowUiStatus = (log) => mapLogisticsStatutToUi(log.statut);
+  const rowUiStatus = (log) => mapLogisticsStatutToUi(log?.statut);
+
+  const safeLogistics = Array.isArray(logistics) ? logistics : [];
 
   const stats = [
-    { label: isFr ? 'Total' : 'Total', value: logistics.length, color: 'text-gray-700', bg: 'bg-gray-50' },
+    { label: isFr ? 'Total' : 'Total', value: safeLogistics.length, color: 'text-gray-700', bg: 'bg-gray-50' },
     {
       label: isFr ? 'Planifiés' : 'Scheduled',
-      value: logistics.filter((l) => ['pending', 'scheduled'].includes(l.statut)).length,
+      value: safeLogistics.filter((l) => ['pending', 'scheduled'].includes(l?.statut)).length,
       color: 'text-blue-700',
       bg: 'bg-blue-50',
     },
     {
       label: isFr ? 'En transit' : 'In Transit',
-      value: logistics.filter((l) => l.statut === 'in_transit').length,
+      value: safeLogistics.filter((l) => l?.statut === 'in_transit').length,
       color: 'text-yellow-700',
       bg: 'bg-yellow-50',
     },
     {
       label: isFr ? 'Terminés' : 'Completed',
-      value: logistics.filter((l) => l.statut === 'completed').length,
+      value: safeLogistics.filter((l) => l?.statut === 'completed').length,
       color: 'text-green-700',
       bg: 'bg-green-50',
     },
@@ -1119,7 +1124,7 @@ export function LogisticsTab({ token, isFr }) {
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="text-center py-8 text-gray-400">{isFr ? 'Chargement...' : 'Loading...'}</div>
-        ) : logistics.length === 0 ? (
+        ) : safeLogistics.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-5xl mb-3">🚛</p>
             <p className="text-gray-500 font-medium mb-1">
@@ -1157,7 +1162,7 @@ export function LogisticsTab({ token, isFr }) {
                 </tr>
               </thead>
               <tbody>
-                {logistics.map((log, i) => {
+                {safeLogistics.map((log, i) => {
                   const t = log.transport;
                   const ui = rowUiStatus(log);
                   const veh = String(t?.vehicule || 'road').toLowerCase();

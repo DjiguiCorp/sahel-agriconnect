@@ -82,9 +82,7 @@ function App() {
                   path="/admin/central"
                   element={
                     <ProtectedRoute>
-                      <ApiSection>
-                        <CentralAdminDashboard />
-                      </ApiSection>
+                      <CentralAdminDashboard />
                     </ProtectedRoute>
                   }
                 />
