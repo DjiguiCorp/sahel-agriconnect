@@ -22,8 +22,31 @@ import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-01-27.acacia' })
+function assertStripeSecretKeyFormat(raw) {
+  const key = String(raw || '').trim();
+  if (!key) return null;
+  // Stripe secret keys are sk_live_… / sk_test_… (restricted: rk_…).
+  // Dashboard row IDs like mk_… are NOT API keys — using them causes auth failures.
+  if (/^mk_/i.test(key)) {
+    console.error(
+      '[stripe] STRIPE_SECRET_KEY looks like a dashboard object id (mk_…), not an API key. ' +
+        'Use the secret key token that starts with sk_live_ or sk_test_ from Developers → API keys.'
+    );
+    return null;
+  }
+  if (!/^sk_(live|test)_/.test(key) && !/^rk_(live|test)_/.test(key)) {
+    console.error(
+      '[stripe] STRIPE_SECRET_KEY has unexpected format (expected sk_live_/sk_test_/rk_…). prefix=',
+      key.slice(0, 12)
+    );
+    return null;
+  }
+  return key;
+}
+
+const stripeSecretKey = assertStripeSecretKeyFormat(process.env.STRIPE_SECRET_KEY);
+const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, { apiVersion: '2025-01-27.acacia' })
   : null;
 
 /**
