@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import { API_ENDPOINTS } from '../config/api';
 import TraceabilityLookup from './TraceabilityLookup';
+import { cropLabel } from '../lib/crops';
 
 function fmtDate(d, locale) {
   if (!d) return '—';
@@ -205,7 +206,9 @@ export default function TracePage() {
                   <p className="text-xs text-[#1a3a2a]/50 font-semibold mb-1">
                     {isFr ? 'Culture' : 'Crop'}
                   </p>
-                  <p className="font-bold text-[#1a3a2a] text-lg">🌾 {cert.cropType}</p>
+                  <p className="font-bold text-[#1a3a2a] text-lg">
+                    🌾 {cropLabel(cert.cropType, isFr)}
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-[#1a3a2a]/10 bg-[#f7f3ea]/60 p-4">
                   <p className="text-xs text-[#1a3a2a]/50 font-semibold mb-1">

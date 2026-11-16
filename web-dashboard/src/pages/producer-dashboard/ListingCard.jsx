@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { CROP_EMOJIS } from './constants';
 import { coopSupplyStatus } from './utils';
+import { cropLabel } from '../../lib/crops';
 
 function ListingCard({ listing: l, isFr }) {
   const st = coopSupplyStatus(l, isFr);
@@ -10,7 +11,7 @@ function ListingCard({ listing: l, isFr }) {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-2xl shrink-0">{CROP_EMOJIS[l.commodity] || '🌾'}</span>
           <div className="min-w-0">
-            <p className="font-bold text-[#1a3c2e]">{l.commodity}</p>
+            <p className="font-bold text-[#1a3c2e]">{cropLabel(l.commodity, isFr)}</p>
             <p className="text-xs text-gray-400">
               {l.qualityGrade} Grade · {l.certificationLevel}
             </p>

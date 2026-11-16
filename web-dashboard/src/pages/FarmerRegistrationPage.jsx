@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   farmerRegistrationSchema,
-  cropOptions as defaultCropOptions,
   step1Fields,
   step2Fields,
 } from '../schemas/farmerRegistrationSchema';
@@ -16,6 +15,7 @@ import { dialPrefixForCountry, formatPhoneE164 } from '../utils/phoneDial';
 import { captureEvent, AnalyticsEvents } from '../lib/analytics';
 import { CheckCircle, Loader2, ChevronRight, ChevronLeft, MapPin, Users, Phone } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { CROP_CATALOG, cropLabel, normalizeCropList } from '../lib/crops';
 
 const defaults = {
   full_name: '',
@@ -57,14 +57,17 @@ export default function FarmerRegistrationPage() {
   const [joiningCoop, setJoiningCoop] = useState(null);
   const [joinSuccess, setJoinSuccess] = useState('');
   const [wantContact, setWantContact] = useState(false);
-  const [cropOptions, setCropOptions] = useState(defaultCropOptions);
+  const [cropOptions, setCropOptions] = useState([
+    ...CROP_CATALOG,
+    { en: 'Other', fr: 'Autre' },
+  ]);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/config/crops`)
       .then((r) => r.json())
       .then((d) => {
         if (d.success && Array.isArray(d.crops) && d.crops.length) {
-          setCropOptions([...d.crops, 'Autre']);
+          setCropOptions([...normalizeCropList(d.crops), { en: 'Other', fr: 'Autre' }]);
         }
       })
       .catch(() => {});
@@ -167,16 +170,16 @@ export default function FarmerRegistrationPage() {
     }
   };
 
-  const toggleCrop = (crop) => {
+  const toggleCrop = (cropEn) => {
     const current = watch('crops') || [];
-    if (current.includes(crop)) {
+    if (current.includes(cropEn)) {
       setValue(
         'crops',
-        current.filter((c) => c !== crop),
+        current.filter((c) => c !== cropEn),
         { shouldValidate: true }
       );
     } else {
-      setValue('crops', [...current, crop], { shouldValidate: true });
+      setValue('crops', [...current, cropEn], { shouldValidate: true });
     }
   };
 
@@ -581,10 +584,11 @@ export default function FarmerRegistrationPage() {
                 <p className={LEGEND_CLS}>Type de culture principale * (plusieurs choix)</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {cropOptions.map((crop) => {
-                    const selected = (watch('crops') || []).includes(crop);
+                    const en = typeof crop === 'string' ? crop : crop.en;
+                    const selected = (watch('crops') || []).includes(en);
                     return (
                       <label
-                        key={crop}
+                        key={en}
                         className="flex items-center gap-2 rounded-xl px-3 py-2 cursor-pointer text-sm transition"
                         style={
                           selected
@@ -599,10 +603,10 @@ export default function FarmerRegistrationPage() {
                         <input
                           type="checkbox"
                           checked={selected}
-                          onChange={() => toggleCrop(crop)}
+                          onChange={() => toggleCrop(en)}
                           className="rounded accent-[#4CAF50]"
                         />
-                        {crop}
+                        {cropLabel(crop, isFr)}
                       </label>
                     );
                   })}

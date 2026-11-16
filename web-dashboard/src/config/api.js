@@ -106,6 +106,13 @@ export const API_ENDPOINTS = {
   CONFIG: {
     CROPS: `${API_BASE_URL}/api/config/crops`,
   },
+  MARKETPLACE: {
+    LISTINGS: `${API_BASE_URL}/api/marketplace/listings`,
+    PRICES: `${API_BASE_URL}/api/marketplace/prices`,
+    PRICES_SYNC: `${API_BASE_URL}/api/marketplace/prices/sync`,
+    PRICE_BY_COMMODITY: (commodity) =>
+      `${API_BASE_URL}/api/marketplace/prices/${encodeURIComponent(commodity)}`,
+  },
   HARVEST_LOGS: {
     BASE: `${API_BASE_URL}/api/harvest-logs`,
     MY: `${API_BASE_URL}/api/harvest-logs/my`,

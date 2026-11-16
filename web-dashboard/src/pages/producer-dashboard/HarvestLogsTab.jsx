@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, QrCode, Trash2 } from 'lucide-react';
 import { API_ENDPOINTS } from '../../config/api';
 import HarvestQrModal from '../../components/HarvestQrModal';
+import { cropLabel, normalizeCropList } from '../../lib/crops';
 
 const INPUT_TYPE_OPTIONS = [
   { value: 'fertilizer', fr: 'Engrais', en: 'Fertilizer' },
@@ -80,10 +81,11 @@ export default function HarvestLogsTab({ isFr, profile }) {
         const r = await fetch(API_ENDPOINTS.CONFIG.CROPS);
         const d = await r.json().catch(() => ({}));
         if (!cancelled && Array.isArray(d.crops)) {
-          setCrops(d.crops);
+          const list = normalizeCropList(d.crops);
+          setCrops(list);
           setForm((p) => ({
             ...p,
-            cropType: p.cropType || d.crops[0] || '',
+            cropType: p.cropType || list[0]?.en || '',
             plotSizeHectares:
               p.plotSizeHectares ||
               (profile?.superficie != null ? String(profile.superficie) : ''),
@@ -199,8 +201,8 @@ export default function HarvestLogsTab({ isFr, profile }) {
                 className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900"
               >
                 {crops.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                  <option key={c.en} value={c.en}>
+                    {cropLabel(c, isFr)}
                   </option>
                 ))}
               </select>
@@ -395,7 +397,7 @@ export default function HarvestLogsTab({ isFr, profile }) {
                 className="rounded-xl border border-gray-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
               >
                 <div>
-                  <p className="font-bold text-[#1a3c2e]">{log.cropType}</p>
+                  <p className="font-bold text-[#1a3c2e]">{cropLabel(log.cropType, isFr)}</p>
                   <p className="text-xs text-gray-500 font-mono mt-0.5">{log.batchId}</p>
                   <p className="text-sm text-gray-600 mt-1">
                     {formatDate(log.harvestDate)} · {Number(log.quantityKg || 0).toLocaleString()} kg ·{' '}

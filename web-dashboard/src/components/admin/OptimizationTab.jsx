@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
 import { mergeCooperativeSources } from './CentralAdminTabs';
+import { CROP_CATALOG, cropLabel } from '../../lib/crops';
 
 function headersWith(token) {
   return {
@@ -274,13 +275,11 @@ export default function OptimizationTab({ token, isFr }) {
               onChange={(e) => setCommodity(e.target.value)}
               className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
             >
-              {['Shea Butter', 'Sesame', 'Cashew', 'Mango', 'Rice', 'Cotton', 'Millet', 'Sorghum'].map(
-                (c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                )
-              )}
+              {CROP_CATALOG.map((c) => (
+                <option key={c.en} value={c.en}>
+                  {cropLabel(c, isFr)}
+                </option>
+              ))}
             </select>
           </div>
           <div>

@@ -8,39 +8,13 @@ import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LocationSelector from '../components/LocationSelector';
 import OtherInput from '../components/OtherInput';
 import AppReturnBanner from '../components/AppReturnBanner';
+import { CROP_CATALOG, cropLabel, normalizeCropList } from '../lib/crops';
 
 const BENEFIT_KEYS = ['recruitment', 'equipment', 'certification', 'investor', 'export'];
 const BENEFIT_ICONS = [Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe];
 const CERT_KEYS = ['none', 'local', 'regional', 'international'];
 const CERT_VALUES = ['None', 'Local', 'Regional', 'International'];
-const FALLBACK_CROP_VALUES = [
-  'Shea Butter',
-  'Sesame',
-  'Millet',
-  'Sorghum',
-  'Maize/Corn',
-  'Rice',
-  'Cowpea',
-  'Groundnut/Peanut',
-  'Cashew',
-  'Mango',
-  'Cotton',
-  'Moringa',
-  'Hibiscus/Bissap',
-  'Fonio',
-  'Yam',
-  'Cassava',
-  'Sweet Potato',
-  'Onion',
-  'Tomato',
-  'Pepper',
-  'Watermelon',
-  'Cowpea Leaves',
-  'Baobab',
-  'Gum Arabic',
-  'Karité',
-  'Other',
-];
+const FALLBACK_CROPS = [...CROP_CATALOG, { en: 'Other', fr: 'Autre' }];
 const INTEREST_KEYS = ['equipment', 'certification', 'diaspora', 'export'];
 const INTEREST_VALUES = ['Equipment Fund', 'Certification', 'Diaspora Investment', 'Export Program'];
 
@@ -85,14 +59,14 @@ export default function CooperativeRegistration() {
     paymentPath: null,
   });
   const [benefitsOpen, setBenefitsOpen] = useState(false);
-  const [cropValues, setCropValues] = useState(FALLBACK_CROP_VALUES);
+  const [cropValues, setCropValues] = useState(FALLBACK_CROPS);
 
   useEffect(() => {
     fetch(`${API}/api/config/crops`)
       .then((r) => r.json())
       .then((d) => {
         if (d.success && Array.isArray(d.crops) && d.crops.length) {
-          setCropValues([...d.crops, 'Other']);
+          setCropValues([...normalizeCropList(d.crops), { en: 'Other', fr: 'Autre' }]);
         }
       })
       .catch(() => {});
@@ -688,12 +662,13 @@ export default function CooperativeRegistration() {
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {cropValues.map((crop) => {
-                        const on = form.primaryCrops.includes(crop);
+                        const en = typeof crop === 'string' ? crop : crop.en;
+                        const on = form.primaryCrops.includes(en);
                         return (
                           <button
-                            key={crop}
+                            key={en}
                             type="button"
-                            onClick={() => toggleArrayItem('primaryCrops', crop)}
+                            onClick={() => toggleArrayItem('primaryCrops', en)}
                             className="text-sm rounded-xl px-3 py-2.5 text-center font-medium transition"
                             style={
                               on
@@ -705,7 +680,7 @@ export default function CooperativeRegistration() {
                                   }
                             }
                           >
-                            {crop}
+                            {cropLabel(crop, isFr)}
                           </button>
                         );
                       })}

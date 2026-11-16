@@ -3,41 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { Users, User, Loader2, CheckCircle2 } from 'lucide-react';
 import LocationSelector from '../components/LocationSelector';
-
-const FALLBACK_CROPS = [
-  'Shea Butter',
-  'Sesame',
-  'Millet',
-  'Sorghum',
-  'Maize/Corn',
-  'Rice',
-  'Cowpea',
-  'Groundnut/Peanut',
-  'Cashew',
-  'Mango',
-  'Cotton',
-  'Moringa',
-  'Hibiscus/Bissap',
-  'Fonio',
-  'Yam',
-  'Cassava',
-  'Sweet Potato',
-  'Onion',
-  'Tomato',
-  'Pepper',
-  'Watermelon',
-  'Cowpea Leaves',
-  'Baobab',
-  'Gum Arabic',
-  'Karité',
-];
+import { CROP_CATALOG, cropLabel, normalizeCropList } from '../lib/crops';
 
 export default function FarmerCertificationProgram() {
   const { i18n } = useTranslation();
   const isFr = String(i18n.language || '').toLowerCase().startsWith('fr');
 
   const [applicantType, setApplicantType] = useState('Individual');
-  const [crops, setCrops] = useState(FALLBACK_CROPS);
+  const [crops, setCrops] = useState(CROP_CATALOG);
   const [confirmHa, setConfirmHa] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -57,8 +30,12 @@ export default function FarmerCertificationProgram() {
       .then((r) => r.json())
       .then((d) => {
         if (d.success && Array.isArray(d.crops) && d.crops.length) {
-          setCrops(d.crops);
-          setForm((p) => ({ ...p, crop: d.crops.includes(p.crop) ? p.crop : d.crops[0] }));
+          const list = normalizeCropList(d.crops);
+          setCrops(list);
+          setForm((p) => ({
+            ...p,
+            crop: list.some((c) => c.en === p.crop) ? p.crop : list[0]?.en || p.crop,
+          }));
         }
       })
       .catch(() => {});
@@ -343,8 +320,12 @@ export default function FarmerCertificationProgram() {
                 style={{ color: '#111827', backgroundColor: '#ffffff' }}
               >
                 {crops.map((c) => (
-                  <option key={c} value={c} style={{ color: '#111827', backgroundColor: '#ffffff' }}>
-                    {c}
+                  <option
+                    key={c.en}
+                    value={c.en}
+                    style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                  >
+                    {cropLabel(c, isFr)}
                   </option>
                 ))}
               </select>

@@ -2,35 +2,10 @@ import { z } from 'zod';
 import { ALL_COUNTRIES } from '../data/africanCountries.js';
 import { formatPhoneE164 } from '../utils/phoneDial.js';
 
-/** Fallback until GET /api/config/crops loads */
-export const cropOptions = [
-  'Shea Butter',
-  'Sesame',
-  'Millet',
-  'Sorghum',
-  'Maize/Corn',
-  'Rice',
-  'Cowpea',
-  'Groundnut/Peanut',
-  'Cashew',
-  'Mango',
-  'Cotton',
-  'Moringa',
-  'Hibiscus/Bissap',
-  'Fonio',
-  'Yam',
-  'Cassava',
-  'Sweet Potato',
-  'Onion',
-  'Tomato',
-  'Pepper',
-  'Watermelon',
-  'Cowpea Leaves',
-  'Baobab',
-  'Gum Arabic',
-  'Karité',
-  'Autre',
-];
+import { CROP_CATALOG } from '../lib/crops.js';
+
+/** Fallback English values until GET /api/config/crops loads */
+export const cropOptions = [...CROP_CATALOG.map((c) => c.en), 'Other'];
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

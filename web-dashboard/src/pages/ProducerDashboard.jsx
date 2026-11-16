@@ -6,6 +6,7 @@ import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import { useWebSession } from '../hooks/useWebSession';
 import { API_ENDPOINTS } from '../config/api';
 import { CROP_EMOJIS } from './producer-dashboard/constants';
+import { cropLabel } from '../lib/crops';
 
 function hasProducerProStatus(profile) {
   if (!profile) return false;
@@ -457,7 +458,7 @@ function ProducerDashboard() {
             <div className="flex flex-wrap gap-2 mt-4">
               {crops.slice(0, 5).map((crop) => (
                 <span key={crop} className="text-xs px-2.5 py-1 rounded-full bg-white/15 text-white/80">
-                  {CROP_EMOJIS[crop] || '🌾'} {crop}
+                  {CROP_EMOJIS[crop] || '🌾'} {cropLabel(crop, isFr)}
                 </span>
               ))}
             </div>

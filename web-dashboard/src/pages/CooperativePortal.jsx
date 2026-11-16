@@ -5,6 +5,8 @@ import { LogOut, Loader2, Check, X, Plus, Lock, QrCode } from 'lucide-react';
 import { API_ENDPOINTS } from '../config/api';
 import CooperativeFinanceForm from '../components/CooperativeFinanceForm';
 import HarvestQrModal from '../components/HarvestQrModal';
+import MarketPricesStrip from '../components/MarketPricesStrip';
+import { cropLabel } from '../lib/crops';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -927,6 +929,8 @@ export default function CooperativePortal() {
               ) : null}
             </div>
 
+            <MarketPricesStrip isFr={isFr} />
+
             {/* Quick Stats Row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
@@ -1509,7 +1513,9 @@ export default function CooperativePortal() {
                     className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 shadow-sm"
                   >
                     <div>
-                      <p className="font-bold text-[#1a3c2e] text-lg">{h.cropType}</p>
+                      <p className="font-bold text-[#1a3c2e] text-lg">
+                        {cropLabel(h.cropType, isFr)}
+                      </p>
                       <p className="text-sm text-gray-600 mt-1">
                         {h.farmerName || h.farmer?.nom || (isFr ? 'Agriculteur' : 'Farmer')}
                         {h.farmerRegion || h.farmer?.region

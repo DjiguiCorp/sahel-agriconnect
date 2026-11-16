@@ -23,6 +23,7 @@ import AfriYieldManagement from '../components/admin/AfriYieldManagement';
 import CountryLicensesManagement from '../components/admin/CountryLicensesManagement';
 import GovernanceTab from '../components/admin/GovernanceTab';
 import FarmerNeedsTab from '../components/admin/FarmerNeedsTab';
+import MarketPricesTab from '../components/admin/MarketPricesTab';
 import Modal from '../components/Modal';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
@@ -50,6 +51,7 @@ import {
   ClipboardList,
   Trash2,
   Wheat,
+  LineChart,
 } from 'lucide-react';
 import { authHeaders, handleAdminApiUnauthorized } from '../utils/adminSession';
 
@@ -71,6 +73,7 @@ const BASE_TABS = [
   { id: 'seasonal', labelKey: 'adminDashboard.tabs.seasonal', shortKey: 'adminDashboard.tabsShort.seasonal', Icon: Calendar },
   { id: 'certification', labelKey: 'adminDashboard.tabs.certification', shortKey: 'adminDashboard.tabsShort.certification', Icon: Star },
   { id: 'logistics', labelKey: 'adminDashboard.tabs.logistics', shortKey: 'adminDashboard.tabsShort.logistics', Icon: Truck },
+  { id: 'marketPrices', labelKey: 'adminDashboard.tabs.marketPrices', shortKey: 'adminDashboard.tabsShort.marketPrices', Icon: LineChart },
   { id: 'reports', labelKey: 'adminDashboard.tabs.reports', shortKey: 'adminDashboard.tabsShort.reports', Icon: BarChart3 },
   { id: 'afriyield', labelKey: 'adminDashboard.tabs.afriyield', shortKey: 'adminDashboard.tabsShort.afriyield', Icon: Coins, accent: 'gold' },
 ];
@@ -1635,11 +1638,20 @@ const CentralAdminDashboard = () => {
   }, [activeTab]);
 
   const tabs = useMemo(() => {
-    const out = BASE_TABS.map((tab) => ({
-      ...tab,
-      label: t(tab.labelKey),
-      shortLabel: t(tab.shortKey),
-    }));
+    const out = BASE_TABS.map((tab) => {
+      if (tab.id === 'marketPrices') {
+        return {
+          ...tab,
+          label: isFr ? 'Prix marché' : 'Market prices',
+          shortLabel: isFr ? 'Prix' : 'Prices',
+        };
+      }
+      return {
+        ...tab,
+        label: t(tab.labelKey),
+        shortLabel: t(tab.shortKey),
+      };
+    });
     if (isSuperAdmin) {
       out.push({
         id: 'countryLicenses',
@@ -1649,7 +1661,7 @@ const CentralAdminDashboard = () => {
       });
     }
     return out;
-  }, [isSuperAdmin, t]);
+  }, [isSuperAdmin, t, isFr]);
 
   const handleLogout = () => {
     logout();
@@ -1873,6 +1885,7 @@ const CentralAdminDashboard = () => {
           {activeTab === 'seasonal' && <PlanningTab token={adminToken} isFr={isFr} />}
           {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
           {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
+          {activeTab === 'marketPrices' && <MarketPricesTab token={adminToken} isFr={isFr} />}
           {activeTab === 'reports' && <ReportsTab token={adminToken} isFr={isFr} />}
           {activeTab === 'afriyield' && <AfriYieldManagement />}
           {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}

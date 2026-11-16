@@ -33,13 +33,6 @@ import OnboardingGateModal from '../components/OnboardingGateModal';
 const API = API_BASE_URL.replace(/\/$/, '');
 const EUR_RATE = 0.92;
 
-const COMMODITIES = [
-  { key: 'shea', emoji: '🌿', price: 1.85, trend: 'up', demand: 'high' },
-  { key: 'sesame', emoji: '🌾', price: 1.45, trend: 'stable', demand: 'high' },
-  { key: 'cashew', emoji: '🥜', price: 3.2, trend: 'up', demand: 'medium' },
-  { key: 'mango', emoji: '🥭', price: 4.1, trend: 'stable', demand: 'medium' },
-];
-
 const NEWS = [
   { key: 'n1', tag: 'market', date: 'May 2026', time: 2, premium: false },
   { key: 'n2', tag: 'price', date: 'April 2026', time: 2, premium: false },
@@ -58,19 +51,13 @@ const TAG_COLORS = {
 
 const JOURNEY_STEPS = ['received', 'purchased', 'working', 'payout'];
 
-const SPARKLINES = {
-  shea: 'M0,40 L20,35 L40,30 L60,28 L80,20 L100,15',
-  sesame: 'M0,30 L20,32 L40,28 L60,30 L80,29 L100,30',
-  cashew: 'M0,45 L20,40 L40,35 L60,30 L80,25 L100,18',
-  mango: 'M0,35 L20,33 L40,32 L60,30 L80,28 L100,25',
-};
+function sparklinePath(trend) {
+  if (trend === 'up') return 'M0,45 L20,40 L40,32 L60,28 L80,18 L100,12';
+  if (trend === 'down') return 'M0,15 L20,22 L40,28 L60,35 L80,42 L100,48';
+  return 'M0,30 L20,28 L40,32 L60,29 L80,31 L100,30';
+}
 
-const COMMODITY_NAMES = {
-  shea: { en: 'Shea Butter', fr: 'Beurre de Karité' },
-  sesame: { en: 'Sesame', fr: 'Sésame' },
-  cashew: { en: 'Cashew', fr: 'Noix de cajou' },
-  mango: { en: 'Dried Mango', fr: 'Mangue séchée' },
-};
+const HIGH_DEMAND = new Set(['Shea Butter', 'Sesame', 'Cashew', 'Cotton', 'Maize/Corn']);
 
 function formatUSD(n) {
   return `$${Number(n).toLocaleString('en-US')}`;
@@ -814,12 +801,33 @@ function PricesTab({ onOpenPremium }) {
       return {};
     }
   });
+  const [prices, setPrices] = useState([]);
+  const [loadingPrices, setLoadingPrices] = useState(true);
+  const [updatedAt, setUpdatedAt] = useState(null);
 
   /** fr, fr-FR, fr-CA etc. */
   const lang = /^fr\b/i.test(String(i18n.language || '').toLowerCase()) ? 'fr' : 'en';
 
-  const commodityLabel = (ckey) =>
-    COMMODITY_NAMES[ckey]?.[lang] ?? t(`investorPortal.prices.names.${ckey}`, { defaultValue: ckey });
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingPrices(true);
+    fetch(`${API}/api/marketplace/prices`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        setPrices(Array.isArray(d.prices) ? d.prices : []);
+        setUpdatedAt(d.updatedAt || null);
+      })
+      .catch(() => {
+        if (!cancelled) setPrices([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingPrices(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggleAlert = (key) => {
     const next = { ...alerts, [key]: !alerts[key] };
@@ -836,115 +844,159 @@ function PricesTab({ onOpenPremium }) {
         <p className="text-sm mt-1 md:text-base" style={{ color: 'rgba(245,240,232,0.55)' }}>
           {t('investorPortal.prices.subtitle')}
         </p>
+        {updatedAt ? (
+          <p className="text-xs mt-1" style={{ color: 'rgba(245,240,232,0.35)' }}>
+            {lang === 'fr' ? 'Dernière mise à jour' : 'Last updated'}:{' '}
+            {new Date(updatedAt).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US')}
+          </p>
+        ) : null}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full min-w-0">
-        {COMMODITIES.map(({ key, emoji, price, trend, demand }) => (
-          <div
-            key={key}
-            className="rounded-2xl p-4 overflow-hidden flex flex-col min-h-0 md:p-3 max-w-full"
-            style={{
-              background: '#132a1e',
-              border:
-                demand === 'high'
-                  ? '1px solid rgba(239,68,68,0.45)'
-                  : '1px solid rgba(181,133,10,0.25)',
-            }}
-          >
-            {/* Emoji + name on one row; HOT badge full-width below — avoids flex squeeze hiding the title */}
-            <div className="mb-3 w-full min-w-0 flex flex-col gap-2">
-              <div className="flex items-start gap-2 min-w-0 w-full">
-                <span className="text-2xl shrink-0 leading-none pt-0.5" aria-hidden>
-                  {emoji}
-                </span>
-                <span
-                  className="min-w-0 flex-1 font-bold text-sm leading-snug break-words hyphens-auto"
-                  style={{ color: '#F5F0E8' }}
-                >
-                  {commodityLabel(key)}
-                </span>
-              </div>
-              {demand === 'high' && (
-                <div className="w-full min-w-0 ps-10 sm:ps-10">
-                  <span
-                    className="inline-flex items-start gap-1.5 text-xs px-2 py-1 rounded-2xl font-bold animate-pulse max-w-full"
-                    style={{ background: '#ef4444', color: 'white' }}
-                  >
-                    <span className="shrink-0" aria-hidden>
-                      🔥
+      {loadingPrices ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-[#B5850A]" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full min-w-0">
+          {prices.map((p) => {
+            const key = p.commodity;
+            const price = Number(p.pricePerKgUsd) || 0;
+            const trend = p.trend || 'stable';
+            const demand = HIGH_DEMAND.has(key) ? 'high' : 'medium';
+            const label = lang === 'fr' ? p.commodityFr || p.commodity : p.commodity;
+            const change = Math.abs(Number(p.weeklyChangePercent) || 0).toFixed(1);
+            return (
+              <div
+                key={key}
+                className="rounded-2xl p-4 overflow-hidden flex flex-col min-h-0 md:p-3 max-w-full"
+                style={{
+                  background: '#132a1e',
+                  border:
+                    demand === 'high'
+                      ? '1px solid rgba(239,68,68,0.45)'
+                      : '1px solid rgba(181,133,10,0.25)',
+                }}
+              >
+                <div className="mb-3 w-full min-w-0 flex flex-col gap-2">
+                  <div className="flex items-start gap-2 min-w-0 w-full">
+                    <span className="text-2xl shrink-0 leading-none pt-0.5" aria-hidden>
+                      {p.emoji || '🌾'}
                     </span>
-                    <span className="break-words min-w-0">{t('investorPortal.prices.demand.high')}</span>
+                    <span
+                      className="min-w-0 flex-1 font-bold text-sm leading-snug break-words hyphens-auto"
+                      style={{ color: '#F5F0E8' }}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                  {demand === 'high' && (
+                    <div className="w-full min-w-0 ps-10 sm:ps-10">
+                      <span
+                        className="inline-flex items-start gap-1.5 text-xs px-2 py-1 rounded-2xl font-bold animate-pulse max-w-full"
+                        style={{ background: '#ef4444', color: 'white' }}
+                      >
+                        <span className="shrink-0" aria-hidden>
+                          🔥
+                        </span>
+                        <span className="break-words min-w-0">
+                          {t('investorPortal.prices.demand.high')}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-end gap-2 mb-1">
+                  <span className="tabular-nums text-[#B5850A] text-3xl font-bold">
+                    ${price.toFixed(2)}
+                  </span>
+                  <span className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)' }}>
+                    {t('investorPortal.prices.perKg')}
                   </span>
                 </div>
-              )}
-            </div>
+                <span className="tabular-nums text-xs" style={{ color: 'rgba(245,240,232,0.35)' }}>
+                  ≈ €{(price * EUR_RATE).toFixed(2)}
+                  {p.pricePerKgXof != null
+                    ? ` · ${Number(p.pricePerKgXof).toLocaleString()} XOF`
+                    : ''}
+                </span>
 
-            <div className="flex items-end gap-2 mb-1">
-              <span className="tabular-nums text-[#B5850A] text-3xl font-bold">${price}</span>
-              <span className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)' }}>
-                {t('investorPortal.prices.perKg')}
-              </span>
-            </div>
-            <span className="tabular-nums text-xs" style={{ color: 'rgba(245,240,232,0.35)' }}>
-              ≈ €{(price * EUR_RATE).toFixed(2)}
-            </span>
+                <div className="flex items-center gap-1 mt-2">
+                  <span
+                    className={
+                      trend === 'up'
+                        ? 'text-[#22c55e]'
+                        : trend === 'down'
+                          ? 'text-red-400'
+                          : 'text-[#B5850A]'
+                    }
+                  >
+                    {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'} {change}%
+                  </span>
+                  <span
+                    className={`text-xs ${
+                      trend === 'up'
+                        ? 'text-[#22c55e]'
+                        : trend === 'down'
+                          ? 'text-red-400'
+                          : 'text-[#B5850A]'
+                    }`}
+                  >
+                    {t(`investorPortal.prices.trend.${trend}`, { defaultValue: trend })}
+                  </span>
+                </div>
 
-            <div className="flex items-center gap-1 mt-2">
-              <span
-                className={
-                  trend === 'up'
-                    ? 'text-[#22c55e]'
-                    : trend === 'down'
-                      ? 'text-red-400'
-                      : 'text-[#B5850A]'
-                }
-              >
-                {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'}
-              </span>
-              <span
-                className={`text-xs ${
-                  trend === 'up'
-                    ? 'text-[#22c55e]'
-                    : trend === 'down'
-                      ? 'text-red-400'
-                      : 'text-[#B5850A]'
-                }`}
-              >
-                {t(`investorPortal.prices.trend.${trend}`)}
-              </span>
-            </div>
+                <div className="mt-3 shrink-0">
+                  <p className="text-white/30 text-xs mb-1">
+                    {lang === 'fr' ? 'Tendance récente' : 'Recent trend'}
+                  </p>
+                  <svg
+                    viewBox="0 0 100 60"
+                    className="w-full max-w-full h-12 mt-1 shrink-0"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d={sparklinePath(trend)}
+                      fill="none"
+                      stroke="#B5850A"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
 
-            {/* Sparkline — desktop has a clear trend preview */}
-            <div className="mt-3 shrink-0">
-              <p className="text-white/30 text-xs mb-1">
-                {lang === 'fr' ? 'Tendance des prix (6 derniers mois)' : 'Price trend (last 6 months)'}
-              </p>
-              <svg viewBox="0 0 100 60" className="w-full max-w-full h-12 mt-1 shrink-0" preserveAspectRatio="none">
-                <path d={SPARKLINES[key]} fill="none" stroke="#B5850A" strokeWidth="2" />
-              </svg>
-            </div>
+                <div className="flex-1 min-h-0 mt-2 overflow-hidden">
+                  <p className="text-white/40 text-xs leading-relaxed line-clamp-2 break-words">
+                    {p.sourceMarket
+                      ? `${lang === 'fr' ? 'Source' : 'Source'}: ${p.sourceMarket}`
+                      : t('investorPortal.prices.subtitle')}
+                  </p>
+                </div>
 
-            <div className="flex-1 min-h-0 mt-2 overflow-hidden">
-              <p className="text-white/40 text-xs leading-relaxed line-clamp-2 break-words">
-                {t(`investorPortal.prices.context.${key}`)}
-              </p>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => toggleAlert(key)}
+                  className={`mt-3 w-full rounded-2xl py-2 text-xs font-semibold transition shrink-0 ${
+                    alerts[key]
+                      ? 'bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/35'
+                      : 'border border-white/10 hover:border-[#B5850A]/40'
+                  }`}
+                  style={!alerts[key] ? { color: 'rgba(245,240,232,0.55)' } : undefined}
+                >
+                  {alerts[key]
+                    ? '✓ ' + t('investorPortal.prices.alertOn')
+                    : t('investorPortal.prices.alertOff')}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-            <button
-              type="button"
-              onClick={() => toggleAlert(key)}
-              className={`mt-3 w-full rounded-2xl py-2 text-xs font-semibold transition shrink-0 ${
-                alerts[key]
-                  ? 'bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/35'
-                  : 'border border-white/10 hover:border-[#B5850A]/40'
-              }`}
-              style={!alerts[key] ? { color: 'rgba(245,240,232,0.55)' } : undefined}
-            >
-              {alerts[key] ? '✓ ' + t('investorPortal.prices.alertOn') : t('investorPortal.prices.alertOff')}
-            </button>
-          </div>
-        ))}
-      </div>
+      {!loadingPrices && prices.length === 0 ? (
+        <p className="text-sm text-white/50">
+          {lang === 'fr' ? 'Prix indisponibles pour le moment.' : 'Prices unavailable right now.'}
+        </p>
+      ) : null}
 
       <div
         className="rounded-2xl p-5"
@@ -974,6 +1026,24 @@ function PricesTab({ onOpenPremium }) {
 function NewsTab({ t, onOpenPremium }) {
   const freeItems = NEWS.filter((x) => !x.premium);
   const premiumItems = NEWS.filter((x) => x.premium);
+  const [ticker, setTicker] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API}/api/marketplace/prices`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const list = Array.isArray(d.prices) ? d.prices : [];
+        setTicker(list.slice(0, 6));
+      })
+      .catch(() => {
+        if (!cancelled) setTicker([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="px-4 pt-6 pb-24 md:pb-10 space-y-4 md:px-6">
@@ -986,19 +1056,38 @@ function NewsTab({ t, onOpenPremium }) {
         </p>
       </div>
 
-      {/* Market Summary ticker */}
-      <div className="rounded-2xl p-4 flex flex-wrap gap-x-4 gap-y-2 items-center" style={{ background: '#132a1e', border: '1px solid rgba(181,133,10,0.2)' }}>
-        {COMMODITIES.map((c, idx) => (
-          <div key={c.key} className="flex items-center gap-2">
-            <span className="text-lg">{c.emoji}</span>
-            <span className="tabular-nums font-bold text-[#B5850A]">${c.price.toFixed(2)}</span>
-            <span className={`text-sm ${c.trend === 'up' ? 'text-[#22c55e]' : c.trend === 'down' ? 'text-red-400' : 'text-[#B5850A]'}`}>
-              {c.trend === 'up' ? '↑' : c.trend === 'down' ? '↓' : '→'}
-            </span>
-            {idx < COMMODITIES.length - 1 && <span style={{ color: 'rgba(245,240,232,0.2)' }}>|</span>}
-          </div>
-        ))}
-      </div>
+      {/* Market Summary ticker — live CropPrice */}
+      {ticker.length > 0 ? (
+        <div
+          className="rounded-2xl p-4 flex flex-wrap gap-x-4 gap-y-2 items-center"
+          style={{ background: '#132a1e', border: '1px solid rgba(181,133,10,0.2)' }}
+        >
+          {ticker.map((c, idx) => {
+            const trend = c.trend || 'stable';
+            const price = Number(c.pricePerKgUsd) || 0;
+            return (
+              <div key={c.commodity} className="flex items-center gap-2">
+                <span className="text-lg">{c.emoji || '🌾'}</span>
+                <span className="tabular-nums font-bold text-[#B5850A]">${price.toFixed(2)}</span>
+                <span
+                  className={`text-sm ${
+                    trend === 'up'
+                      ? 'text-[#22c55e]'
+                      : trend === 'down'
+                        ? 'text-red-400'
+                        : 'text-[#B5850A]'
+                  }`}
+                >
+                  {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'}
+                </span>
+                {idx < ticker.length - 1 && (
+                  <span style={{ color: 'rgba(245,240,232,0.2)' }}>|</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
 
       <div className="md:grid md:grid-cols-12 md:gap-6 space-y-4 md:space-y-0">
         {/* Free articles (left) */}

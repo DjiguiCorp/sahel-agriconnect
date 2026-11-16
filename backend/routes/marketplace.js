@@ -5,6 +5,10 @@ import Opportunity from '../models/Opportunity.js';
 import ProduceListing from '../models/ProduceListing.js';
 import CropPrice from '../models/CropPrice.js';
 import { buildPilotListings } from '../lib/pilotMarketplaceListings.js';
+import {
+  syncCommodityPrices,
+  getLastCommodityPriceSyncAt,
+} from '../services/commodityPriceSyncService.js';
 
 const router = express.Router();
 
@@ -65,6 +69,22 @@ router.get('/prices', async (req, res) => {
     });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/marketplace/prices/sync — admin only, force live feed sync
+router.post('/prices/sync', authenticateToken, async (req, res) => {
+  try {
+    const result = await syncCommodityPrices({ force: true });
+    return res.json({
+      success: true,
+      synced: result.synced,
+      skipped: result.skipped,
+      lastSyncAt: result.lastSyncAt || getLastCommodityPriceSyncAt(),
+      results: result.results,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Sync failed' });
   }
 });
 
@@ -163,6 +183,46 @@ function _defaultPrices() {
       weeklyChangePercent: 0.5,
       trend: 'up',
       sourceMarket: 'Bamako',
+    },
+    {
+      commodity: 'Maize/Corn',
+      commodityFr: 'Maïs',
+      emoji: '🌽',
+      pricePerKgUsd: 0.28,
+      pricePerKgXof: 168,
+      weeklyChangePercent: 1.2,
+      trend: 'up',
+      sourceMarket: 'World Bank',
+    },
+    {
+      commodity: 'Rice',
+      commodityFr: 'Riz',
+      emoji: '🍚',
+      pricePerKgUsd: 0.55,
+      pricePerKgXof: 330,
+      weeklyChangePercent: -0.4,
+      trend: 'stable',
+      sourceMarket: 'World Bank',
+    },
+    {
+      commodity: 'Sorghum',
+      commodityFr: 'Sorgho',
+      emoji: '🌾',
+      pricePerKgUsd: 0.32,
+      pricePerKgXof: 192,
+      weeklyChangePercent: 0.8,
+      trend: 'stable',
+      sourceMarket: 'World Bank',
+    },
+    {
+      commodity: 'Groundnut/Peanut',
+      commodityFr: 'Arachide',
+      emoji: '🥜',
+      pricePerKgUsd: 1.1,
+      pricePerKgXof: 660,
+      weeklyChangePercent: -1.5,
+      trend: 'down',
+      sourceMarket: 'World Bank',
     },
   ];
 }

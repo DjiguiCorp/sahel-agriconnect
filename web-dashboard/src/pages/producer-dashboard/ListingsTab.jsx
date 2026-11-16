@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Plus, Check } from 'lucide-react';
-import { CROPS } from './constants';
+import { CROP_CATALOG, cropLabel } from '../../lib/crops';
 import ListingCard from './ListingCard';
 
 function ListingsTab({
@@ -104,9 +104,9 @@ function ListingsTab({
                     onChange={(e) => setListingForm((p) => ({ ...p, commodity: e.target.value }))}
                     className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                   >
-                    {CROPS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
+                    {CROP_CATALOG.map((c) => (
+                      <option key={c.en} value={c.en}>
+                        {cropLabel(c, isFr)}
                       </option>
                     ))}
                   </select>
