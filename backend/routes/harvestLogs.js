@@ -1,4 +1,5 @@
 import express from 'express';
+import QRCode from 'qrcode';
 import HarvestLog, { generateHarvestBatchId } from '../models/HarvestLog.js';
 import Farmer from '../models/Farmer.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
@@ -6,6 +7,44 @@ import { authFarmer } from '../middleware/auth.js';
 import { authCoop } from './cooperatives.js';
 
 const router = express.Router();
+const FRONTEND = (process.env.FRONTEND_URL || 'https://sahelagriconnect.com').replace(/\/$/, '');
+
+async function loadTraceCertificate(batchId) {
+  const log = await HarvestLog.findOne({ batchId }).lean();
+  if (!log) return null;
+
+  let cooperativeName = '';
+  let cooperativeRegion = '';
+  let cooperativeCountry = '';
+  if (log.cooperativeId) {
+    const coop = await CooperativePlatformRegistration.findById(log.cooperativeId)
+      .select('cooperativeName regionCity country')
+      .lean();
+    cooperativeName = coop?.cooperativeName || '';
+    cooperativeRegion = coop?.regionCity || '';
+    cooperativeCountry = coop?.country || '';
+  }
+  if (!cooperativeRegion && log.farmerId) {
+    const farmer = await Farmer.findById(log.farmerId).select('region country').lean();
+    cooperativeRegion = farmer?.region || cooperativeRegion;
+    if (!cooperativeCountry) cooperativeCountry = farmer?.country || '';
+  }
+
+  return {
+    batchId: log.batchId,
+    cropType: log.cropType,
+    cooperativeName,
+    cooperativeRegion,
+    cooperativeCountry,
+    harvestDate: log.harvestDate,
+    quantityKg: log.quantityKg,
+    qualityGrade: log.qualityGrade,
+    verifiedByCoop: Boolean(log.verifiedByCoop),
+    verifiedAt: log.verifiedAt || null,
+    platformName: 'Sahel AgriConnect',
+    certificateGeneratedAt: new Date(),
+  };
+}
 
 const INPUT_TYPES = new Set(['fertilizer', 'pesticide', 'organic', 'none']);
 const GRADES = new Set(['A', 'B', 'C', 'ungraded']);
@@ -182,6 +221,48 @@ router.get('/public/:batchId', async (req, res) => {
         verifiedAt: log.verifiedAt || null,
       },
     });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
+  }
+});
+
+// GET /api/harvest-logs/:batchId/qr — public QR PNG (base64)
+router.get('/:batchId/qr', async (req, res) => {
+  try {
+    const batchId = String(req.params.batchId || '').trim();
+    if (!batchId) {
+      return res.status(400).json({ success: false, error: 'batchId required' });
+    }
+    const log = await HarvestLog.findOne({ batchId }).select('batchId').lean();
+    if (!log) return res.status(404).json({ success: false, error: 'Not found' });
+
+    const traceUrl = `${FRONTEND}/trace/${encodeURIComponent(batchId)}`;
+    const qrCodeBase64 = await QRCode.toDataURL(traceUrl, {
+      type: 'image/png',
+      width: 512,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+      color: { dark: '#1a3a2a', light: '#ffffff' },
+    });
+    return res.json({ success: true, batchId, traceUrl, qrCodeBase64 });
+  } catch (e) {
+    console.error('[harvest-logs] qr error:', e.message);
+    return res.status(500).json({ success: false, error: e.message || 'QR failed' });
+  }
+});
+
+// GET /api/harvest-logs/:batchId/certificate — public traceability certificate
+router.get('/:batchId/certificate', async (req, res) => {
+  try {
+    const batchId = String(req.params.batchId || '').trim();
+    if (!batchId) {
+      return res.status(400).json({ success: false, error: 'batchId required' });
+    }
+    const certificate = await loadTraceCertificate(batchId);
+    if (!certificate) {
+      return res.status(404).json({ success: false, error: 'Not found' });
+    }
+    return res.json({ success: true, ...certificate });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message || 'Failed' });
   }

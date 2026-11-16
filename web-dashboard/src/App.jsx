@@ -39,6 +39,7 @@ const FarmerRegistrationPage = lazy(() => import('./pages/FarmerRegistrationPage
 const FarmerSignIn = lazy(() => import('./pages/FarmerSignIn'));
 const ImpactReport = lazy(() => import('./pages/ImpactReport'));
 const TraceabilityLookup = lazy(() => import('./pages/TraceabilityLookup'));
+const TracePage = lazy(() => import('./pages/TracePage'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
@@ -144,7 +145,15 @@ function App() {
                   <Route path="help" element={<Navigate to="/help-center" replace />} />
                   <Route path="user-agreement" element={<UserAgreement />} />
                   <Route
-                    path="trace/:batchNumber?"
+                    path="trace/:batchId?"
+                    element={
+                      <ApiSection>
+                        <TracePage />
+                      </ApiSection>
+                    }
+                  />
+                  <Route
+                    path="trace-legacy/:batchNumber?"
                     element={
                       <ApiSection>
                         <TraceabilityLookup />

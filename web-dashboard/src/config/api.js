@@ -112,6 +112,9 @@ export const API_ENDPOINTS = {
     COOPERATIVE: (id) => `${API_BASE_URL}/api/harvest-logs/cooperative/${id}`,
     VERIFY: (id) => `${API_BASE_URL}/api/harvest-logs/${id}/verify`,
     PUBLIC: (batchId) => `${API_BASE_URL}/api/harvest-logs/public/${batchId}`,
+    QR: (batchId) => `${API_BASE_URL}/api/harvest-logs/${encodeURIComponent(batchId)}/qr`,
+    CERTIFICATE: (batchId) =>
+      `${API_BASE_URL}/api/harvest-logs/${encodeURIComponent(batchId)}/certificate`,
   },
   // Health check
   HEALTH: `${API_BASE_URL}/api/health`,

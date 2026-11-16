@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Loader2, Check, X, Plus, Lock } from 'lucide-react';
+import { LogOut, Loader2, Check, X, Plus, Lock, QrCode } from 'lucide-react';
 import { API_ENDPOINTS } from '../config/api';
 import CooperativeFinanceForm from '../components/CooperativeFinanceForm';
+import HarvestQrModal from '../components/HarvestQrModal';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -158,6 +159,7 @@ export default function CooperativePortal() {
   const [harvestLoading, setHarvestLoading] = useState(false);
   const [harvestSubTab, setHarvestSubTab] = useState('pending'); // pending | verified
   const [harvestVerifyBusy, setHarvestVerifyBusy] = useState(null);
+  const [harvestQrBatchId, setHarvestQrBatchId] = useState('');
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
   const declaredMembers = Number(
@@ -1543,25 +1545,46 @@ export default function CooperativePortal() {
                         </span>
                       )}
                     </div>
-                    {!h.verifiedByCoop ? (
-                      <button
-                        type="button"
-                        disabled={harvestVerifyBusy === h._id}
-                        onClick={() => verifyHarvestLog(h._id)}
-                        className="shrink-0 text-sm font-bold px-4 py-2.5 rounded-xl text-white disabled:opacity-60"
-                        style={{ background: '#1a3c2e' }}
-                      >
-                        {harvestVerifyBusy === h._id
-                          ? '…'
-                          : isFr
-                            ? 'Vérifier ce lot'
-                            : 'Verify this batch'}
-                      </button>
-                    ) : null}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {h.verifiedByCoop ? (
+                        <button
+                          type="button"
+                          onClick={() => setHarvestQrBatchId(h.batchId)}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#c9962a]/40 bg-[#c9962a]/10 px-3 py-2.5 text-sm font-bold text-[#854d0e] hover:bg-[#c9962a]/20"
+                          title="QR"
+                          aria-label="QR"
+                        >
+                          <QrCode className="w-4 h-4" />
+                          QR
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={harvestVerifyBusy === h._id}
+                          onClick={() => verifyHarvestLog(h._id)}
+                          className="text-sm font-bold px-4 py-2.5 rounded-xl text-white disabled:opacity-60"
+                          style={{ background: '#1a3c2e' }}
+                        >
+                          {harvestVerifyBusy === h._id
+                            ? '…'
+                            : isFr
+                              ? 'Vérifier ce lot'
+                              : 'Verify this batch'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ));
               })()
             )}
+
+            {harvestQrBatchId ? (
+              <HarvestQrModal
+                batchId={harvestQrBatchId}
+                isFr={isFr}
+                onClose={() => setHarvestQrBatchId('')}
+              />
+            ) : null}
           </div>
         )}
 

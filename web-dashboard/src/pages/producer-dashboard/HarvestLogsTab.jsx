@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, QrCode, Trash2 } from 'lucide-react';
 import { API_ENDPOINTS } from '../../config/api';
+import HarvestQrModal from '../../components/HarvestQrModal';
 
 const INPUT_TYPE_OPTIONS = [
   { value: 'fertilizer', fr: 'Engrais', en: 'Fertilizer' },
@@ -36,6 +37,7 @@ export default function HarvestLogsTab({ isFr, profile }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [okMsg, setOkMsg] = useState('');
+  const [qrBatchId, setQrBatchId] = useState('');
   const [form, setForm] = useState({
     cropType: '',
     harvestDate: new Date().toISOString().slice(0, 10),
@@ -400,26 +402,40 @@ export default function HarvestLogsTab({ isFr, profile }) {
                     {gradeLabel(log.qualityGrade)}
                   </p>
                 </div>
-                <span
-                  className={`inline-flex self-start text-xs font-bold px-2.5 py-1 rounded-full ${
-                    log.verifiedByCoop
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}
-                >
-                  {log.verifiedByCoop
-                    ? isFr
-                      ? 'Vérifié ✓'
-                      : 'Verified ✓'
-                    : isFr
-                      ? 'En attente'
-                      : 'Pending'}
-                </span>
+                <div className="flex items-center gap-2 self-start">
+                  <button
+                    type="button"
+                    onClick={() => setQrBatchId(log.batchId)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#c9962a]/40 bg-[#c9962a]/10 px-3 py-1.5 text-xs font-bold text-[#854d0e] hover:bg-[#c9962a]/20"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    QR
+                  </button>
+                  <span
+                    className={`inline-flex text-xs font-bold px-2.5 py-1 rounded-full ${
+                      log.verifiedByCoop
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {log.verifiedByCoop
+                      ? isFr
+                        ? 'Vérifié ✓'
+                        : 'Verified ✓'
+                      : isFr
+                        ? 'En attente'
+                        : 'Pending'}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {qrBatchId ? (
+        <HarvestQrModal batchId={qrBatchId} isFr={isFr} onClose={() => setQrBatchId('')} />
+      ) : null}
     </div>
   );
 }
