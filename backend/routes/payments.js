@@ -205,6 +205,26 @@ function defaultAmountUsdForTier(tierKey) {
   return defaults[key] ?? null;
 }
 
+/** Annual platform tiers (everything else with a known price is monthly). */
+function isAnnualTierKey(tierKey) {
+  return ['investor', 'afriyield', 'afriyield_access', 'cooperative', 'cooperative_growth'].includes(
+    String(tierKey || '').trim().toLowerCase()
+  );
+}
+
+function resolveBillingInterval(tierKey, billingInterval) {
+  if (billingInterval === 'month' || billingInterval === 'year') return billingInterval;
+  return isAnnualTierKey(tierKey) ? 'year' : 'month';
+}
+
+function subscriptionIsAnnual({ tierKey, billingInterval, amountTotal }) {
+  if (billingInterval === 'month') return false;
+  if (billingInterval === 'year') return true;
+  if (isAnnualTierKey(tierKey)) return true;
+  if (Number(amountTotal) === 9900 || Number(amountTotal) === 19900) return true;
+  return false;
+}
+
 function isMissingStripePriceError(err) {
   const msg = String(err?.message || err || '');
   const code = String(err?.code || err?.raw?.code || '');
@@ -288,7 +308,7 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
 
     const baseFront = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
     const urls = defaultReturnUrls(tier, baseFront);
-    const interval = billingInterval === 'month' ? 'month' : 'year';
+    const interval = resolveBillingInterval(tier, billingInterval);
     const success = safeReturnUrl(successUrl, urls.success);
     const cancel = safeReturnUrl(cancelUrl, urls.cancel);
 
@@ -386,13 +406,11 @@ async function activateSubscriptionFromCheckoutSession(session) {
 
   const tierKey = String(session.metadata?.tierKey || '').trim().toLowerCase();
   const metaType = String(session.metadata?.type || '').toLowerCase();
-  const isAnnual =
-    session.metadata?.billingInterval === 'year' ||
-    ['investor', 'afriyield', 'afriyield_access', 'cooperative', 'cooperative_growth',
-      'transformation', 'transformation_center', 'producer_pro', 'ngo', 'government',
-    ].includes(tierKey) ||
-    Boolean(session.metadata?.stripePriceId) ||
-    Number(session.amount_total) === 9900;
+  const isAnnual = subscriptionIsAnnual({
+    tierKey,
+    billingInterval: session.metadata?.billingInterval,
+    amountTotal: session.amount_total,
+  });
   const days = isAnnual ? 365 : 30;
 
   await PremiumSubscription.findOneAndUpdate(
@@ -759,13 +777,11 @@ router.post('/stripe/webhook', async (req, res) => {
       // ── Platform subscriptions (AfriYield, Producer Pro, Transform, NGO, Gov) ─
       // checkout.session.completed → activate PremiumSubscription in MongoDB
       else if (!isInvestmentCheckout && emailNorm) {
-        const isAnnual =
-          session.metadata?.billingInterval === 'year' ||
-          ['investor', 'afriyield', 'afriyield_access', 'cooperative', 'cooperative_growth',
-            'transformation', 'transformation_center', 'producer_pro', 'ngo', 'government',
-          ].includes(tierKey) ||
-          Boolean(session.metadata?.stripePriceId) ||
-          Number(session.amount_total) === 9900;
+        const isAnnual = subscriptionIsAnnual({
+          tierKey,
+          billingInterval: session.metadata?.billingInterval,
+          amountTotal: session.amount_total,
+        });
         const days = isAnnual ? 365 : 30;
         await PremiumSubscription.findOneAndUpdate(
           { investorEmail: emailNorm },
