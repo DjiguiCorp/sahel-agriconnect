@@ -35,6 +35,7 @@ import expertsRouter from './routes/experts.js';
 import diasporaRouter from './routes/diaspora.js';
 import Admin from './models/Admin.js';
 import marketplaceRouter from './routes/marketplace.js';
+import mobileMoneyPaymentRoutes from './routes/mobileMoneyPayments.js';
 import waitlistRouter from './routes/waitlist.js';
 import investmentsRouter from './routes/investments.js';
 import escrowRouter from './routes/escrow.js';
@@ -197,6 +198,7 @@ app.use('/api/config', configRouter);
 app.use('/api/experts', expertsRouter);
 app.use('/api/diaspora', diasporaRouter);
 app.use('/api/marketplace', marketplaceRouter);
+app.use('/api/mobile-money', mobileMoneyPaymentRoutes);
 app.use('/api/waitlist', waitlistRouter);
 
 // Payments — Stripe (subscriptions, cooperative memberships, AfriYield investments)

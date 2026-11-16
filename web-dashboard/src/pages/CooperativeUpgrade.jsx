@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2, Lock } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import { isStripeCheckoutAvailable, createCheckoutSession } from '../lib/stripeCheckout';
+import PaymentMethodSelector from '../components/PaymentMethodSelector';
 
 const COOP_PRICE_USD = 199;
 const GROWTH_REQUIRED = 51;
@@ -18,14 +19,15 @@ export default function CooperativeUpgrade() {
   const [error, setError] = useState('');
   const [verifiedMemberCount, setVerifiedMemberCount] = useState(0);
   const [eligible, setEligible] = useState(false);
+  const [showPayMethods, setShowPayMethods] = useState(false);
 
   const email =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('sac_coop_email') || ''
-      : '';
+    typeof window !== 'undefined' ? localStorage.getItem('sac_coop_email') || '' : '';
   const coopName =
+    typeof window !== 'undefined' ? localStorage.getItem('sac_coop_name') || '' : '';
+  const token =
     typeof window !== 'undefined'
-      ? localStorage.getItem('sac_coop_name') || ''
+      ? sessionStorage.getItem(COOP_TOKEN) || localStorage.getItem(COOP_TOKEN) || ''
       : '';
 
   useEffect(() => {
@@ -33,8 +35,6 @@ export default function CooperativeUpgrade() {
     (async () => {
       setChecking(true);
       try {
-        const token =
-          sessionStorage.getItem(COOP_TOKEN) || localStorage.getItem(COOP_TOKEN) || '';
         if (!token) {
           if (!cancelled) {
             setEligible(false);
@@ -60,7 +60,7 @@ export default function CooperativeUpgrade() {
     return () => {
       cancelled = true;
     };
-  }, [isFr]);
+  }, [isFr, token]);
 
   const startCheckout = async () => {
     setError('');
@@ -73,7 +73,7 @@ export default function CooperativeUpgrade() {
       return;
     }
     if (!isStripeCheckoutAvailable()) {
-      setError(isFr ? 'Paiement indisponible.' : 'Checkout unavailable.');
+      setError(isFr ? 'Paiement Stripe indisponible.' : 'Stripe checkout unavailable.');
       return;
     }
     setLoading(true);
@@ -128,7 +128,7 @@ export default function CooperativeUpgrade() {
         </h1>
         <p className="text-white/60 text-sm text-center mb-6 leading-relaxed">
           {isFr
-            ? 'Débloquez la certification, AfriYield Exchange et l\'export diaspora pour 199$/an. Requis pour les coopératives de 51+ membres vérifiés.'
+            ? "Débloquez la certification, AfriYield Exchange et l'export diaspora pour 199$/an. Requis pour les coopératives de 51+ membres vérifiés."
             : 'Unlock certification, AfriYield Exchange, and diaspora export for $199/year. Required for cooperatives with 51+ verified members.'}
         </p>
 
@@ -159,6 +159,28 @@ export default function CooperativeUpgrade() {
               {isFr ? 'Retour au portail' : 'Back to portal'}
             </Link>
           </div>
+        ) : showPayMethods ? (
+          <>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+              </div>
+            ) : null}
+            {error ? <p className="text-red-400 text-sm mb-4 text-center">{error}</p> : null}
+            <PaymentMethodSelector
+              isFr={isFr}
+              subscriptionType="cooperative_growth"
+              amount={COOP_PRICE_USD}
+              amountLabel={isFr ? '199$/an — Plan Croissance' : '$199/year — Growth Plan'}
+              authToken={token}
+              email={email}
+              entityName={coopName}
+              onStripeSelect={startCheckout}
+              onActivated={() => {
+                navigate('/cooperative-portal?upgrade=success');
+              }}
+            />
+          </>
         ) : (
           <>
             <ul className="space-y-2 text-sm text-white/70 mb-8">
@@ -166,7 +188,7 @@ export default function CooperativeUpgrade() {
                 isFr ? 'Workflow de certification' : 'Certification workflow',
                 isFr ? 'Référencement AfriYield Exchange' : 'AfriYield Exchange listing',
                 isFr ? 'Export vers marchés diaspora' : 'Export to diaspora markets',
-                isFr ? 'Éligibilité fonds d\'équipement' : 'Equipment fund eligibility',
+                isFr ? "Éligibilité fonds d'équipement" : 'Equipment fund eligibility',
               ].map((item) => (
                 <li key={item} className="flex gap-2">
                   <span className="text-amber-400">✓</span>
@@ -177,18 +199,10 @@ export default function CooperativeUpgrade() {
             {error ? <p className="text-red-400 text-sm mb-4 text-center">{error}</p> : null}
             <button
               type="button"
-              disabled={loading}
-              onClick={startCheckout}
-              className="w-full py-3.5 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              onClick={() => setShowPayMethods(true)}
+              className="w-full py-3.5 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {loading
-                ? isFr
-                  ? 'Redirection...'
-                  : 'Redirecting...'
-                : isFr
-                  ? 'Payer 199$/an avec Stripe →'
-                  : 'Pay $199/year with Stripe →'}
+              {isFr ? 'Choisir une méthode de paiement →' : 'Choose a payment method →'}
             </button>
           </>
         )}
@@ -199,10 +213,10 @@ export default function CooperativeUpgrade() {
             onClick={() => navigate(-1)}
             className="text-white/50 hover:text-white"
           >
-            {isFr ? '← Retour' : '← Back'}
+            {isFr ? 'Retour' : 'Back'}
           </button>
-          <Link to="/cooperative-portal" className="text-teal-400 hover:underline">
-            {isFr ? 'Portail coopérative' : 'Cooperative portal'}
+          <Link to="/cooperative-portal" className="text-white/50 hover:text-white">
+            {isFr ? 'Portail' : 'Portal'}
           </Link>
         </div>
       </div>

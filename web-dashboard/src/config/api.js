@@ -113,6 +113,13 @@ export const API_ENDPOINTS = {
     PRICE_BY_COMMODITY: (commodity) =>
       `${API_BASE_URL}/api/marketplace/prices/${encodeURIComponent(commodity)}`,
   },
+  MOBILE_MONEY: {
+    INITIATE: `${API_BASE_URL}/api/mobile-money/initiate`,
+    PENDING: `${API_BASE_URL}/api/mobile-money/pending`,
+    MY_STATUS: `${API_BASE_URL}/api/mobile-money/my-status`,
+    CONFIRM: (code) => `${API_BASE_URL}/api/mobile-money/confirm/${encodeURIComponent(code)}`,
+    REJECT: (code) => `${API_BASE_URL}/api/mobile-money/reject/${encodeURIComponent(code)}`,
+  },
   HARVEST_LOGS: {
     BASE: `${API_BASE_URL}/api/harvest-logs`,
     MY: `${API_BASE_URL}/api/harvest-logs/my`,

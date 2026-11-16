@@ -24,6 +24,9 @@ import CountryLicensesManagement from '../components/admin/CountryLicensesManage
 import GovernanceTab from '../components/admin/GovernanceTab';
 import FarmerNeedsTab from '../components/admin/FarmerNeedsTab';
 import MarketPricesTab from '../components/admin/MarketPricesTab';
+import PendingMobilePayments, {
+  usePendingMobilePaymentCount,
+} from '../components/admin/PendingMobilePayments';
 import Modal from '../components/Modal';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
@@ -52,11 +55,13 @@ import {
   Trash2,
   Wheat,
   LineChart,
+  Wallet,
 } from 'lucide-react';
 import { authHeaders, handleAdminApiUnauthorized } from '../utils/adminSession';
 
 const BASE_TABS = [
   { id: 'overview', labelKey: 'adminDashboard.tabs.overview', shortKey: 'adminDashboard.tabsShort.overview', Icon: ShieldAlert },
+  { id: 'payments', labelKey: 'adminDashboard.tabs.payments', shortKey: 'adminDashboard.tabsShort.payments', Icon: Wallet },
   { id: 'notifications', labelKey: 'adminDashboard.tabs.notifications', shortKey: 'adminDashboard.tabsShort.notifications', Icon: BadgeCheck },
   { id: 'deletions', labelKey: 'adminDashboard.tabs.deletions', shortKey: 'adminDashboard.tabsShort.deletions', Icon: Trash2 },
   { id: 'deleteUsers', labelKey: 'adminDashboard.tabs.deleteUsers', shortKey: 'adminDashboard.tabsShort.deleteUsers', Icon: Trash2 },
@@ -396,8 +401,12 @@ function OverviewControlTower({ onGoTab }) {
   if (loading) return <div className="text-center py-10">{t('common.loading')}</div>;
   if (err) return <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{err}</div>;
 
+  const adminToken = localStorage.getItem('adminToken') || '';
+
   return (
     <div className="space-y-8">
+      <PendingMobilePayments token={adminToken} isFr={isFr} />
+
       <div className="overflow-x-auto">
         <div className="flex gap-4 min-w-max pb-2">
           <UrgentCard
@@ -1593,6 +1602,7 @@ const CentralAdminDashboard = () => {
   const isSuperAdmin = user?.role === 'super-admin';
   const { country: detectedCountry } = useGeolocation();
   const [globalCountryFilter, setGlobalCountryFilter] = useState('');
+  const pendingMobilePayCount = usePendingMobilePaymentCount(adminToken);
 
   useEffect(() => {
     const tab = sessionStorage.getItem('admin_initial_tab');
@@ -1644,6 +1654,13 @@ const CentralAdminDashboard = () => {
           ...tab,
           label: isFr ? 'Prix marché' : 'Market prices',
           shortLabel: isFr ? 'Prix' : 'Prices',
+        };
+      }
+      if (tab.id === 'payments') {
+        return {
+          ...tab,
+          label: isFr ? 'Paiements' : 'Payments',
+          shortLabel: isFr ? 'Pay' : 'Pay',
         };
       }
       return {
@@ -1746,6 +1763,11 @@ const CentralAdminDashboard = () => {
                   {deletionRequestsPendingCount}
                 </span>
               ) : null}
+              {tab.id === 'payments' && pendingMobilePayCount > 0 ? (
+                <span className="shrink-0 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white animate-pulse">
+                  {pendingMobilePayCount}
+                </span>
+              ) : null}
             </button>
           ))}
         </nav>
@@ -1776,6 +1798,11 @@ const CentralAdminDashboard = () => {
                 {tab.id === 'expertRequests' && expertRequestsNewCount > 0 ? (
                   <span className="rounded-full bg-red-500 px-1.5 py-px text-[10px] font-bold leading-none text-white">
                     {expertRequestsNewCount}
+                  </span>
+                ) : null}
+                {tab.id === 'payments' && pendingMobilePayCount > 0 ? (
+                  <span className="rounded-full bg-amber-500 px-1.5 py-px text-[10px] font-bold leading-none text-white animate-pulse">
+                    {pendingMobilePayCount}
                   </span>
                 ) : null}
                 {tab.id === 'deletions' && deletionRequestsPendingCount > 0 ? (
@@ -1859,6 +1886,9 @@ const CentralAdminDashboard = () => {
             ) : null}
           </div>
           {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
+          {activeTab === 'payments' && (
+            <PendingMobilePayments token={adminToken} isFr={isFr} />
+          )}
           {activeTab === 'notifications' && <NotificationsPanel />}
           {activeTab === 'deletions' && (
             <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />

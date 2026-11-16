@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProcessorRegistration from '../components/ProcessorRegistration';
 import AppReturnBanner from '../components/AppReturnBanner';
+import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import { API_BASE_URL } from '../config/api';
 
 export default function TransformationRegistration() {
@@ -13,6 +14,10 @@ export default function TransformationRegistration() {
   const [success, setSuccess] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [billingInterval, setBillingInterval] = useState('month');
+  const [showPayMethods, setShowPayMethods] = useState(false);
+  const [payEmail, setPayEmail] = useState('');
+  const [centerName, setCenterName] = useState('');
 
   useEffect(() => {
     if (searchParams.get('payment') === 'success') {
@@ -21,19 +26,21 @@ export default function TransformationRegistration() {
     }
   }, [searchParams]);
 
-  const handleTransformationPayment = async (billingInterval = 'month') => {
+  const amountUsd = billingInterval === 'year' ? 1090 : 109;
+
+  const handleTransformationPayment = async () => {
     setCheckoutLoading(true);
     try {
-      const amountUsd = billingInterval === 'year' ? 1090 : 109;
       const res = await fetch(`${API_BASE_URL}/api/payments/stripe/create-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: '',
+          email: payEmail || '',
           tierKey: 'transformation',
-          tierName: billingInterval === 'year'
-            ? 'Transformation Center — Annual'
-            : 'Transformation Center — Monthly',
+          tierName:
+            billingInterval === 'year'
+              ? 'Transformation Center — Annual'
+              : 'Transformation Center — Monthly',
           amountUsd,
           billingInterval,
           successUrl: `${window.location.origin}/transformation-registration?payment=success`,
@@ -174,6 +181,40 @@ export default function TransformationRegistration() {
                   {isFr ? 'Voir le tableau de bord' : 'View Dashboard'}
                 </button>
               </div>
+            ) : showPayMethods ? (
+              <div className="space-y-4">
+                {checkoutLoading ? (
+                  <p className="text-amber-300 text-sm text-center">...</p>
+                ) : null}
+                <PaymentMethodSelector
+                  isFr={isFr}
+                  subscriptionType="transformation_monthly"
+                  amount={amountUsd}
+                  amountLabel={
+                    billingInterval === 'year'
+                      ? isFr
+                        ? '1 090$/an — Centre de transformation'
+                        : '$1,090/year — Transformation Center'
+                      : isFr
+                        ? '109$/mois — Centre de transformation'
+                        : '$109/month — Transformation Center'
+                  }
+                  email={payEmail}
+                  entityName={centerName}
+                  onStripeSelect={handleTransformationPayment}
+                  onActivated={() => {
+                    setPaymentDone(true);
+                    setSuccess(true);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPayMethods(false)}
+                  className="w-full text-xs text-white/50 hover:text-white"
+                >
+                  {isFr ? '← Retour' : '← Back'}
+                </button>
+              </div>
             ) : (
               <div className="space-y-4">
                 <h3 className="text-white font-bold text-lg mb-2">
@@ -184,35 +225,61 @@ export default function TransformationRegistration() {
                     {isFr ? 'Paiement annulé. Vous pouvez réessayer.' : 'Payment cancelled. You can try again.'}
                   </p>
                 )}
+                <label className="block text-sm text-white/70">
+                  {isFr ? 'Email (requis pour Orange Money / Wave)' : 'Email (required for Orange Money / Wave)'}
+                  <input
+                    type="email"
+                    value={payEmail}
+                    onChange={(e) => setPayEmail(e.target.value)}
+                    className="mt-1 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-2.5 text-white text-sm"
+                    placeholder="centre@email.com"
+                  />
+                </label>
+                <label className="block text-sm text-white/70">
+                  {isFr ? 'Nom du centre (optionnel)' : 'Center name (optional)'}
+                  <input
+                    type="text"
+                    value={centerName}
+                    onChange={(e) => setCenterName(e.target.value)}
+                    className="mt-1 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-2.5 text-white text-sm"
+                  />
+                </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-xl p-5 border border-amber-500/30 bg-amber-500/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBillingInterval('month');
+                      setShowPayMethods(true);
+                    }}
+                    className="rounded-xl p-5 border border-amber-500/30 bg-amber-500/10 text-left hover:border-amber-400"
+                  >
                     <p className="text-amber-400 font-bold text-lg">$109 / {isFr ? 'mois' : 'month'}</p>
-                    <p className="text-white/60 text-sm mb-4">{isFr ? 'Abonnement mensuel' : 'Monthly subscription'}</p>
-                    <button
-                      type="button"
-                      disabled={checkoutLoading}
-                      onClick={() => handleTransformationPayment('month')}
-                      className="w-full py-3 rounded-xl font-bold text-black bg-amber-500 disabled:opacity-60 text-sm"
-                    >
-                      {checkoutLoading ? '...' : isFr ? '💳 Payer mensuellement' : '💳 Pay Monthly'}
-                    </button>
-                  </div>
-                  <div className="rounded-xl p-5 border border-amber-400/50 bg-amber-500/15">
+                    <p className="text-white/60 text-sm mt-1">
+                      {isFr ? 'Puis choisir la méthode de paiement →' : 'Then choose payment method →'}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBillingInterval('year');
+                      setShowPayMethods(true);
+                    }}
+                    className="rounded-xl p-5 border border-amber-400/50 bg-amber-500/15 text-left hover:border-amber-300"
+                  >
                     <p className="text-amber-400 font-bold text-lg">$1,090 / {isFr ? 'an' : 'year'}</p>
-                    <p className="text-green-400 text-xs mb-1">{isFr ? 'Économisez $218/an' : 'Save $218/year'}</p>
-                    <p className="text-white/60 text-sm mb-4">{isFr ? 'Abonnement annuel' : 'Annual subscription'}</p>
-                    <button
-                      type="button"
-                      disabled={checkoutLoading}
-                      onClick={() => handleTransformationPayment('year')}
-                      className="w-full py-3 rounded-xl font-bold text-black bg-amber-400 disabled:opacity-60 text-sm"
-                    >
-                      {checkoutLoading ? '...' : isFr ? '💳 Payer annuellement' : '💳 Pay Annually'}
-                    </button>
-                  </div>
+                    <p className="text-green-400 text-xs mb-1">
+                      {isFr ? 'Économisez $218/an' : 'Save $218/year'}
+                    </p>
+                    <p className="text-white/60 text-sm">
+                      {isFr ? 'Puis choisir la méthode de paiement →' : 'Then choose payment method →'}
+                    </p>
+                  </button>
                 </div>
                 <p className="text-white/40 text-xs text-center">
-                  🔒 {isFr ? 'Paiement sécurisé par Stripe · Visa, Mastercard, Amex' : 'Secure payment by Stripe · Visa, Mastercard, Amex'}
+                  🔒{' '}
+                  {isFr
+                    ? 'Stripe · Orange Money · Wave · Espèces'
+                    : 'Stripe · Orange Money · Wave · Cash'}
                 </p>
               </div>
             )}
