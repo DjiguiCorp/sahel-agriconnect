@@ -14,6 +14,16 @@ export const DUES_METHOD_OPTIONS = [
   { value: 'other', fr: 'Autre', en: 'Other' },
 ];
 
+export const DUES_CURRENCY_OPTIONS = [
+  { value: 'XOF', fr: 'XOF (Franc CFA)', en: 'XOF (CFA Franc)' },
+  { value: 'USD', fr: 'USD (Dollar)', en: 'USD (Dollar)' },
+  { value: 'EUR', fr: 'EUR (Euro)', en: 'EUR (Euro)' },
+  { value: 'GNF', fr: 'GNF (Franc Guinéen)', en: 'GNF (Guinean Franc)' },
+  { value: 'GHS', fr: 'GHS (Cedi Ghanéen)', en: 'GHS (Ghanaian Cedi)' },
+  { value: 'NGN', fr: 'NGN (Naira Nigérian)', en: 'NGN (Nigerian Naira)' },
+  { value: 'MAD', fr: 'MAD (Dirham Marocain)', en: 'MAD (Moroccan Dirham)' },
+];
+
 const MONTHS_FR = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
@@ -587,7 +597,7 @@ export function DuesPaymentsPanel({
   };
 
   const exportCsv = () => {
-    const rows = [
+    const csvContent = [
       [
         'Membre',
         'Montant',
@@ -603,15 +613,15 @@ export function DuesPaymentsPanel({
           `"${(p.memberName || '').replace(/"/g, '""')}"`,
           p.amount,
           p.currency || 'XOF',
-          p.paymentMethod,
+          methodLabel(p.paymentMethod, true),
           `"${(p.paymentReference || '').replace(/"/g, '""')}"`,
           `${p.periodMonth}/${p.periodYear}`,
           p.createdAt ? new Date(p.createdAt).toISOString().slice(0, 10) : '',
           `"${(p.notes || '').replace(/"/g, '""')}"`,
         ].join(',')
       ),
-    ];
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    ].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -622,22 +632,22 @@ export function DuesPaymentsPanel({
 
   return (
     <div className="p-4 space-y-4">
-      <div className="flex flex-wrap gap-3 text-sm bg-[#1a3c2e]/5 rounded-xl px-4 py-3 border border-[#1a3c2e]/10">
+      <div className="flex flex-wrap gap-3 text-sm text-[#1a3a2a] bg-[#1a3c2e]/5 rounded-xl px-4 py-3 border border-[#1a3c2e]/10">
         <span>
           {isFr ? 'Total collecté ce mois' : 'Collected this month'}:{' '}
-          <strong className="font-mono">
-            {Number(summary?.totalCollected || 0).toLocaleString()} XOF
+          <strong className="font-mono text-[#1a3c2e]">
+            {Number(summary?.totalCollected || 0).toLocaleString()}
           </strong>
         </span>
-        <span className="text-gray-300">|</span>
+        <span className="text-gray-400">|</span>
         <span>
           {isFr ? 'Membres à jour' : 'Members up to date'}:{' '}
-          <strong>{summary?.paidThisMonth ?? '—'}</strong>
+          <strong className="text-[#1a3c2e]">{summary?.paidThisMonth ?? '—'}</strong>
         </span>
-        <span className="text-gray-300">|</span>
+        <span className="text-gray-400">|</span>
         <span>
           {isFr ? 'En attente' : 'Pending'}:{' '}
-          <strong>{summary?.unpaidThisMonth ?? '—'}</strong>
+          <strong className="text-[#1a3c2e]">{summary?.unpaidThisMonth ?? '—'}</strong>
         </span>
       </div>
 
@@ -851,11 +861,17 @@ export function DuesPaymentsPanel({
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {isFr ? 'Devise' : 'Currency'}
                   </label>
-                  <input
-                    value={form.currency}
+                  <select
+                    value={form.currency || 'XOF'}
                     onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
                     className={INPUT}
-                  />
+                  >
+                    {DUES_CURRENCY_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {isFr ? c.fr : c.en}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>
