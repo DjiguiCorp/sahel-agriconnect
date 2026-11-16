@@ -154,6 +154,10 @@ export default function CooperativePortal() {
   const [linkProcessorBusy, setLinkProcessorBusy] = useState(false);
   const [showFinanceForm, setShowFinanceForm] = useState(false);
   const [verifyToast, setVerifyToast] = useState('');
+  const [harvestLogs, setHarvestLogs] = useState([]);
+  const [harvestLoading, setHarvestLoading] = useState(false);
+  const [harvestSubTab, setHarvestSubTab] = useState('pending'); // pending | verified
+  const [harvestVerifyBusy, setHarvestVerifyBusy] = useState(null);
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
   const declaredMembers = Number(
@@ -171,6 +175,8 @@ export default function CooperativePortal() {
     data?.stats?.activeProduceListings ??
       (data?.produceListings || []).filter((l) => l.cooperativeApproved).length
   );
+  const pendingHarvestCount = harvestLogs.filter((h) => !h.verifiedByCoop).length;
+  const verifiedHarvestCount = harvestLogs.filter((h) => h.verifiedByCoop).length;
   const specialUnlocked = isGrowth && progressMembers >= 51 && Boolean(processorId);
   const verificationStatus = data?.cooperative?.verificationStatus || 'unverified';
 
@@ -191,6 +197,45 @@ export default function CooperativePortal() {
     refreshPortal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, coop]);
+
+  const loadHarvestLogs = () => {
+    const coopId = data?.cooperative?._id;
+    if (!token || !coopId) return;
+    setHarvestLoading(true);
+    fetch(API_ENDPOINTS.HARVEST_LOGS.COOPERATIVE(coopId), { headers })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setHarvestLogs(Array.isArray(d.harvestLogs) ? d.harvestLogs : []);
+      })
+      .catch(() => setHarvestLogs([]))
+      .finally(() => setHarvestLoading(false));
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'produce') return;
+    loadHarvestLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, data?.cooperative?._id, token]);
+
+  const verifyHarvestLog = async (id) => {
+    setHarvestVerifyBusy(id);
+    try {
+      const r = await fetch(API_ENDPOINTS.HARVEST_LOGS.VERIFY(id), {
+        method: 'PATCH',
+        headers,
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Verify failed');
+      setHarvestLogs((prev) =>
+        prev.map((h) => (h._id === id ? { ...h, ...d.harvestLog, verifiedByCoop: true } : h))
+      );
+      setHarvestSubTab('verified');
+    } catch (e) {
+      alert(e.message || (isFr ? 'Échec de la vérification' : 'Verification failed'));
+    } finally {
+      setHarvestVerifyBusy(null);
+    }
+  };
 
   // Email verification from registration link ?verify=<token>
   useEffect(() => {
@@ -640,7 +685,9 @@ export default function CooperativePortal() {
     },
     {
       key: 'produce',
-      label: isFr ? `🌾 Productions (${data?.produceListings?.length ?? '—'})` : `🌾 Produce (${data?.produceListings?.length ?? '—'})`,
+      label: isFr
+        ? `🌾 Productions (${harvestLogs.length || data?.produceListings?.length || 0})`
+        : `🌾 Produce (${harvestLogs.length || data?.produceListings?.length || 0})`,
     },
     {
       key: 'certification',
@@ -1398,52 +1445,122 @@ export default function CooperativePortal() {
         )}
 
         {activeTab === 'produce' && !loading && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-[#1a3c2e]">🌾 {isFr ? 'Productions déclarées' : 'Declared produce'}</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h3 className="text-xl font-bold text-[#1a3c2e]">
+                🌾 {isFr ? 'Récoltes des membres' : 'Member harvests'}
+              </h3>
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setHarvestSubTab('pending')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    harvestSubTab === 'pending'
+                      ? 'bg-white text-[#1a3c2e] shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {isFr ? `À vérifier (${pendingHarvestCount})` : `To verify (${pendingHarvestCount})`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHarvestSubTab('verified')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    harvestSubTab === 'verified'
+                      ? 'bg-white text-[#1a3c2e] shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {isFr ? `Vérifiés (${verifiedHarvestCount})` : `Verified (${verifiedHarvestCount})`}
+                </button>
+              </div>
             </div>
-            {(data?.produceListings || []).length === 0 ? (
-              <div className="text-center py-14 bg-white rounded-2xl border border-gray-200">
-                <p className="text-5xl mb-3">🌾</p>
-                <p className="text-gray-500 text-sm">
-                  {isFr ? 'Aucune production déclarée par vos membres.' : 'No produce declared by your members yet.'}
-                </p>
+
+            {harvestLoading ? (
+              <div className="flex justify-center py-14">
+                <Loader2 className="w-8 h-8 animate-spin text-[#1a3c2e]" />
               </div>
             ) : (
-              (data?.produceListings || []).map((l) => (
-                <div key={l._id} className="bg-white rounded-2xl border border-gray-200 p-5 flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-bold text-[#1a3c2e]">{l.commodity}</p>
-                    <p className="text-sm text-gray-500">
-                      {l.quantityKg ? `${l.quantityKg} kg` : ''}
-                      {l.pricePerKgUSD != null ? ` · $${l.pricePerKgUSD}/kg` : ''} ·{' '}
-                      {l.farmerName || (isFr ? 'Agriculteur' : 'Farmer')}
-                    </p>
-                    <div className="flex gap-2 mt-2">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          l.cooperativeApproved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}
-                      >
-                        {l.cooperativeApproved ? (isFr ? '✓ Approuvé' : '✓ Approved') : isFr ? '⏳ En attente' : '⏳ Pending'}
-                      </span>
-                      {l.promotedToMarketplace && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">🌍 AfriYield</span>
+              (() => {
+                const list = harvestLogs.filter((h) =>
+                  harvestSubTab === 'verified' ? h.verifiedByCoop : !h.verifiedByCoop
+                );
+                if (list.length === 0) {
+                  return (
+                    <div className="text-center py-14 bg-white rounded-2xl border border-gray-200">
+                      <p className="text-5xl mb-3">🌾</p>
+                      <p className="text-gray-500 text-sm">
+                        {harvestSubTab === 'verified'
+                          ? isFr
+                            ? 'Aucun lot vérifié pour le moment.'
+                            : 'No verified batches yet.'
+                          : isFr
+                            ? 'Aucun lot en attente de vérification.'
+                            : 'No batches waiting for verification.'}
+                      </p>
+                    </div>
+                  );
+                }
+                return list.map((h) => (
+                  <div
+                    key={h._id}
+                    className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 shadow-sm"
+                  >
+                    <div>
+                      <p className="font-bold text-[#1a3c2e] text-lg">{h.cropType}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {h.farmerName || h.farmer?.nom || (isFr ? 'Agriculteur' : 'Farmer')}
+                        {h.farmerRegion || h.farmer?.region
+                          ? ` · ${h.farmerRegion || h.farmer.region}`
+                          : ''}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {h.quantityKg != null ? `${Number(h.quantityKg).toLocaleString()} kg` : ''}
+                        {h.qualityGrade
+                          ? ` · ${
+                              h.qualityGrade === 'ungraded'
+                                ? isFr
+                                  ? 'Non classé'
+                                  : 'Ungraded'
+                                : h.qualityGrade
+                            }`
+                          : ''}
+                        {h.harvestDate
+                          ? ` · ${new Date(h.harvestDate).toLocaleDateString()}`
+                          : ''}
+                      </p>
+                      <p className="text-xs font-mono text-[#B5850A] mt-2">{h.batchId}</p>
+                      {h.verifiedByCoop ? (
+                        <span className="inline-flex mt-2 text-xs font-bold px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                          ✓ {isFr ? 'Vérifié' : 'Verified'}
+                          {h.verifiedAt
+                            ? ` · ${new Date(h.verifiedAt).toLocaleDateString()}`
+                            : ''}
+                        </span>
+                      ) : (
+                        <span className="inline-flex mt-2 text-xs font-bold px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-800">
+                          {isFr ? 'En attente' : 'Pending'}
+                        </span>
                       )}
                     </div>
+                    {!h.verifiedByCoop ? (
+                      <button
+                        type="button"
+                        disabled={harvestVerifyBusy === h._id}
+                        onClick={() => verifyHarvestLog(h._id)}
+                        className="shrink-0 text-sm font-bold px-4 py-2.5 rounded-xl text-white disabled:opacity-60"
+                        style={{ background: '#1a3c2e' }}
+                      >
+                        {harvestVerifyBusy === h._id
+                          ? '…'
+                          : isFr
+                            ? 'Vérifier ce lot'
+                            : 'Verify this batch'}
+                      </button>
+                    ) : null}
                   </div>
-                  {!l.cooperativeApproved && (
-                    <button
-                      type="button"
-                      onClick={() => approveListing(l._id)}
-                      className="flex-shrink-0 text-sm font-bold px-4 py-2 rounded-xl text-white"
-                      style={{ background: '#1a3c2e' }}
-                    >
-                      ✓ {isFr ? 'Approuver' : 'Approve'}
-                    </button>
-                  )}
-                </div>
-              ))
+                ));
+              })()
             )}
           </div>
         )}

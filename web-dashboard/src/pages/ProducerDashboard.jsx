@@ -62,6 +62,7 @@ function ProUpgradeBanner({ isFr, onDismiss }) {
 
 const OverviewTab = lazy(() => import('./producer-dashboard/OverviewTab'));
 const ListingsTab = lazy(() => import('./producer-dashboard/ListingsTab'));
+const HarvestLogsTab = lazy(() => import('./producer-dashboard/HarvestLogsTab'));
 const BenefitsTab = lazy(() => import('./producer-dashboard/BenefitsTab'));
 const ServicesTab = lazy(() => import('./producer-dashboard/ServicesTab'));
 
@@ -310,6 +311,7 @@ function ProducerDashboard() {
     () => [
       { key: 'overview', label: isFr ? '🏠 Aperçu' : '🏠 Overview' },
       { key: 'listings', label: isFr ? '🌾 Ma production' : '🌾 My production' },
+      { key: 'harvests', label: isFr ? '📒 Mes Récoltes' : '📒 My Harvests' },
       { key: 'benefits', label: isFr ? '🎁 Avantages' : '🎁 Benefits' },
       { key: 'services', label: isFr ? '🚜 Services' : '🚜 Services' },
     ],
@@ -522,6 +524,12 @@ function ProducerDashboard() {
             listingState={listingState}
             submitListing={submitListing}
           />
+        </Suspense>
+      )}
+
+      {activeTab === 'harvests' && loadedTabs.has('harvests') && (
+        <Suspense fallback={TAB_FALLBACK}>
+          <HarvestLogsTab isFr={isFr} profile={profile} />
         </Suspense>
       )}
 

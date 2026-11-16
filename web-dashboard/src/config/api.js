@@ -106,6 +106,13 @@ export const API_ENDPOINTS = {
   CONFIG: {
     CROPS: `${API_BASE_URL}/api/config/crops`,
   },
+  HARVEST_LOGS: {
+    BASE: `${API_BASE_URL}/api/harvest-logs`,
+    MY: `${API_BASE_URL}/api/harvest-logs/my`,
+    COOPERATIVE: (id) => `${API_BASE_URL}/api/harvest-logs/cooperative/${id}`,
+    VERIFY: (id) => `${API_BASE_URL}/api/harvest-logs/${id}/verify`,
+    PUBLIC: (batchId) => `${API_BASE_URL}/api/harvest-logs/public/${batchId}`,
+  },
   // Health check
   HEALTH: `${API_BASE_URL}/api/health`,
   // Centres agricoles
