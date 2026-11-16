@@ -6,6 +6,7 @@ import CooperativePlatformRegistration from '../models/CooperativePlatformRegist
 import Investment from '../models/Investment.js';
 import Opportunity from '../models/Opportunity.js';
 import Investor from '../models/Investor.js';
+import InvestorKYC from '../models/InvestorKYC.js';
 import GovernmentAdmin from '../models/GovernmentAdmin.js';
 import PendingNotification from '../models/PendingNotification.js';
 import {
@@ -51,16 +52,16 @@ function defaultReturnUrls(tierKey, baseFront) {
   const key = String(tierKey || '').trim().toLowerCase();
   const defaults = {
     investor: {
-      success: `${baseFront}/afri-yield/register?payment=success`,
-      cancel: `${baseFront}/pricing?cancelled=investor`,
+      success: `${baseFront}/afri-yield/portal?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel: `${baseFront}/afri-yield/portal?payment=cancelled`,
     },
     afriyield: {
-      success: `${baseFront}/afri-yield/register?payment=success`,
-      cancel: `${baseFront}/pricing?cancelled=investor`,
+      success: `${baseFront}/afri-yield/portal?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel: `${baseFront}/afri-yield/portal?payment=cancelled`,
     },
     afriyield_access: {
-      success: `${baseFront}/afri-yield/register?payment=success`,
-      cancel: `${baseFront}/afri-yield/register?payment=cancelled`,
+      success: `${baseFront}/afri-yield/portal?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel: `${baseFront}/afri-yield/portal?payment=cancelled`,
     },
     cooperative: {
       success: `${baseFront}/cooperative-registration?payment=success`,
@@ -164,13 +165,59 @@ function buildPayoutSchedule({ amountDeployed, expectedROIPercent, deploymentDat
   ];
 }
 
+function defaultAmountUsdForTier(tierKey) {
+  const key = String(tierKey || '').trim().toLowerCase();
+  const defaults = {
+    investor: 99,
+    afriyield: 99,
+    afriyield_access: 99,
+    cooperative: 199,
+    cooperative_growth: 199,
+    transformation: 109,
+    transformation_center: 109,
+    producer_pro: 29.99,
+    ngo: 499,
+    government: 999,
+  };
+  return defaults[key] ?? null;
+}
+
+function isMissingStripePriceError(err) {
+  const msg = String(err?.message || err || '');
+  const code = String(err?.code || err?.raw?.code || '');
+  return (
+    code === 'resource_missing' ||
+    /No such price/i.test(msg) ||
+    /No such product/i.test(msg)
+  );
+}
+
+async function createSubscriptionCheckoutSession({
+  emailNorm,
+  lineItems,
+  metadata,
+  successUrl,
+  cancelUrl,
+}) {
+  return stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'subscription',
+    ...(emailNorm ? { customer_email: emailNorm } : {}),
+    line_items: lineItems,
+    metadata,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+  });
+}
+
 // ── Stripe: create checkout session ────────────────────────────
 // POST /api/payments/stripe/create-session
 // Body: { email, tierKey, tierName, amountUsd?, successUrl, cancelUrl, billingInterval? }
 //
 // Prefer Stripe Dashboard Price IDs (Render env):
-//   STRIPE_PRICE_AFRIYIELD | COOPERATIVE | TRANSFORMATION | PRODUCER_PRO | NGO | GOVERNMENT
-// Checkout uses line_items: [{ price: <Price ID>, quantity: 1 }] — not dynamic price_data.
+//   STRIPE_PRICE_AFRIYIELD | COOPERATIVE | TRANSFORMAT | PRODUCER_PRO | NGO | GOVERNMENT
+// If the Price ID is missing on the account tied to STRIPE_SECRET_KEY
+// (wrong Stripe account / live vs test), fall back to inline price_data.
 router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
   try {
     if (!ensureStripeConfigured(res)) return;
@@ -184,9 +231,14 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
       billingInterval,
     } = req.body || {};
 
-    const tier = String(tierKey || '').trim();
+    const tier = String(tierKey || req.body?.type || '').trim();
     const priceId = resolveStripePriceId(tier);
-    if (!priceId && (amountUsd == null || amountUsd === '')) {
+    const fallbackAmount =
+      amountUsd != null && amountUsd !== ''
+        ? Number(amountUsd)
+        : defaultAmountUsdForTier(tier);
+
+    if (!priceId && (fallbackAmount == null || !Number.isFinite(fallbackAmount))) {
       return res.status(400).json({
         success: false,
         error:
@@ -204,13 +256,18 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
     if (req.body?.memberCount != null) extraMeta.memberCount = String(req.body.memberCount);
     if (req.body?.cooperativeName) extraMeta.cooperativeName = String(req.body.cooperativeName);
     if (req.body?.type) extraMeta.type = String(req.body.type);
+    if (
+      !extraMeta.type &&
+      ['investor', 'afriyield', 'afriyield_access'].includes(tier.toLowerCase())
+    ) {
+      extraMeta.type = 'afriyield_access';
+    }
 
     const baseFront = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
     const urls = defaultReturnUrls(tier, baseFront);
-    const interval =
-      billingInterval === 'month'
-        ? 'month'
-        : 'year'; // all Sahel Price IDs are annual subscriptions
+    const interval = billingInterval === 'month' ? 'month' : 'year';
+    const success = safeReturnUrl(successUrl, urls.success);
+    const cancel = safeReturnUrl(cancelUrl, urls.cancel);
 
     const metadata = {
       tierKey: tier || '',
@@ -220,38 +277,48 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
       ...extraMeta,
     };
 
-    // Price-ID path (production): exact Stripe product/price match
     if (priceId) {
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        mode: 'subscription',
-        ...(emailNorm ? { customer_email: emailNorm } : {}),
-        line_items: [{ price: priceId, quantity: 1 }],
-        metadata,
-        success_url: safeReturnUrl(successUrl, urls.success),
-        cancel_url: safeReturnUrl(cancelUrl, urls.cancel),
-      });
-      return res.json({ success: true, url: session.url, sessionId: session.id });
+      try {
+        const session = await createSubscriptionCheckoutSession({
+          emailNorm,
+          lineItems: [{ price: priceId, quantity: 1 }],
+          metadata,
+          successUrl: success,
+          cancelUrl: cancel,
+        });
+        return res.json({
+          success: true,
+          url: session.url,
+          sessionId: session.id,
+          mode: 'price_id',
+        });
+      } catch (priceErr) {
+        if (!isMissingStripePriceError(priceErr) || fallbackAmount == null) {
+          throw priceErr;
+        }
+        console.warn(
+          '[stripe] Price ' + priceId + ' not found for current STRIPE_SECRET_KEY account; ' +
+            'falling back to price_data ($' + fallbackAmount + '/' + interval + '). ' +
+            'Use a Price ID from the same Stripe account as STRIPE_SECRET_KEY.'
+        );
+      }
     }
 
-    // Legacy fallback (local/dev only): dynamic price_data when Price ID env is missing
-    const amountCents = Math.round(Number(amountUsd) * 100);
+    const amountCents = Math.round(Number(fallbackAmount) * 100);
     if (!Number.isFinite(amountCents) || amountCents <= 0) {
       return res.status(400).json({ success: false, error: 'amountUsd required' });
     }
     const productName = tierName || tier || 'Sahel AgriConnect Subscription';
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'subscription',
-      ...(emailNorm ? { customer_email: emailNorm } : {}),
-      line_items: [
+    const session = await createSubscriptionCheckoutSession({
+      emailNorm,
+      lineItems: [
         {
           price_data: {
             currency: 'usd',
             recurring: { interval },
             product_data: {
               name: productName,
-              description: `Sahel AgriConnect Platform — ${productName}`,
+              description: 'Sahel AgriConnect Platform — ' + productName,
               images: ['https://sahelagriconnect.com/sahel-logo.png'],
             },
             unit_amount: amountCents,
@@ -259,12 +326,127 @@ router.post('/stripe/create-session', checkoutLimiter, async (req, res) => {
           quantity: 1,
         },
       ],
-      metadata,
-      success_url: safeReturnUrl(successUrl, urls.success),
-      cancel_url: safeReturnUrl(cancelUrl, urls.cancel),
+      metadata: {
+        ...metadata,
+        stripePriceId: '',
+        priceDataFallback: '1',
+        amountUsd: String(fallbackAmount),
+      },
+      successUrl: success,
+      cancelUrl: cancel,
     });
-    return res.json({ success: true, url: session.url, sessionId: session.id });
+    return res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+      mode: 'price_data',
+    });
   } catch (e) {
+    console.error('[stripe] create-session error:', e.message);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * Activate AfriYield / platform PremiumSubscription from a paid Checkout Session.
+ * Used by webhook and by portal return (confirm-access-session) so payment works
+ * even if the webhook endpoint is on a mismatched Stripe account.
+ */
+async function activateSubscriptionFromCheckoutSession(session) {
+  const email =
+    session.customer_email ||
+    session.metadata?.email ||
+    session.customer_details?.email ||
+    '';
+  const emailNorm = String(email || '').toLowerCase().trim();
+  if (!emailNorm) return { ok: false, reason: 'missing_email' };
+
+  const tierKey = String(session.metadata?.tierKey || '').trim().toLowerCase();
+  const metaType = String(session.metadata?.type || '').toLowerCase();
+  const isAnnual =
+    session.metadata?.billingInterval === 'year' ||
+    ['investor', 'afriyield', 'afriyield_access', 'cooperative', 'cooperative_growth',
+      'transformation', 'transformation_center', 'producer_pro', 'ngo', 'government',
+    ].includes(tierKey) ||
+    Boolean(session.metadata?.stripePriceId) ||
+    Number(session.amount_total) === 9900;
+  const days = isAnnual ? 365 : 30;
+
+  await PremiumSubscription.findOneAndUpdate(
+    { investorEmail: emailNorm },
+    {
+      investorEmail: emailNorm,
+      ...(tierKey ? { tierKey } : {}),
+      ...(session.metadata?.stripePriceId
+        ? { stripePriceId: session.metadata.stripePriceId }
+        : {}),
+      ...(session.subscription
+        ? {
+            stripeSubscriptionId:
+              typeof session.subscription === 'string'
+                ? session.subscription
+                : session.subscription.id,
+          }
+        : {}),
+      plan: isAnnual ? 'annual' : 'monthly',
+      priceUSD: (session.amount_total || 0) / 100,
+      status: 'active',
+      paymentMethod: 'stripe',
+      paymentReference: session.id,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+    },
+    { upsert: true, new: true }
+  );
+
+  if (
+    ['investor', 'afriyield', 'afriyield_access'].includes(tierKey) ||
+    metaType === 'afriyield_access'
+  ) {
+    await InvestorKYC.findOneAndUpdate(
+      { investorEmail: emailNorm },
+      {
+        paymentVerified: true,
+        paymentVerifiedAt: new Date(),
+        stripeSessionId: session.id,
+      },
+      { upsert: false }
+    );
+  }
+
+  return { ok: true, email: emailNorm, tierKey };
+}
+
+// POST /api/payments/stripe/confirm-access-session
+// Body: { sessionId } — called when investor returns from Stripe Checkout
+router.post('/stripe/confirm-access-session', checkoutLimiter, async (req, res) => {
+  try {
+    if (!ensureStripeConfigured(res)) return;
+    const sessionId = String(req.body?.sessionId || req.body?.session_id || '').trim();
+    if (!sessionId) {
+      return res.status(400).json({ success: false, error: 'sessionId required' });
+    }
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status !== 'paid' && session.status !== 'complete') {
+      return res.status(402).json({
+        success: false,
+        error: 'Payment not completed',
+        payment_status: session.payment_status,
+        status: session.status,
+      });
+    }
+    const result = await activateSubscriptionFromCheckoutSession(session);
+    if (!result.ok) {
+      return res.status(400).json({ success: false, error: result.reason || 'Activation failed' });
+    }
+    return res.json({
+      success: true,
+      email: result.email,
+      tierKey: result.tierKey,
+      subscriptionActive: true,
+    });
+  } catch (e) {
+    console.error('[stripe] confirm-access-session error:', e.message);
     return res.status(500).json({ success: false, error: e.message });
   }
 });
@@ -589,6 +771,33 @@ router.post('/stripe/webhook', async (req, res) => {
           { upsert: true, new: true }
         );
         console.log('✅ Subscription activated:', { email: emailNorm, tierKey: tierKey || 'unknown' });
+
+        // AfriYield access fee → mark KYC paymentVerified for portal status UI
+        const metaType = String(session.metadata?.type || '').toLowerCase();
+        if (
+          ['investor', 'afriyield', 'afriyield_access'].includes(tierKey) ||
+          metaType === 'afriyield_access'
+        ) {
+          await InvestorKYC.findOneAndUpdate(
+            { investorEmail: emailNorm },
+            {
+              paymentVerified: true,
+              paymentVerifiedAt: new Date(),
+              stripeSessionId: session.id,
+            },
+            { upsert: false }
+          );
+          const invLang = resolveInvestorLang({});
+          const payCopy = investorNotificationCopy('payment_verified', invLang);
+          InvestorNotification.create({
+            investorEmail: emailNorm,
+            type: 'payment_verified',
+            title: payCopy.title,
+            message: payCopy.message,
+            lang: invLang,
+            link: '/afri-yield/portal',
+          }).catch(console.error);
+        }
 
         // NGO / Government portal access
         if (['ngo', 'government'].includes(tierKey)) {

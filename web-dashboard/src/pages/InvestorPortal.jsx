@@ -1464,9 +1464,28 @@ export default function InvestorPortal() {
       setTimeout(() => setVerifyToast(''), 4500);
     }
     if (searchParams.get('payment') === 'success') {
-      refreshOnboarding();
+      const sessionId = searchParams.get('session_id');
+      (async () => {
+        if (sessionId) {
+          try {
+            await fetch(`${API}/api/payments/stripe/confirm-access-session`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId }),
+            });
+          } catch {
+            /* webhook may still activate */
+          }
+        }
+        await refreshOnboarding();
+        setVerifyToast(
+          isFr ? 'Paiement reçu — accès mis à jour' : 'Payment received — access updated'
+        );
+        setTimeout(() => setVerifyToast(''), 4500);
+      })();
       const next = new URLSearchParams(searchParams);
       next.delete('payment');
+      next.delete('session_id');
       setSearchParams(next, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1494,19 +1513,22 @@ export default function InvestorPortal() {
   const startAccessPayment = async () => {
     setPayBusy(true);
     try {
+      const origin = window.location.origin.includes('localhost')
+        ? 'https://sahelagriconnect.com'
+        : window.location.origin;
       const r = await fetch(`${API}/api/payments/stripe/create-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'afriyield_access',
-          tierKey: 'investor',
-          tierName: 'AfriYield Exchange',
+          tierKey: 'afriyield_access',
+          tierName: 'AfriYield Exchange — Annual Access',
           amountUsd: 99,
           billingInterval: 'year',
           email: investor?.email,
           name: investor?.fullName,
-          successUrl: `${window.location.origin}/afri-yield/portal?payment=success`,
-          cancelUrl: `${window.location.origin}/afri-yield/portal?payment=cancelled`,
+          successUrl: `${origin}/afri-yield/portal?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${origin}/afri-yield/portal?payment=cancelled`,
         }),
       });
       const data = await r.json().catch(() => ({}));
