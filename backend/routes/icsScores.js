@@ -7,11 +7,26 @@ import { computeICSScore } from '../services/icsScoreService.js';
 
 const router = express.Router();
 
-/** GET /api/ics-scores/my — cooperative: own score (compute if missing) */
+function isLegacyEnglishIcs(score) {
+  if (!score) return true;
+  const samples = [
+    ...(score.missingItems || []),
+    ...(score.recommendations || []),
+    score.breakdown?.memberRecords?.notes,
+    score.breakdown?.harvestLogs?.notes,
+    score.breakdown?.inputTracking?.notes,
+    score.breakdown?.plotDocumentation?.notes,
+    score.breakdown?.coopVerification?.notes,
+    score.breakdown?.subscriptionActive?.notes,
+  ].filter(Boolean);
+  return samples.some((s) => typeof s === 'string' && s.includes(' ') && /[A-Z]/.test(s));
+}
+
+/** GET /api/ics-scores/my — cooperative: own score (compute / migrate legacy English) */
 router.get('/my', authCoop, async (req, res) => {
   try {
     let score = await ICSScore.findOne({ cooperativeId: req.coop._id });
-    if (!score) {
+    if (!score || isLegacyEnglishIcs(score)) {
       score = await computeICSScore(req.coop._id);
     }
     res.json({ success: true, score });

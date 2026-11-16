@@ -139,7 +139,34 @@ const ICS_I18N = {
   },
 };
 
-function parseNoteToken(raw) {
+/** Exact legacy English → key (static lists / notes) */
+const LEGACY_EXACT = {
+  'Insufficient verified member records': 'insufficient_verified_members',
+  'Insufficient harvest logs': 'insufficient_harvest_logs',
+  'Incomplete input tracking on harvest logs': 'incomplete_input_tracking',
+  'Incomplete plot GPS / size documentation': 'incomplete_plot_documentation',
+  'Email not verified': 'email_not_verified',
+  'No supporting document uploaded': 'no_document_uploaded',
+  'Declared member count is zero': 'declared_member_count_zero',
+  'No paid subscription plan': 'no_paid_subscription',
+  'Add fertilizer/pesticide/organic inputs on each harvest log': 'add_inputs_to_logs',
+  'Record plot GPS coordinates and plot size (hectares) on harvest logs': 'record_plot_gps',
+  'Verify the cooperative leader email address': 'verify_email',
+  'Upload at least one cooperative registration or legitimacy document': 'upload_document',
+  'Upgrade to an active Growth subscription for full ICS subscription points': 'upgrade_to_growth',
+  'Keep verified member roster up to date': 'keep_roster_up_to_date',
+  'Continue logging every harvest': 'continue_logging_harvests',
+  'Set the declared member count for the cooperative': 'set_declared_member_count',
+  'Upgrade from free to Starter or Growth': 'upgrade_from_free',
+  '0% of harvest logs have inputs': 'note_inputs_none',
+  '0% of harvest logs have plot documentation': 'note_plot_none',
+  'No verification criteria met': 'note_coop_none',
+  'Growth plan active': 'note_subscription_growth',
+  'Starter plan': 'note_subscription_starter',
+  'Free / inactive plan': 'note_subscription_free',
+};
+
+function parseToken(raw) {
   if (!raw || typeof raw !== 'string') return { key: '', params: {} };
   const [key, ...rest] = raw.split('|');
   const params = {};
@@ -160,8 +187,8 @@ function fillTemplate(template, params = {}) {
 
 function tIcs(lang, key, params = {}) {
   const map = ICS_I18N[lang] || ICS_I18N.en;
-  const fallback = ICS_I18N.en;
-  const template = map[key] || fallback[key] || key;
+  const template = map[key] || ICS_I18N.en[key];
+  if (!template) return null;
   return fillTemplate(template, params);
 }
 
@@ -172,14 +199,87 @@ function translatePlan(lang, plan) {
   return tIcs(lang, 'plan_free');
 }
 
-function translateNote(lang, raw) {
-  // Legacy English notes (pre-key scores) — keep readable until recompute
-  if (!raw) return '';
-  if (!raw.includes('|') && !raw.startsWith('note_') && !ICS_I18N.en[raw]) {
-    return raw;
+/**
+ * Normalize API string (translation key OR legacy English) → { key, params }.
+ */
+function normalizeIcsString(raw) {
+  if (!raw || typeof raw !== 'string') return { key: '', params: {} };
+  const trimmed = raw.trim();
+
+  // Already a key or key|params=
+  if (/^[a-z][a-z0-9_]*(\|[a-z0-9_]+=[^|]*)*$/i.test(trimmed) && !trimmed.includes(' ')) {
+    return parseToken(trimmed);
+  }
+  if (trimmed.includes('|') && /^[a-z][a-z0-9_]*\|/i.test(trimmed)) {
+    return parseToken(trimmed);
   }
 
-  const { key, params } = parseNoteToken(raw);
+  if (LEGACY_EXACT[trimmed]) {
+    return { key: LEGACY_EXACT[trimmed], params: {} };
+  }
+
+  let m = trimmed.match(/^Verify more members \(currently (\d+); target 51\+ for full points\)$/i);
+  if (m) return { key: 'verify_more_members', params: { count: m[1] } };
+
+  m = trimmed.match(/^Record more harvest logs \(currently (\d+); target 30\+\)$/i);
+  if (m) return { key: 'record_more_harvest_logs', params: { count: m[1] } };
+
+  m = trimmed.match(/^(\d+)\s+verified member\(s\)$/i);
+  if (m) return { key: 'note_verified_members', params: { count: m[1] } };
+
+  m = trimmed.match(/^(\d+)\s+harvest log\(s\)$/i);
+  if (m) return { key: 'note_harvest_logs', params: { count: m[1] } };
+
+  m = trimmed.match(/^(\d+)% of harvest logs include inputs \((\d+)\/(\d+)\)$/i);
+  if (m) return { key: 'note_inputs_pct', params: { pct: m[1], with: m[2], total: m[3] } };
+
+  m = trimmed.match(/^(\d+)% of harvest logs have GPS \+ plot size \((\d+)\/(\d+)\)$/i);
+  if (m) return { key: 'note_plot_pct', params: { pct: m[1], with: m[2], total: m[3] } };
+
+  // Coop verification composite: "email verified; declared members: 51; plan: starter"
+  if (
+    /email verified|document uploaded|declared members:|plan:/i.test(trimmed) &&
+    !trimmed.startsWith('note_')
+  ) {
+    const params = {
+      email: /email verified/i.test(trimmed) ? '1' : '0',
+      document: /document uploaded/i.test(trimmed) ? '1' : '0',
+      declared: '0',
+      plan: 'free',
+    };
+    const dm = trimmed.match(/declared members:\s*(\d+)/i);
+    if (dm) params.declared = dm[1];
+    const pm = trimmed.match(/plan:\s*([a-z_]+)/i);
+    if (pm) params.plan = pm[1].toLowerCase();
+    return { key: 'note_coop_verification', params };
+  }
+
+  return { key: trimmed, params: {} };
+}
+
+function looksLikeLegacyEnglish(score) {
+  if (!score) return false;
+  const samples = [
+    ...(score.missingItems || []),
+    ...(score.recommendations || []),
+    score.breakdown?.memberRecords?.notes,
+    score.breakdown?.harvestLogs?.notes,
+    score.breakdown?.inputTracking?.notes,
+    score.breakdown?.plotDocumentation?.notes,
+    score.breakdown?.coopVerification?.notes,
+    score.breakdown?.subscriptionActive?.notes,
+  ].filter(Boolean);
+
+  return samples.some((s) => {
+    if (typeof s !== 'string') return false;
+    if (/^[a-z][a-z0-9_]*(\||$)/i.test(s) && !s.includes(' ')) return false;
+    return /[A-Z]/.test(s) && s.includes(' ');
+  });
+}
+
+function renderIcsText(lang, raw) {
+  const { key, params } = normalizeIcsString(raw);
+  if (!key) return '';
 
   if (key === 'note_coop_verification') {
     const parts = [];
@@ -194,21 +294,8 @@ function translateNote(lang, raw) {
     return parts.length ? parts.join(lang === 'fr' ? ' ; ' : '; ') : tIcs(lang, 'note_coop_none');
   }
 
-  if (key === 'verify_more_members' || key === 'record_more_harvest_logs') {
-    return tIcs(lang, key, { count: params.count ?? 'X' });
-  }
-
-  return tIcs(lang, key, params);
-}
-
-function translateListItem(lang, raw) {
-  const { key, params } = parseNoteToken(raw);
-  if (key === 'verify_more_members' || key === 'record_more_harvest_logs') {
-    return tIcs(lang, key, { count: params.count ?? 'X' });
-  }
   const translated = tIcs(lang, key, params);
-  // If unknown legacy English string, show as-is
-  return translated === key && raw.includes(' ') ? raw : translated;
+  return translated != null ? translated : raw;
 }
 
 function gaugeColor(total) {
@@ -261,6 +348,21 @@ export default function ICSScorePanel({ API, headers, isFr }) {
   const [recomputing, setRecomputing] = useState(false);
   const [error, setError] = useState('');
 
+  const applyScore = useCallback((next) => {
+    setScore(next || null);
+  }, []);
+
+  const recompute = useCallback(async () => {
+    if (!API || !headers?.Authorization) return null;
+    const r = await fetch(`${API}/api/ics-scores/recompute`, {
+      method: 'POST',
+      headers,
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || (isFr ? 'Échec du recalcul' : 'Failed to recompute'));
+    return d.score || null;
+  }, [API, headers, isFr]);
+
   const load = useCallback(async () => {
     if (!API || !headers?.Authorization) return;
     setLoading(true);
@@ -268,31 +370,36 @@ export default function ICSScorePanel({ API, headers, isFr }) {
     try {
       const r = await fetch(`${API}/api/ics-scores/my`, { headers });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || (isFr ? 'Échec du chargement du score ICS' : 'Failed to load ICS score'));
-      setScore(d.score || null);
+      if (!r.ok) {
+        throw new Error(d.error || (isFr ? 'Échec du chargement du score ICS' : 'Failed to load ICS score'));
+      }
+      let next = d.score || null;
+      // Migrate stored English prose → keys without requiring a manual click
+      if (looksLikeLegacyEnglish(next)) {
+        try {
+          next = (await recompute()) || next;
+        } catch {
+          /* keep legacy; client-side map still translates */
+        }
+      }
+      applyScore(next);
     } catch (e) {
       setError(e.message || (isFr ? 'Erreur' : 'Error'));
       setScore(null);
     } finally {
       setLoading(false);
     }
-  }, [API, headers, isFr]);
+  }, [API, headers, isFr, recompute, applyScore]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const recompute = async () => {
+  const onRecalculateClick = async () => {
     setRecomputing(true);
     setError('');
     try {
-      const r = await fetch(`${API}/api/ics-scores/recompute`, {
-        method: 'POST',
-        headers,
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || (isFr ? 'Échec du recalcul' : 'Failed to recompute'));
-      setScore(d.score || null);
+      applyScore(await recompute());
     } catch (e) {
       setError(e.message || (isFr ? 'Erreur' : 'Error'));
     } finally {
@@ -328,7 +435,7 @@ export default function ICSScorePanel({ API, headers, isFr }) {
         </div>
         <button
           type="button"
-          onClick={recompute}
+          onClick={onRecalculateClick}
           disabled={recomputing}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1a3c2e] text-white text-sm font-bold hover:bg-[#244d3c] disabled:opacity-50"
         >
@@ -369,12 +476,12 @@ export default function ICSScorePanel({ API, headers, isFr }) {
           </thead>
           <tbody>
             {Object.keys(CATEGORY_META).map((key) => {
-              const cat = breakdown[key] || { score: 0, maxScore: CATEGORY_META[key] ? undefined : 0 };
+              const cat = breakdown[key] || {};
               const max = Number(cat.maxScore) || 1;
               const val = Number(cat.score) || 0;
               const pct = Math.round((val / max) * 100);
               const meta = CATEGORY_META[key];
-              const noteText = cat.notes ? translateNote(lang, cat.notes) : '';
+              const noteText = cat.notes ? renderIcsText(lang, cat.notes) : '';
               return (
                 <tr key={key} className="border-b border-gray-50">
                   <td className="py-3 pr-3">
@@ -406,7 +513,7 @@ export default function ICSScorePanel({ API, headers, isFr }) {
           </h4>
           <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
             {score.missingItems.map((item) => (
-              <li key={item}>{translateListItem(lang, item)}</li>
+              <li key={item}>{renderIcsText(lang, item)}</li>
             ))}
           </ul>
         </div>
@@ -419,7 +526,7 @@ export default function ICSScorePanel({ API, headers, isFr }) {
           </h4>
           <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
             {score.recommendations.map((item) => (
-              <li key={item}>{translateListItem(lang, item)}</li>
+              <li key={item}>{renderIcsText(lang, item)}</li>
             ))}
           </ul>
         </div>
