@@ -351,6 +351,13 @@ export function AdminPaymentsPanel({ token, isFr }) {
               {fmtUsd(summary?.confirmedThisYear)}
             </strong>
           </span>
+          <span className="text-gray-300">|</span>
+          <span>
+            {isFr ? 'Frais de facilitation AfriYield (5%)' : 'AfriYield facilitation fees (5%)'}:{' '}
+            <strong className="font-mono text-[#1a3c2e]">
+              {fmtUsd(summary?.facilitationFees)}
+            </strong>
+          </span>
         </div>
       </div>
 

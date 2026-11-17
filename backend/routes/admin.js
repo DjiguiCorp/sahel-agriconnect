@@ -6,6 +6,7 @@ import { Resend } from 'resend';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import MobileMoneyPayment from '../models/MobileMoneyPayment.js';
 import PremiumSubscription from '../models/PremiumSubscription.js';
+import Investment from '../models/Investment.js';
 import Investor from '../models/Investor.js';
 import InvestorKYC from '../models/InvestorKYC.js';
 import KYCAuditLog from '../models/KYCAuditLog.js';
@@ -532,7 +533,8 @@ router.get('/payments/ledger', authenticateToken, async (req, res) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const yearStart = new Date(now.getFullYear(), 0, 1);
 
-    const [mobileAll, stripeSubs, stripeCoops, coopCounts] = await Promise.all([
+    const [mobileAll, stripeSubs, stripeCoops, coopCounts, facilitationFeeAgg] =
+      await Promise.all([
       MobileMoneyPayment.find({}).sort({ createdAt: -1 }).limit(500).lean(),
       PremiumSubscription.find({
         $or: [
@@ -558,6 +560,24 @@ router.get('/payments/ledger', authenticateToken, async (req, res) => {
           paymentReceived: true,
         }),
         CooperativePlatformRegistration.countDocuments({ status: 'pending_payment' }),
+      ]),
+      // Confirmed investments: active or completed (no "confirmed" status on Investment)
+      Investment.aggregate([
+        {
+          $match: {
+            status: { $in: ['active', 'completed'] },
+            facilitationFee: { $gt: 0 },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            facilitationFees: { $sum: '$facilitationFee' },
+            netToCooperatives: { $sum: { $ifNull: ['$netAmount', 0] } },
+            grossInvested: { $sum: { $ifNull: ['$grossAmount', '$amountDeployed'] } },
+            count: { $sum: 1 },
+          },
+        },
       ]),
     ]);
 
@@ -668,6 +688,9 @@ router.get('/payments/ledger', authenticateToken, async (req, res) => {
         .map((p) => Number(p.amount) || 0),
     ].reduce((s, n) => s + n, 0);
 
+    const feeRow = facilitationFeeAgg?.[0] || {};
+    const facilitationFees = Number(feeRow.facilitationFees) || 0;
+
     return res.json({
       success: true,
       mobilePayments,
@@ -677,6 +700,10 @@ router.get('/payments/ledger', authenticateToken, async (req, res) => {
         confirmedThisYear,
         totalConfirmed,
         coopAnnualRevenue,
+        facilitationFees,
+        facilitationFeeInvestmentCount: Number(feeRow.count) || 0,
+        investmentGrossTotal: Number(feeRow.grossInvested) || 0,
+        investmentNetToCooperatives: Number(feeRow.netToCooperatives) || 0,
         activePaidCoops,
         pendingPaymentCoops,
       },

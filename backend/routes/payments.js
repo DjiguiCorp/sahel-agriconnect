@@ -562,8 +562,16 @@ router.post('/stripe/webhook', async (req, res) => {
         const investorEmailLower = String(investorEmail || email || '')
           .trim()
           .toLowerCase();
-        const amountDeployed =
-          Number(amountUSD) || (session.amount_total || 0) / 100;
+        const grossAmount = parseFloat(
+          (
+            (Number(session.amount_total) > 0
+              ? session.amount_total / 100
+              : Number(amountUSD) || 0) || 0
+          ).toFixed(2)
+        );
+        const facilitationFee = parseFloat((grossAmount * 0.05).toFixed(2));
+        const netAmount = parseFloat((grossAmount - facilitationFee).toFixed(2));
+        const amountDeployed = grossAmount;
         const oppId =
           opportunityId && mongoose.Types.ObjectId.isValid(opportunityId)
             ? opportunityId
@@ -584,6 +592,8 @@ router.post('/stripe/webhook', async (req, res) => {
           `stripeSessionId=${session.id}`,
           `stripePaymentIntent=${session.payment_intent || ''}`,
           'paymentMethod=stripe',
+          `facilitationFee=${facilitationFee}`,
+          `netAmount=${netAmount}`,
         ].join('; ');
 
         let investment = await Investment.findOne({
@@ -591,7 +601,13 @@ router.post('/stripe/webhook', async (req, res) => {
         });
         let investmentCreated = false;
 
-        if (!investment && investorEmailLower && amountDeployed > 0 && oppId) {
+        if (
+          !investment &&
+          investorEmailLower &&
+          grossAmount > 0 &&
+          oppId &&
+          opp
+        ) {
           investment = await Investment.create({
             investorId: investor?._id,
             investorName: investorName || investor?.fullName || '',
@@ -601,11 +617,14 @@ router.post('/stripe/webhook', async (req, res) => {
             track,
             commodity: opp?.commodity || '',
             amountDeployed,
+            grossAmount,
+            facilitationFee,
+            netAmount,
             currency: 'USD',
             deploymentDate,
             expectedROIPercent,
             payoutSchedule: buildPayoutSchedule({
-              amountDeployed,
+              amountDeployed: grossAmount,
               expectedROIPercent,
               deploymentDate,
             }),
@@ -617,7 +636,9 @@ router.post('/stripe/webhook', async (req, res) => {
             id: investment._id,
             email: investorEmailLower,
             opportunityId: oppId,
-            amount: amountDeployed,
+            grossAmount,
+            facilitationFee,
+            netAmount,
             sessionId: session.id,
           });
         } else if (investment) {
@@ -628,7 +649,7 @@ router.post('/stripe/webhook', async (req, res) => {
           const updatedOpp = await Opportunity.findByIdAndUpdate(
             opp._id,
             {
-              $inc: { amountRaised: amountDeployed },
+              $inc: { amountRaised: netAmount },
               $set: { updatedAt: new Date() },
             },
             { new: true }

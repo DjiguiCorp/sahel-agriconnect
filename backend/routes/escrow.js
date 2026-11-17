@@ -108,7 +108,7 @@ router.put('/:id/milestone', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const total = Number(req.body.totalAmountUSD);
-    const fee = total * 0.075;
+    const fee = total * 0.05;
     const tx = await EscrowTransaction.create({
       ...req.body,
       totalAmountUSD: total,
