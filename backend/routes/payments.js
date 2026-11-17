@@ -949,6 +949,19 @@ router.post('/stripe/create-investment-session', checkoutLimiter, async (req, re
       });
     }
 
+    if (mongoose.Types.ObjectId.isValid(opportunityId)) {
+      const opportunity = await Opportunity.findById(opportunityId)
+        .select('isDemoOpportunity centerName status')
+        .lean();
+      if (opportunity?.isDemoOpportunity) {
+        return res.status(403).json({
+          error: 'DEMO_OPPORTUNITY',
+          message:
+            'This opportunity is a demonstration and is not open for investment.',
+        });
+      }
+    }
+
     const amount = Number(amountUSD);
     if (isNaN(amount) || amount < 500) {
       return res.status(400).json({

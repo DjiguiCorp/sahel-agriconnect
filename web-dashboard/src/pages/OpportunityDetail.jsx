@@ -8,6 +8,12 @@ import {
   investButtonLabel,
 } from '../lib/investorOnboarding';
 import OnboardingGateModal, { hasFullInvestAccess } from '../components/OnboardingGateModal';
+import {
+  ComingSoonInvestButton,
+  DemoOpportunityBanner,
+  RiskDisclosureBlock,
+  isDemoOpportunity,
+} from '../components/DemoOpportunityUi';
 import { Loader2, Lock, X } from 'lucide-react';
 
 const CARD_STYLE = {
@@ -183,6 +189,7 @@ export default function OpportunityDetail() {
   };
 
   const handleInvestClick = () => {
+    if (isDemoOpportunity(opportunity)) return;
     const investPath = `/afri-yield/invest/${opportunity?._id || id}`;
     if (!kycState.isRegistered) {
       localStorage.setItem('afriyield_invest_return', investPath);
@@ -228,7 +235,9 @@ export default function OpportunityDetail() {
   const amt = Number(opportunity.amountSought ?? opportunity.amountTarget);
   const amountLine = Number.isFinite(amt) ? `$${amt.toLocaleString()} USD` : String(opportunity.amountSought ?? '—');
   const certStyle = certBadgeStyle[tone] || certBadgeStyle.gray;
-  const investBtnActive = !kycState.isRegistered || hasFullInvestAccess(onboarding);
+  const isDemo = isDemoOpportunity(opportunity);
+  const investBtnActive =
+    !isDemo && (!kycState.isRegistered || hasFullInvestAccess(onboarding));
   const lockedStep = onboarding?.step || 'email_verification';
   const fundingTarget = opportunity.amountTarget || opportunity.amountSought || 0;
   const fundingPct =
@@ -252,6 +261,11 @@ export default function OpportunityDetail() {
           >
             ← {t('opportunityDetail.backToList')}
           </Link>
+          {isDemo ? (
+            <div className="mt-4">
+              <DemoOpportunityBanner isFr={isFr} />
+            </div>
+          ) : null}
           <h1 className="mt-4 text-3xl md:text-4xl font-extrabold text-white">{opportunity.centerName}</h1>
           <p className="mt-2 text-lg text-white/85">{opportunity.location}</p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -475,6 +489,8 @@ export default function OpportunityDetail() {
             )}
           </div>
 
+          <RiskDisclosureBlock opp={opportunity} isFr={isFr} className="mb-2" />
+
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
@@ -483,18 +499,22 @@ export default function OpportunityDetail() {
             >
               {t('afriYield.scheduleMeeting')}
             </button>
-            <button
-              type="button"
-              onClick={handleInvestClick}
-              className="rounded-xl px-8 py-4 text-sm font-bold transition-all flex items-center justify-center gap-2"
-              style={{
-                background: investBtnActive ? '#B5850A' : 'rgba(181,133,10,0.3)',
-                color: investBtnActive ? 'black' : 'rgba(255,255,255,0.5)',
-              }}
-            >
-              {!investBtnActive ? <Lock className="w-4 h-4" /> : null}
-              {`💰 ${investButtonLabel(onboarding, isFr, { registered: kycState.isRegistered })}`}
-            </button>
+            {isDemo ? (
+              <ComingSoonInvestButton isFr={isFr} className="px-8 py-4" />
+            ) : (
+              <button
+                type="button"
+                onClick={handleInvestClick}
+                className="rounded-xl px-8 py-4 text-sm font-bold transition-all flex items-center justify-center gap-2"
+                style={{
+                  background: investBtnActive ? '#B5850A' : 'rgba(181,133,10,0.3)',
+                  color: investBtnActive ? 'black' : 'rgba(255,255,255,0.5)',
+                }}
+              >
+                {!investBtnActive ? <Lock className="w-4 h-4" /> : null}
+                {`💰 ${investButtonLabel(onboarding, isFr, { registered: kycState.isRegistered })}`}
+              </button>
+            )}
           </div>
 
           {kycState.isRegistered && !hasFullInvestAccess(onboarding) && onboarding && (

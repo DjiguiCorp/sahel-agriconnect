@@ -8,6 +8,12 @@ import {
   onboardingStepLabel,
 } from '../lib/investorOnboarding';
 import OnboardingGateModal, { hasFullInvestAccess } from '../components/OnboardingGateModal';
+import {
+  ComingSoonInvestButton,
+  DemoOpportunityBanner,
+  RiskDisclosureBlock,
+  isDemoOpportunity,
+} from '../components/DemoOpportunityUi';
 import { Loader2 } from 'lucide-react';
 import StripeInvestmentCheckout from '../components/StripeInvestmentCheckout';
 
@@ -164,7 +170,8 @@ export default function InvestmentConfirmation() {
       : '—';
   const payouts = computeBiAnnualPayouts(form.amount, expectedROIPercent);
 
-  const canInvestNow = hasFullInvestAccess(onboarding);
+  const isDemo = isDemoOpportunity(opportunity);
+  const canInvestNow = !isDemo && hasFullInvestAccess(onboarding);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -228,7 +235,20 @@ export default function InvestmentConfirmation() {
             : 'Everything is explained simply — no jargon. You confirm first, then we send instructions.'}
         </p>
 
-        {!kycState.loading && !onboardingLoading && !kycState.isRegistered && (
+        {isDemo && opportunity ? (
+          <div className="max-w-2xl mx-auto space-y-4">
+            <DemoOpportunityBanner isFr={isFr} />
+            <RiskDisclosureBlock opp={opportunity} isFr={isFr} />
+            <ComingSoonInvestButton isFr={isFr} className="w-full" />
+            <p className="text-sm text-center text-white/50">
+              {isFr
+                ? 'Cette opportunité est une démonstration et n’est pas ouverte à l’investissement.'
+                : 'This opportunity is a demonstration and is not open for investment.'}
+            </p>
+          </div>
+        ) : null}
+
+        {!isDemo && !kycState.loading && !onboardingLoading && !kycState.isRegistered && (
           <div className="max-w-2xl mx-auto">
             <div
               className="rounded-2xl border p-6 text-center"
@@ -261,7 +281,7 @@ export default function InvestmentConfirmation() {
           </div>
         )}
 
-        {!kycState.loading && !onboardingLoading && kycState.isRegistered && !canInvestNow && (
+        {!isDemo && !kycState.loading && !onboardingLoading && kycState.isRegistered && !canInvestNow && (
           <div className="max-w-2xl mx-auto">
             <div
               className="rounded-2xl border p-6 text-center"
@@ -291,7 +311,7 @@ export default function InvestmentConfirmation() {
           </div>
         )}
 
-        {(canInvestNow || kycState.loading || onboardingLoading) && (
+        {!isDemo && (canInvestNow || kycState.loading || onboardingLoading) && (
           <>
         {error ? (
           <div className="rounded-2xl p-4" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>

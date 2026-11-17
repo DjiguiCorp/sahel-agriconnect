@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { Shield, TrendingUp, Globe, ChevronRight, ArrowRight, Check, Star, Lock } from 'lucide-react';
 import { INVESTOR_RESIDENCE_OPTIONS } from '../data/investorResidenceCountries';
 import { useInvestorKYCStatus } from '../hooks/useInvestorKYCStatus';
+import {
+  DemoOpportunityBanner,
+  RiskDisclosureBlock,
+  isDemoOpportunity,
+} from '../components/DemoOpportunityUi';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -168,7 +173,7 @@ export default function AfriYieldExchange() {
       .catch(() => {});
     fetch(`${API}/api/opportunities?featured=true`)
       .then((r) => r.json())
-      .then((d) => setOpportunities(d.opportunities?.slice(0, 3) || []))
+      .then((d) => setOpportunities(d.opportunities?.slice(0, 5) || []))
       .catch(() => {});
   }, []);
 
@@ -1201,6 +1206,7 @@ function OpportunityCard({ opp, isFr }) {
   const trackColor =
     { 'Track A': '#1a3c2e', 'Track B': '#B5850A', 'Track C': '#3b82f6', All: '#6b7280' }[opp.track] ||
     '#1a3c2e';
+  const demo = isDemoOpportunity(opp);
 
   return (
     <Link
@@ -1209,6 +1215,11 @@ function OpportunityCard({ opp, isFr }) {
       style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
     >
       <div className="p-5 pb-0">
+        {demo ? (
+          <div className="mb-3">
+            <DemoOpportunityBanner isFr={isFr} />
+          </div>
+        ) : null}
         <div className="mb-3 flex items-start justify-between">
           <div>
             <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -1320,6 +1331,7 @@ function OpportunityCard({ opp, isFr }) {
             />
           </div>
         </div>
+        <RiskDisclosureBlock opp={opp} isFr={isFr} className="mb-4" />
       </div>
 
       <div
@@ -1335,9 +1347,18 @@ function OpportunityCard({ opp, isFr }) {
               ))
             : opp.commodity && <span className="text-xs text-white/40">{opp.commodity}</span>}
         </div>
-        <span className="text-xs font-semibold" style={{ color: '#B5850A' }}>
-          {isFr ? 'Voir le deal →' : 'View deal →'}
-        </span>
+        {demo ? (
+          <span
+            className="text-xs font-semibold cursor-not-allowed"
+            style={{ color: 'rgba(255,255,255,0.35)' }}
+          >
+            {isFr ? 'Bientôt disponible' : 'Coming Soon'}
+          </span>
+        ) : (
+          <span className="text-xs font-semibold" style={{ color: '#B5850A' }}>
+            {isFr ? 'Voir le deal →' : 'View deal →'}
+          </span>
+        )}
       </div>
     </Link>
   );

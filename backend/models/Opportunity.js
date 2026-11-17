@@ -44,7 +44,14 @@ const opportunitySchema = new mongoose.Schema({
   cooperativeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CooperativePlatformRegistration',
+    default: null,
     index: true,
+  },
+  /** Placeholder listings — not open for real investment */
+  isDemoOpportunity: { type: Boolean, default: false, index: true },
+  riskDisclosure: {
+    en: { type: String, trim: true, default: '' },
+    fr: { type: String, trim: true, default: '' },
   },
   afriyieldScore: { type: Number, min: 0, max: 100, default: 0 },
 

@@ -2,6 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Search } from 'lucide-react';
+import {
+  DemoOpportunityBanner,
+  RiskDisclosureBlock,
+  isDemoOpportunity,
+} from '../components/DemoOpportunityUi';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -159,6 +164,7 @@ export default function InvestmentOpportunities() {
                     : 0;
                 const trackColor = TRACK_COLORS[opp.track] || '#1a3c2e';
                 const certColor = CERT_COLORS[opp.certificationStatus] || '#6b7280';
+                const demo = isDemoOpportunity(opp);
                 return (
                   <Link
                     key={opp._id}
@@ -170,6 +176,11 @@ export default function InvestmentOpportunities() {
                     }}
                   >
                     <div className="p-5">
+                      {demo ? (
+                        <div className="mb-3">
+                          <DemoOpportunityBanner isFr={isFr} />
+                        </div>
+                      ) : null}
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <div className="flex flex-wrap gap-1.5 mb-2">
@@ -255,6 +266,7 @@ export default function InvestmentOpportunities() {
                           />
                         </div>
                       </div>
+                      <RiskDisclosureBlock opp={opp} isFr={isFr} />
                     </div>
                     <div
                       className="px-5 py-3 flex justify-between items-center"
@@ -268,9 +280,18 @@ export default function InvestmentOpportunities() {
                           <span className="text-xs text-white/30">👩‍🌾 {opp.memberFarmers}</span>
                         )}
                       </div>
-                      <span className="text-xs font-semibold" style={{ color: '#B5850A' }}>
-                        {isFr ? 'Voir le deal →' : 'View deal →'}
-                      </span>
+                      {demo ? (
+                        <span
+                          className="text-xs font-semibold cursor-not-allowed"
+                          style={{ color: 'rgba(255,255,255,0.35)' }}
+                        >
+                          {isFr ? 'Bientôt disponible' : 'Coming Soon'}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold" style={{ color: '#B5850A' }}>
+                          {isFr ? 'Voir le deal →' : 'View deal →'}
+                        </span>
+                      )}
                     </div>
                   </Link>
                 );
