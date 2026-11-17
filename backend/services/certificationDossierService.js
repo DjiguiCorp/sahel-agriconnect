@@ -377,10 +377,16 @@ function buildInputSummary(logs) {
 
 /**
  * Build a pdfkit document for the certification dossier (caller must pipe + end).
+ * @param {string|import('mongoose').Types.ObjectId} cooperativeId
+ * @param {'fr'|'en'} [lang='fr']
+ * @param {{ computeIcsIfMissing?: boolean, filenamePrefix?: string }} [options]
  * @returns {Promise<{ doc: import('pdfkit'), filename: string, cooperativeName: string }>}
  */
-export async function generateDossierPDF(cooperativeId, lang = 'fr') {
+export async function generateDossierPDF(cooperativeId, lang = 'fr', options = {}) {
   const language = lang === 'en' ? 'en' : 'fr';
+  const computeIcsIfMissing = options.computeIcsIfMissing !== false;
+  const filenamePrefix = options.filenamePrefix || 'dossier-certification';
+
   const coop = await CooperativePlatformRegistration.findById(cooperativeId);
   if (!coop) {
     const err = new Error('Cooperative not found');
@@ -393,7 +399,11 @@ export async function generateDossierPDF(cooperativeId, lang = 'fr') {
     loadVerifiedFarmers(cooperativeId, coop.cooperativeName),
     ManualCoopMember.find({ cooperativeId }).sort({ fullName: 1 }).lean(),
     HarvestLog.find({ cooperativeId }).sort({ harvestDate: -1 }).lean(),
-    ICSScore.findOne({ cooperativeId }).then(async (s) => s || computeICSScore(cooperativeId)),
+    ICSScore.findOne({ cooperativeId }).then(async (s) => {
+      if (s) return s;
+      if (computeIcsIfMissing) return computeICSScore(cooperativeId);
+      return null;
+    }),
   ]);
 
   const ics = icsScore?.toObject ? icsScore.toObject() : icsScore;
@@ -430,7 +440,7 @@ export async function generateDossierPDF(cooperativeId, lang = 'fr') {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40) || 'cooperative';
-  const filename = `dossier-certification-${safeName}-${dateStr.replace(/\//g, '-')}.pdf`;
+  const filename = `${filenamePrefix}-${safeName}-${dateStr.replace(/\//g, '-')}.pdf`;
 
   const doc = new PDFDocument({
     size: 'A4',
@@ -505,56 +515,73 @@ export async function generateDossierPDF(cooperativeId, lang = 'fr') {
 
   // —— SECTION 3 ICS ——
   sectionHeading(doc, t(language, 'Score de Conformité ICS', 'ICS Compliance Score'));
-  const total = ics?.scoreTotal ?? 0;
-  const level = ics?.readinessLevel || 'not_ready';
-  const levelLabel = (READINESS[level] || READINESS.not_ready)[language];
-  kv(doc, t(language, 'Score total', 'Total score'), `${total} / 100`);
-  kv(doc, t(language, 'Niveau de préparation', 'Readiness level'), levelLabel);
-  doc.moveDown(0.4);
-
-  const catRows = Object.keys(CATEGORY_LABELS).map((key) => {
-    const cat = ics?.breakdown?.[key] || {};
-    return [
-      CATEGORY_LABELS[key][language],
-      String(cat.score ?? 0),
-      String(cat.maxScore ?? '—'),
-      translateIcs(language, cat.notes || ''),
-    ];
-  });
-  drawSimpleTable(
-    doc,
-    [
-      t(language, 'Catégorie', 'Category'),
-      t(language, 'Score', 'Score'),
-      t(language, 'Max', 'Max'),
-      t(language, 'Notes', 'Notes'),
-    ],
-    catRows,
-    [120, 40, 35, CONTENT_W - 195]
-  );
-
-  const missing = ics?.missingItems || [];
-  if (missing.length) {
-    ensureSpace(doc, 40);
-    doc.font('Helvetica-Bold').fillColor(BRAND).fontSize(10).text(t(language, 'Éléments manquants', 'Missing Items'));
-    doc.moveDown(0.3);
-    doc.font('Helvetica').fillColor('#222').fontSize(9);
-    for (const item of missing) {
-      ensureSpace(doc, 14);
-      doc.text(`• ${translateIcs(language, item)}`);
-    }
+  if (!ics) {
+    doc
+      .font('Helvetica-Oblique')
+      .fillColor(MUTED)
+      .fontSize(10)
+      .text(t(language, 'Score non encore calculé', 'Score not yet computed'));
+    doc.moveDown(0.6);
+  } else {
+    const total = ics.scoreTotal ?? 0;
+    const level = ics.readinessLevel || 'not_ready';
+    const levelLabel = (READINESS[level] || READINESS.not_ready)[language];
+    kv(doc, t(language, 'Score total', 'Total score'), `${total} / 100`);
+    kv(doc, t(language, 'Niveau de préparation', 'Readiness level'), levelLabel);
     doc.moveDown(0.4);
-  }
 
-  const recs = ics?.recommendations || [];
-  if (recs.length) {
-    ensureSpace(doc, 40);
-    doc.font('Helvetica-Bold').fillColor(BRAND).fontSize(10).text(t(language, 'Recommandations', 'Recommendations'));
-    doc.moveDown(0.3);
-    doc.font('Helvetica').fillColor('#222').fontSize(9);
-    for (const item of recs) {
-      ensureSpace(doc, 14);
-      doc.text(`• ${translateIcs(language, item)}`);
+    const catRows = Object.keys(CATEGORY_LABELS).map((key) => {
+      const cat = ics.breakdown?.[key] || {};
+      return [
+        CATEGORY_LABELS[key][language],
+        String(cat.score ?? 0),
+        String(cat.maxScore ?? '—'),
+        translateIcs(language, cat.notes || ''),
+      ];
+    });
+    drawSimpleTable(
+      doc,
+      [
+        t(language, 'Catégorie', 'Category'),
+        t(language, 'Score', 'Score'),
+        t(language, 'Max', 'Max'),
+        t(language, 'Notes', 'Notes'),
+      ],
+      catRows,
+      [120, 40, 35, CONTENT_W - 195]
+    );
+
+    const missing = ics.missingItems || [];
+    if (missing.length) {
+      ensureSpace(doc, 40);
+      doc
+        .font('Helvetica-Bold')
+        .fillColor(BRAND)
+        .fontSize(10)
+        .text(t(language, 'Éléments manquants', 'Missing Items'));
+      doc.moveDown(0.3);
+      doc.font('Helvetica').fillColor('#222').fontSize(9);
+      for (const item of missing) {
+        ensureSpace(doc, 14);
+        doc.text(`• ${translateIcs(language, item)}`);
+      }
+      doc.moveDown(0.4);
+    }
+
+    const recs = ics.recommendations || [];
+    if (recs.length) {
+      ensureSpace(doc, 40);
+      doc
+        .font('Helvetica-Bold')
+        .fillColor(BRAND)
+        .fontSize(10)
+        .text(t(language, 'Recommandations', 'Recommendations'));
+      doc.moveDown(0.3);
+      doc.font('Helvetica').fillColor('#222').fontSize(9);
+      for (const item of recs) {
+        ensureSpace(doc, 14);
+        doc.text(`• ${translateIcs(language, item)}`);
+      }
     }
   }
 

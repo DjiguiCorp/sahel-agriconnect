@@ -136,6 +136,9 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
   const [growthBusy, setGrowthBusy] = useState(null);
   const [icsByCoopId, setIcsByCoopId] = useState({});
   const [icsComputing, setIcsComputing] = useState(null);
+  const [dossierLang, setDossierLang] = useState('fr');
+  const [dossierBusyId, setDossierBusyId] = useState(null);
+  const [dossierError, setDossierError] = useState('');
 
   const headers = useMemo(
     () => ({
@@ -143,6 +146,69 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
       Authorization: `Bearer ${token}`,
     }),
     [token]
+  );
+
+  const downloadDossier = async (coopId, e) => {
+    e?.stopPropagation?.();
+    e?.preventDefault?.();
+    if (!token || !coopId) return;
+    setDossierBusyId(coopId);
+    setDossierError('');
+    try {
+      const lang = dossierLang === 'en' ? 'en' : 'fr';
+      const r = await fetch(
+        `${API_BASE_URL}/api/certification-dossier/admin/generate/${coopId}?lang=${lang}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!r.ok) {
+        throw new Error('Error generating dossier. Please try again.');
+      }
+      const blob = await r.blob();
+      const cd = r.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/i);
+      const filename =
+        match?.[1] || `dossier-${String(coopId).slice(-6)}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDossierError('Error generating dossier. Please try again.');
+    } finally {
+      setDossierBusyId(null);
+    }
+  };
+
+  const renderDossierLangToggle = (light = false) => (
+    <div
+      className={`inline-flex rounded-lg border overflow-hidden text-[10px] font-bold ${
+        light ? 'border-white/30' : 'border-gray-200'
+      }`}
+    >
+      {['fr', 'en'].map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDossierLang(l);
+          }}
+          className={`px-2 py-1 uppercase ${
+            dossierLang === l
+              ? 'bg-[#1a3c2e] text-white'
+              : light
+                ? 'bg-white/10 text-white hover:bg-white/20'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          {l}
+        </button>
+      ))}
+    </div>
   );
 
   const fetchGrowthCoops = async () => {
@@ -385,7 +451,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                 {isFr ? 'Paiement' : 'Payment'}: {paymentMethodLabel} ({paymentDateLabel})
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
               <span
                 className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
                   selectedCoop.status === 'active'
@@ -407,8 +473,24 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                   {activating === selectedCoop._id ? '...' : '✅ Activer'}
                 </button>
               )}
+              <div className="flex items-center gap-2">
+                {renderDossierLangToggle(true)}
+                <button
+                  type="button"
+                  disabled={dossierBusyId === selectedCoop._id}
+                  onClick={(e) => downloadDossier(selectedCoop._id, e)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-[#1a3c2e] hover:bg-white/90 disabled:opacity-50"
+                  title="Generate Certification Dossier"
+                >
+                  {dossierBusyId === selectedCoop._id ? '…' : '📄'}{' '}
+                  {isFr ? 'Dossier PDF' : 'PDF Dossier'}
+                </button>
+              </div>
             </div>
           </div>
+          {dossierError ? (
+            <p className="text-xs text-red-300 mt-3">{dossierError}</p>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -572,7 +654,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
           <h3 className="font-bold text-brand-forest mb-3">
             {isFr ? '⚡ Actions rapides admin' : '⚡ Admin Quick Actions'}
           </h3>
-          <div className="mb-2">
+          <div className="mb-2 flex flex-col sm:flex-row gap-2">
             <button
               onClick={async () => {
                 await fetch(`${API_BASE_URL}/api/cooperatives/${selectedCoop._id}`, {
@@ -589,6 +671,19 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
             >
               💳 {isFr ? 'Confirmer paiement reçu — Activer portail' : 'Confirm Payment Received — Activate Portal'}
             </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {renderDossierLangToggle()}
+              <button
+                type="button"
+                disabled={dossierBusyId === selectedCoop._id}
+                onClick={(e) => downloadDossier(selectedCoop._id, e)}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium bg-[#1a3c2e]/5 text-[#1a3c2e] border-[#1a3c2e]/20 hover:bg-[#1a3c2e]/10 transition disabled:opacity-50"
+                title="Generate Certification Dossier"
+              >
+                {dossierBusyId === selectedCoop._id ? '…' : '📄'}{' '}
+                {isFr ? 'Dossier PDF' : 'PDF Dossier'}
+              </button>
+            </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-2">
             {[
@@ -822,7 +917,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                         </span>
                       </td>
                       <td className="px-3 py-3">
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 items-center">
                           <button
                             type="button"
                             disabled={growthBusy === c._id || vs === 'verified'}
@@ -839,6 +934,15 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                           >
                             {isFr ? 'Signaler' : 'Flag'}
                           </button>
+                          <button
+                            type="button"
+                            disabled={dossierBusyId === c._id}
+                            onClick={(e) => downloadDossier(c._id, e)}
+                            className="text-[12px] font-bold px-2 py-1.5 rounded-lg bg-gray-100 text-[#1a3c2e] hover:bg-gray-200 disabled:opacity-40"
+                            title="Generate Certification Dossier"
+                          >
+                            {dossierBusyId === c._id ? '…' : '📄'}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -849,6 +953,16 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
           </div>
         )}
       </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+        <p className="text-[11px] text-gray-500">
+          {isFr ? 'Langue dossier PDF :' : 'PDF dossier language:'}
+        </p>
+        {renderDossierLangToggle()}
+      </div>
+      {dossierError && viewMode === 'list' ? (
+        <p className="text-xs text-red-600 mb-2">{dossierError}</p>
+      ) : null}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
@@ -971,6 +1085,15 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                     >
                       {coop.status || 'pending'}
                     </span>
+                    <button
+                      type="button"
+                      disabled={dossierBusyId === coop._id}
+                      onClick={(e) => downloadDossier(coop._id, e)}
+                      className="px-2 py-1 rounded-lg text-xs font-bold bg-gray-100 text-[#1a3c2e] hover:bg-gray-200 disabled:opacity-50"
+                      title="Generate Certification Dossier"
+                    >
+                      {dossierBusyId === coop._id ? '…' : '📄'}
+                    </button>
                     {coop.status === 'pending_payment' && (
                       <button
                         type="button"
