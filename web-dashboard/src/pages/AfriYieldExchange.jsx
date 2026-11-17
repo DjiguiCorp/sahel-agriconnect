@@ -678,31 +678,54 @@ export default function AfriYieldExchange() {
                       <span className="text-3xl">{track.icon}</span>
                       <span
                         className="rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider"
-                        style={{ background: `${track.color}30`, color: track.color }}
+                        style={{
+                          background:
+                            track.id === 'A'
+                              ? 'rgba(255,255,255,0.14)'
+                              : `${track.color}40`,
+                          color:
+                            track.id === 'A'
+                              ? '#f5f5f5'
+                              : track.id === 'B'
+                                ? '#F5D78A'
+                                : '#93c5fd',
+                        }}
                       >
                         {track.tag}
                       </span>
                     </div>
                     <h3 className="mb-2 text-lg font-bold text-white">{track.title}</h3>
-                    <p className="mb-5 text-sm leading-relaxed text-white/50">{track.desc}</p>
+                    <p className="mb-5 text-sm leading-relaxed" style={{ color: '#f5f5f5' }}>
+                      {track.desc}
+                    </p>
                     <div className="grid grid-cols-2 gap-2">
                       <div
                         className="rounded-xl p-3"
                         style={{ background: 'rgba(255,255,255,0.06)' }}
                       >
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">
+                        <p
+                          className="text-[10px] uppercase tracking-wider"
+                          style={{ color: '#d4d4d4' }}
+                        >
                           {isFr ? 'Min. investissement' : 'Min. investment'}
                         </p>
-                        <p className="font-bold text-white">{track.min}</p>
+                        <p className="font-bold" style={{ color: '#ffffff' }}>
+                          {track.min}
+                        </p>
                       </div>
                       <div
                         className="rounded-xl p-3"
                         style={{ background: 'rgba(255,255,255,0.06)' }}
                       >
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">
+                        <p
+                          className="text-[10px] uppercase tracking-wider"
+                          style={{ color: '#d4d4d4' }}
+                        >
                           {isFr ? 'Durée du cycle' : 'Cycle duration'}
                         </p>
-                        <p className="font-bold text-white">{track.timeline}</p>
+                        <p className="font-bold" style={{ color: '#ffffff' }}>
+                          {track.timeline}
+                        </p>
                       </div>
                     </div>
                     {track.roi && (
@@ -710,10 +733,13 @@ export default function AfriYieldExchange() {
                         className="mt-2 rounded-xl p-3 text-center"
                         style={{ background: '#B5850A20' }}
                       >
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">
+                        <p
+                          className="text-[10px] uppercase tracking-wider"
+                          style={{ color: '#d4d4d4' }}
+                        >
                           {isFr ? 'Retour estimé' : 'Estimated return'}
                         </p>
-                        <p className="font-bold" style={{ color: '#B5850A' }}>
+                        <p className="font-bold" style={{ color: '#E8C56A' }}>
                           {track.roi}
                         </p>
                       </div>
