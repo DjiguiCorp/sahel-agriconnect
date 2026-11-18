@@ -293,54 +293,122 @@ router.post('/register-platform', async (req, res) => {
   }
 });
 
+/** Haversine distance in km between two WGS84 points */
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 /**
  * Shared discover handler — platform coops for farmer discovery.
  * GET /api/cooperatives/discover and /nearby (alias)
+ * Query: region?, country?, lat?, lng?, radius? (km, default 100), cropType?
  */
 async function discoverCooperatives(req, res) {
   try {
     const region = String(req.query.region || '').trim();
     const cropType = String(req.query.cropType || req.query.crop || '').trim();
     const country = String(req.query.country || '').trim();
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    const radiusKm = Number(req.query.radius) > 0 ? Number(req.query.radius) : 100;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
 
     const filter = {
       $or: [{ status: 'active' }, { paymentReceived: true }],
     };
     if (country) {
-      filter.country = new RegExp(`^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      filter.country = new RegExp(
+        `^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+        'i'
+      );
     }
     if (region) {
-      filter.regionCity = new RegExp(region.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      // Match regionCity or country (e.g. region=Mali)
+      filter.$and = [
+        ...(filter.$and || []),
+        {
+          $or: [
+            {
+              regionCity: new RegExp(
+                region.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                'i'
+              ),
+            },
+            {
+              country: new RegExp(
+                region.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                'i'
+              ),
+            },
+          ],
+        },
+      ];
     }
     if (cropType) {
       filter.primaryCrops = {
         $elemMatch: {
-          $regex: new RegExp(cropType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+          $regex: new RegExp(
+            cropType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+            'i'
+          ),
         },
       };
     }
 
-    const rows = await CooperativePlatformRegistration.find(filter)
+    let rows = await CooperativePlatformRegistration.find(filter)
       .sort({ memberCount: -1, createdAt: -1 })
-      .limit(50)
+      .limit(80)
       .select(
-        'cooperativeName regionCity country primaryCrops memberCount tier leaderName certificationStatus verificationStatus paymentReceived status'
+        'cooperativeName regionCity country primaryCrops memberCount tier leaderName certificationStatus verificationStatus paymentReceived status autresCrops latitude longitude location'
       )
       .lean();
 
-    const cooperatives = rows.map((c) => ({
+    if (hasCoords) {
+      rows = rows
+        .map((c) => {
+          const cLat = Number(c.latitude ?? c.location?.coordinates?.[1]);
+          const cLng = Number(c.longitude ?? c.location?.coordinates?.[0]);
+          const distanceKm =
+            Number.isFinite(cLat) && Number.isFinite(cLng)
+              ? haversineKm(lat, lng, cLat, cLng)
+              : null;
+          return { ...c, distanceKm };
+        })
+        .filter((c) => c.distanceKm == null || c.distanceKm <= radiusKm)
+        .sort((a, b) => {
+          if (a.distanceKm == null && b.distanceKm == null) {
+            return (b.memberCount || 0) - (a.memberCount || 0);
+          }
+          if (a.distanceKm == null) return 1;
+          if (b.distanceKm == null) return -1;
+          return a.distanceKm - b.distanceKm;
+        });
+    }
+
+    const cooperatives = rows.slice(0, 20).map((c) => ({
       id: c._id,
       _id: c._id,
       cooperativeName: c.cooperativeName,
       region: c.regionCity,
       regionCity: c.regionCity,
       country: c.country,
+      cropTypes: c.primaryCrops || [],
       primaryCrops: c.primaryCrops || [],
       memberCount: c.memberCount,
+      subscriptionPlan: c.tier || 'starter',
       tier: c.tier,
+      description: c.autresCrops || '',
       leaderName: c.leaderName,
       certificationStatus: c.certificationStatus || null,
       verificationStatus: c.verificationStatus || 'unverified',
+      ...(c.distanceKm != null ? { distanceKm: Math.round(c.distanceKm * 10) / 10 } : {}),
     }));
 
     return res.json({ success: true, cooperatives });

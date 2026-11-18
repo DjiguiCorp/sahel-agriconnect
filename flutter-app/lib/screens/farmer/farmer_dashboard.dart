@@ -180,6 +180,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         ),
         _FarmerBenefitsTab(
           isFr: isFr,
+          farmer: _farmer,
           onPushTool: _pushFarmerTool,
         ),
         _FarmerAccountTab(isFr: isFr, onTabChange: _goTab),
@@ -726,7 +727,9 @@ class _FarmerHomeTab extends StatelessWidget {
               emoji: '🤝',
               title: isFr ? 'Coopérative' : 'Join Cooperative',
               color: const Color(0xFF1D9E75),
-              onTap: () => onPushTool(_JoinCooperativeScreen(isFr: isFr)),
+              onTap: () => onPushTool(
+                _JoinCooperativeScreen(isFr: isFr, farmer: farmer),
+              ),
             ),
           ],
         ),
@@ -1397,8 +1400,13 @@ class _AiTool {
 // ══════════════════════════════════════════════════════════════
 class _FarmerBenefitsTab extends StatelessWidget {
   final bool isFr;
+  final Map<String, dynamic>? farmer;
   final void Function(Widget screen) onPushTool;
-  const _FarmerBenefitsTab({required this.isFr, required this.onPushTool});
+  const _FarmerBenefitsTab({
+    required this.isFr,
+    required this.onPushTool,
+    this.farmer,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1475,7 +1483,9 @@ class _FarmerBenefitsTab extends StatelessWidget {
           subtitle: isFr
             ? 'Trouvez et rejoignez une coopérative près de chez vous'
             : 'Find and join a cooperative near you',
-          onTap: () => onPushTool(_JoinCooperativeScreen(isFr: isFr)),
+          onTap: () => onPushTool(
+            _JoinCooperativeScreen(isFr: isFr, farmer: farmer),
+          ),
         ),
       ],
     );
@@ -3313,587 +3323,561 @@ Thank you for registering! We look forward to working with you.''',
 // ── JOIN COOPERATIVE ──────────────────────────────────────────
 class _JoinCooperativeScreen extends StatefulWidget {
   final bool isFr;
-  const _JoinCooperativeScreen({required this.isFr});
-  @override State<_JoinCooperativeScreen> createState() => _JoinCooperativeScreenState();
+  final Map<String, dynamic>? farmer;
+  const _JoinCooperativeScreen({required this.isFr, this.farmer});
+  @override
+  State<_JoinCooperativeScreen> createState() => _JoinCooperativeScreenState();
 }
 
 class _JoinCooperativeScreenState extends State<_JoinCooperativeScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _localityCtrl = TextEditingController();
-  final _nationalIdCtrl = TextEditingController();
-  final _areaCtrl = TextEditingController();
-  final _yearsCtrl = TextEditingController();
   final _msgCtrl = TextEditingController();
-  String _filterRegion = 'all';
-  String _farmRegion = 'koulikoro';
-  String _country = 'Mali';
-  String _areaUnit = 'hectares';
-  String _irrigation = 'non';
-  String? _selectedCoopId;
-  String? _selectedCoopName;
-  final Set<String> _selectedCrops = {};
-  bool _alreadyMember = false;
-  bool _consent = false;
-  bool _submitting = false;
-  bool _submitted = false;
-  bool _prefilled = false;
-
-  static const _cropOptions = [
-    'Mil',
-    'Sorgho',
-    'Maïs',
-    'Arachide',
-    'Coton',
-    'Niébé',
-    'Riz',
-    'Karité',
-    'Sésame',
-    'Cajou',
-  ];
-
-
-  final _coops = [
-    {'id': '1', 'name': 'Coopérative Karité Mali', 'region': 'koulikoro', 'members': 145},
-    {'id': '2', 'name': 'Union Agricole du Sahel', 'region': 'segou', 'members': 230},
-    {'id': '3', 'name': 'Coop Sésame Sikasso', 'region': 'sikasso', 'members': 87},
-    {'id': '4', 'name': 'Alliance Arachide Nord', 'region': 'mopti', 'members': 192},
-    {'id': '5', 'name': 'Groupement Mil & Sorgho', 'region': 'gao', 'members': 63},
-  ];
-
-  List<Map<String, dynamic>> get _filteredCoops =>
-      _coops
-          .where((c) => _filterRegion == 'all' || c['region'] == _filterRegion)
-          .toList()
-          .cast<Map<String, dynamic>>();
+  List<Map<String, dynamic>> _coops = [];
+  List<Map<String, dynamic>> _applications = [];
+  final Set<String> _applyingIds = {};
+  bool _loading = true;
+  String? _error;
+  String? _successMsg;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_prefilled) return;
-    _prefilled = true;
-    final auth = context.read<AuthState>();
-    if (auth.displayName.isNotEmpty) _nameCtrl.text = auth.displayName;
-    if (auth.displayEmail.isNotEmpty) _emailCtrl.text = auth.displayEmail;
-    if (auth.displayCountry.isNotEmpty) _country = auth.displayCountry;
-    final region = auth.user?['region']?.toString();
-    if (region != null && region.isNotEmpty) {
-      _farmRegion = region.toLowerCase();
-    }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _load();
+    });
   }
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
-    _emailCtrl.dispose();
-    _phoneCtrl.dispose();
-    _localityCtrl.dispose();
-    _nationalIdCtrl.dispose();
-    _areaCtrl.dispose();
-    _yearsCtrl.dispose();
     _msgCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    final isFr = widget.isFr;
-    if (_selectedCoopId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(isFr
-            ? 'Sélectionnez une coopérative'
-            : 'Select a cooperative'),
-        backgroundColor: Colors.orange,
-      ));
-      return;
+  String? get _region {
+    final f = widget.farmer;
+    final fromFarmer = f?['region']?.toString() ?? f?['regionCity']?.toString();
+    if (fromFarmer != null && fromFarmer.trim().isNotEmpty) {
+      return fromFarmer.trim();
     }
-    if (_selectedCrops.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(isFr
-            ? 'Sélectionnez au moins une culture'
-            : 'Select at least one crop'),
-        backgroundColor: Colors.orange,
-      ));
-      return;
-    }
-    if (!_consent) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(isFr
-            ? 'Vous devez accepter le traitement des données'
-            : 'You must accept data processing'),
-        backgroundColor: Colors.orange,
-      ));
-      return;
-    }
-    if (!_formKey.currentState!.validate()) return;
+    final auth = context.read<AuthState>();
+    final r = auth.user?['region']?.toString();
+    if (r == null || r.trim().isEmpty) return null;
+    return r.trim();
+  }
 
-    setState(() => _submitting = true);
+  String? get _country {
+    final f = widget.farmer;
+    final fromFarmer = f?['country']?.toString();
+    if (fromFarmer != null && fromFarmer.trim().isNotEmpty) {
+      return fromFarmer.trim();
+    }
+    final c = context.read<AuthState>().displayCountry;
+    if (c.trim().isEmpty) return null;
+    return c.trim();
+  }
+
+  double? get _lat {
+    final f = widget.farmer;
+    final v = f?['latitude'] ?? f?['gpsLat'] ?? f?['lat'];
+    if (v is num) return v.toDouble();
+    return double.tryParse(v?.toString() ?? '');
+  }
+
+  double? get _lng {
+    final f = widget.farmer;
+    final v = f?['longitude'] ?? f?['gpsLng'] ?? f?['lng'];
+    if (v is num) return v.toDouble();
+    return double.tryParse(v?.toString() ?? '');
+  }
+
+  Map<String, String> get _pendingByCoop {
+    final map = <String, String>{};
+    for (final a in _applications) {
+      final id = (a['cooperativeId'] ?? '').toString();
+      final status = (a['status'] ?? '').toString().toLowerCase();
+      if (id.isNotEmpty) map[id] = status;
+    }
+    return map;
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final auth = context.read<AuthState>();
-      final queue = context.read<OfflineQueue>();
-      await queue.enqueue(
-        path: '/api/cooperative-membership/applications',
-        body: {
-          'cooperativeId': _selectedCoopId,
-          'cooperativeName': _selectedCoopName,
-          'farmerEmail': auth.displayEmail,
-          'fullName': _nameCtrl.text.trim(),
-          'email': _emailCtrl.text.trim(),
-          'phone': _phoneCtrl.text.trim(),
-          'country': _country,
-          'region': _farmRegion,
-          'locality': _localityCtrl.text.trim(),
-          'nationalId': _nationalIdCtrl.text.trim(),
-          'crops': _selectedCrops.toList(),
-          'areaHectares': double.tryParse(_areaCtrl.text) ?? 0,
-          'areaUnit': _areaUnit,
-          'hasIrrigation': _irrigation,
-          'yearsFarming': int.tryParse(_yearsCtrl.text) ?? 0,
-          'alreadyCooperativeMember': _alreadyMember,
-          'message': _msgCtrl.text.trim(),
-          'consent': _consent,
-        },
-        label: 'Cooperative membership application',
-        token: auth.token,
+      final token = auth.token;
+      var discovered = await ApiService.discoverCooperatives(
+        region: _region,
+        country: _country,
+        lat: _lat,
+        lng: _lng,
       );
-      if (mounted) setState(() => _submitted = true);
+      // Broader fallback if region filter yields nothing
+      if (discovered.isEmpty && (_region != null || _country != null)) {
+        discovered = await ApiService.discoverCooperatives(
+          country: _country,
+          lat: _lat,
+          lng: _lng,
+        );
+      }
+      if (discovered.isEmpty) {
+        discovered = await ApiService.discoverCooperatives(
+          lat: _lat,
+          lng: _lng,
+        );
+      }
+      final appsFut = (token != null && token.isNotEmpty)
+          ? ApiService.getMyApplications(token: token)
+          : Future<List<dynamic>>.value(<dynamic>[]);
+      final apps = await appsFut;
+      if (!mounted) return;
+      final coopList = <Map<String, dynamic>>[];
+      for (final e in discovered) {
+        if (e is Map) coopList.add(Map<String, dynamic>.from(e));
+      }
+      final appList = <Map<String, dynamic>>[];
+      for (final e in apps) {
+        if (e is Map) appList.add(Map<String, dynamic>.from(e));
+      }
+      setState(() {
+        _coops = coopList;
+        _applications = appList;
+        _loading = false;
+      });
     } catch (_) {
-      if (mounted) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = widget.isFr
+            ? 'Impossible de charger les coopératives.'
+            : 'Could not load cooperatives.';
+      });
+    }
+  }
+
+  Future<void> _apply(Map<String, dynamic> coop) async {
+    final isFr = widget.isFr;
+    final auth = context.read<AuthState>();
+    final token = auth.token;
+    if (token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isFr ? 'Session expirée' : 'Session expired'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+    final id = (coop['_id'] ?? coop['id'] ?? '').toString();
+    if (id.isEmpty) return;
+
+    setState(() {
+      _applyingIds.add(id);
+      _successMsg = null;
+    });
+    try {
+      final res = await ApiService.applyToCooperative(
+        id,
+        message: _msgCtrl.text.trim().isEmpty ? null : _msgCtrl.text.trim(),
+        token: token,
+      );
+      if (!mounted) return;
+      if (res['success'] == true || res['applicationId'] != null) {
+        final msg = isFr
+            ? 'Demande envoyée. La coopérative examinera votre candidature.'
+            : 'Application sent. The cooperative will review your request.';
+        setState(() => _successMsg = msg);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(isFr
-              ? 'Échec de l\'envoi. Réessayez.'
-              : 'Submission failed. Please try again.'),
+          content: Text(msg),
+          backgroundColor: _green,
+        ));
+        await _load();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(res['error']?.toString() ??
+              (isFr ? 'Échec de la demande' : 'Application failed')),
           backgroundColor: Colors.red,
         ));
       }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isFr ? 'Erreur réseau' : 'Network error'),
+        backgroundColor: Colors.red,
+      ));
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) {
+        setState(() => _applyingIds.remove(id));
+      }
     }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'approved':
+        return _green;
+      case 'rejected':
+      case 'declined':
+        return Colors.redAccent;
+      default:
+        return const Color(0xFFF59E0B);
+    }
+  }
+
+  String _statusLabel(String status, bool isFr) {
+    switch (status) {
+      case 'approved':
+        return isFr ? 'Approuvée' : 'Approved';
+      case 'rejected':
+      case 'declined':
+        return isFr ? 'Refusée' : 'Rejected';
+      default:
+        return isFr ? 'En attente' : 'Pending';
+    }
+  }
+
+  String _cropsLabel(dynamic crops) {
+    if (crops is List) {
+      return crops.map((e) => e.toString()).where((e) => e.isNotEmpty).join(', ');
+    }
+    return '';
+  }
+
+  String _formatDate(dynamic raw) {
+    if (raw == null) return '—';
+    final dt = DateTime.tryParse(raw.toString());
+    if (dt == null) return '—';
+    return '//';
   }
 
   @override
   Widget build(BuildContext context) {
     final isFr = widget.isFr;
+    final pending = _pendingByCoop;
+
     return _ToolScaffold(
       title: isFr ? 'Rejoindre une coopérative' : 'Join a Cooperative',
-      emoji: '🤝', color: _green,
-      child: _submitted
-          ? _ResultView(
-              result: isFr
-                  ? '''✅ **Demande envoyée !**
-
-Coopérative: **$_selectedCoopName**
-Nom: **${_nameCtrl.text}**
-Téléphone: **${_phoneCtrl.text}**
-Email: **${_emailCtrl.text}**
-
-**La coopérative vous contactera sous 48-72h** pour valider votre adhésion.'''
-                  : '''✅ **Application Submitted!**
-
-Cooperative: **$_selectedCoopName**
-Name: **${_nameCtrl.text}**
-Phone: **${_phoneCtrl.text}**
-Email: **${_emailCtrl.text}**
-
-**The cooperative will contact you within 48-72 hours** to validate your membership.''',
-              isFr: isFr,
-              onReset: () => setState(() {
-                _submitted = false;
-                _selectedCoopId = null;
-                _selectedCoopName = null;
-              }),
+      emoji: '🤝',
+      color: _green,
+      child: _loading
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(color: _gold),
+              ),
             )
-          : Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    isDense: true,
-                    value: _filterRegion,
-                    dropdownColor: _surface,
-                    style: const TextStyle(color: _text),
-                    decoration: _inputDecoration(
-                      isFr ? 'Filtrer coopératives par région' : 'Filter cooperatives by region',
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_successMsg != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _green.withValues(alpha: 0.4)),
                     ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'all',
-                        child: Text(
-                          isFr ? 'Toutes les régions' : 'All regions',
-                          style: const TextStyle(color: _text),
-                        ),
-                      ),
-                      ...['koulikoro', 'segou', 'sikasso', 'mopti', 'gao'].map(
-                        (r) => DropdownMenuItem(
-                          value: r,
-                          child: Text(
-                            r[0].toUpperCase() + r.substring(1),
-                            style: const TextStyle(color: _text),
-                          ),
-                        ),
-                      ),
-                    ],
-                    onChanged: (v) => setState(() {
-                      _filterRegion = v ?? 'all';
-                      _selectedCoopId = null;
-                      _selectedCoopName = null;
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    isFr ? 'Coopératives disponibles' : 'Available Cooperatives',
-                    style: const TextStyle(
-                      color: _text,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                    child: Text(
+                      _successMsg!,
+                      style: const TextStyle(color: _text, fontSize: 13),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  ..._filteredCoops.map((c) {
-                    final id = c['id'] as String;
-                    final selected = _selectedCoopId == id;
-                    return GestureDetector(
-                      onTap: () => setState(() {
-                        _selectedCoopId = id;
-                        _selectedCoopName = c['name'] as String;
-                      }),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [_surface, _surface2],
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: selected ? _green : _border,
-                            width: selected ? 2 : 1,
-                          ),
+                  const SizedBox(height: 14),
+                ],
+                if (_error != null) ...[
+                  Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _load,
+                    child: Text(isFr ? 'Réessayer' : 'Retry'),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                Text(
+                  isFr ? 'Coopératives disponibles' : 'Available cooperatives',
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isFr
+                      ? 'Basé sur votre région / proximité'
+                      : 'Based on your region / proximity',
+                  style: const TextStyle(color: _textMuted, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                if (_coops.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      isFr
+                          ? 'Aucune coopérative trouvée dans votre région.'
+                          : 'No cooperatives found in your region.',
+                      style: const TextStyle(color: _textMuted, fontSize: 13),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                else
+                  ..._coops.map((c) {
+                    final id = (c['_id'] ?? c['id'] ?? '').toString();
+                    final name =
+                        (c['cooperativeName'] ?? c['name'] ?? '—').toString();
+                    final region =
+                        (c['region'] ?? c['regionCity'] ?? '—').toString();
+                    final crops = _cropsLabel(c['cropTypes'] ?? c['primaryCrops']);
+                    final members = c['memberCount'] ?? 0;
+                    final status = pending[id];
+                    final applying = _applyingIds.contains(id);
+                    final isPending = status == 'pending';
+                    final isApproved = status == 'approved';
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_surface, _surface2],
                         ),
-                        child: Row(
-                          children: [
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _green.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.groups,
+                                  color: _green,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: const TextStyle(
+                                        color: _text,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' ·  ',
+                                      style: const TextStyle(
+                                        color: _textMuted,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    if (crops.isNotEmpty)
+                                      Text(
+                                        crops,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: _textMuted,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          if (isApproved)
                             Container(
-                              width: 40,
-                              height: 40,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
-                                color: _green.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
+                                color: _green.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Icon(Icons.groups, color: _green, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    c['name'] as String,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: _text,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                              child: Text(
+                                isFr ? 'Membre' : 'Member',
+                                style: const TextStyle(
+                                  color: _green,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            )
+                          else if (isPending)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B)
+                                    .withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                isFr ? 'En attente' : 'Pending',
+                                style: const TextStyle(
+                                  color: Color(0xFFF59E0B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            )
+                          else
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _green,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
                                   ),
-                                  Text(
-                                    '${c['members']} ${isFr ? 'membres' : 'members'} · ${(c['region'] as String)[0].toUpperCase()}${(c['region'] as String).substring(1)}',
-                                    style: const TextStyle(
-                                      color: _textMuted,
-                                      fontSize: 11,
-                                    ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                ],
+                                ),
+                                onPressed: applying ? null : () => _apply(c),
+                                child: applying
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        isFr ? 'Rejoindre' : 'Join',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                               ),
                             ),
-                            if (selected)
-                              const Icon(Icons.check_circle, color: _green, size: 22),
-                          ],
-                        ),
+                        ],
                       ),
                     );
                   }),
-                  if (_selectedCoopId != null) ...[
-                    const SizedBox(height: 20),
-                    _formCard(
-                      children: [
-                        Text(
-                          isFr ? 'Candidature complète' : 'Full Application',
-                          style: const TextStyle(
-                            color: _text,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          isFr
-                              ? 'Tous les champs marqués * sont requis pour traiter votre demande.'
-                              : 'All fields marked * are required to process your application.',
-                          style: const TextStyle(color: _textMuted, fontSize: 12),
-                        ),
-                        const SizedBox(height: 14),
-                        _fieldLabel(isFr ? 'Nom complet *' : 'Full name *'),
-                        _validatedField(
-                          _nameCtrl,
-                          isFr ? 'Prénom et nom' : 'First and last name',
-                          (v) => (v == null || v.trim().length < 2)
-                              ? (isFr ? 'Nom requis' : 'Name required')
-                              : null,
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Email *' : 'Email *'),
-                        _validatedField(
-                          _emailCtrl,
-                          'email@example.com',
-                          (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return isFr ? 'Email requis' : 'Email required';
-                            }
-                            if (!v.contains('@')) {
-                              return isFr ? 'Email invalide' : 'Invalid email';
-                            }
-                            return null;
-                          },
-                          type: TextInputType.emailAddress,
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Téléphone *' : 'Phone *'),
-                        _validatedField(
-                          _phoneCtrl,
-                          '+22376123456',
-                          (v) {
-                            if (v == null || v.trim().length < 8) {
-                              return isFr ? 'Téléphone requis' : 'Phone required';
-                            }
-                            if (!v.trim().startsWith('+')) {
-                              return isFr
-                                  ? 'Format international (+indicatif)'
-                                  : 'Use international format (+country code)';
-                            }
-                            return null;
-                          },
-                          type: TextInputType.phone,
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Pays *' : 'Country *'),
-                        DropdownButtonFormField<String>(
-                          isExpanded: true,
-                          isDense: true,
-                          value: _country,
-                          dropdownColor: _surface,
-                          style: const TextStyle(color: _text),
-                          decoration: _inputDecoration(isFr ? 'Pays' : 'Country'),
-                          items: allCountries
-                              .map(
-                                (c) => DropdownMenuItem(
-                                  value: c,
-                                  child: Text(c, style: const TextStyle(color: _text)),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (v) => setState(() => _country = v ?? _country),
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Région / commune *' : 'Region / district *'),
-                        DropdownButtonFormField<String>(
-                          isExpanded: true,
-                          isDense: true,
-                          value: _farmRegion,
-                          dropdownColor: _surface,
-                          style: const TextStyle(color: _text),
-                          decoration: _inputDecoration(isFr ? 'Région' : 'Region'),
-                          items: ['koulikoro', 'segou', 'sikasso', 'mopti', 'gao', 'bamako']
-                              .map(
-                                (r) => DropdownMenuItem(
-                                  value: r,
-                                  child: Text(
-                                    r[0].toUpperCase() + r.substring(1),
-                                    style: const TextStyle(color: _text),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (v) => setState(() => _farmRegion = v ?? _farmRegion),
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Village / localité' : 'Village / locality'),
-                        _textField(
-                          _localityCtrl,
-                          isFr ? 'Ex: Sirakoro' : 'e.g. Sirakoro',
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'N° pièce d\'identité' : 'National ID number'),
-                        _textField(
-                          _nationalIdCtrl,
-                          isFr ? 'Carte NINA / passeport' : 'National ID / passport',
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Cultures principales *' : 'Main crops *'),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _cropOptions.map((crop) {
-                            final on = _selectedCrops.contains(crop);
-                            return FilterChip(
-                              label: Text(crop),
-                              selected: on,
-                              onSelected: (sel) => setState(() {
-                                if (sel) {
-                                  _selectedCrops.add(crop);
-                                } else {
-                                  _selectedCrops.remove(crop);
-                                }
-                              }),
-                              selectedColor: _green.withValues(alpha: 0.25),
-                              checkmarkColor: _green,
-                              labelStyle: TextStyle(
-                                color: on ? _text : _textMuted,
-                                fontSize: 12,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Superficie cultivée *' : 'Farm area *'),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _validatedField(
-                                _areaCtrl,
-                                isFr ? 'Ex: 2.5' : 'e.g. 2.5',
-                                (v) {
-                                  final n = double.tryParse(v ?? '');
-                                  if (n == null || n <= 0) {
-                                    return isFr
-                                        ? 'Superficie requise'
-                                        : 'Valid area required';
-                                  }
-                                  return null;
-                                },
-                                type: TextInputType.number,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 90,
-                              child: DropdownButtonFormField<String>(
-                                isExpanded: true,
-                                isDense: true,
-                                value: _areaUnit,
-                                dropdownColor: _surface,
-                                style: const TextStyle(color: _text, fontSize: 13),
-                                decoration: _inputDecoration(''),
-                                items: [
-                                  DropdownMenuItem(
-                                    value: 'hectares',
-                                    child: Text(
-                                      isFr ? 'ha' : 'ha',
-                                      style: const TextStyle(color: _text),
-                                    ),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'acres',
-                                    child: Text(
-                                      isFr ? 'acres' : 'acres',
-                                      style: const TextStyle(color: _text),
-                                    ),
-                                  ),
-                                ],
-                                onChanged: (v) =>
-                                    setState(() => _areaUnit = v ?? 'hectares'),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Irrigation *' : 'Irrigation *'),
-                        DropdownButtonFormField<String>(
-                          isExpanded: true,
-                          isDense: true,
-                          value: _irrigation,
-                          dropdownColor: _surface,
-                          style: const TextStyle(color: _text),
-                          decoration: _inputDecoration(''),
-                          items: [
-                            DropdownMenuItem(
-                              value: 'oui',
-                              child: Text(
-                                isFr ? 'Oui' : 'Yes',
-                                style: const TextStyle(color: _text),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'non',
-                              child: Text(
-                                isFr ? 'Non' : 'No',
-                                style: const TextStyle(color: _text),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'partiel',
-                              child: Text(
-                                isFr ? 'Partiel' : 'Partial',
-                                style: const TextStyle(color: _text),
-                              ),
-                            ),
-                          ],
-                          onChanged: (v) => setState(() => _irrigation = v ?? 'non'),
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Années d\'expérience' : 'Years of experience'),
-                        _textField(_yearsCtrl, '5', type: TextInputType.number),
-                        const SizedBox(height: 8),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            isFr
-                                ? 'Déjà membre d\'une coopérative'
-                                : 'Already a cooperative member',
-                            style: const TextStyle(color: _text, fontSize: 13),
-                          ),
-                          value: _alreadyMember,
-                          activeTrackColor: _green.withValues(alpha: 0.5),
-                          onChanged: (v) => setState(() => _alreadyMember = v),
-                        ),
-                        const SizedBox(height: 12),
-                        _fieldLabel(isFr ? 'Message / motivation' : 'Message / motivation'),
-                        _textField(
-                          _msgCtrl,
-                          isFr
-                              ? 'Pourquoi rejoindre cette coopérative ?'
-                              : 'Why do you want to join this cooperative?',
-                          maxLines: 4,
-                        ),
-                        const SizedBox(height: 12),
-                        CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          value: _consent,
-                          activeColor: _green,
-                          onChanged: (v) => setState(() => _consent = v ?? false),
-                          title: Text(
-                            isFr
-                                ? 'J\'accepte que mes données soient utilisées pour traiter cette candidature *'
-                                : 'I agree my data may be used to process this application *',
-                            style: const TextStyle(color: _textMuted, fontSize: 12),
-                          ),
-                          controlAffinity: ListTileControlAffinity.leading,
-                        ),
-                        const SizedBox(height: 16),
-                        _submitBtn(
-                          isFr ? 'Envoyer ma candidature' : 'Submit Application',
-                          _submitting,
-                          _submit,
-                          _green,
-                        ),
-                      ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _msgCtrl,
+                  maxLines: 2,
+                  style: const TextStyle(color: _text, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: isFr
+                        ? 'Message optionnel pour la coopérative'
+                        : 'Optional message for the cooperative',
+                    hintStyle: const TextStyle(color: _textMuted),
+                    filled: true,
+                    fillColor: _surface2,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _border),
                     ),
-                  ],
-                ],
-              ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _border),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  isFr ? 'Mes coopératives' : 'My Cooperatives',
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (_applications.isEmpty)
+                  Text(
+                    isFr
+                        ? 'Aucune demande pour le moment.'
+                        : 'No applications yet.',
+                    style: const TextStyle(color: _textMuted, fontSize: 13),
+                  )
+                else
+                  ..._applications.map((a) {
+                    final name =
+                        (a['cooperativeName'] ?? '—').toString();
+                    final status =
+                        (a['status'] ?? 'pending').toString().toLowerCase();
+                    final color = _statusColor(status);
+                    final date = _formatDate(a['createdAt'] ?? a['requestedAt']);
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    color: _text,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  date,
+                                  style: const TextStyle(
+                                    color: _textMuted,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: color.withValues(alpha: 0.45),
+                              ),
+                            ),
+                            child: Text(
+                              _statusLabel(status, isFr),
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
             ),
     );
   }

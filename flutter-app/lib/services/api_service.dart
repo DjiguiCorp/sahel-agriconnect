@@ -304,6 +304,58 @@ class ApiService {
   ) =>
       post('/api/cooperatives/register-platform', body);
 
+  /// Discover real platform cooperatives (public).
+  static Future<List<dynamic>> discoverCooperatives({
+    String? region,
+    String? country,
+    double? lat,
+    double? lng,
+  }) async {
+    final params = <String, String>{};
+    if (region != null && region.trim().isNotEmpty) {
+      params['region'] = region.trim();
+    }
+    if (country != null && country.trim().isNotEmpty) {
+      params['country'] = country.trim();
+    }
+    if (lat != null) params['lat'] = lat.toString();
+    if (lng != null) params['lng'] = lng.toString();
+    final q = params.isEmpty
+        ? ''
+        : '?${Uri(queryParameters: params).query}';
+    final res = await get('/api/cooperatives/discover$q');
+    final list = res['cooperatives'];
+    return list is List ? list : <dynamic>[];
+  }
+
+  /// Submit farmer join application (auth: farmer JWT).
+  static Future<Map<String, dynamic>> applyToCooperative(
+    String cooperativeId, {
+    String? message,
+    required String token,
+  }) =>
+      post(
+        '/api/cooperative-membership/applications',
+        {
+          'cooperativeId': cooperativeId,
+          if (message != null && message.trim().isNotEmpty)
+            'message': message.trim(),
+        },
+        token: token,
+      );
+
+  /// Farmer's own cooperative join applications.
+  static Future<List<dynamic>> getMyApplications({
+    required String token,
+  }) async {
+    final res = await get(
+      '/api/cooperative-membership/applications/my',
+      token: token,
+    );
+    final list = res['applications'];
+    return list is List ? list : <dynamic>[];
+  }
+
   // ── Government ────────────────────────────────────────────
   static Future<Map<String, dynamic>> govLogin(
     String email,

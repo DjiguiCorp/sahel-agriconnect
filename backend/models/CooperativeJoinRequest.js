@@ -17,13 +17,16 @@ const cooperativeJoinRequestSchema = new mongoose.Schema({
   farmerRegion: { type: String, trim: true },
   farmerCropTypes: [{ type: String, trim: true }],
   message: { type: String, default: '' },
+  reason: { type: String, default: '' },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'declined'],
+    // `declined` = legacy web portal; `rejected` = Flutter / membership API
+    enum: ['pending', 'approved', 'declined', 'rejected'],
     default: 'pending',
     index: true,
   },
   requestedAt: { type: Date, default: Date.now },
+  createdAt: { type: Date, default: Date.now },
   reviewedAt: { type: Date },
   reviewedBy: { type: String, trim: true },
 });
