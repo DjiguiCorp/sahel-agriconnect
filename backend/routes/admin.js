@@ -31,6 +31,10 @@ import {
   getVerifiedMemberCount,
   sendCoopFlaggedEmail,
 } from '../services/coopMemberUpgrade.js';
+import {
+  revokeTradingAccess,
+  restoreTradingAccess,
+} from '../services/investorApprovalService.js';
 
 const router = express.Router();
 
@@ -253,6 +257,16 @@ router.post('/investors/:id/kyc-review', authenticateToken, async (req, res) => 
       await Investor.findByIdAndUpdate(investor._id, {
         kycStatus: action === 'approve' ? 'approved' : 'rejected',
         kycReviewedAt: now,
+        ...(action === 'approve'
+          ? {
+              tradingApproved: true,
+              tradingApprovedAt: now,
+              tradingApprovedBy: adminEmail,
+              tradingRevoked: false,
+            }
+          : {
+              tradingApproved: false,
+            }),
       });
     }
 
@@ -365,6 +379,21 @@ router.post('/investors/:id/approve-trading', authenticateToken, async (req, res
       });
     }
 
+    const now = new Date();
+    investor.tradingApproved = tradingApproved;
+    if (tradingApproved) {
+      investor.tradingApprovedAt = now;
+      investor.tradingApprovedBy = adminEmail;
+      investor.tradingRevoked = false;
+      investor.tradingRevokedAt = undefined;
+      investor.tradingRevokedBy = undefined;
+    } else {
+      investor.tradingRevoked = true;
+      investor.tradingRevokedAt = now;
+      investor.tradingRevokedBy = adminEmail;
+    }
+    await investor.save();
+
     const kyc = await InvestorKYC.findOneAndUpdate(
       { investorEmail: String(investor.email).toLowerCase() },
       {
@@ -373,7 +402,7 @@ router.post('/investors/:id/approve-trading', authenticateToken, async (req, res
           investorEmail: String(investor.email).toLowerCase(),
           investorName: investor.fullName,
           ...(tradingApproved
-            ? { tradingApprovedAt: new Date(), tradingApprovedBy: adminEmail }
+            ? { tradingApprovedAt: now, tradingApprovedBy: adminEmail }
             : {}),
         },
         $setOnInsert: {
@@ -391,6 +420,62 @@ router.post('/investors/:id/approve-trading', authenticateToken, async (req, res
       investorId: investor._id.toString(),
       investorEmail: kyc.investorEmail,
       diditStatus: kyc.diditStatus,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * POST /api/admin/investors/:email/revoke-trading
+ * Suspend trading access; blocks auto-approve until restore.
+ */
+router.post('/investors/:email/revoke-trading', authenticateToken, async (req, res) => {
+  try {
+    const email = decodeURIComponent(String(req.params.email || ''))
+      .toLowerCase()
+      .trim();
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'email required' });
+    }
+    const adminEmail = String(req.admin?.email || 'admin').toLowerCase();
+    const investor = await revokeTradingAccess(email, adminEmail);
+    if (!investor) {
+      return res.status(404).json({ success: false, error: 'Investor not found' });
+    }
+    return res.json({
+      success: true,
+      tradingApproved: false,
+      tradingRevoked: true,
+      investorEmail: investor.email,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * POST /api/admin/investors/:email/restore-trading
+ * Restore or manually approve trading access.
+ */
+router.post('/investors/:email/restore-trading', authenticateToken, async (req, res) => {
+  try {
+    const email = decodeURIComponent(String(req.params.email || ''))
+      .toLowerCase()
+      .trim();
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'email required' });
+    }
+    const adminEmail = String(req.admin?.email || 'admin').toLowerCase();
+    const investor = await restoreTradingAccess(email, adminEmail);
+    if (!investor) {
+      return res.status(404).json({ success: false, error: 'Investor not found' });
+    }
+    return res.json({
+      success: true,
+      tradingApproved: true,
+      tradingRevoked: false,
+      investorEmail: investor.email,
     });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });

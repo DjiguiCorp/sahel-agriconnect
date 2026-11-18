@@ -9,6 +9,7 @@ import {
   isNonIdentityDocument,
 } from '../utils/diditPayload.js';
 import KYCAuditLog from '../models/KYCAuditLog.js';
+import { checkAndApproveTradingAccess } from '../services/investorApprovalService.js';
 
 const router = express.Router();
 
@@ -286,6 +287,13 @@ router.post('/webhook', async (req, res) => {
 
     kyc.diditStatus = finalStatus;
     await kyc.save();
+
+    // When Didit KYC reaches approved, auto-approve trading if subscription active
+    if (finalStatus === 'approved' && kyc.investorEmail) {
+      checkAndApproveTradingAccess(kyc.investorEmail).catch((err) =>
+        console.error('[Didit] trading auto-approve failed:', err.message)
+      );
+    }
 
     if (autoFlagged) {
       let investorId = null;

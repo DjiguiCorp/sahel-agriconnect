@@ -1037,6 +1037,7 @@ export default function AfriYieldManagement() {
   const [loading, setLoading] = useState(true);
   const [opportunities, setOpportunities] = useState([]);
   const [investors, setInvestors] = useState([]);
+  const [tradingActionEmail, setTradingActionEmail] = useState('');
   const [paymentStatusByInvestorId, setPaymentStatusByInvestorId] = useState({});
   const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
   const [meetingRequests, setMeetingRequests] = useState([]);
@@ -1095,6 +1096,82 @@ export default function AfriYieldManagement() {
     const data = await r.json();
     if (data.success && Array.isArray(data.investors)) setInvestors(data.investors);
     else if (Array.isArray(data)) setInvestors(data);
+  }, []);
+
+  const revokeTradingAccess = useCallback(
+    async (inv) => {
+      const email = String(inv.email || '').trim().toLowerCase();
+      if (!email) return;
+      const name = inv.fullName || email;
+      if (
+        !window.confirm(
+          `Revoke trading access for ${name}? They will be notified by email.`
+        )
+      ) {
+        return;
+      }
+      setTradingActionEmail(email);
+      try {
+        const r = await fetch(
+          `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(email)}/revoke-trading`,
+          { method: 'POST', headers: authHeaders() }
+        );
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || data.success === false) {
+          throw new Error(data.error || 'Revoke failed');
+        }
+        setInvestors((prev) =>
+          prev.map((row) =>
+            String(row.email || '').toLowerCase() === email
+              ? {
+                  ...row,
+                  tradingApproved: false,
+                  tradingRevoked: true,
+                  tradingRevokedAt: new Date().toISOString(),
+                }
+              : row
+          )
+        );
+      } catch (e) {
+        window.alert(e.message || 'Could not revoke trading access');
+      } finally {
+        setTradingActionEmail('');
+      }
+    },
+    []
+  );
+
+  const restoreTradingAccess = useCallback(async (inv) => {
+    const email = String(inv.email || '').trim().toLowerCase();
+    if (!email) return;
+    setTradingActionEmail(email);
+    try {
+      const r = await fetch(
+        `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(email)}/restore-trading`,
+        { method: 'POST', headers: authHeaders() }
+      );
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || data.success === false) {
+        throw new Error(data.error || 'Restore failed');
+      }
+      setInvestors((prev) =>
+        prev.map((row) =>
+          String(row.email || '').toLowerCase() === email
+            ? {
+                ...row,
+                tradingApproved: true,
+                tradingRevoked: false,
+                tradingRevokedAt: undefined,
+                tradingApprovedAt: new Date().toISOString(),
+              }
+            : row
+        )
+      );
+    } catch (e) {
+      window.alert(e.message || 'Could not restore trading access');
+    } finally {
+      setTradingActionEmail('');
+    }
   }, []);
 
   const resolvePaymentStatuses = useCallback(async (invList) => {
@@ -1648,6 +1725,7 @@ export default function AfriYieldManagement() {
                   <th className="px-3 py-2 font-semibold">Investment Range</th>
                   <th className="px-3 py-2 font-semibold">Date Registered</th>
                   <th className="px-3 py-2 font-semibold">Payment Status</th>
+                  <th className="px-3 py-2 font-semibold">Trading</th>
                   <th className="px-3 py-2 font-semibold">Status</th>
                   <th className="px-3 py-2 font-semibold">Actions</th>
                 </tr>
@@ -1687,6 +1765,61 @@ export default function AfriYieldManagement() {
                           );
                         })()
                       )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {(() => {
+                        const emailKey = String(inv.email || '').toLowerCase();
+                        const busy = tradingActionEmail === emailKey;
+                        if (inv.tradingApproved) {
+                          return (
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className="inline-flex rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800">
+                                Trading Active
+                              </span>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => revokeTradingAccess(inv)}
+                                className="text-xs font-medium text-red-700 hover:underline disabled:opacity-50"
+                              >
+                                {busy ? '…' : 'Revoke Access'}
+                              </button>
+                            </div>
+                          );
+                        }
+                        if (inv.tradingRevoked) {
+                          return (
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-800">
+                                Access Revoked
+                              </span>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => restoreTradingAccess(inv)}
+                                className="text-xs font-medium text-green-700 hover:underline disabled:opacity-50"
+                              >
+                                {busy ? '…' : 'Restore Access'}
+                              </button>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                              Pending
+                            </span>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => restoreTradingAccess(inv)}
+                              className="text-xs font-medium text-blue-700 hover:underline disabled:opacity-50"
+                            >
+                              {busy ? '…' : 'Approve Manually'}
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-3 py-2">
                       {(() => {

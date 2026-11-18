@@ -61,6 +61,7 @@ import {
   seedMissingCropPrices,
   startCommodityPriceSync,
 } from './services/commodityPriceSyncService.js';
+import { backfillTradingApproval } from './services/investorApprovalService.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -482,6 +483,13 @@ const startServer = async () => {
           .catch((e) => console.warn('📈 CropPrice seed failed:', e.message));
         startCommodityPriceSync({ force: false });
       }, 5000);
+
+      // AfriYield: auto-approve trading for existing KYC + subscription investors
+      setTimeout(() => {
+        backfillTradingApproval().catch((e) =>
+          console.warn('[investorApproval] backfill failed:', e.message)
+        );
+      }, 8000);
 
       setInterval(() => {
         startCommodityPriceSync({ force: false });

@@ -75,6 +75,13 @@ const investorSchema = new mongoose.Schema({
     enum: ['en', 'fr'],
     default: 'fr',
   },
+  /** AfriYield invest access — auto-set when KYC + $99 subscription met */
+  tradingApproved: { type: Boolean, default: false },
+  tradingApprovedAt: { type: Date },
+  tradingApprovedBy: { type: String, trim: true },
+  tradingRevoked: { type: Boolean, default: false },
+  tradingRevokedAt: { type: Date },
+  tradingRevokedBy: { type: String, trim: true },
 });
 
 investorSchema.index({ email: 1 }, { unique: true });

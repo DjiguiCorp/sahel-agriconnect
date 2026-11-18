@@ -20,6 +20,7 @@ import {
 } from '../utils/investorNotificationCopy.js';
 import rateLimit from 'express-rate-limit';
 import { assertCoopGrowthCheckoutAllowed } from '../services/coopMemberUpgrade.js';
+import { checkAndApproveTradingAccess } from '../services/investorApprovalService.js';
 
 const router = express.Router();
 
@@ -485,6 +486,12 @@ async function activateSubscriptionFromCheckoutSession(session) {
       },
       { upsert: false }
     );
+    // Auto-approve trading if KYC already submitted
+    try {
+      await checkAndApproveTradingAccess(emailNorm);
+    } catch (e) {
+      console.error('[stripe] trading auto-approve failed:', e.message);
+    }
   }
 
   return { ok: true, email: emailNorm, tierKey };
@@ -892,6 +899,11 @@ router.post('/stripe/webhook', async (req, res) => {
             },
             { upsert: false }
           );
+          try {
+            await checkAndApproveTradingAccess(emailNorm);
+          } catch (e) {
+            console.error('[stripe webhook] trading auto-approve failed:', e.message);
+          }
           const invLang = resolveInvestorLang({});
           const payCopy = investorNotificationCopy('payment_verified', invLang);
           InvestorNotification.create({

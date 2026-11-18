@@ -14,6 +14,7 @@ import {
   resolveInvestorLang,
   investorNotificationCopy,
 } from '../utils/investorNotificationCopy.js';
+import { checkAndApproveTradingAccess } from '../services/investorApprovalService.js';
 
 const router = express.Router();
 
@@ -192,6 +193,11 @@ router.post('/submit', async (req, res) => {
             }
           : {}),
       }
+    );
+
+    // Auto-approve trading if subscription already active
+    checkAndApproveTradingAccess(investorEmail.toLowerCase()).catch((err) =>
+      console.error('[KYC] trading auto-approve failed:', err.message)
     );
 
     // Send emails

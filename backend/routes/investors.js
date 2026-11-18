@@ -101,6 +101,9 @@ router.post('/login', async (req, res) => {
     if (kyc && (kyc.diditSessionId || kyc.diditVerifiedAt || kyc.diditStatus)) {
       diditStatus = kyc.diditStatus || 'pending';
     }
+    const tradingApproved =
+      !investor.tradingRevoked &&
+      Boolean(investor.tradingApproved || kyc?.tradingApproved);
 
     const token = jwt.sign(
       {
@@ -110,7 +113,7 @@ router.post('/login', async (req, res) => {
         emailVerified: Boolean(investor.emailVerified),
         diditStatus,
         subscriptionActive: Boolean(subscriptionActive),
-        tradingApproved: Boolean(kyc?.tradingApproved),
+        tradingApproved,
       },
       process.env.JWT_SECRET,
       { expiresIn: '90d' }
@@ -133,7 +136,7 @@ router.post('/login', async (req, res) => {
         emailVerified: Boolean(investor.emailVerified),
         diditStatus,
         subscriptionActive: Boolean(subscriptionActive),
-        tradingApproved: Boolean(kyc?.tradingApproved),
+        tradingApproved,
       },
     });
   } catch (e) {
@@ -276,7 +279,9 @@ router.get('/onboarding-status', authenticateInvestor, async (req, res) => {
   try {
     const email = String(req.investorEmail || '').toLowerCase().trim();
     const [investor, kyc, subscriptionActive] = await Promise.all([
-      Investor.findOne({ email }).select('emailVerified').lean(),
+      Investor.findOne({ email })
+        .select('emailVerified tradingApproved tradingRevoked')
+        .lean(),
       InvestorKYC.findOne({ investorEmail: email })
         .select('diditStatus tradingApproved diditSessionId diditVerifiedAt')
         .lean(),
@@ -288,7 +293,9 @@ router.get('/onboarding-status', authenticateInvestor, async (req, res) => {
     if (kyc && (kyc.diditSessionId || kyc.diditVerifiedAt || kyc.diditStatus)) {
       diditStatus = kyc.diditStatus || 'pending';
     }
-    const tradingApproved = Boolean(kyc?.tradingApproved);
+    const tradingApproved =
+      !investor?.tradingRevoked &&
+      Boolean(investor?.tradingApproved || kyc?.tradingApproved);
 
     return res.json({
       success: true,
@@ -354,12 +361,15 @@ router.post('/investment-intent', async (req, res) => {
 router.get('/kyc-status', authenticateInvestor, async (req, res) => {
   try {
     const email = String(req.investorEmail || '').toLowerCase().trim();
-    const kyc = await InvestorKYC.findOne({ investorEmail: email })
-      .select(
-        'diditStatus tradingApproved diditVerifiedAt diditSessionId status ' +
-          'kycRejectionReason kycReviewNotes kycReviewedAt'
-      )
-      .lean();
+    const [investor, kyc] = await Promise.all([
+      Investor.findOne({ email }).select('tradingApproved tradingRevoked').lean(),
+      InvestorKYC.findOne({ investorEmail: email })
+        .select(
+          'diditStatus tradingApproved diditVerifiedAt diditSessionId status ' +
+            'kycRejectionReason kycReviewNotes kycReviewedAt'
+        )
+        .lean(),
+    ]);
 
     // No KYC record, or Didit never started → diditStatus null (show "required" banner)
     if (!kyc || (!kyc.diditSessionId && !kyc.diditVerifiedAt)) {
@@ -375,7 +385,9 @@ router.get('/kyc-status', authenticateInvestor, async (req, res) => {
     }
 
     const diditStatus = kyc.diditStatus || 'pending';
-    const tradingApproved = Boolean(kyc.tradingApproved);
+    const tradingApproved =
+      !investor?.tradingRevoked &&
+      Boolean(investor?.tradingApproved || kyc.tradingApproved);
 
     return res.json({
       success: true,
