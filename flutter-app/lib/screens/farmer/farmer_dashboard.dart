@@ -13,11 +13,12 @@ import '../../core/platform_navigation.dart';
 import '../../core/responsive.dart';
 import '../../core/safe_insets.dart';
 import '../../core/theme.dart';
+import '../../data/crops.dart';
 import '../../services/api_service.dart';
-import '../../services/offline_queue.dart';
 import '../../widgets/country_picker.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/portal_dashboard_nav.dart';
+import 'harvest_log_screen.dart';
 
 // ── COLOR CONSTANTS ────────────────────────────────────────────
 const _bg = Color(0xFF0f2318);
@@ -947,71 +948,80 @@ class _FarmerProduceTab extends StatefulWidget {
     required this.isFr,
     required this.onGoHome,
   });
-  @override State<_FarmerProduceTab> createState() => _FarmerProduceTabState();
+  @override
+  State<_FarmerProduceTab> createState() => _FarmerProduceTabState();
 }
 
 class _FarmerProduceTabState extends State<_FarmerProduceTab> {
-  bool _showForm = false;
-  bool _showSyncNote = false;
-
-  // Form controllers
-  final _cropCtrl = TextEditingController();
-  final _qtyCtrl = TextEditingController();
-  final _priceCtrl = TextEditingController();
-  final _notesCtrl = TextEditingController();
-  String _quality = 'A';
-  String _unit = 'kg';
-  bool _submitting = false;
+  List<Map<String, dynamic>> _logs = [];
+  bool _loadingLogs = true;
+  String? _logsError;
 
   @override
-  void dispose() {
-    _cropCtrl.dispose(); _qtyCtrl.dispose();
-    _priceCtrl.dispose(); _notesCtrl.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadLogs();
+    });
   }
 
-  Future<void> _submit() async {
-    if (_cropCtrl.text.trim().isEmpty || _qtyCtrl.text.trim().isEmpty) return;
-    setState(() => _submitting = true);
-    try {
-      final auth = context.read<AuthState>();
-      final queue = context.read<OfflineQueue>();
-      await queue.enqueue(
-        path: '/api/produce/declare',
-        body: {
-          'farmerEmail': auth.displayEmail,
-          'crop': _cropCtrl.text.trim(),
-          'quantity': double.tryParse(_qtyCtrl.text) ?? 0,
-          'unit': _unit,
-          'quality': _quality,
-          'priceXOF': double.tryParse(_priceCtrl.text) ?? 0,
-          'notes': _notesCtrl.text.trim(),
-        },
-        label: 'Declare produce',
-        token: auth.token,
-      );
+  Future<void> _loadLogs() async {
+    final auth = context.read<AuthState>();
+    final token = auth.token;
+    if (token == null || token.isEmpty) {
       if (mounted) {
         setState(() {
-          _submitting = false;
-          _showForm = false;
-          _showSyncNote = true;
+          _loadingLogs = false;
+          _logs = [];
         });
-        _cropCtrl.clear();
-        _qtyCtrl.clear();
-        _priceCtrl.clear();
-        _notesCtrl.clear();
       }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(widget.isFr
-            ? '✅ Production déclarée avec succès'
-            : '✅ Produce declared successfully'),
-          backgroundColor: _green,
-        ));
-      }
-    } catch (_) {
-      if (mounted) setState(() => _submitting = false);
+      return;
     }
+    setState(() {
+      _loadingLogs = true;
+      _logsError = null;
+    });
+    try {
+      final raw = await ApiService.getMyHarvestLogs(token: token);
+      if (!mounted) return;
+      final list = <Map<String, dynamic>>[];
+      for (final e in raw) {
+        if (e is Map) list.add(Map<String, dynamic>.from(e));
+      }
+      setState(() {
+        _logs = list.take(10).toList();
+        _loadingLogs = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loadingLogs = false;
+        _logsError = widget.isFr
+            ? 'Impossible de charger les récoltes'
+            : 'Could not load harvests';
+      });
+    }
+  }
+
+  Future<void> _openHarvestForm() async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => HarvestLogScreen(
+          isFr: widget.isFr,
+          farmer: widget.farmer,
+          onSaved: () {},
+        ),
+      ),
+    );
+    if (saved == true || saved == null) {
+      await _loadLogs();
+    }
+  }
+
+  String _fmtDate(dynamic raw) {
+    final dt = DateTime.tryParse(raw?.toString() ?? '');
+    if (dt == null) return '—';
+    return '//';
   }
 
   @override
@@ -1020,239 +1030,171 @@ class _FarmerProduceTabState extends State<_FarmerProduceTab> {
     return ListView(
       padding: SafeInsets.listBottom(context),
       children: [
-        if (_showSyncNote) ...[
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1D9E75).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF1D9E75).withValues(alpha: 0.3),
-              ),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1e4535), Color(0xFF162e24)],
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.sync, color: Color(0xFF1D9E75), size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    isFr
-                        ? 'Votre déclaration est synchronisée avec la plateforme web Sahel AgriConnect et visible par les acheteurs et investisseurs.'
-                        : 'Your declaration is synced with the Sahel AgriConnect web platform and visible to buyers and investors.',
-                    style: const TextStyle(
-                      color: Color(0xFF1D9E75),
-                      fontSize: 12,
-                      height: 1.4,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _green.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('🌾', style: TextStyle(fontSize: 36)),
+              const SizedBox(height: 12),
+              Text(
+                isFr ? 'Mes récoltes' : 'My Harvests',
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isFr
+                    ? 'Enregistrez vos récoltes pour la traçabilité ICS et le dossier de certification.'
+                    : 'Log harvests for ICS traceability and your certification dossier.',
+                style: const TextStyle(color: _textMuted, fontSize: 13, height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // DECLARE BUTTON
-        if (!_showForm) ...[
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1e4535), Color(0xFF162e24)]),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _green.withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('🌾', style: TextStyle(fontSize: 36)),
-                const SizedBox(height: 12),
-                Text(
-                  isFr ? 'Déclarer une nouvelle récolte'
-                       : 'Declare New Produce',
-                  style: const TextStyle(color: _text, fontSize: 18,
-                    fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                Text(
-                  isFr ? 'Enregistrez vos cultures pour les connecter aux acheteurs.'
-                       : 'Register your crops to connect with buyers and cooperatives.',
-                  style: const TextStyle(color: _textMuted, fontSize: 13,
-                    height: 1.5)),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.add_circle_outline),
-                    label: Text(isFr ? 'Déclarer ma récolte' : 'Declare My Produce',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                    onPressed: () => setState(() => _showForm = true),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: Text(
+                    isFr ? 'Ajouter une récolte' : 'Add Harvest',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  onPressed: _openHarvestForm,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-
-        // DECLARATION FORM (native, no webview)
-        if (_showForm) ...[
-          _FormNavBar(
-            title: isFr ? 'Déclarer une récolte' : 'Declare Produce',
-            onBack: () => setState(() => _showForm = false),
-            onHome: () {
-              setState(() => _showForm = false);
-              widget.onGoHome();
-            },
-          ),
-          const SizedBox(height: 8),
-          _formCard(children: [
-            _fieldLabel(isFr ? 'Type de culture *' : 'Crop Type *'),
-            _textField(_cropCtrl, isFr ? 'Ex: Beurre de karité' : 'e.g. Shea Butter'),
-            const SizedBox(height: 14),
-            _fieldLabel(isFr ? 'Quantité *' : 'Quantity *'),
-            Row(
-              children: [
-                Expanded(
-                  child: _textField(_qtyCtrl,
-                    isFr ? 'Ex: 500' : 'e.g. 500',
-                    type: TextInputType.number)),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 90,
-                  child: DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    isDense: true,
-                    value: _unit,
-                    dropdownColor: _surface,
-                    style: const TextStyle(color: _text, fontSize: 13),
-                    decoration: _inputDecoration(''),
-                    items: ['kg', 'tonne', 'L']
-                      .map((u) => DropdownMenuItem(value: u,
-                        child: Text(u,
-                          style: const TextStyle(color: _text, fontSize: 13))))
-                      .toList(),
-                    onChanged: (v) => setState(() => _unit = v ?? 'kg'),
-                  ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                isFr ? 'Récoltes récentes' : 'Recent harvests',
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            _fieldLabel(isFr ? 'Qualité' : 'Quality Grade'),
-            DropdownButtonFormField<String>(
-              isExpanded: true,
-              isDense: true,
-              value: _quality,
-              dropdownColor: _surface,
-              style: const TextStyle(color: _text),
-              decoration: _inputDecoration(isFr ? 'Choisir la qualité' : 'Select quality'),
-              items: ['A', 'B', 'C']
-                .map((q) => DropdownMenuItem(value: q,
-                  child: Text(
-                    q == 'A' ? (isFr ? 'A — Supérieure' : 'A — Superior')
-                    : q == 'B' ? (isFr ? 'B — Standard' : 'B — Standard')
-                    : (isFr ? 'C — Ordinaire' : 'C — Ordinary'),
-                    style: const TextStyle(color: _text))))
-                .toList(),
-              onChanged: (v) => setState(() => _quality = v ?? 'A'),
-            ),
-            const SizedBox(height: 14),
-            _fieldLabel(isFr ? 'Prix souhaité (XOF/kg)' : 'Asking Price (XOF/kg)'),
-            _textField(_priceCtrl,
-              isFr ? 'Ex: 450' : 'e.g. 450',
-              type: TextInputType.number),
-            const SizedBox(height: 14),
-            _fieldLabel(isFr ? 'Notes (optionnel)' : 'Notes (optional)'),
-            _textField(_notesCtrl,
-              isFr ? 'Infos supplémentaires...' : 'Additional information...',
-              maxLines: 3),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(width: 20, height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
-                    : Text(isFr ? 'Soumettre la déclaration' : 'Submit Declaration',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15)),
               ),
             ),
-          ]),
-        ],
-
-        const SizedBox(height: 24),
-
-        // MY DECLARED PRODUCE LIST
-        Text(isFr ? 'Mes productions déclarées' : 'My Declared Productions',
-          style: const TextStyle(color: _text, fontSize: 16,
-            fontWeight: FontWeight.w600)),
-        const SizedBox(height: 12),
-        if (widget.loading)
-          const Center(child: CircularProgressIndicator(color: _gold))
-        else if (widget.cultures.isEmpty)
+            IconButton(
+              onPressed: _loadingLogs ? null : _loadLogs,
+              icon: const Icon(Icons.refresh, color: _textMuted, size: 20),
+              tooltip: isFr ? 'Actualiser' : 'Refresh',
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_loadingLogs)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator(color: _gold)),
+          )
+        else if (_logsError != null)
+          _emptyState(
+            icon: Icons.error_outline,
+            title: _logsError!,
+            subtitle: isFr ? 'Appuyez pour réessayer' : 'Tap refresh to retry',
+          )
+        else if (_logs.isEmpty)
           _emptyState(
             icon: Icons.grass_outlined,
-            title: isFr ? 'Aucune culture déclarée' : 'No crops declared yet',
-            subtitle: isFr
-              ? 'Déclarez votre première récolte ci-dessus'
-              : 'Declare your first produce above',
+            title: isFr
+                ? 'Aucune récolte enregistrée. Commencez par ajouter votre première récolte.'
+                : 'No harvests recorded yet. Start by adding your first harvest.',
+            subtitle: '',
           )
         else
-          ...widget.cultures.asMap().entries.map((e) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [_surface, _surface2]),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _border),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36, height: 36,
-                  decoration: BoxDecoration(
-                    color: _green.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+          ..._logs.map((log) {
+            final crop = cropLabelFor(log['cropType']?.toString(), isFr);
+            final qty = log['quantityKg'];
+            final batch = (log['batchId'] ?? '—').toString();
+            final verified = log['verifiedByCoop'] == true;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [_surface, _surface2]),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.eco, color: _green, size: 18),
                   ),
-                  child: const Icon(Icons.eco, color: _green, size: 18)),
-                const SizedBox(width: 12),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(e.value, style: const TextStyle(
-                      color: _text, fontWeight: FontWeight.w600)),
-                    Text(isFr ? 'Culture enregistrée' : 'Crop on file',
-                      style: const TextStyle(color: _textMuted, fontSize: 12)),
-                  ],
-                )),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _green.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          crop,
+                          style: const TextStyle(
+                            color: _text,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          ' ·  kg',
+                          style: const TextStyle(color: _textMuted, fontSize: 12),
+                        ),
+                        Text(
+                          batch,
+                          style: const TextStyle(color: _gold, fontSize: 11),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(isFr ? 'Actif' : 'Active',
-                    style: const TextStyle(
-                      color: _green, fontSize: 11, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          )),
+                  if (verified)
+                    const Icon(Icons.verified, color: _green, size: 22)
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isFr ? 'En attente' : 'Pending',
+                        style: const TextStyle(
+                          color: Color(0xFFF59E0B),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
       ],
     );
   }

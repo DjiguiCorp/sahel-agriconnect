@@ -213,6 +213,46 @@ class ApiService {
     }
   }
 
+  // ── Harvest logs (ICS / traceability) ────────────────────
+  static Future<Map<String, dynamic>> createHarvestLog({
+    required String token,
+    required String cropType,
+    required DateTime harvestDate,
+    required double quantityKg,
+    double? plotLat,
+    double? plotLng,
+    double? plotSizeHectares,
+    String? storageLocation,
+    String? qualityGrade,
+    String? notes,
+    List<Map<String, dynamic>>? inputs,
+    String? cooperativeId,
+  }) {
+    final body = <String, dynamic>{
+      'cropType': cropType,
+      'harvestDate': harvestDate.toIso8601String(),
+      'quantityKg': quantityKg,
+      if (plotLat != null && plotLng != null)
+        'plotGps': {'lat': plotLat, 'lng': plotLng},
+      if (plotSizeHectares != null) 'plotSizeHectares': plotSizeHectares,
+      if (storageLocation != null && storageLocation.trim().isNotEmpty)
+        'storageLocation': storageLocation.trim(),
+      if (qualityGrade != null && qualityGrade.isNotEmpty)
+        'qualityGrade': qualityGrade,
+      if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+      if (inputs != null && inputs.isNotEmpty) 'inputs': inputs,
+      if (cooperativeId != null && cooperativeId.isNotEmpty)
+        'cooperativeId': cooperativeId,
+    };
+    return post('/api/harvest-logs', body, token: token);
+  }
+
+  static Future<List<dynamic>> getMyHarvestLogs({required String token}) async {
+    final res = await get('/api/harvest-logs/my', token: token);
+    final list = res['harvestLogs'];
+    return list is List ? list : <dynamic>[];
+  }
+
   // ── Farmers ──────────────────────────────────────────────
   static Future<Map<String, dynamic>> getPublicStats() =>
       get('/api/farmers/public-stats');

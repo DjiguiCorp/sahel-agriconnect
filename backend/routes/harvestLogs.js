@@ -49,11 +49,20 @@ async function loadTraceCertificate(batchId) {
 const INPUT_TYPES = new Set(['fertilizer', 'pesticide', 'organic', 'none']);
 const GRADES = new Set(['A', 'B', 'C', 'ungraded']);
 
+/** Map mobile-friendly input types onto HarvestLog enum without schema change */
+function normalizeInputType(raw) {
+  const t = String(raw || '').trim().toLowerCase();
+  if (INPUT_TYPES.has(t)) return t;
+  if (t === 'herbicide') return 'pesticide';
+  if (t === 'other' || t === 'autre') return 'none';
+  return 'none';
+}
+
 function normalizeInputs(raw) {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((row) => {
-      const type = INPUT_TYPES.has(row?.type) ? row.type : 'none';
+      const type = normalizeInputType(row?.type);
       const quantity =
         row?.quantity != null && row.quantity !== '' ? Number(row.quantity) : null;
       return {
@@ -117,7 +126,23 @@ router.post('/', authFarmer, async (req, res) => {
         ? Number(req.body.plotSizeHectares)
         : undefined;
 
-    const batchId = await uniqueBatchId();
+    let batchId = String(req.body?.batchId || '').trim();
+    if (batchId) {
+      const exists = await HarvestLog.exists({ batchId });
+      if (exists) {
+        return res.status(409).json({
+          success: false,
+          error: 'batchId already exists',
+        });
+      }
+      // Enforce SAC-YYYY-xxxxxx shape when client supplies an id
+      if (!/^SAC-\d{4}-[a-zA-Z0-9]{6}$/.test(batchId)) {
+        batchId = await uniqueBatchId();
+      }
+    } else {
+      batchId = await uniqueBatchId();
+    }
+
     const doc = await HarvestLog.create({
       farmerId: farmer._id,
       cooperativeId,
@@ -133,7 +158,13 @@ router.post('/', authFarmer, async (req, res) => {
       batchId,
     });
 
-    return res.status(201).json({ success: true, harvestLog: doc });
+    const traceUrl = `${FRONTEND}/trace/${doc.batchId}`;
+    return res.status(201).json({
+      success: true,
+      harvestLog: doc,
+      batchId: doc.batchId,
+      traceUrl,
+    });
   } catch (e) {
     console.error('[harvest-logs] create error:', e.message);
     return res.status(400).json({ success: false, error: e.message || 'Create failed' });
