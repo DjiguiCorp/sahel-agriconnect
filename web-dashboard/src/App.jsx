@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { WebSocketProvider } from './context/WebSocketContext';
@@ -64,6 +64,16 @@ const PageLoader = () => (
 
 function App() {
   useGeolocation();
+
+  // Allow a future deploy's stale-chunk handler to reload again
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('chunk_error_reload');
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>

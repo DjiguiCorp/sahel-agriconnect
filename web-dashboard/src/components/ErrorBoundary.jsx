@@ -1,28 +1,68 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
+const CHUNK_RELOAD_KEY = 'chunk_error_reload';
+
+function isChunkLoadError(error) {
+  const message = String(error?.message || '');
+  return (
+    error?.name === 'ChunkLoadError' ||
+    message.includes('Failed to fetch dynamically imported module') ||
+    message.includes('Importing a module script failed') ||
+    message.includes('Unable to preload CSS') ||
+    message.includes('Loading chunk') ||
+    message.includes('Loading CSS chunk')
+  );
+}
+
+function reloadOnceForStaleChunk() {
+  try {
+    if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return false;
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, '1');
+  } catch {
+    /* continue */
+  }
+  window.location.reload();
+  return true;
+}
+
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, chunkReloading: false };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    if (isChunkLoadError(error)) {
+      return { hasError: false, error: null, chunkReloading: true };
+    }
+    return { hasError: true, error, chunkReloading: false };
   }
 
   componentDidCatch(error, info) {
+    if (isChunkLoadError(error)) {
+      reloadOnceForStaleChunk();
+      return;
+    }
+    // existing error logging (Sentry etc)
     console.error('ErrorBoundary caught:', error, info);
+    if (typeof window !== 'undefined' && window.Sentry?.captureException) {
+      window.Sentry.captureException(error, { extra: info });
+    }
   }
 
   componentDidUpdate(prevProps) {
     // Reset when parent remounts a different section (e.g. admin tab key change)
     if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ hasError: false, error: null });
+      this.setState({ hasError: false, error: null, chunkReloading: false });
     }
   }
 
   render() {
+    if (this.state.chunkReloading) {
+      return null;
+    }
+
     if (!this.state.hasError) return this.props.children;
 
     const isInline = this.props.inline;
