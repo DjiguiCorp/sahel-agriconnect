@@ -574,7 +574,7 @@ class _FarmerHeader extends StatelessWidget {
       statsRow: Row(
         children: [
           GlassStatTile(
-            value: farmer?['surface']?.toString() ?? '—',
+            value: (farmer?['superficie'] ?? farmer?['surface'])?.toString() ?? '—',
             label: isFr ? 'Superficie' : 'Total area',
             accentColor: _gold,
           ),
@@ -630,6 +630,58 @@ class _FarmerHomeTab extends StatelessWidget {
         meta != null;
   }
 
+  /// Total declared hectares from profile / plots. Zero when unknown or empty.
+  double get _declaredHectares {
+    final f = farmer;
+    if (f == null) return 0;
+
+    double? parseHa(dynamic v) {
+      if (v == null) return null;
+      if (v is num) return v.toDouble();
+      final s = v.toString().trim().replaceAll(',', '.');
+      if (s.isEmpty || s == '—' || s == '-') return null;
+      return double.tryParse(s);
+    }
+
+    var total = 0.0;
+    var hasPlot = false;
+
+    final plots = f['plots'] ?? f['parcelles'] ?? f['landPlots'];
+    if (plots is List && plots.isNotEmpty) {
+      hasPlot = true;
+      for (final p in plots) {
+        if (p is! Map) continue;
+        final ha = parseHa(
+          p['hectares'] ?? p['superficie'] ?? p['area'] ?? p['surface'] ?? p['sizeHa'],
+        );
+        if (ha != null && ha > 0) total += ha;
+      }
+    }
+
+    final profileHa = parseHa(
+      f['superficie'] ?? f['surface'] ?? f['farmAreaHa'] ?? f['totalHectares'],
+    );
+    if (profileHa != null && profileHa > 0) {
+      hasPlot = true;
+      // Prefer summed plots when present; otherwise use profile total.
+      if (plots is! List || plots.isEmpty) {
+        total = profileHa;
+      } else if (total <= 0) {
+        total = profileHa;
+      }
+    }
+
+    if (!hasPlot) return 0;
+    return total;
+  }
+
+  /// Upsell only for farmers with registered land totaling ≥ 100 ha.
+  bool get _showProducerProBanner {
+    if (_isProducerPro) return false;
+    if (loading || farmer == null) return false;
+    return _declaredHectares >= 100;
+  }
+
   Future<void> _openProUpgrade() async {
     final uri = Uri.parse('https://sahelagriconnect.com/pricing');
     await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -641,7 +693,7 @@ class _FarmerHomeTab extends StatelessWidget {
       padding: SafeInsets.listBottom(context),
       children: [
 
-        if (!_isProducerPro) ...[
+        if (_showProducerProBanner) ...[
           Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(14),

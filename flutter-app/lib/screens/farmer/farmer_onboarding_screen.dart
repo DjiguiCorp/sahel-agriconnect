@@ -21,6 +21,9 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
   bool _loading = false;
   String _error = '';
 
+  final _scrollCtrl = ScrollController();
+  final _areaFieldKey = GlobalKey();
+
   final _areaCtrl = TextEditingController();
   final _regionCtrl = TextEditingController();
   String _country = 'Mali';
@@ -57,12 +60,30 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
     'Training',
   ];
 
+  static const _chipSelectedBg = Color(0xFF1a3c2e);
+  static const _onCardText = Color(0xFF0a1f14);
+  static const _onCardMuted = Color(0xFF1a3c2e);
+
   @override
   void dispose() {
+    _scrollCtrl.dispose();
     _areaCtrl.dispose();
     _regionCtrl.dispose();
     _coopNameCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _ensureAreaVisible() async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    final ctx = _areaFieldKey.currentContext;
+    if (ctx != null) {
+      await Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+        alignment: 0.15,
+      );
+    }
   }
 
   Future<void> _submit() async {
@@ -73,6 +94,7 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
             'Enter your farm area in hectares',
             'Indiquez la superficie en hectares',
           ));
+      if (mounted) await _ensureAreaVisible();
       return;
     }
     if (_cultures.isEmpty) {
@@ -122,6 +144,99 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
     }
   }
 
+  Widget _sectionTitle(String text) => Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+          color: _onCardText,
+        ),
+      );
+
+  Widget _fieldLabel(String text) => Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: _onCardMuted,
+        ),
+      );
+
+  Widget _areaHectaresField(LanguageProvider lp, {Key? key}) {
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _fieldLabel(lp.t('Superficie (hectares)', 'Superficie (hectares)')),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _areaCtrl,
+          style: AuthFormTheme.fieldTextStyle(),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: AuthFormTheme.decoration(
+            hint: lp.t('e.g. 2.5', 'ex. 2,5'),
+            labelText: lp.t('Required', 'Obligatoire'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _styledFilterChip({
+    required String label,
+    required bool selected,
+    required ValueChanged<bool> onSelected,
+  }) {
+    return FilterChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          color: selected ? Colors.white : Colors.black87,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
+      ),
+      selected: selected,
+      onSelected: onSelected,
+      selectedColor: _chipSelectedBg,
+      backgroundColor: const Color(0xFFF3F6F4),
+      checkmarkColor: Colors.white,
+      side: BorderSide(
+        color: selected
+            ? _chipSelectedBg
+            : AppColors.forestGreen.withValues(alpha: 0.35),
+      ),
+      showCheckmark: true,
+    );
+  }
+
+  Widget _styledChoiceChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onSelected,
+  }) {
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          color: selected ? Colors.white : Colors.black87,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
+      ),
+      selected: selected,
+      onSelected: (_) => onSelected(),
+      selectedColor: _chipSelectedBg,
+      backgroundColor: const Color(0xFFF3F6F4),
+      checkmarkColor: Colors.white,
+      side: BorderSide(
+        color: selected
+            ? _chipSelectedBg
+            : AppColors.forestGreen.withValues(alpha: 0.35),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final lp = context.watch<LanguageProvider>();
@@ -169,6 +284,7 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
               ),
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _scrollCtrl,
                   padding: const EdgeInsets.all(20),
                   child: Container(
                     padding: const EdgeInsets.all(20),
@@ -181,7 +297,13 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
                         if (_step == 2) ..._stepNeeds(lp),
                         if (_error.isNotEmpty) ...[
                           const SizedBox(height: 12),
-                          Text(_error, style: const TextStyle(color: AppColors.error)),
+                          Text(
+                            _error,
+                            style: const TextStyle(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                         const SizedBox(height: 20),
                         FilledButton(
@@ -211,7 +333,10 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
                               : Text(
                                   _step < 2
                                       ? lp.t('Continue', 'Continuer')
-                                      : lp.t('Finish & open dashboard', 'Terminer et ouvrir le tableau de bord'),
+                                      : lp.t(
+                                          'Finish & open dashboard',
+                                          'Terminer et ouvrir le tableau de bord',
+                                        ),
                                 ),
                         ),
                       ],
@@ -228,23 +353,16 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
 
   List<Widget> _stepLand(LanguageProvider lp) {
     return [
-      Text(
-        lp.t('Land & crops', 'Terres & cultures'),
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-      ),
+      _sectionTitle(lp.t('Land & crops', 'Terres & cultures')),
       const SizedBox(height: 12),
-      TextField(
-        controller: _areaCtrl,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: AuthFormTheme.decoration(
-          hint: lp.t('Farm area (hectares)', 'Superficie (hectares)'),
-        ),
-      ),
+      _areaHectaresField(lp),
       const SizedBox(height: 12),
       TextField(
         controller: _regionCtrl,
+        style: AuthFormTheme.fieldTextStyle(),
         decoration: AuthFormTheme.decoration(
           hint: lp.t('Region / village', 'Région / village'),
+          labelText: lp.t('Region / village', 'Région / village'),
         ),
       ),
       const SizedBox(height: 12),
@@ -252,50 +370,68 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
         decoration: AuthFormTheme.dropdownBoxDecoration(),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: DropdownButtonFormField<String>(
-        value: _country,
-        decoration: InputDecoration(
-          labelText: lp.t('Country', 'Pays'),
-          border: InputBorder.none,
+          value: _country,
+          dropdownColor: Colors.white,
+          style: AuthFormTheme.fieldTextStyle(),
+          decoration: InputDecoration(
+            labelText: lp.t('Country', 'Pays'),
+            labelStyle: AuthFormTheme.labelStyle(),
+            border: InputBorder.none,
+          ),
+          items: [
+            'Mali',
+            'Senegal',
+            'Burkina Faso',
+            'Niger',
+            'Ghana',
+            'Côte d\'Ivoire',
+          ]
+              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+              .toList(),
+          onChanged: (v) => setState(() => _country = v ?? _country),
         ),
-        items: ['Mali', 'Senegal', 'Burkina Faso', 'Niger', 'Ghana', 'Côte d\'Ivoire']
-            .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-            .toList(),
-        onChanged: (v) => setState(() => _country = v ?? _country),
-      ),
       ),
       const SizedBox(height: 12),
       Container(
         decoration: AuthFormTheme.dropdownBoxDecoration(),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: DropdownButtonFormField<String>(
-        value: _farmType,
-        decoration: InputDecoration(
-          labelText: lp.t('Farm type', 'Type d\'exploitation'),
-          border: InputBorder.none,
+          value: _farmType,
+          dropdownColor: Colors.white,
+          style: AuthFormTheme.fieldTextStyle(),
+          decoration: InputDecoration(
+            labelText: lp.t('Farm type', 'Type d\'exploitation'),
+            labelStyle: AuthFormTheme.labelStyle(),
+            border: InputBorder.none,
+          ),
+          items: [
+            DropdownMenuItem(
+              value: 'Familiale',
+              child: Text(lp.t('Family farm', 'Exploitation familiale')),
+            ),
+            DropdownMenuItem(
+              value: 'Commerciale/Indépendante',
+              child: Text(
+                lp.t(
+                  'Commercial / independent',
+                  'Commerciale / indépendante',
+                ),
+              ),
+            ),
+          ],
+          onChanged: (v) => setState(() => _farmType = v ?? _farmType),
         ),
-        items: [
-          DropdownMenuItem(
-            value: 'Familiale',
-            child: Text(lp.t('Family farm', 'Exploitation familiale')),
-          ),
-          DropdownMenuItem(
-            value: 'Commerciale/Indépendante',
-            child: Text(lp.t('Commercial / independent', 'Commerciale / indépendante')),
-          ),
-        ],
-        onChanged: (v) => setState(() => _farmType = v ?? _farmType),
-      ),
       ),
       const SizedBox(height: 12),
-      Text(lp.t('Main crops (select all)', 'Cultures principales'), style: const TextStyle(fontSize: 13)),
+      _fieldLabel(lp.t('Main crops (select all)', 'Cultures principales')),
       const SizedBox(height: 8),
       Wrap(
         spacing: 8,
         runSpacing: 8,
         children: _crops.map((c) {
           final selected = _cultures.contains(c);
-          return FilterChip(
-            label: Text(c),
+          return _styledFilterChip(
+            label: c,
             selected: selected,
             onSelected: (v) {
               setState(() {
@@ -314,10 +450,7 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
 
   List<Widget> _stepInfra(LanguageProvider lp) {
     return [
-      Text(
-        lp.t('Infrastructure', 'Infrastructure'),
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-      ),
+      _sectionTitle(lp.t('Infrastructure', 'Infrastructure')),
       const SizedBox(height: 12),
       _choiceRow(
         lp.t('Electricity access', 'Accès électricité'),
@@ -359,11 +492,11 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
 
   List<Widget> _stepNeeds(LanguageProvider lp) {
     return [
-      Text(
-        lp.t('Cooperative & needs', 'Coopérative & besoins'),
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-      ),
+      _sectionTitle(lp.t('Cooperative & needs', 'Coopérative & besoins')),
       const SizedBox(height: 12),
+      // Superficie must be visible on step 3 above the finish button.
+      _areaHectaresField(lp, key: _areaFieldKey),
+      const SizedBox(height: 16),
       _choiceRow(
         lp.t('Linked to a cooperative?', 'Lié à une coopérative ?'),
         ['Oui', 'Non'],
@@ -373,23 +506,27 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
       ),
       if (_coopLink == 'Oui') ...[
         const SizedBox(height: 8),
+        _fieldLabel(lp.t('Cooperative name', 'Nom de la coopérative')),
+        const SizedBox(height: 6),
         TextField(
           controller: _coopNameCtrl,
+          style: AuthFormTheme.fieldTextStyle(),
           decoration: AuthFormTheme.decoration(
-            hint: lp.t('Cooperative name', 'Nom de la coopérative'),
+            hint: lp.t('Enter cooperative name', 'Entrez le nom de la coopérative'),
+            labelText: lp.t('Cooperative name', 'Nom de la coopérative'),
           ),
         ),
       ],
       const SizedBox(height: 16),
-      Text(lp.t('Your main needs', 'Vos besoins principaux'), style: const TextStyle(fontSize: 13)),
+      _fieldLabel(lp.t('Your main needs', 'Vos besoins principaux')),
       const SizedBox(height: 8),
       Wrap(
         spacing: 8,
         runSpacing: 8,
         children: _needOptions.map((n) {
           final selected = _needs.contains(n);
-          return FilterChip(
-            label: Text(n),
+          return _styledFilterChip(
+            label: n,
             selected: selected,
             onSelected: (v) {
               setState(() {
@@ -416,17 +553,24 @@ class _FarmerOnboardingScreenState extends State<FarmerOnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _onCardMuted,
+          ),
+        ),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
           children: List.generate(values.length, (i) {
             final v = values[i];
             final label = labels != null && i < labels.length ? labels[i] : v;
-            return ChoiceChip(
-              label: Text(label),
+            return _styledChoiceChip(
+              label: label,
               selected: current == v,
-              onSelected: (_) => onPick(v),
+              onSelected: () => onPick(v),
             );
           }),
         ),
