@@ -104,6 +104,8 @@
 		<string>We need photo library access to upload your government ID</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>This app uses your location to suggest nearby cooperatives and provide localized services.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Used to discover nearby cooperatives and log farm plot locations</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Sahel AgriConnect uses Face ID for secure, faster sign-in after you choose to enable it.</string>
 		<key>UIStatusBarHidden</key>
