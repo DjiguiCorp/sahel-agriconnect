@@ -98,12 +98,12 @@
 		<false/>
 		<key>NSCameraUsageDescription</key>
 		<string>We need camera access to verify your identity for investor KYC</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Required for video features</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>We need photo library access to upload your government ID</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>This app uses your location to suggest nearby cooperatives and provide localized services.</string>
-		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>This app uses your location to suggest nearby cooperatives and provide localized services when the app is open or in the background for field updates you enable.</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Sahel AgriConnect uses Face ID for secure, faster sign-in after you choose to enable it.</string>
 		<key>UIStatusBarHidden</key>

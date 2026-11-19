@@ -16,6 +16,9 @@ import '../../services/api_service.dart';
 class InvestorKycScreen extends StatefulWidget {
   const InvestorKycScreen({super.key});
 
+  /// When set (App Store shot tour), open on this step with sample values.
+  static int? screenshotStep;
+
   @override
   State<InvestorKycScreen> createState() => _InvestorKycScreenState();
 }
@@ -52,6 +55,29 @@ class _InvestorKycScreenState extends State<InvestorKycScreen> {
   static const _gold = AppColors.gold;
   static const _text = Colors.white;
   static const _muted = Color(0x99FFFFFF);
+
+  @override
+  void initState() {
+    super.initState();
+    final shotStep = InvestorKycScreen.screenshotStep;
+    if (shotStep != null) {
+      _step = shotStep.clamp(0, 3);
+      _nameCtrl.text = 'Mariam Keita';
+      _dobCtrl.text = '12/04/1990';
+      _nationalityCtrl.text = 'Malian';
+      _countryCtrl.text = 'United States';
+      _idType = 'passport';
+      _idNumberCtrl.text = 'P-MK-204918';
+      _addressCtrl.text = 'Brooklyn, NY, USA';
+      _idPhotoName = 'passport_mariam_keita.jpg';
+      _idPhotoBase64 = 'data:image/jpeg;base64,/9j/';
+      if (_step >= 2) {
+        _selfieName = 'selfie_holding_id.jpg';
+        _selfieBase64 = 'data:image/jpeg;base64,/9j/';
+      }
+      InvestorKycScreen.screenshotStep = null;
+    }
+  }
 
   @override
   void dispose() {

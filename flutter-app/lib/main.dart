@@ -17,6 +17,7 @@ import 'core/theme.dart';
 import 'navigation/session_nav.dart';
 import 'screens/age_gate_screen.dart';
 import 'screens/shared/terms_screen.dart';
+import 'debug/app_store_shots.dart';
 import 'services/offline_queue.dart';
 
 /// TestFlight launch probe. If this screen opens on device, Flutter engine is fine
@@ -202,6 +203,16 @@ class _SahelAppState extends State<SahelApp> {
       if (initial != null) _handleDeepLink(initial);
     } catch (e) {
       debugPrint('Deep link init skipped: $e');
+    }
+
+    if (kAppStoreShots) {
+      unawaited(
+        runAppStoreShotTour(
+          auth: widget.authState,
+          ageGate: widget.ageGate,
+          termsGate: widget.termsGate,
+        ),
+      );
     }
   }
 

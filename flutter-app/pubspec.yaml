@@ -1,6 +1,6 @@
 name: sahel_agriconnect
 description: Sahel AgriConnect & AfriYield Exchange — African Agricultural Platform
-version: 1.0.2+26
+version: 1.0.3+28
 publish_to: none
 
 environment:
@@ -35,14 +35,13 @@ dependencies:
   flutter_animate: ^4.5.0
   animated_text_kit: ^4.2.2
 
-  # Camera & AI tools
+  # Camera & AI tools (image_picker only — camera package unused)
   image_picker: ^1.1.2
-  camera: ^0.11.0+2
 
   # Charts
   fl_chart: ^0.67.0
 
-  # Firebase — fully disabled to isolate iOS launch crash (Android was fine)
+  # Firebase — fully removed for iOS launch stability (do not re-enable without initializeApp)
   # firebase_core: ^4.9.0
   # firebase_messaging: ^16.2.2
   # firebase_analytics: ^11.0.0
