@@ -54,11 +54,12 @@ function timelineStepStyle(active) {
 }
 
 export default function TraceabilityLookup() {
-  const { batchNumber } = useParams();
+  const { batchNumber, batchId } = useParams();
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
-  const [q, setQ] = useState(batchNumber || '');
+  const initialBatch = batchId || batchNumber || '';
+  const [q, setQ] = useState(initialBatch);
   const [state, setState] = useState({ loading: false, err: '', record: null, notFound: false });
 
   const fetchBatch = async (num) => {
@@ -80,9 +81,9 @@ export default function TraceabilityLookup() {
   };
 
   useEffect(() => {
-    if (batchNumber) fetchBatch(batchNumber);
+    if (initialBatch) fetchBatch(initialBatch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [batchNumber]);
+  }, [initialBatch]);
 
   const goSearch = () => {
     const bn = String(q).trim();

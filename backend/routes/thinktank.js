@@ -39,8 +39,9 @@ async function callGeminiAPI(prompt) {
 // POST /api/thinktank/solve
 router.post('/solve', async (req, res) => {
   try {
-    const { problem, category, cropType, region, cooperativeMember } = req.body || {};
+    const { problem, category, cropType, region, cooperativeMember, lang } = req.body || {};
     const cooperativeMemberBool = Boolean(cooperativeMember);
+    const L = String(lang || '').toLowerCase().startsWith('en') ? 'en' : 'fr';
 
     if (!problem || typeof problem !== 'string' || !problem.trim()) {
       return res.status(400).json({ error: 'problem is required' });
@@ -49,6 +50,10 @@ router.post('/solve', async (req, res) => {
     const safeCategory = String(category || 'general');
     const safeCrop = String(cropType || 'Non précisé');
     const safeRegion = String(region || 'Non précisée');
+    const langLine =
+      L === 'en'
+        ? 'Write summary, solution, steps, inputs, and cooperativeBenefit in English.'
+        : 'Écris summary, solution, steps, inputs et cooperativeBenefit en français.';
 
     const prompt = `You are an expert agronomist specializing in West African and pan-African agriculture, with deep knowledge of shea butter, sesame, and staple crops. A farmer has a problem.
 
@@ -58,7 +63,8 @@ Crop type: ${safeCrop}
 Region: ${safeRegion}
 Cooperative member: ${cooperativeMemberBool}
 
-Provide a practical, actionable solution in the same language the problem was described in (French or English). Structure your response as JSON:
+${langLine}
+Provide a practical, actionable solution. Structure your response as JSON:
 {
   "summary": "One sentence diagnosis",
   "urgency": "immediate|within_week|seasonal",

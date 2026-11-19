@@ -572,7 +572,7 @@ export default function CountryLicensesManagement({ token }) {
                     type={type}
                     value={form[field]}
                     onChange={(e) => setForm((p) => ({ ...p, [field]: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   />
                 </div>
               ))}
@@ -582,7 +582,7 @@ export default function CountryLicensesManagement({ token }) {
                   <select
                     value={form.licenseType}
                     onChange={(e) => setForm((p) => ({ ...p, licenseType: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   >
                     <option value="pilot">{lang === 'fr' ? 'Pilote ($299/mois)' : 'Pilot ($299/month)'}</option>
                     <option value="standard">{lang === 'fr' ? 'Standard ($999/mois)' : 'Standard ($999/month)'}</option>
@@ -595,7 +595,7 @@ export default function CountryLicensesManagement({ token }) {
                     type="number"
                     value={form.monthlyFee}
                     onChange={(e) => setForm((p) => ({ ...p, monthlyFee: Number(e.target.value) }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   />
                 </div>
               </div>
@@ -638,7 +638,7 @@ export default function CountryLicensesManagement({ token }) {
                     type={type}
                     value={adminForm[field]}
                     onChange={(e) => setAdminForm((p) => ({ ...p, [field]: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   />
                 </div>
               ))}
@@ -698,7 +698,7 @@ export default function CountryLicensesManagement({ token }) {
                   <select
                     value={govAdminForm.orgType}
                     onChange={(e) => setGovAdminForm((f) => ({ ...f, orgType: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="government">
                       🏛️ {lang === 'fr' ? 'Gouvernement / Ministère' : 'Government / Ministry'}
@@ -739,7 +739,7 @@ export default function CountryLicensesManagement({ token }) {
                       value={govAdminForm[key]}
                       onChange={(e) => setGovAdminForm((f) => ({ ...f, [key]: e.target.value }))}
                       placeholder={placeholder}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                     />
                   </div>
                 ))}

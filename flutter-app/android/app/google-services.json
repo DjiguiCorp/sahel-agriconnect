@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1072783610602",
+    "project_id": "sahel-agriconnect",
+    "storage_bucket": "sahel-agriconnect.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1072783610602:android:f278b493f67975e9be3d93",
+        "android_client_info": {
+          "package_name": "com.sahelagriconnect.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiVn81m4oNzQg4Rh-kdWnsoqk_dKxujo8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

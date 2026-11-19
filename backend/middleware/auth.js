@@ -101,6 +101,37 @@ export const authenticateAnyUser = async (req, res, next) => {
   }
 };
 
+/** Farmer JWT (role: farmer, id: Farmer._id) — used by harvest logs, etc. */
+export const authFarmer = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Token d\'authentification requis' });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded || decoded.role !== 'farmer' || !decoded.id) {
+      return res.status(403).json({ error: 'Accès agriculteur requis' });
+    }
+    req.farmerId = decoded.id;
+    req.farmerEmail = decoded.email || '';
+    req.mobileUser = {
+      role: 'farmer',
+      id: decoded.id,
+      email: decoded.email,
+    };
+    next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Token invalide' });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expiré' });
+    }
+    return res.status(500).json({ error: 'Erreur d\'authentification' });
+  }
+};
+
 export const authenticateInvestor = (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];

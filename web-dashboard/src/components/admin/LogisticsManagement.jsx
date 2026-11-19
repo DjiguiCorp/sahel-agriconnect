@@ -221,7 +221,7 @@ export default function LogisticsManagement() {
                   </td>
                   <td className="py-3 pr-3">
                     <select
-                      className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+                      className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
                       value={log.statut}
                       onChange={(e) => updateStatus(log._id, e.target.value)}
                     >
@@ -247,7 +247,7 @@ export default function LogisticsManagement() {
               <label className="block">
                 <span className="text-gray-600">Agriculteur *</span>
                 <select
-                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.farmerId}
                   onChange={(e) => setForm((p) => ({ ...p, farmerId: e.target.value }))}
                 >
@@ -262,7 +262,7 @@ export default function LogisticsManagement() {
               <label className="block">
                 <span className="text-gray-600">Coopérative (optionnel)</span>
                 <select
-                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.cooperativeId}
                   onChange={(e) => setForm((p) => ({ ...p, cooperativeId: e.target.value }))}
                 >
@@ -277,7 +277,7 @@ export default function LogisticsManagement() {
               <label className="block">
                 <span className="text-gray-600">Origine *</span>
                 <input
-                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.origine}
                   onChange={(e) => setForm((p) => ({ ...p, origine: e.target.value }))}
                   placeholder="Ex: Ferme, région"
@@ -286,7 +286,7 @@ export default function LogisticsManagement() {
               <label className="block">
                 <span className="text-gray-600">Destination *</span>
                 <input
-                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.destination}
                   onChange={(e) => setForm((p) => ({ ...p, destination: e.target.value }))}
                   placeholder="Ex: Entrepôt, processeur"
@@ -295,7 +295,7 @@ export default function LogisticsManagement() {
               <label className="block">
                 <span className="text-gray-600">Produit</span>
                 <input
-                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.produit}
                   onChange={(e) => setForm((p) => ({ ...p, produit: e.target.value }))}
                 />
@@ -304,7 +304,7 @@ export default function LogisticsManagement() {
                 <span className="text-gray-600">Quantité (kg)</span>
                 <input
                   type="number"
-                  className="mt-1 w-full rounded-lg border px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.quantite}
                   onChange={(e) => setForm((p) => ({ ...p, quantite: e.target.value }))}
                 />
@@ -314,7 +314,7 @@ export default function LogisticsManagement() {
                   <span className="text-gray-600">Enlèvement</span>
                   <input
                     type="datetime-local"
-                    className="mt-1 w-full rounded-lg border px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={form.dateEnlevement}
                     onChange={(e) => setForm((p) => ({ ...p, dateEnlevement: e.target.value }))}
                   />
@@ -323,7 +323,7 @@ export default function LogisticsManagement() {
                   <span className="text-gray-600">Livraison</span>
                   <input
                     type="datetime-local"
-                    className="mt-1 w-full rounded-lg border px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={form.dateLivraison}
                     onChange={(e) => setForm((p) => ({ ...p, dateLivraison: e.target.value }))}
                   />
@@ -332,7 +332,7 @@ export default function LogisticsManagement() {
               <label className="block">
                 <span className="text-gray-600">Notes</span>
                 <textarea
-                  className="mt-1 w-full rounded-lg border px-3 py-2 min-h-[60px]"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 min-h-[60px]"
                   value={form.notes}
                   onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                 />

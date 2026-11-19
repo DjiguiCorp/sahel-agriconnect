@@ -3,6 +3,17 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { useInvestorKYCStatus } from '../hooks/useInvestorKYCStatus';
+import {
+  fetchInvestorOnboardingStatus,
+  onboardingStepLabel,
+} from '../lib/investorOnboarding';
+import OnboardingGateModal, { hasFullInvestAccess } from '../components/OnboardingGateModal';
+import {
+  ComingSoonInvestButton,
+  DemoOpportunityBanner,
+  RiskDisclosureBlock,
+  isDemoOpportunity,
+} from '../components/DemoOpportunityUi';
 import { Loader2 } from 'lucide-react';
 import StripeInvestmentCheckout from '../components/StripeInvestmentCheckout';
 
@@ -50,6 +61,9 @@ export default function InvestmentConfirmation() {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('stripe');
+  const [onboarding, setOnboarding] = useState(null);
+  const [onboardingLoading, setOnboardingLoading] = useState(true);
+  const [gateOpen, setGateOpen] = useState(false);
 
   const investorName = localStorage.getItem('afriyield_investor_name') || '';
   const investorEmail = localStorage.getItem('afriyield_investor_email') || '';
@@ -87,6 +101,27 @@ export default function InvestmentConfirmation() {
       cancelled = true;
     };
   }, [opportunityId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setOnboardingLoading(true);
+    fetchInvestorOnboardingStatus()
+      .then((d) => {
+        if (!cancelled) {
+          setOnboarding(d);
+          if (!hasFullInvestAccess(d) && !d.unauthenticated) setGateOpen(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setOnboarding(null);
+      })
+      .finally(() => {
+        if (!cancelled) setOnboardingLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const steps = useMemo(() => {
     return [
@@ -135,8 +170,15 @@ export default function InvestmentConfirmation() {
       : '—';
   const payouts = computeBiAnnualPayouts(form.amount, expectedROIPercent);
 
+  const isDemo = isDemoOpportunity(opportunity);
+  const canInvestNow = !isDemo && hasFullInvestAccess(onboarding);
+
   const submit = async (e) => {
     e.preventDefault();
+    if (!canInvestNow) {
+      setGateOpen(true);
+      return;
+    }
     if (!form.name || !form.email || !form.amount) return;
     setSubmitting(true);
     try {
@@ -193,84 +235,83 @@ export default function InvestmentConfirmation() {
             : 'Everything is explained simply — no jargon. You confirm first, then we send instructions.'}
         </p>
 
-        {!kycState.loading && !kycState.canInvest && (
+        {isDemo && opportunity ? (
+          <div className="max-w-2xl mx-auto space-y-4">
+            <DemoOpportunityBanner isFr={isFr} />
+            <RiskDisclosureBlock opp={opportunity} isFr={isFr} />
+            <ComingSoonInvestButton isFr={isFr} className="w-full" />
+            <p className="text-sm text-center text-white/50">
+              {isFr
+                ? 'Cette opportunité est une démonstration et n’est pas ouverte à l’investissement.'
+                : 'This opportunity is a demonstration and is not open for investment.'}
+            </p>
+          </div>
+        ) : null}
+
+        {!isDemo && !kycState.loading && !onboardingLoading && !kycState.isRegistered && (
           <div className="max-w-2xl mx-auto">
             <div
               className="rounded-2xl border p-6 text-center"
               style={{
-                background: kycState.needsKYC ? 'rgba(245,158,11,0.08)' : 'rgba(59,130,246,0.08)',
-                borderColor: kycState.needsKYC ? 'rgba(245,158,11,0.3)' : 'rgba(59,130,246,0.3)',
+                background: 'rgba(245,158,11,0.08)',
+                borderColor: 'rgba(245,158,11,0.3)',
               }}
             >
-              <div className="text-4xl mb-3">
-                {!kycState.isRegistered ? '💰' : kycState.needsKYC ? '🪪' : '⏳'}
-              </div>
+              <div className="text-4xl mb-3">💰</div>
               <h2 className="text-white font-bold text-xl mb-2">
-                {!kycState.isRegistered
-                  ? isFr
-                    ? 'Inscription requise'
-                    : 'Registration Required'
-                  : kycState.needsKYC
-                    ? isFr
-                      ? 'Vérification KYC requise'
-                      : 'KYC Verification Required'
-                    : isFr
-                      ? 'Vérification en cours'
-                      : 'Verification in Progress'}
+                {isFr ? 'Inscription requise' : 'Registration Required'}
               </h2>
               <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                {!kycState.isRegistered
-                  ? isFr
-                    ? 'Inscrivez-vous comme investisseur AfriYield pour continuer.'
-                    : 'Register as an AfriYield investor to continue.'
-                  : kycState.needsKYC
-                    ? isFr
-                      ? "Une vérification d'identité (KYC) est requise avant d'investir. Cela protège tous les investisseurs."
-                      : 'Identity verification (KYC) is required before investing. This protects all investors.'
-                    : isFr
-                      ? `Votre KYC est en cours de révision. Délai estimé: ${kycState.category === 'diaspora' ? '24 heures' : '48-72 heures'}. Vous recevrez un email de confirmation.`
-                      : `Your KYC is under review. Estimated time: ${kycState.category === 'diaspora' ? '24 hours' : '48-72 hours'}. You will receive a confirmation email.`}
+                {isFr
+                  ? 'Inscrivez-vous comme investisseur AfriYield pour continuer.'
+                  : 'Register as an AfriYield investor to continue.'}
               </p>
-              {!kycState.kycUnderReview && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    localStorage.setItem('afriyield_invest_return', window.location.pathname);
-                    navigate(`/afri-yield/register${kycState.needsKYC ? '?step=kyc' : ''}`);
-                  }}
-                  className="px-6 py-3 rounded-xl font-bold text-black text-sm"
-                  style={{ backgroundColor: '#B5850A' }}
-                >
-                  {!kycState.isRegistered
-                    ? isFr
-                      ? "S'inscrire maintenant →"
-                      : 'Register Now →'
-                    : isFr
-                      ? 'Compléter le KYC →'
-                      : 'Complete KYC →'}
-                </button>
-              )}
-              {kycState.kycUnderReview && (
-                <div className="flex flex-col gap-3 items-center">
-                  <p className="text-xs text-center max-w-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                    {isFr
-                      ? 'Votre dossier est en file d\'attente. Vous pouvez revenir aux opportunités — nous vous enverrons un email dès approbation.'
-                      : 'Your file is in the review queue. You can return to opportunities — we will email you once approved.'}
-                  </p>
-                  <Link
-                    to="/afri-yield/opportunities"
-                    className="px-6 py-3 rounded-xl font-bold text-sm"
-                    style={{ backgroundColor: '#B5850A', color: '#0d1f17' }}
-                  >
-                    {isFr ? '← Retour aux opportunités' : '← Back to opportunities'}
-                  </Link>
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem('afriyield_invest_return', window.location.pathname);
+                  navigate('/afri-yield/register');
+                }}
+                className="px-6 py-3 rounded-xl font-bold text-black text-sm"
+                style={{ backgroundColor: '#B5850A' }}
+              >
+                {isFr ? "S'inscrire maintenant →" : 'Register Now →'}
+              </button>
             </div>
           </div>
         )}
 
-        {(kycState.canInvest || kycState.loading) && (
+        {!isDemo && !kycState.loading && !onboardingLoading && kycState.isRegistered && !canInvestNow && (
+          <div className="max-w-2xl mx-auto">
+            <div
+              className="rounded-2xl border p-6 text-center"
+              style={{
+                background: 'rgba(59,130,246,0.08)',
+                borderColor: 'rgba(59,130,246,0.3)',
+              }}
+            >
+              <div className="text-4xl mb-3">🔒</div>
+              <h2 className="text-white font-bold text-xl mb-2">
+                {onboardingStepLabel(onboarding?.step || 'email_verification', isFr)}
+              </h2>
+              <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                {isFr
+                  ? 'Complétez les étapes d’onboarding dans le portail avant d’investir.'
+                  : 'Complete onboarding steps in the portal before investing.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/afri-yield/portal')}
+                className="px-6 py-3 rounded-xl font-bold text-black text-sm"
+                style={{ backgroundColor: '#B5850A' }}
+              >
+                {isFr ? 'Aller au portail →' : 'Go to portal →'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!isDemo && (canInvestNow || kycState.loading || onboardingLoading) && (
           <>
         {error ? (
           <div className="rounded-2xl p-4" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
@@ -561,6 +602,18 @@ export default function InvestmentConfirmation() {
           </>
         )}
       </div>
+
+      <OnboardingGateModal
+        open={gateOpen && kycState.isRegistered && !canInvestNow}
+        onClose={() => setGateOpen(false)}
+        onboarding={onboarding || { step: 'email_verification', currentStep: 1 }}
+        isFr={isFr}
+        actionLabel={isFr ? 'Investir' : 'Invest'}
+        onContinue={() => {
+          setGateOpen(false);
+          navigate('/afri-yield/portal');
+        }}
+      />
     </div>
   );
 }

@@ -1,0 +1,17 @@
+EN:
+Version 1.0.2 — What’s new:
+
+Join real cooperatives in your region directly from the app
+Record your harvests with full traceability (batch ID + QR code)
+Harvests now feed your cooperative’s ICS certification score
+Improved farmer onboarding flow
+Bug fixes and performance improvements
+
+FR:
+Version 1.0.2 — Nouveautés :
+
+Rejoignez de vraies coopératives dans votre région depuis l’application
+Enregistrez vos récoltes avec traçabilité complète (ID de lot + QR)
+Les récoltes alimentent le score ICS de votre coopérative
+Amélioration du flux d’inscription agriculteur
+Corrections de bugs et améliorations de performance

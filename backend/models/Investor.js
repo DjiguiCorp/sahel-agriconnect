@@ -13,6 +13,8 @@ const investorSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
   },
+  emailVerified: { type: Boolean, default: false },
+  verifiedAt: { type: Date },
   phone: { type: String, trim: true },
   countryOfResidence: { type: String, trim: true },
   investmentTrack: {
@@ -67,6 +69,19 @@ const investorSchema = new mongoose.Schema({
     type: String,
     enum: ['african', 'diaspora', 'other'],
   },
+  /** Portal / notification language preference */
+  preferredLanguage: {
+    type: String,
+    enum: ['en', 'fr'],
+    default: 'fr',
+  },
+  /** AfriYield invest access — auto-set when KYC + $99 subscription met */
+  tradingApproved: { type: Boolean, default: false },
+  tradingApprovedAt: { type: Date },
+  tradingApprovedBy: { type: String, trim: true },
+  tradingRevoked: { type: Boolean, default: false },
+  tradingRevokedAt: { type: Date },
+  tradingRevokedBy: { type: String, trim: true },
 });
 
 investorSchema.index({ email: 1 }, { unique: true });

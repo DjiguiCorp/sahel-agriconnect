@@ -5,8 +5,8 @@ import { Loader2, X } from 'lucide-react';
 import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import { useWebSession } from '../hooks/useWebSession';
 import { API_ENDPOINTS } from '../config/api';
-import { isStripeCheckoutAvailable, createCheckoutSession } from '../lib/stripeCheckout';
 import { CROP_EMOJIS } from './producer-dashboard/constants';
+import { cropLabel } from '../lib/crops';
 
 function hasProducerProStatus(profile) {
   if (!profile) return false;
@@ -24,34 +24,7 @@ function hasProducerProStatus(profile) {
   );
 }
 
-function ProUpgradeBanner({ isFr, email, onDismiss }) {
-  const [loading, setLoading] = useState(false);
-
-  const handleUpgrade = async () => {
-    if (!isStripeCheckoutAvailable()) {
-      alert(isFr ? 'Paiement indisponible.' : 'Checkout unavailable.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await createCheckoutSession('producer_pro', {
-        email: email || '',
-        billingInterval: 'month',
-        amountUsd: 29.99,
-        successUrl: `${window.location.origin}/my-dashboard?upgrade=success`,
-        cancelUrl: `${window.location.origin}/my-dashboard?upgrade=cancelled`,
-      });
-      if (result?.error) {
-        alert(isFr ? 'Erreur de paiement. Veuillez réessayer.' : 'Payment error. Please try again.');
-      }
-    } catch (e) {
-      console.error('Upgrade checkout error:', e);
-      alert(isFr ? 'Erreur de connexion. Veuillez réessayer.' : 'Connection error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function ProUpgradeBanner({ isFr, onDismiss }) {
   return (
     <div
       className="relative rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
@@ -64,21 +37,17 @@ function ProUpgradeBanner({ isFr, email, onDismiss }) {
     >
       <p className="flex-1 text-sm text-amber-100/95 leading-snug pr-6 sm:pr-0">
         {isFr
-          ? '🌟 Débloquez Producteur Pro — 29,99$/mois ou 299$/an. Accès marché prioritaire, outils export & prévisions de rendement.'
-          : '🌟 Unlock Producer Pro — $29.99/mo or $299/year. Priority market access, export tools & yield forecasting.'}
+          ? '🌟 Débloquez Producteur Pro — accès marché prioritaire, outils export & prévisions de rendement. Paiement bientôt disponible.'
+          : '🌟 Unlock Producer Pro — priority market access, export tools & yield forecasting. Checkout coming soon.'}
       </p>
       <div className="flex items-center gap-2 shrink-0">
-        <button
-          type="button"
-          onClick={handleUpgrade}
-          disabled={loading}
-          className="px-4 py-2 rounded-xl text-sm font-bold transition disabled:opacity-60"
+        <a
+          href="mailto:support@sahelagriconnect.com?subject=Producer%20Pro%20Waitlist"
+          className="px-4 py-2 rounded-xl text-sm font-bold transition inline-block"
           style={{ background: '#B5850A', color: '#0f1a10' }}
         >
-          {loading
-            ? (isFr ? 'Redirection...' : 'Redirecting...')
-            : (isFr ? 'Mettre à niveau' : 'Upgrade Now')}
-        </button>
+          {isFr ? 'Rejoindre la liste d\'attente' : 'Join waitlist'}
+        </a>
         <button
           type="button"
           onClick={onDismiss}
@@ -94,6 +63,7 @@ function ProUpgradeBanner({ isFr, email, onDismiss }) {
 
 const OverviewTab = lazy(() => import('./producer-dashboard/OverviewTab'));
 const ListingsTab = lazy(() => import('./producer-dashboard/ListingsTab'));
+const HarvestLogsTab = lazy(() => import('./producer-dashboard/HarvestLogsTab'));
 const BenefitsTab = lazy(() => import('./producer-dashboard/BenefitsTab'));
 const ServicesTab = lazy(() => import('./producer-dashboard/ServicesTab'));
 
@@ -342,6 +312,7 @@ function ProducerDashboard() {
     () => [
       { key: 'overview', label: isFr ? '🏠 Aperçu' : '🏠 Overview' },
       { key: 'listings', label: isFr ? '🌾 Ma production' : '🌾 My production' },
+      { key: 'harvests', label: isFr ? '📒 Mes Récoltes' : '📒 My Harvests' },
       { key: 'benefits', label: isFr ? '🎁 Avantages' : '🎁 Benefits' },
       { key: 'services', label: isFr ? '🚜 Services' : '🚜 Services' },
     ],
@@ -368,7 +339,7 @@ function ProducerDashboard() {
               value={identEmail}
               onChange={(e) => setIdentEmail(e.target.value)}
               placeholder={isFr ? 'votre@email.com' : 'your@email.com'}
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
             />
             {identError && <p className="text-red-500 text-xs">{identError}</p>}
             <button
@@ -487,7 +458,7 @@ function ProducerDashboard() {
             <div className="flex flex-wrap gap-2 mt-4">
               {crops.slice(0, 5).map((crop) => (
                 <span key={crop} className="text-xs px-2.5 py-1 rounded-full bg-white/15 text-white/80">
-                  {CROP_EMOJIS[crop] || '🌾'} {crop}
+                  {CROP_EMOJIS[crop] || '🌾'} {cropLabel(crop, isFr)}
                 </span>
               ))}
             </div>
@@ -498,7 +469,6 @@ function ProducerDashboard() {
       {showProUpgrade ? (
         <ProUpgradeBanner
           isFr={isFr}
-          email={userEmail}
           onDismiss={() => {
             setUpgradeBannerDismissed(true);
             try {
@@ -555,6 +525,12 @@ function ProducerDashboard() {
             listingState={listingState}
             submitListing={submitListing}
           />
+        </Suspense>
+      )}
+
+      {activeTab === 'harvests' && loadedTabs.has('harvests') && (
+        <Suspense fallback={TAB_FALLBACK}>
+          <HarvestLogsTab isFr={isFr} profile={profile} />
         </Suspense>
       )}
 

@@ -239,7 +239,7 @@ export default function FarmerNeeds() {
                       value={form.farmerName}
                       onChange={(e) => setForm((p) => ({ ...p, farmerName: e.target.value }))}
                       required
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                     />
                   </div>
                   <div>
@@ -251,7 +251,7 @@ export default function FarmerNeeds() {
                       onChange={(e) => setForm((p) => ({ ...p, farmerPhone: e.target.value }))}
                       required
                       placeholder="+223 76 12 34 56"
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                     />
                   </div>
                 </div>
@@ -264,7 +264,7 @@ export default function FarmerNeeds() {
                     value={form.cooperativeName}
                     onChange={(e) => setForm((p) => ({ ...p, cooperativeName: e.target.value }))}
                     placeholder={isFr ? 'Nom de votre coopérative' : 'Your cooperative name'}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   />
                 </div>
 
@@ -396,7 +396,7 @@ export default function FarmerNeeds() {
                         ? "Ex: J'ai besoin d'un tracteur pour labourer mes 3 hectares avant la saison des pluies. Mon sol est argileux et difficile à travailler manuellement..."
                         : 'Ex: I need a tractor to plow my 3 hectares before the rainy season. My soil is clay and difficult to work manually...'
                     }
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A] resize-none"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30 resize-none"
                   />
                 </div>
 

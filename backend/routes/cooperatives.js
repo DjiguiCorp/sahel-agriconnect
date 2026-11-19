@@ -6,17 +6,85 @@ import { Resend } from 'resend';
 import Cooperative from '../models/Cooperative.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import CooperativeInvitation from '../models/CooperativeInvitation.js';
+import CooperativeJoinRequest from '../models/CooperativeJoinRequest.js';
+import CooperativeMemberPayment from '../models/CooperativeMemberPayment.js';
+import ManualCoopMember from '../models/ManualCoopMember.js';
+import MemberDuesPayment from '../models/MemberDuesPayment.js';
 import PendingNotification from '../models/PendingNotification.js';
 import ProduceListing from '../models/ProduceListing.js';
 import Farmer from '../models/Farmer.js';
 import NationalProject from '../models/NationalProject.js';
+import Processor from '../models/Processor.js';
+import EquipmentFundApplication from '../models/EquipmentFundApplication.js';
+import CertificationProgramApplication from '../models/CertificationProgramApplication.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { countryFilter } from '../middleware/countryFilter.js';
 import { requireGrowthTier } from '../middleware/requireGrowthTier.js';
-import { confirmCooperativeRegistration, notifyAdminNewCooperative } from '../services/emailService.js';
+import {
+  confirmCooperativeRegistration,
+  notifyAdminNewCooperative,
+  sendCooperativeEmailVerification,
+} from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import { dispatchNotification } from './notifications.js';
 import DeviceSession from '../models/DeviceSession.js';
+import {
+  maybeUpgradeCoopAt51,
+  getVerifiedMemberCount,
+  syncPendingFullVerification,
+  evaluateGrowthPaths,
+  isAfriYieldUnlocked,
+  GROWTH_MIN_VERIFIED_MEMBERS,
+  GROWTH_PATH_B_DECLARED,
+  GROWTH_PATH_B_VERIFIED,
+  AFRIYIELD_UNLOCK_VERIFIED,
+  GROWTH_GATE_ERROR_FR,
+  sendJoinRequestToLeaderEmail,
+  sendJoinRequestOutcomeEmail,
+  sendCoopFlaggedEmail,
+} from '../services/coopMemberUpgrade.js';
+
+const ADMIN_VERIFY_EMAIL = 'info@djiguicorporation.org';
+
+function emailDomain(email) {
+  const s = String(email || '').toLowerCase().trim();
+  const at = s.lastIndexOf('@');
+  return at > 0 ? s.slice(at + 1) : '';
+}
+
+/** Simple edit-distance (Levenshtein); used for soft name similarity flags */
+function editDistance(a, b) {
+  const s = String(a || '').toLowerCase().trim();
+  const t = String(b || '').toLowerCase().trim();
+  if (!s || !t) return 99;
+  const m = s.length;
+  const n = t.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+async function sendAdminSoftFlagAlert({ subject, html }) {
+  try {
+    if (!process.env.RESEND_API_KEY) return;
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+      to: ADMIN_VERIFY_EMAIL,
+      subject,
+      html,
+    });
+  } catch (e) {
+    console.error('[coop soft-flag email]', e.message);
+  }
+}
 
 const router = express.Router();
 
@@ -32,7 +100,7 @@ export function deriveCoopTier(memberCount) {
   };
 }
 
-const authCoop = async (req, res, next) => {
+export const authCoop = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Not authenticated' });
@@ -113,6 +181,37 @@ router.post('/register-platform', async (req, res) => {
     // Eligibility unlocks with Growth tier; unpaid Growth stays pending_payment (cannot login until paid).
     const paidGrowth = tier === 'growth' && (req.body.paymentReceived === true || req.body.skipPayment === true);
 
+    // Soft fraud checks (do not block activation)
+    const softFlags = [];
+    if (memberCount > 100) {
+      softFlags.push(`Declared memberCount ${memberCount} > 100`);
+    }
+    const domain = emailDomain(req.body.email);
+    if (domain) {
+      const domainCount = await CooperativePlatformRegistration.countDocuments({
+        email: new RegExp(`@${domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+      });
+      if (domainCount >= 3) {
+        softFlags.push(`Email domain @${domain} already used by ${domainCount} cooperatives`);
+      }
+    }
+    const regionCity = String(req.body.regionCity || '').trim();
+    const coopName = String(req.body.cooperativeName || '').trim();
+    if (coopName && regionCity) {
+      const sameRegion = await CooperativePlatformRegistration.find({
+        regionCity: new RegExp(`^${regionCity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+      })
+        .select('cooperativeName regionCity')
+        .limit(50)
+        .lean();
+      const similar = sameRegion.find((c) => editDistance(c.cooperativeName, coopName) <= 3);
+      if (similar) {
+        softFlags.push(
+          `Name similar to existing "${similar.cooperativeName}" in ${similar.regionCity} (≤3 chars)`
+        );
+      }
+    }
+
     const cooperative = await CooperativePlatformRegistration.create({
       cooperativeName: req.body.cooperativeName,
       country: req.body.country,
@@ -133,10 +232,43 @@ router.post('/register-platform', async (req, res) => {
       paymentReceived: tier === 'starter' || paidGrowth,
       paymentMethod: tier === 'starter' ? 'free_starter' : paidGrowth ? (req.body.paymentMethod || 'stripe') : undefined,
       activatedAt: tier === 'starter' || paidGrowth ? new Date() : undefined,
+      emailVerified: false,
+      verificationStatus: softFlags.length ? 'flagged' : 'unverified',
+      verificationNotes: softFlags.length ? softFlags.join('; ') : undefined,
     });
+
+    if (softFlags.length) {
+      sendAdminSoftFlagAlert({
+        subject: `Alerte inscription coopérative / Soft-flagged registration — ${cooperative.cooperativeName}`,
+        html: `
+          <p><strong>${cooperative.cooperativeName}</strong> (${cooperative.country} / ${cooperative.regionCity})</p>
+          <p>Leader: ${cooperative.leaderName} · ${cooperative.email}</p>
+          <p>Declared members: ${memberCount} · Tier: ${tier}</p>
+          <ul>${softFlags.map((f) => `<li>${f}</li>`).join('')}</ul>
+          <p><a href="https://sahelagriconnect.com/admin/central">Open admin panel</a></p>
+        `,
+      }).catch(console.error);
+    }
 
     notifyAdminNewCooperative(cooperative).catch(console.error);
     confirmCooperativeRegistration(cooperative).catch(console.error);
+
+    // Starter (free): send email verification link to portal
+    if (tier === 'starter' && cooperative.email) {
+      try {
+        const verifyToken = jwt.sign(
+          { purpose: 'coop_email_verify', coopId: String(cooperative._id), email: cooperative.email },
+          process.env.JWT_SECRET,
+          { expiresIn: '7d' }
+        );
+        const frontendBase = (process.env.FRONTEND_URL || 'https://sahelagriconnect.com').replace(/\/$/, '');
+        const verifyUrl = `${frontendBase}/cooperative-portal?verify=${encodeURIComponent(verifyToken)}`;
+        sendCooperativeEmailVerification(cooperative, verifyUrl).catch(console.error);
+      } catch (verifyErr) {
+        console.error('coop verify token error:', verifyErr);
+      }
+    }
+
     queueNotification({
       name: cooperative.leaderName || cooperative.nomResponsable || '',
       phone: cooperative.phone,
@@ -158,6 +290,308 @@ router.post('/register-platform', async (req, res) => {
       success: false,
       error: error.message || 'Erreur lors de l’enregistrement',
     });
+  }
+});
+
+/** Haversine distance in km between two WGS84 points */
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Shared discover handler — platform coops for farmer discovery.
+ * GET /api/cooperatives/discover and /nearby (alias)
+ * Query: region?, country?, lat?, lng?, radius? (km, default 100), cropType?
+ */
+async function discoverCooperatives(req, res) {
+  try {
+    const region = String(req.query.region || '').trim();
+    const cropType = String(req.query.cropType || req.query.crop || '').trim();
+    const country = String(req.query.country || '').trim();
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    const radiusKm = Number(req.query.radius) > 0 ? Number(req.query.radius) : 100;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+
+    const filter = {
+      $or: [{ status: 'active' }, { paymentReceived: true }],
+    };
+    if (country) {
+      filter.country = new RegExp(
+        `^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+        'i'
+      );
+    }
+    if (region) {
+      // Match regionCity or country (e.g. region=Mali)
+      filter.$and = [
+        ...(filter.$and || []),
+        {
+          $or: [
+            {
+              regionCity: new RegExp(
+                region.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                'i'
+              ),
+            },
+            {
+              country: new RegExp(
+                region.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                'i'
+              ),
+            },
+          ],
+        },
+      ];
+    }
+    if (cropType) {
+      filter.primaryCrops = {
+        $elemMatch: {
+          $regex: new RegExp(
+            cropType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+            'i'
+          ),
+        },
+      };
+    }
+
+    let rows = await CooperativePlatformRegistration.find(filter)
+      .sort({ memberCount: -1, createdAt: -1 })
+      .limit(80)
+      .select(
+        'cooperativeName regionCity country primaryCrops memberCount tier leaderName certificationStatus verificationStatus paymentReceived status autresCrops latitude longitude location'
+      )
+      .lean();
+
+    if (hasCoords) {
+      rows = rows
+        .map((c) => {
+          const cLat = Number(c.latitude ?? c.location?.coordinates?.[1]);
+          const cLng = Number(c.longitude ?? c.location?.coordinates?.[0]);
+          const distanceKm =
+            Number.isFinite(cLat) && Number.isFinite(cLng)
+              ? haversineKm(lat, lng, cLat, cLng)
+              : null;
+          return { ...c, distanceKm };
+        })
+        .filter((c) => c.distanceKm == null || c.distanceKm <= radiusKm)
+        .sort((a, b) => {
+          if (a.distanceKm == null && b.distanceKm == null) {
+            return (b.memberCount || 0) - (a.memberCount || 0);
+          }
+          if (a.distanceKm == null) return 1;
+          if (b.distanceKm == null) return -1;
+          return a.distanceKm - b.distanceKm;
+        });
+    }
+
+    const cooperatives = rows.slice(0, 20).map((c) => ({
+      id: c._id,
+      _id: c._id,
+      cooperativeName: c.cooperativeName,
+      region: c.regionCity,
+      regionCity: c.regionCity,
+      country: c.country,
+      cropTypes: c.primaryCrops || [],
+      primaryCrops: c.primaryCrops || [],
+      memberCount: c.memberCount,
+      subscriptionPlan: c.tier || 'starter',
+      tier: c.tier,
+      description: c.autresCrops || '',
+      leaderName: c.leaderName,
+      certificationStatus: c.certificationStatus || null,
+      verificationStatus: c.verificationStatus || 'unverified',
+      ...(c.distanceKm != null ? { distanceKm: Math.round(c.distanceKm * 10) / 10 } : {}),
+    }));
+
+    return res.json({ success: true, cooperatives });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+router.get('/discover', discoverCooperatives);
+router.get('/nearby', discoverCooperatives);
+
+/**
+ * POST /api/cooperatives/join-request
+ * Body: { cooperativeId, farmerId, message? }
+ */
+router.post('/join-request', async (req, res) => {
+  try {
+    const cooperativeId = String(req.body?.cooperativeId || '').trim();
+    const farmerId = String(req.body?.farmerId || '').trim();
+    const message = String(req.body?.message || '').trim();
+
+    if (!cooperativeId || !farmerId) {
+      return res.status(400).json({
+        success: false,
+        error: 'cooperativeId and farmerId are required',
+      });
+    }
+
+    const [coop, farmer] = await Promise.all([
+      CooperativePlatformRegistration.findById(cooperativeId),
+      Farmer.findById(farmerId),
+    ]);
+    if (!coop) {
+      return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    }
+    if (!farmer) {
+      return res.status(404).json({ success: false, error: 'Farmer not found' });
+    }
+
+    const existing = await CooperativeJoinRequest.findOne({
+      cooperativeId,
+      farmerId,
+      status: 'pending',
+    });
+    if (existing) {
+      return res.json({
+        success: true,
+        requestId: existing._id,
+        status: 'pending',
+        alreadyPending: true,
+      });
+    }
+
+    const joinReq = await CooperativeJoinRequest.create({
+      cooperativeId,
+      farmerId,
+      farmerName: farmer.nom,
+      farmerRegion: farmer.region || '',
+      farmerCropTypes: farmer.cultures || [],
+      message,
+      status: 'pending',
+      requestedAt: new Date(),
+    });
+
+    await sendJoinRequestToLeaderEmail({
+      leaderEmail: coop.email,
+      leaderName: coop.leaderName,
+      cooperativeName: coop.cooperativeName,
+      farmerName: farmer.nom,
+      farmerRegion: farmer.region,
+      farmerCrops: farmer.cultures,
+      message,
+    }).catch((err) => console.error('[join-request] leader email failed:', err.message));
+
+    return res.status(201).json({
+      success: true,
+      requestId: joinReq._id,
+      status: 'pending',
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * GET /api/cooperatives/:id/join-requests — pending requests for this coop (leader auth)
+ */
+router.get('/:id/join-requests', authCoop, async (req, res) => {
+  try {
+    if (String(req.coop._id) !== String(req.params.id)) {
+      return res.status(403).json({ success: false, error: 'Not your cooperative' });
+    }
+    const status = String(req.query.status || 'pending');
+    const filter = { cooperativeId: req.coop._id };
+    if (status !== 'all') filter.status = status;
+
+    const requests = await CooperativeJoinRequest.find(filter)
+      .sort({ requestedAt: -1 })
+      .lean();
+    return res.json({ success: true, requests });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * POST /api/cooperatives/:id/join-requests/:requestId/review
+ * Body: { action: 'approve' | 'decline' }
+ */
+router.post('/:id/join-requests/:requestId/review', authCoop, async (req, res) => {
+  try {
+    if (String(req.coop._id) !== String(req.params.id)) {
+      return res.status(403).json({ success: false, error: 'Not your cooperative' });
+    }
+    const action = String(req.body?.action || '').toLowerCase();
+    if (!['approve', 'decline'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        error: "action must be 'approve' or 'decline'",
+      });
+    }
+
+    const joinReq = await CooperativeJoinRequest.findOne({
+      _id: req.params.requestId,
+      cooperativeId: req.coop._id,
+    });
+    if (!joinReq) {
+      return res.status(404).json({ success: false, error: 'Join request not found' });
+    }
+    if (joinReq.status !== 'pending') {
+      return res.status(409).json({
+        success: false,
+        error: `Request already ${joinReq.status}`,
+      });
+    }
+
+    const farmer = await Farmer.findById(joinReq.farmerId);
+    const now = new Date();
+    joinReq.reviewedAt = now;
+    joinReq.reviewedBy = req.coop.email || req.coop.leaderName || 'cooperative_leader';
+
+    if (action === 'approve') {
+      joinReq.status = 'approved';
+      await joinReq.save();
+
+      if (farmer) {
+        farmer.cooperativeId = req.coop._id;
+        farmer.lienCooperative = 'Oui';
+        farmer.nomCooperative = req.coop.cooperativeName;
+        await farmer.save();
+      }
+
+      await CooperativePlatformRegistration.findByIdAndUpdate(req.coop._id, {
+        $inc: { memberCount: 1 },
+      });
+      await maybeUpgradeCoopAt51(req.coop._id);
+      await syncPendingFullVerification(req.coop._id);
+
+      await sendJoinRequestOutcomeEmail({
+        farmerEmail: farmer?.email,
+        farmerName: farmer?.nom || joinReq.farmerName,
+        cooperativeName: req.coop.cooperativeName,
+        approved: true,
+      }).catch((err) => console.error('[join-review] approve email failed:', err.message));
+    } else {
+      joinReq.status = 'declined';
+      await joinReq.save();
+
+      await sendJoinRequestOutcomeEmail({
+        farmerEmail: farmer?.email,
+        farmerName: farmer?.nom || joinReq.farmerName,
+        cooperativeName: req.coop.cooperativeName,
+        approved: false,
+      }).catch((err) => console.error('[join-review] decline email failed:', err.message));
+    }
+
+    return res.json({
+      success: true,
+      status: joinReq.status,
+      requestId: joinReq._id,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
   }
 });
 
@@ -435,13 +869,45 @@ router.post('/set-password', authCoop, async (req, res) => {
   }
 });
 
+// POST /api/cooperatives/verify-email — confirm leader email via JWT from registration email
+router.post('/verify-email', async (req, res) => {
+  try {
+    const token = String(req.body?.token || '').trim();
+    if (!token) return res.status(400).json({ success: false, error: 'token required' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.purpose !== 'coop_email_verify' || !decoded.coopId) {
+      return res.status(400).json({ success: false, error: 'Invalid verification token' });
+    }
+    const coop = await CooperativePlatformRegistration.findByIdAndUpdate(
+      decoded.coopId,
+      { emailVerified: true, verifiedAt: new Date() },
+      { new: true }
+    );
+    if (!coop) return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    res.json({ success: true, emailVerified: true, email: coop.email });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message || 'Invalid or expired token' });
+  }
+});
+
 // GET /api/cooperatives/my-portal — full cooperative dashboard data
 router.get('/my-portal', authCoop, async (req, res) => {
   try {
     const coopName = req.coop.cooperativeName || req.coop.nomCooperative;
     const country = req.coop.country;
+    const coopIdStr = String(req.coop._id);
 
-    const [memberFarmers, produceListings, invitations, projects] = await Promise.all([
+    const [
+      memberFarmers,
+      produceListings,
+      invitations,
+      projects,
+      joinRequests,
+      memberPayments,
+      pendingEquipmentApps,
+      pendingCertifications,
+      verifiedMemberCount,
+    ] = await Promise.all([
       Farmer.find({
         $or: [{ nomCooperative: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }, { cooperativeId: req.coop._id }],
       })
@@ -458,6 +924,26 @@ router.get('/my-portal', authCoop, async (req, res) => {
           'title titleFr description descriptionFr projectType priority incentives requirements startDate endDate createdByName organization responses'
         )
         .lean(),
+      CooperativeJoinRequest.find({ cooperativeId: req.coop._id, status: 'pending' })
+        .sort({ requestedAt: -1 })
+        .lean(),
+      CooperativeMemberPayment.find({ cooperativeId: req.coop._id }).sort({ date: -1 }).limit(100).lean(),
+      EquipmentFundApplication.countDocuments({
+        status: { $in: ['pending', 'reviewing'] },
+        $or: [
+          { cooperativeName: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+          { email: (req.coop.email || '').toLowerCase() },
+        ],
+      }),
+      CertificationProgramApplication.countDocuments({
+        status: { $in: ['new', 'reviewing'] },
+        $or: [
+          { farmerOrCooperativeId: coopIdStr },
+          { email: (req.coop.email || '').toLowerCase() },
+          { name: new RegExp(String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+        ],
+      }),
+      getVerifiedMemberCount(req.coop._id),
     ]);
 
     const projectsWithMine = projects.map((p) => {
@@ -468,16 +954,29 @@ router.get('/my-portal', authCoop, async (req, res) => {
 
     const stats = {
       memberCount: memberFarmers.length,
+      declaredMemberCount: req.coop.memberCount,
+      verifiedMemberCount,
       totalAreaHa: memberFarmers.reduce((s, f) => s + (Number(f.superficie) || 0), 0),
       pendingListings: produceListings.filter((l) => !l.cooperativeApproved).length,
       promotedListings: produceListings.filter((l) => l.promotedToMarketplace).length,
       invitationsSent: invitations.length,
       invitationsAccepted: invitations.filter((i) => i.status === 'accepted').length,
+      pendingJoinRequests: joinRequests.length,
       activeProjects: projectsWithMine.length,
+      pendingEquipmentApps,
+      pendingCertifications,
+      activeProduceListings: produceListings.filter((l) => l.cooperativeApproved).length,
     };
 
     const tier = req.coop.tier || deriveCoopTier(req.coop.memberCount).tier;
     const isGrowth = tier === 'growth';
+
+    // Auto-clear Path B provisional lock when verifiedCount >= 25
+    const sync = await syncPendingFullVerification(req.coop._id, verifiedMemberCount);
+    const pendingFullVerification = Boolean(
+      sync?.pendingFullVerification ?? req.coop.pendingFullVerification
+    );
+    const afriyieldUnlocked = isGrowth && !pendingFullVerification;
 
     res.json({
       success: true,
@@ -486,15 +985,26 @@ router.get('/my-portal', authCoop, async (req, res) => {
         cooperativeName: req.coop.cooperativeName,
         country: req.coop.country,
         memberCount: req.coop.memberCount,
+        status: req.coop.status,
         tier,
+        emailVerified: Boolean(req.coop.emailVerified),
+        verificationStatus: req.coop.verificationStatus || 'unverified',
         certificationEligible: isGrowth || Boolean(req.coop.certificationEligible),
-        afriyieldEligible: isGrowth || Boolean(req.coop.afriyieldEligible),
+        afriyieldEligible: afriyieldUnlocked,
+        afriyieldUnlocked,
+        pendingFullVerification,
+        gracePeriodStartDate: sync?.coop?.gracePeriodStartDate || req.coop.gracePeriodStartDate || null,
         exportEligible: isGrowth || Boolean(req.coop.exportEligible),
+        subscriptionExpiresAt: req.coop.subscriptionExpiresAt || null,
+        processorId: req.coop.processorId || null,
+        processorName: req.coop.processorName || '',
       },
       stats,
       memberFarmers,
       produceListings,
       invitations,
+      joinRequests,
+      memberPayments,
       nationalProjects: projectsWithMine,
     });
   } catch (e) {
@@ -502,9 +1012,404 @@ router.get('/my-portal', authCoop, async (req, res) => {
   }
 });
 
+// POST /api/cooperatives/my-portal/record-member-payment
+router.post('/my-portal/record-member-payment', authCoop, async (req, res) => {
+  try {
+    const { farmerId, amount, paymentMethod, reference, date } = req.body || {};
+    if (!farmerId || amount == null || !paymentMethod) {
+      return res.status(400).json({ success: false, error: 'farmerId, amount, and paymentMethod required' });
+    }
+    const allowed = ['Orange Money', 'MTN Mobile Money', 'Cash', 'Virement bancaire', 'Autre'];
+    if (!allowed.includes(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Invalid paymentMethod' });
+    }
+    const farmer = await Farmer.findById(farmerId).select('nom').lean();
+    if (!farmer) return res.status(404).json({ success: false, error: 'Farmer not found' });
+
+    const payment = await CooperativeMemberPayment.create({
+      cooperativeId: req.coop._id,
+      farmerId,
+      farmerName: farmer.nom || req.body.farmerName || '',
+      amount: Number(amount),
+      currency: req.body.currency || 'XOF',
+      paymentMethod,
+      reference: reference || '',
+      date: date ? new Date(date) : new Date(),
+      recordedBy: req.coop.email || req.coop.leaderName || '',
+    });
+
+    res.status(201).json({ success: true, payment });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// PATCH /api/cooperatives/my-portal/update-count — edit self-reported memberCount
+router.patch('/my-portal/update-count', authCoop, async (req, res) => {
+  try {
+    const raw = req.body?.memberCount;
+    const memberCount = Number(raw);
+    if (!Number.isFinite(memberCount) || memberCount < 0 || !Number.isInteger(memberCount)) {
+      return res.status(400).json({
+        success: false,
+        error: 'memberCount must be a non-negative integer',
+      });
+    }
+    const coop = await CooperativePlatformRegistration.findByIdAndUpdate(
+      req.coop._id,
+      { memberCount },
+      { new: true }
+    ).select('memberCount tier pendingFullVerification');
+    if (!coop) return res.status(404).json({ success: false, error: 'Cooperative not found' });
+    // Declared count change can unlock Path B (51 declared + 10 verified)
+    await maybeUpgradeCoopAt51(req.coop._id);
+    await syncPendingFullVerification(req.coop._id);
+    return res.json({ success: true, memberCount: coop.memberCount });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+async function maybeLinkManualMemberByPhone(coopId, phone) {
+  const normalized = String(phone || '').replace(/\s+/g, '').trim();
+  if (!normalized || normalized.length < 6) return false;
+  const digits = normalized.replace(/\D/g, '');
+  const farmer = await Farmer.findOne({
+    telephone: { $regex: new RegExp(digits.slice(-8) + '$') },
+  })
+    .select('_id')
+    .lean();
+  return Boolean(farmer);
+}
+
+// POST /api/cooperatives/my-portal/manual-members
+router.post('/my-portal/manual-members', authCoop, async (req, res) => {
+  try {
+    const fullName = String(req.body?.fullName || '').trim();
+    if (!fullName) {
+      return res.status(400).json({ success: false, error: 'fullName is required' });
+    }
+    const phone = String(req.body?.phone || '').trim();
+    const platformLinked = await maybeLinkManualMemberByPhone(req.coop._id, phone);
+    const member = await ManualCoopMember.create({
+      cooperativeId: req.coop._id,
+      fullName,
+      phone,
+      village: String(req.body?.village || '').trim(),
+      region: String(req.body?.region || '').trim(),
+      cropTypes: Array.isArray(req.body?.cropTypes)
+        ? req.body.cropTypes.map((c) => String(c).trim()).filter(Boolean)
+        : [],
+      hectares:
+        req.body?.hectares != null && req.body.hectares !== ''
+          ? Number(req.body.hectares)
+          : null,
+      notes: String(req.body?.notes || '').trim(),
+      joinedDate: req.body?.joinedDate ? new Date(req.body.joinedDate) : new Date(),
+      platformLinked,
+    });
+    return res.status(201).json({ success: true, member });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/manual-members
+router.get('/my-portal/manual-members', authCoop, async (req, res) => {
+  try {
+    const members = await ManualCoopMember.find({ cooperativeId: req.coop._id })
+      .sort({ createdAt: -1 })
+      .lean();
+    return res.json({ success: true, members, total: members.length });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// PATCH /api/cooperatives/my-portal/manual-members/:id
+router.patch('/my-portal/manual-members/:id', authCoop, async (req, res) => {
+  try {
+    const member = await ManualCoopMember.findOne({
+      _id: req.params.id,
+      cooperativeId: req.coop._id,
+    });
+    if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
+
+    const fields = ['fullName', 'phone', 'village', 'region', 'notes'];
+    for (const f of fields) {
+      if (req.body?.[f] !== undefined) member[f] = String(req.body[f] || '').trim();
+    }
+    if (Array.isArray(req.body?.cropTypes)) {
+      member.cropTypes = req.body.cropTypes.map((c) => String(c).trim()).filter(Boolean);
+    }
+    if (req.body?.hectares !== undefined) {
+      member.hectares =
+        req.body.hectares === '' || req.body.hectares == null
+          ? null
+          : Number(req.body.hectares);
+    }
+    if (req.body?.joinedDate) member.joinedDate = new Date(req.body.joinedDate);
+    if (typeof req.body?.platformLinked === 'boolean') {
+      member.platformLinked = req.body.platformLinked;
+    } else if (req.body?.phone !== undefined) {
+      member.platformLinked = await maybeLinkManualMemberByPhone(req.coop._id, member.phone);
+    }
+    await member.save();
+    return res.json({ success: true, member });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// DELETE /api/cooperatives/my-portal/manual-members/:id
+router.delete('/my-portal/manual-members/:id', authCoop, async (req, res) => {
+  try {
+    const deleted = await ManualCoopMember.findOneAndDelete({
+      _id: req.params.id,
+      cooperativeId: req.coop._id,
+    });
+    if (!deleted) return res.status(404).json({ success: false, error: 'Member not found' });
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+const DUES_METHODS = ['orange_money', 'wave', 'mtn', 'cash', 'bank_transfer', 'other'];
+
+// POST /api/cooperatives/my-portal/dues-payments
+router.post('/my-portal/dues-payments', authCoop, async (req, res) => {
+  try {
+    const memberType = String(req.body?.memberType || '').trim();
+    const memberId = String(req.body?.memberId || '').trim();
+    const memberName = String(req.body?.memberName || '').trim();
+    const amount = Number(req.body?.amount);
+    const paymentMethod = String(req.body?.paymentMethod || '').trim();
+
+    if (!['platform', 'manual'].includes(memberType)) {
+      return res.status(400).json({ success: false, error: 'memberType must be platform or manual' });
+    }
+    if (!memberId || !memberName) {
+      return res.status(400).json({ success: false, error: 'memberId and memberName are required' });
+    }
+    if (!Number.isFinite(amount) || amount < 0) {
+      return res.status(400).json({ success: false, error: 'amount must be a non-negative number' });
+    }
+    if (!DUES_METHODS.includes(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Invalid paymentMethod' });
+    }
+
+    const now = new Date();
+    const periodMonth =
+      req.body?.periodMonth != null ? Number(req.body.periodMonth) : now.getMonth() + 1;
+    const periodYear =
+      req.body?.periodYear != null ? Number(req.body.periodYear) : now.getFullYear();
+
+    if (!Number.isInteger(periodMonth) || periodMonth < 1 || periodMonth > 12) {
+      return res.status(400).json({ success: false, error: 'periodMonth must be 1-12' });
+    }
+    if (!Number.isInteger(periodYear) || periodYear < 2000) {
+      return res.status(400).json({ success: false, error: 'Invalid periodYear' });
+    }
+
+    const payment = await MemberDuesPayment.create({
+      cooperativeId: req.coop._id,
+      memberType,
+      memberId,
+      memberName,
+      amount,
+      currency: String(req.body?.currency || 'XOF').trim() || 'XOF',
+      paymentMethod,
+      paymentReference: String(req.body?.paymentReference || '').trim(),
+      periodMonth,
+      periodYear,
+      notes: String(req.body?.notes || '').trim(),
+      recordedBy: req.coop.email || req.coop.leaderName || '',
+    });
+
+    return res.status(201).json({ success: true, payment });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/dues-payments
+router.get('/my-portal/dues-payments', authCoop, async (req, res) => {
+  try {
+    const filter = { cooperativeId: req.coop._id };
+    if (req.query.memberId) filter.memberId = String(req.query.memberId);
+    if (req.query.month) filter.periodMonth = Number(req.query.month);
+    if (req.query.year) filter.periodYear = Number(req.query.year);
+    if (req.query.method && DUES_METHODS.includes(String(req.query.method))) {
+      filter.paymentMethod = String(req.query.method);
+    }
+    const payments = await MemberDuesPayment.find(filter).sort({ createdAt: -1 }).limit(500).lean();
+    return res.json({ success: true, payments });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// DELETE /api/cooperatives/my-portal/dues-payments/:id
+router.delete('/my-portal/dues-payments/:id', authCoop, async (req, res) => {
+  try {
+    const deleted = await MemberDuesPayment.findOneAndDelete({
+      _id: req.params.id,
+      cooperativeId: req.coop._id,
+    });
+    if (!deleted) return res.status(404).json({ success: false, error: 'Payment not found' });
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/dues-summary
+router.get('/my-portal/dues-summary', authCoop, async (req, res) => {
+  try {
+    const now = new Date();
+    const month = req.query.month != null ? Number(req.query.month) : now.getMonth() + 1;
+    const year = req.query.year != null ? Number(req.query.year) : now.getFullYear();
+
+    const coopName = req.coop.cooperativeName || req.coop.nomCooperative;
+    const [platformMembers, manualMembers, monthPayments, allPayments] = await Promise.all([
+      Farmer.find({
+        $or: [
+          {
+            nomCooperative: new RegExp(
+              String(coopName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+              'i'
+            ),
+          },
+          { cooperativeId: req.coop._id },
+        ],
+      })
+        .select('_id')
+        .lean(),
+      ManualCoopMember.find({ cooperativeId: req.coop._id }).select('_id').lean(),
+      MemberDuesPayment.find({
+        cooperativeId: req.coop._id,
+        periodMonth: month,
+        periodYear: year,
+      }).lean(),
+      MemberDuesPayment.find({ cooperativeId: req.coop._id }).lean(),
+    ]);
+
+    const totalMembers = platformMembers.length + manualMembers.length;
+    const paidIds = new Set(monthPayments.map((p) => String(p.memberId)));
+    const paidThisMonth = paidIds.size;
+    const unpaidThisMonth = Math.max(0, totalMembers - paidThisMonth);
+    const totalCollected = monthPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+
+    const byMethod = Object.fromEntries(DUES_METHODS.map((m) => [m, 0]));
+    for (const p of monthPayments) {
+      if (byMethod[p.paymentMethod] != null) byMethod[p.paymentMethod] += 1;
+    }
+
+    const statusByMember = {};
+    const lastMonth = month === 1 ? 12 : month - 1;
+    const lastYear = month === 1 ? year - 1 : year;
+    for (const p of allPayments) {
+      const id = String(p.memberId);
+      const isThis = p.periodMonth === month && p.periodYear === year;
+      const isLast = p.periodMonth === lastMonth && p.periodYear === lastYear;
+      if (!statusByMember[id]) statusByMember[id] = 'none';
+      if (isThis) statusByMember[id] = 'paid';
+      else if (isLast && statusByMember[id] !== 'paid') statusByMember[id] = 'late';
+    }
+
+    return res.json({
+      success: true,
+      totalCollected,
+      totalMembers,
+      paidThisMonth,
+      unpaidThisMonth,
+      byMethod,
+      statusByMember,
+      periodMonth: month,
+      periodYear: year,
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/processors — active processors in same country
+router.get('/my-portal/processors', authCoop, async (req, res) => {
+  try {
+    const country = String(req.coop.country || '').trim();
+    const filter = {
+      statut: { $in: ['Opérationnelle', 'En construction'] },
+    };
+    if (country) {
+      filter.$or = [
+        { country: new RegExp(`^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+        { countryCode: new RegExp(`^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      ];
+    }
+    const processors = await Processor.find(filter)
+      .select('nom region country produitsTransformes email telephone statut')
+      .sort({ nom: 1 })
+      .limit(100)
+      .lean();
+
+    res.json({
+      success: true,
+      processors: processors.map((p) => ({
+        id: p._id,
+        name: p.nom,
+        regionCity: p.region || '',
+        processingTypes: p.produitsTransformes || [],
+        contactEmail: p.email || '',
+        phone: p.telephone || '',
+        status: p.statut,
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/cooperatives/my-portal/link-processor
+router.post('/my-portal/link-processor', authCoop, async (req, res) => {
+  try {
+    const processorId = req.body?.processorId;
+    if (!processorId) return res.status(400).json({ success: false, error: 'processorId required' });
+    const processor = await Processor.findById(processorId).select('nom').lean();
+    if (!processor) return res.status(404).json({ success: false, error: 'Processor not found' });
+
+    req.coop.processorId = processor._id;
+    req.coop.processorName = processor.nom;
+    await req.coop.save();
+
+    res.json({
+      success: true,
+      processorId: processor._id,
+      processorName: processor.nom,
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // PUT /api/cooperatives/my-portal/promote-listing/:id — AfriYield marketplace (Growth only)
 router.put('/my-portal/promote-listing/:id', authCoop, requireGrowthTier, async (req, res) => {
   try {
+    await syncPendingFullVerification(req.coop._id);
+    const fresh = await CooperativePlatformRegistration.findById(req.coop._id)
+      .select('tier pendingFullVerification')
+      .lean();
+    if (!isAfriYieldUnlocked(fresh || req.coop)) {
+      return res.status(403).json({
+        success: false,
+        error: 'AFRIYIELD_LOCKED',
+        message:
+          'AfriYield requires 25 verified members while on provisional Growth access.',
+        messageFr:
+          'AfriYield nécessite 25 membres vérifiés pendant l’accès provisoire Croissance.',
+        requiredVerified: AFRIYIELD_UNLOCK_VERIFIED,
+      });
+    }
     const listing = await ProduceListing.findOneAndUpdate(
       { _id: req.params.id, cooperativeId: req.coop._id },
       {
@@ -555,12 +1460,83 @@ router.post('/my-portal/upgrade', authCoop, async (req, res) => {
     if (req.coop.tier === 'growth' && req.coop.paymentReceived) {
       return res.json({ success: true, tier: 'growth', alreadyActive: true });
     }
+    const verifiedCount = await getVerifiedMemberCount(req.coop._id);
+    const declaredCount = Number(req.coop.memberCount) || 0;
+    const { pathA, pathB, eligible } = evaluateGrowthPaths({ verifiedCount, declaredCount });
+
+    if (!eligible) {
+      return res.status(403).json({
+        success: false,
+        error: 'NOT_ELIGIBLE',
+        errorFr: GROWTH_GATE_ERROR_FR,
+        verifiedCount,
+        declaredCount,
+        verifiedMemberCount: verifiedCount,
+        requiredVerified: GROWTH_MIN_VERIFIED_MEMBERS,
+        requiredDeclaredForPathB: GROWTH_PATH_B_DECLARED,
+        requiredVerifiedForPathB: GROWTH_PATH_B_VERIFIED,
+        requiresCheckout: false,
+      });
+    }
+
+    if (!pathA && pathB) {
+      req.coop.pendingFullVerification = true;
+      req.coop.gracePeriodStartDate = new Date();
+      req.coop.afriyieldEligible = false;
+      await req.coop.save();
+    } else if (pathA) {
+      req.coop.pendingFullVerification = false;
+      req.coop.gracePeriodStartDate = undefined;
+      req.coop.afriyieldEligible = true;
+      await req.coop.save();
+    }
+
     res.json({
       success: true,
       tier: req.coop.tier || 'starter',
       requiresCheckout: true,
       amountUsd: 199,
       tierKey: 'cooperative_growth',
+      verifiedCount,
+      declaredCount,
+      verifiedMemberCount: verifiedCount,
+      pathA,
+      pathB,
+      pendingFullVerification: Boolean(req.coop.pendingFullVerification),
+      required: GROWTH_MIN_VERIFIED_MEMBERS,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/cooperatives/my-portal/growth-eligibility
+router.get('/my-portal/growth-eligibility', authCoop, async (req, res) => {
+  try {
+    const verifiedCount = await getVerifiedMemberCount(req.coop._id);
+    await syncPendingFullVerification(req.coop._id, verifiedCount);
+    const declaredCount = Number(req.coop.memberCount) || 0;
+    const { pathA, pathB, eligible } = evaluateGrowthPaths({ verifiedCount, declaredCount });
+    const fresh = await CooperativePlatformRegistration.findById(req.coop._id)
+      .select('pendingFullVerification afriyieldEligible tier')
+      .lean();
+    res.json({
+      success: true,
+      eligible,
+      pathA,
+      pathB,
+      verifiedCount,
+      declaredCount,
+      verifiedMemberCount: verifiedCount,
+      required: GROWTH_MIN_VERIFIED_MEMBERS,
+      requiredVerified: GROWTH_MIN_VERIFIED_MEMBERS,
+      requiredDeclaredForPathB: GROWTH_PATH_B_DECLARED,
+      requiredVerifiedForPathB: GROWTH_PATH_B_VERIFIED,
+      afriyieldUnlockAt: AFRIYIELD_UNLOCK_VERIFIED,
+      pendingFullVerification: Boolean(fresh?.pendingFullVerification),
+      afriyieldUnlocked: isAfriYieldUnlocked(fresh || req.coop),
+      error: eligible ? null : 'NOT_ELIGIBLE',
+      errorFr: eligible ? null : GROWTH_GATE_ERROR_FR,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

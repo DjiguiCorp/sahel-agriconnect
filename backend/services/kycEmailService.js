@@ -10,6 +10,10 @@ function getResend() {
 }
 
 const FROM = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+/** Investor-facing AfriYield emails only */
+const AFRIYIELD_FROM =
+  process.env.AFRIYIELD_FROM_EMAIL ||
+  'AfriYield Exchange <noreply@sahelagriconnect.com>';
 const ADMIN = process.env.ADMIN_EMAIL || 'support@woneapp.com';
 const FRONTEND = process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
 
@@ -114,7 +118,7 @@ export async function sendKYCSubmissionConfirmation({
   `;
 
   await resend.emails.send({
-    from: FROM, to: email, subject, html: bodyHtml,
+    from: AFRIYIELD_FROM, to: email, subject, html: bodyHtml,
   });
 }
 
@@ -126,7 +130,7 @@ export async function sendKYCApproved({ email, name, category }) {
   const isAfrican = category === 'african';
 
   await resend.emails.send({
-    from: FROM,
+    from: AFRIYIELD_FROM,
     to: email,
     subject: '🎉 KYC Approved — You can now invest on AfriYield',
     html: `
@@ -176,7 +180,7 @@ export async function sendKYCRejected({ email, name, reason }) {
   if (!resend) return;
 
   await resend.emails.send({
-    from: FROM,
+    from: AFRIYIELD_FROM,
     to: email,
     subject: '⚠️ KYC Verification — Action Required',
     html: `
@@ -221,7 +225,7 @@ export async function sendKYCAdditionalDocs({
   if (!resend) return;
 
   await resend.emails.send({
-    from: FROM,
+    from: AFRIYIELD_FROM,
     to: email,
     subject: '📎 Documents Required — AfriYield KYC',
     html: `

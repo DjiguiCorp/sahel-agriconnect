@@ -184,7 +184,7 @@ export default function EquipmentFund() {
                     placeholder={
                       isFr ? 'Ex: Coopérative Karité du Sahel' : 'Ex: Sahel Shea Cooperative'
                     }
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   />
                 </div>
 
@@ -245,7 +245,7 @@ export default function EquipmentFund() {
                       value={form.estimatedValue}
                       onChange={onChange}
                       placeholder="Ex: 15000"
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                     />
                   </div>
                   <div>
@@ -258,7 +258,7 @@ export default function EquipmentFund() {
                       value={form.farmersBenefiting}
                       onChange={onChange}
                       placeholder="Ex: 45"
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                     />
                   </div>
                 </div>
@@ -312,7 +312,7 @@ export default function EquipmentFund() {
                       value={form.email}
                       onChange={onChange}
                       required
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                     />
                   </div>
                   <div>
@@ -324,7 +324,7 @@ export default function EquipmentFund() {
                       value={form.phone}
                       onChange={onChange}
                       placeholder="+223 76 12 34 56"
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                     />
                   </div>
                 </div>
@@ -343,7 +343,7 @@ export default function EquipmentFund() {
                         ? 'Décrivez votre situation, vos cultures, pourquoi cet équipement est nécessaire...'
                         : 'Describe your situation, crops, why this equipment is needed...'
                     }
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#B5850A] resize-none"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30 resize-none"
                   />
                 </div>
 

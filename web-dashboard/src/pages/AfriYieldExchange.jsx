@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { Shield, TrendingUp, Globe, ChevronRight, ArrowRight, Check, Star, Lock } from 'lucide-react';
 import { INVESTOR_RESIDENCE_OPTIONS } from '../data/investorResidenceCountries';
 import { useInvestorKYCStatus } from '../hooks/useInvestorKYCStatus';
+import {
+  DemoOpportunityBanner,
+  RiskDisclosureBlock,
+  isDemoOpportunity,
+} from '../components/DemoOpportunityUi';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -168,7 +173,7 @@ export default function AfriYieldExchange() {
       .catch(() => {});
     fetch(`${API}/api/opportunities?featured=true`)
       .then((r) => r.json())
-      .then((d) => setOpportunities(d.opportunities?.slice(0, 3) || []))
+      .then((d) => setOpportunities(d.opportunities?.slice(0, 5) || []))
       .catch(() => {});
   }, []);
 
@@ -673,31 +678,54 @@ export default function AfriYieldExchange() {
                       <span className="text-3xl">{track.icon}</span>
                       <span
                         className="rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider"
-                        style={{ background: `${track.color}30`, color: track.color }}
+                        style={{
+                          background:
+                            track.id === 'A'
+                              ? 'rgba(255,255,255,0.14)'
+                              : `${track.color}40`,
+                          color:
+                            track.id === 'A'
+                              ? '#f5f5f5'
+                              : track.id === 'B'
+                                ? '#F5D78A'
+                                : '#93c5fd',
+                        }}
                       >
                         {track.tag}
                       </span>
                     </div>
                     <h3 className="mb-2 text-lg font-bold text-white">{track.title}</h3>
-                    <p className="mb-5 text-sm leading-relaxed text-white/50">{track.desc}</p>
+                    <p className="mb-5 text-sm leading-relaxed" style={{ color: '#f5f5f5' }}>
+                      {track.desc}
+                    </p>
                     <div className="grid grid-cols-2 gap-2">
                       <div
                         className="rounded-xl p-3"
                         style={{ background: 'rgba(255,255,255,0.06)' }}
                       >
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">
+                        <p
+                          className="text-[10px] uppercase tracking-wider"
+                          style={{ color: '#d4d4d4' }}
+                        >
                           {isFr ? 'Min. investissement' : 'Min. investment'}
                         </p>
-                        <p className="font-bold text-white">{track.min}</p>
+                        <p className="font-bold" style={{ color: '#ffffff' }}>
+                          {track.min}
+                        </p>
                       </div>
                       <div
                         className="rounded-xl p-3"
                         style={{ background: 'rgba(255,255,255,0.06)' }}
                       >
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">
+                        <p
+                          className="text-[10px] uppercase tracking-wider"
+                          style={{ color: '#d4d4d4' }}
+                        >
                           {isFr ? 'Durée du cycle' : 'Cycle duration'}
                         </p>
-                        <p className="font-bold text-white">{track.timeline}</p>
+                        <p className="font-bold" style={{ color: '#ffffff' }}>
+                          {track.timeline}
+                        </p>
                       </div>
                     </div>
                     {track.roi && (
@@ -705,10 +733,13 @@ export default function AfriYieldExchange() {
                         className="mt-2 rounded-xl p-3 text-center"
                         style={{ background: '#B5850A20' }}
                       >
-                        <p className="text-[10px] uppercase tracking-wider text-white/40">
+                        <p
+                          className="text-[10px] uppercase tracking-wider"
+                          style={{ color: '#d4d4d4' }}
+                        >
                           {isFr ? 'Retour estimé' : 'Estimated return'}
                         </p>
-                        <p className="font-bold" style={{ color: '#B5850A' }}>
+                        <p className="font-bold" style={{ color: '#E8C56A' }}>
                           {track.roi}
                         </p>
                       </div>
@@ -935,25 +966,28 @@ export default function AfriYieldExchange() {
                     className="text-[10px] font-bold uppercase tracking-[0.35em]"
                     style={{ color: '#B5850A' }}
                   >
-                    AfriYield Premium
+                    AfriYield Exchange
                   </span>
                 </div>
                 <h2 className="mb-3 text-3xl font-bold text-white">
-                  {isFr ? 'Accès complet. Priorité totale.' : 'Full access. Full priority.'}
+                  AfriYield Exchange — {isFr ? '$99 / an' : '$99 / year'}
                 </h2>
                 <p className="mb-8 max-w-xl text-white/60">
-                  {isFr
-                    ? 'Alertes de deal en temps réel, accès aux opportunités Track C, rapports de marché hebdomadaires, appel conseil gratuit mensuel.'
-                    : 'Real-time deal alerts, Track C opportunity access, weekly market reports, monthly free advisory call.'}
+                  Accès annuel complet · Full annual access
                 </p>
                 <div className="mb-8 grid gap-3 sm:grid-cols-2">
                   {[
-                    isFr ? 'Accès prioritaire aux nouveaux deals' : 'Priority access to new deals',
-                    isFr ? 'Alertes prix commodités en temps réel' : 'Real-time commodity price alerts',
-                    isFr ? 'Rapports de marché hebdomadaires' : 'Weekly market reports',
-                    isFr ? 'Appel conseil mensuel gratuit ($99 valeur)' : 'Monthly free advisory call ($99 value)',
-                    isFr ? 'Score AfriYield des fournisseurs visible' : 'Supplier AfriYield Score visible',
-                    isFr ? 'Accès Track C — sourcing premium vérifié' : 'Track C access — verified premium sourcing',
+                    isFr ? 'Vérification KYC incluse' : 'KYC verification included',
+                    isFr
+                      ? 'Accès à toutes les opportunités Track A et B'
+                      : 'Access to all Track A and B opportunities',
+                    isFr ? 'Rapports de marché mensuels' : 'Monthly market reports',
+                    isFr
+                      ? 'Protection escrow sur tous les deals'
+                      : 'Escrow protection on all deals',
+                    isFr
+                      ? 'Couverture complète du cycle agricole de 12 mois'
+                      : 'Full 12-month agricultural cycle coverage',
                   ].map((f) => (
                     <div key={f} className="flex items-center gap-2 text-sm text-white/70">
                       <Check className="h-4 w-4 flex-shrink-0" style={{ color: '#B5850A' }} />
@@ -967,12 +1001,12 @@ export default function AfriYieldExchange() {
                     className="rounded-xl px-8 py-3.5 font-bold text-[#1a3c2e]"
                     style={{ background: '#B5850A' }}
                   >
-                    {isFr ? `S'inscrire — $299/an` : `Subscribe — $299/year`}
+                    {isFr ? `S'inscrire — $99 / an` : `Subscribe — $99 / year`}
                   </Link>
                   <span className="text-sm text-white/40">
                     {isFr
-                      ? 'ou $29.99/mois · Premier appel conseil gratuit'
-                      : 'or $29.99/month · First advisory call free'}
+                      ? 'Abonnement annuel uniquement'
+                      : 'Annual subscription only'}
                   </span>
                 </div>
               </div>
@@ -1067,7 +1101,7 @@ export default function AfriYieldExchange() {
                 </label>
                 <input
                   required
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
                   value={kycData.fullName}
                   onChange={(e) => setKycData((d) => ({ ...d, fullName: e.target.value }))}
                 />
@@ -1078,7 +1112,7 @@ export default function AfriYieldExchange() {
                 </label>
                 <select
                   required
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#B5850A]"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-[#B5850A]/30"
                   value={kycData.country}
                   onChange={(e) => setKycData((d) => ({ ...d, country: e.target.value }))}
                 >
@@ -1096,7 +1130,7 @@ export default function AfriYieldExchange() {
                 </label>
                 <input
                   required
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
                   value={kycData.idNumber}
                   onChange={(e) => setKycData((d) => ({ ...d, idNumber: e.target.value }))}
                 />
@@ -1198,6 +1232,7 @@ function OpportunityCard({ opp, isFr }) {
   const trackColor =
     { 'Track A': '#1a3c2e', 'Track B': '#B5850A', 'Track C': '#3b82f6', All: '#6b7280' }[opp.track] ||
     '#1a3c2e';
+  const demo = isDemoOpportunity(opp);
 
   return (
     <Link
@@ -1206,23 +1241,52 @@ function OpportunityCard({ opp, isFr }) {
       style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
     >
       <div className="p-5 pb-0">
+        {demo ? (
+          <div className="mb-3">
+            <DemoOpportunityBanner isFr={isFr} />
+          </div>
+        ) : null}
         <div className="mb-3 flex items-start justify-between">
           <div>
-            <div className="mb-1 flex items-center gap-2">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
               <span
                 className="rounded-full px-2 py-0.5 text-xs font-bold text-white"
                 style={{ background: trackColor }}
               >
                 {opp.track}
               </span>
-              {opp.verified && (
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs font-bold"
-                  style={{ background: '#B5850A20', color: '#B5850A' }}
-                >
-                  ✓ Vérifié
-                </span>
-              )}
+              {(() => {
+                const level = opp.certificationLevel || (opp.verified ? 'verified' : 'none');
+                if (level === 'verified' || level === 'premium' || opp.verified) {
+                  return (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-bold"
+                      style={{ background: '#22c55e22', color: '#4ade80' }}
+                      title={isFr ? 'Certification AfriYield' : 'AfriYield certification'}
+                    >
+                      ✓ {level === 'premium' ? 'Premium' : isFr ? 'Vérifié' : 'Verified'}
+                    </span>
+                  );
+                }
+                if (level === 'basic') {
+                  return (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-bold"
+                      style={{ background: '#B5850A20', color: '#B5850A' }}
+                    >
+                      {isFr ? 'Certification de base' : 'Basic certified'}
+                    </span>
+                  );
+                }
+                return (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-xs font-bold"
+                    style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }}
+                  >
+                    {isFr ? 'Certification en attente' : 'Certification pending'}
+                  </span>
+                );
+              })()}
             </div>
             <h3 className="text-lg font-bold leading-snug text-white">{opp.centerName}</h3>
             <p className="mt-0.5 text-sm text-white/40">
@@ -1293,6 +1357,7 @@ function OpportunityCard({ opp, isFr }) {
             />
           </div>
         </div>
+        <RiskDisclosureBlock opp={opp} isFr={isFr} className="mb-4" />
       </div>
 
       <div
@@ -1308,9 +1373,18 @@ function OpportunityCard({ opp, isFr }) {
               ))
             : opp.commodity && <span className="text-xs text-white/40">{opp.commodity}</span>}
         </div>
-        <span className="text-xs font-semibold" style={{ color: '#B5850A' }}>
-          {isFr ? 'Voir le deal →' : 'View deal →'}
-        </span>
+        {demo ? (
+          <span
+            className="text-xs font-semibold cursor-not-allowed"
+            style={{ color: 'rgba(255,255,255,0.35)' }}
+          >
+            {isFr ? 'Bientôt disponible' : 'Coming Soon'}
+          </span>
+        ) : (
+          <span className="text-xs font-semibold" style={{ color: '#B5850A' }}>
+            {isFr ? 'Voir le deal →' : 'View deal →'}
+          </span>
+        )}
       </div>
     </Link>
   );

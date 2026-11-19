@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Plus, Check } from 'lucide-react';
-import { CROPS } from './constants';
+import { CROP_CATALOG, cropLabel } from '../../lib/crops';
 import ListingCard from './ListingCard';
 
 function ListingsTab({
@@ -102,11 +102,11 @@ function ListingsTab({
                   <select
                     value={listingForm.commodity}
                     onChange={(e) => setListingForm((p) => ({ ...p, commodity: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                   >
-                    {CROPS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
+                    {CROP_CATALOG.map((c) => (
+                      <option key={c.en} value={c.en}>
+                        {cropLabel(c, isFr)}
                       </option>
                     ))}
                   </select>
@@ -122,7 +122,7 @@ function ListingsTab({
                       min={1}
                       value={listingForm.quantityKg}
                       onChange={(e) => setListingForm((p) => ({ ...p, quantityKg: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                   </div>
                   <div>
@@ -136,7 +136,7 @@ function ListingsTab({
                       min={0}
                       value={listingForm.pricePerKgUSD}
                       onChange={(e) => setListingForm((p) => ({ ...p, pricePerKgUSD: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     />
                   </div>
                 </div>
@@ -148,7 +148,7 @@ function ListingsTab({
                     <select
                       value={listingForm.certificationLevel}
                       onChange={(e) => setListingForm((p) => ({ ...p, certificationLevel: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     >
                       <option value="None">{isFr ? 'Aucune' : 'None'}</option>
                       <option value="Local">Local</option>
@@ -161,7 +161,7 @@ function ListingsTab({
                     <select
                       value={listingForm.qualityGrade}
                       onChange={(e) => setListingForm((p) => ({ ...p, qualityGrade: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                     >
                       <option value="C">C</option>
                       <option value="B">B</option>
@@ -178,7 +178,7 @@ function ListingsTab({
                     value={listingForm.description}
                     onChange={(e) => setListingForm((p) => ({ ...p, description: e.target.value }))}
                     rows={2}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e] resize-none"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20 resize-none"
                   />
                 </div>
                 {listingState.err && (

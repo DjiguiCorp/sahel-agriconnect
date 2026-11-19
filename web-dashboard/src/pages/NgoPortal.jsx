@@ -262,7 +262,7 @@ function LoginScreen({ onLogin, isFr }) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#2ECC71]"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20"
                 />
               </div>
               {error && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{error}</p>}
@@ -299,7 +299,7 @@ function LoginScreen({ onLogin, isFr }) {
                   required
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#2ECC71] tracking-widest text-center font-mono"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20 tracking-widest text-center font-mono"
                 />
               </div>
               {error && <p className="text-red-600 text-xs bg-red-50 p-2 rounded-lg">{error}</p>}

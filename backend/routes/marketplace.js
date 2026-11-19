@@ -5,6 +5,12 @@ import Opportunity from '../models/Opportunity.js';
 import ProduceListing from '../models/ProduceListing.js';
 import CropPrice from '../models/CropPrice.js';
 import { buildPilotListings } from '../lib/pilotMarketplaceListings.js';
+import {
+  startCommodityPriceSync,
+  seedMissingCropPrices,
+  serializeCropPrice,
+  getLastCommodityPriceSyncAt,
+} from '../services/commodityPriceSyncService.js';
 
 const router = express.Router();
 
@@ -50,21 +56,53 @@ router.get('/listings', async (req, res) => {
 // GET /api/marketplace/prices — weekly reference crop prices (public)
 router.get('/prices', async (req, res) => {
   try {
-    const prices = await CropPrice.find().sort({ commodity: 1 }).lean();
-    if (prices.length === 0) {
-      return res.json({
-        success: true,
-        prices: _defaultPrices(),
-        updatedAt: new Date(),
-      });
+    // Ensure reference crops exist even before first live sync completes
+    try {
+      await seedMissingCropPrices();
+    } catch (seedErr) {
+      console.warn('CropPrice seed on GET failed:', seedErr.message);
     }
+
+    let prices = await CropPrice.find().sort({ commodity: 1 }).lean();
+    if (!prices.length) {
+      prices = _defaultPrices();
+    }
+
+    const normalized = prices
+      .map((p) => serializeCropPrice(p))
+      .filter((p) => p && p.commodity && p.pricePerKgUsd != null);
+
+    const updatedAt =
+      normalized.reduce((latest, p) => {
+        const t = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
+        return t > latest ? t : latest;
+      }, 0) || Date.now();
+
     return res.json({
       success: true,
-      prices,
-      updatedAt: prices[0]?.updatedAt,
+      prices: normalized,
+      updatedAt: new Date(updatedAt),
+      lastSyncAt: getLastCommodityPriceSyncAt(),
     });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// POST /api/marketplace/prices/sync — admin only; responds immediately, syncs in background
+router.post('/prices/sync', authenticateToken, async (req, res) => {
+  try {
+    // Seed missing rows first so the admin table is complete right away
+    const seed = await seedMissingCropPrices();
+    const started = startCommodityPriceSync({ force: true });
+    return res.json({
+      success: true,
+      status: started.status,
+      seeded: seed.seeded,
+      lastSyncAt: started.lastSyncAt || getLastCommodityPriceSyncAt(),
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Sync failed' });
   }
 });
 
@@ -163,6 +201,46 @@ function _defaultPrices() {
       weeklyChangePercent: 0.5,
       trend: 'up',
       sourceMarket: 'Bamako',
+    },
+    {
+      commodity: 'Maize/Corn',
+      commodityFr: 'Maïs',
+      emoji: '🌽',
+      pricePerKgUsd: 0.28,
+      pricePerKgXof: 168,
+      weeklyChangePercent: 1.2,
+      trend: 'up',
+      sourceMarket: 'World Bank',
+    },
+    {
+      commodity: 'Rice',
+      commodityFr: 'Riz',
+      emoji: '🍚',
+      pricePerKgUsd: 0.55,
+      pricePerKgXof: 330,
+      weeklyChangePercent: -0.4,
+      trend: 'stable',
+      sourceMarket: 'World Bank',
+    },
+    {
+      commodity: 'Sorghum',
+      commodityFr: 'Sorgho',
+      emoji: '🌾',
+      pricePerKgUsd: 0.32,
+      pricePerKgXof: 192,
+      weeklyChangePercent: 0.8,
+      trend: 'stable',
+      sourceMarket: 'World Bank',
+    },
+    {
+      commodity: 'Groundnut/Peanut',
+      commodityFr: 'Arachide',
+      emoji: '🥜',
+      pricePerKgUsd: 1.1,
+      pricePerKgXof: 660,
+      weeklyChangePercent: -1.5,
+      trend: 'down',
+      sourceMarket: 'World Bank',
     },
   ];
 }

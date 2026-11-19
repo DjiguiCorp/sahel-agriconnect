@@ -60,6 +60,5 @@ web-dashboard/dist/
 .cache/
 .parcel-cache/
 
-# Firebase (never commit API keys)
-**/google-services.json
+# Firebase iOS config stays local; Android google-services.json is tracked
 

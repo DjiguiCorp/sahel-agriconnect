@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { CROP_EMOJIS } from './constants';
 import { coopSupplyStatus, mapFarmerQualityToCert } from './utils';
+import MarketPricesStrip from '../../components/MarketPricesStrip';
 
 function OverviewTab({
   isFr,
@@ -57,6 +58,12 @@ function OverviewTab({
           ))}
         </div>
       </div>
+
+      <MarketPricesStrip
+        isFr={isFr}
+        featuredOnly
+        title={isFr ? 'Prix du marché' : 'Market prices'}
+      />
 
       <div className="grid sm:grid-cols-3 gap-3">
         <button

@@ -2,6 +2,7 @@ import express from 'express';
 import Opportunity from '../models/Opportunity.js';
 import MeetingRequest from '../models/MeetingRequest.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { applyOpportunityCertification } from '../services/certificationService.js';
 
 const router = express.Router();
 
@@ -111,7 +112,13 @@ router.put('/meeting-requests/:requestId', authenticateToken, async (req, res) =
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const opportunity = await Opportunity.create(req.body);
-    res.status(201).json({ success: true, opportunity });
+    try {
+      await applyOpportunityCertification(opportunity);
+    } catch (certErr) {
+      console.error('[opportunities] certification check failed:', certErr.message);
+    }
+    const fresh = await Opportunity.findById(opportunity._id).lean({ virtuals: true });
+    res.status(201).json({ success: true, opportunity: fresh || opportunity });
   } catch (e) {
     res.status(400).json({ success: false, error: e.message });
   }
@@ -149,7 +156,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
       runValidators: true,
     });
     if (!opportunity) return res.status(404).json({ success: false, error: 'Not found' });
-    res.json({ success: true, opportunity });
+    try {
+      await applyOpportunityCertification(opportunity);
+    } catch (certErr) {
+      console.error('[opportunities] certification check failed:', certErr.message);
+    }
+    const fresh = await Opportunity.findById(opportunity._id).lean({ virtuals: true });
+    res.json({ success: true, opportunity: fresh || opportunity });
   } catch (e) {
     res.status(400).json({ success: false, error: e.message });
   }

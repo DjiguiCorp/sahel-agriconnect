@@ -54,7 +54,7 @@ function InviteFarmersSection({ coop, isFr }) {
             <input
               value={form[key]}
               onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-brand-forest"
             />
           </div>
         ))}
@@ -69,7 +69,7 @@ function InviteFarmersSection({ coop, isFr }) {
                 ? 'Ex: Bonjour, nous cherchons des producteurs de karité dans votre région...'
                 : 'Ex: Hello, we are looking for shea producers in your region...'
             }
-            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-brand-forest resize-none"
           />
         </div>
       </div>
@@ -117,6 +117,13 @@ function InviteFarmersSection({ coop, isFr }) {
   );
 }
 
+const ICS_DOT = {
+  not_ready: '#dc2626',
+  developing: '#ea580c',
+  nearly_ready: '#ca8a04',
+  audit_ready: '#16a34a',
+};
+
 export default function CooperativesTab({ token, isFr, globalCountryFilter = '' }) {
   const [cooperatives, setCooperatives] = useState([]);
   const [farmers, setFarmers] = useState([]);
@@ -125,6 +132,13 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
   const [viewMode, setViewMode] = useState('list');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activating, setActivating] = useState(null);
+  const [growthCoops, setGrowthCoops] = useState([]);
+  const [growthBusy, setGrowthBusy] = useState(null);
+  const [icsByCoopId, setIcsByCoopId] = useState({});
+  const [icsComputing, setIcsComputing] = useState(null);
+  const [dossierLang, setDossierLang] = useState('fr');
+  const [dossierBusyId, setDossierBusyId] = useState(null);
+  const [dossierError, setDossierError] = useState('');
 
   const headers = useMemo(
     () => ({
@@ -133,6 +147,141 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     }),
     [token]
   );
+
+  const downloadDossier = async (coopId, e) => {
+    e?.stopPropagation?.();
+    e?.preventDefault?.();
+    if (!token || !coopId) return;
+    setDossierBusyId(coopId);
+    setDossierError('');
+    try {
+      const lang = dossierLang === 'en' ? 'en' : 'fr';
+      const r = await fetch(
+        `${API_BASE_URL}/api/certification-dossier/admin/generate/${coopId}?lang=${lang}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!r.ok) {
+        throw new Error('Error generating dossier. Please try again.');
+      }
+      const blob = await r.blob();
+      const cd = r.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/i);
+      const filename =
+        match?.[1] || `dossier-${String(coopId).slice(-6)}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDossierError('Error generating dossier. Please try again.');
+    } finally {
+      setDossierBusyId(null);
+    }
+  };
+
+  const renderDossierLangToggle = (light = false) => (
+    <div
+      className={`inline-flex rounded-lg border overflow-hidden text-[10px] font-bold ${
+        light ? 'border-white/30' : 'border-gray-200'
+      }`}
+    >
+      {['fr', 'en'].map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDossierLang(l);
+          }}
+          className={`px-2 py-1 uppercase ${
+            dossierLang === l
+              ? 'bg-[#1a3c2e] text-white'
+              : light
+                ? 'bg-white/10 text-white hover:bg-white/20'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+
+  const fetchGrowthCoops = async () => {
+    if (!token) return;
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/admin/cooperatives/growth`, { headers });
+      const d = await r.json().catch(() => ({}));
+      setGrowthCoops(d.cooperatives || []);
+    } catch {
+      setGrowthCoops([]);
+    }
+  };
+
+  const fetchIcsScores = async () => {
+    if (!token) return;
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/ics-scores/admin/all`, { headers });
+      const d = await r.json().catch(() => ({}));
+      const map = {};
+      for (const s of d.scores || []) {
+        if (s?.cooperativeId) map[String(s.cooperativeId)] = s;
+      }
+      setIcsByCoopId(map);
+    } catch {
+      setIcsByCoopId({});
+    }
+  };
+
+  const computeIcsForCoop = async (coopId, e) => {
+    e?.stopPropagation?.();
+    if (!token || !coopId) return;
+    setIcsComputing(coopId);
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/ics-scores/admin/recompute/${coopId}`, {
+        method: 'POST',
+        headers,
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.score) {
+        setIcsByCoopId((prev) => ({ ...prev, [String(coopId)]: d.score }));
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setIcsComputing(null);
+    }
+  };
+
+  const renderIcsCell = (coopId) => {
+    const ics = icsByCoopId[String(coopId)];
+    if (!ics) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs text-gray-400" onClick={(e) => e.stopPropagation()}>
+          —
+          <button
+            type="button"
+            disabled={icsComputing === coopId}
+            onClick={(e) => computeIcsForCoop(coopId, e)}
+            className="text-[10px] font-semibold text-brand-forest underline disabled:opacity-50"
+          >
+            {icsComputing === coopId ? '…' : isFr ? 'Calculer' : 'Compute'}
+          </button>
+        </span>
+      );
+    }
+    const dot = ICS_DOT[ics.readinessLevel] || ICS_DOT.not_ready;
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-brand-forest">
+        <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} title={ics.readinessLevel} />
+        {ics.scoreTotal ?? 0}/100
+      </span>
+    );
+  };
 
   const fetchCooperatives = async () => {
     if (!token) return;
@@ -145,6 +294,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
       const coopList = Array.isArray(coops) ? coops : coops.cooperatives || coops.registrations || [];
       setCooperatives(coopList);
       setFarmers(Array.isArray(farm) ? farm : farm.farmers || []);
+      await Promise.all([fetchGrowthCoops(), fetchIcsScores()]);
     } catch {
       /* ignore */
     } finally {
@@ -156,6 +306,31 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     fetchCooperatives();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, headers]);
+
+  const setVerification = async (coopId, action) => {
+    setGrowthBusy(coopId);
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/admin/cooperatives/${coopId}/${action}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({}),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) throw new Error(d.error || 'Failed');
+      await fetchGrowthCoops();
+      setCooperatives((prev) =>
+        prev.map((c) =>
+          c._id === coopId
+            ? { ...c, verificationStatus: action === 'verify' ? 'verified' : 'flagged' }
+            : c
+        )
+      );
+    } catch (e) {
+      alert(e.message || 'Error');
+    } finally {
+      setGrowthBusy(null);
+    }
+  };
 
   const handleManualActivate = async (coopId, email) => {
     if (!window.confirm(`Activer la coopérative ${email || coopId} manuellement (paiement reçu hors-ligne) ?`)) return;
@@ -217,12 +392,31 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
     });
   }, [cooperatives, globalCountryFilter]);
 
+  const growthForView = useMemo(() => {
+    if (!globalCountryFilter) return growthCoops;
+    const cf = globalCountryFilter.toLowerCase();
+    return growthCoops.filter((c) =>
+      `${c.country || ''} ${c.regionCity || ''}`.toLowerCase().includes(cf)
+    );
+  }, [growthCoops, globalCountryFilter]);
+
   if (selectedCoop && viewMode === 'detail') {
     const coopFarmers = getCoopFarmers(selectedCoop);
-    const name = selectedCoop.cooperativeName || selectedCoop.nomCooperative;
-    const leader = selectedCoop.leaderName || selectedCoop.nomResponsable;
+    const name = selectedCoop.cooperativeName || selectedCoop.nomCooperative || 'N/A';
+    const leader = selectedCoop.leaderName || selectedCoop.nomResponsable || 'N/A';
     const cert = selectedCoop.certificationStatus || 'None';
     const certPct = certProgress(cert);
+    const email = selectedCoop.email || '';
+    const country = selectedCoop.country || selectedCoop.pays || 'N/A';
+    const region = selectedCoop.regionCity || 'N/A';
+    const processorLabel = selectedCoop.processorName || selectedCoop.processorId || 'N/A';
+    const expiresLabel = selectedCoop.subscriptionExpiresAt
+      ? new Date(selectedCoop.subscriptionExpiresAt).toLocaleDateString()
+      : 'N/A';
+    const paymentMethodLabel = selectedCoop.paymentMethod || 'N/A';
+    const paymentDateLabel = selectedCoop.paymentDate
+      ? new Date(selectedCoop.paymentDate).toLocaleDateString()
+      : 'N/A';
 
     return (
       <div className="p-4 space-y-5">
@@ -244,13 +438,20 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
             <div>
               <h2 className="text-2xl font-bold">{name}</h2>
               <p className="text-white/70 text-sm mt-1">
-                🌍 {selectedCoop.country || selectedCoop.pays} · {selectedCoop.regionCity || '—'}
+                🌍 {country} · {region}
               </p>
               <p className="text-white/70 text-sm">
-                👤 {leader} · 📧 {selectedCoop.email}
+                👤 {leader} · 📧 {email || 'N/A'}
+              </p>
+              <p className="text-white/50 text-xs mt-2">
+                {isFr ? 'Processeur' : 'Processor'}: {processorLabel}
+                {' · '}
+                {isFr ? 'Abonnement jusqu’au' : 'Subscription until'}: {expiresLabel}
+                {' · '}
+                {isFr ? 'Paiement' : 'Payment'}: {paymentMethodLabel} ({paymentDateLabel})
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
               <span
                 className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
                   selectedCoop.status === 'active'
@@ -272,8 +473,24 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                   {activating === selectedCoop._id ? '...' : '✅ Activer'}
                 </button>
               )}
+              <div className="flex items-center gap-2">
+                {renderDossierLangToggle(true)}
+                <button
+                  type="button"
+                  disabled={dossierBusyId === selectedCoop._id}
+                  onClick={(e) => downloadDossier(selectedCoop._id, e)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-[#1a3c2e] hover:bg-white/90 disabled:opacity-50"
+                  title="Generate Certification Dossier"
+                >
+                  {dossierBusyId === selectedCoop._id ? '…' : '📄'}{' '}
+                  {isFr ? 'Dossier PDF' : 'PDF Dossier'}
+                </button>
+              </div>
             </div>
           </div>
+          {dossierError ? (
+            <p className="text-xs text-red-300 mt-3">{dossierError}</p>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -330,14 +547,14 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
           <p className="text-sm text-brand-forest font-semibold mt-2">
             {isFr ? `Niveau actuel: ${cert}` : `Current level: ${cert}`}
           </p>
-          {cert !== 'International' && (
+          {cert !== 'International' && email ? (
             <a
-              href={`mailto:${selectedCoop.email}?subject=Prochaine étape certification — Sahel AgriConnect`}
+              href={`mailto:${email}?subject=Prochaine étape certification — Sahel AgriConnect`}
               className="inline-block mt-2 text-xs bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition"
             >
               ⭐ {isFr ? 'Initier la prochaine étape' : 'Initiate next step'}
             </a>
-          )}
+          ) : null}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -437,7 +654,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
           <h3 className="font-bold text-brand-forest mb-3">
             {isFr ? '⚡ Actions rapides admin' : '⚡ Admin Quick Actions'}
           </h3>
-          <div className="mb-2">
+          <div className="mb-2 flex flex-col sm:flex-row gap-2">
             <button
               onClick={async () => {
                 await fetch(`${API_BASE_URL}/api/cooperatives/${selectedCoop._id}`, {
@@ -454,6 +671,19 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
             >
               💳 {isFr ? 'Confirmer paiement reçu — Activer portail' : 'Confirm Payment Received — Activate Portal'}
             </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {renderDossierLangToggle()}
+              <button
+                type="button"
+                disabled={dossierBusyId === selectedCoop._id}
+                onClick={(e) => downloadDossier(selectedCoop._id, e)}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium bg-[#1a3c2e]/5 text-[#1a3c2e] border-[#1a3c2e]/20 hover:bg-[#1a3c2e]/10 transition disabled:opacity-50"
+                title="Generate Certification Dossier"
+              >
+                {dossierBusyId === selectedCoop._id ? '…' : '📄'}{' '}
+                {isFr ? 'Dossier PDF' : 'PDF Dossier'}
+              </button>
+            </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-2">
             {[
@@ -463,37 +693,49 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                 action: () => updateCoopStatus(selectedCoop._id, 'active'),
                 color: 'bg-green-50 text-green-700 border-green-200',
               },
-              {
-                icon: '📚',
-                href: `mailto:${selectedCoop.email}?subject=Formation disponible — Sahel AgriConnect`,
-                label: isFr ? 'Proposer une formation' : 'Propose Training',
-                color: 'bg-purple-50 text-purple-700 border-purple-200',
-              },
-              {
-                icon: '💰',
-                href: `mailto:${selectedCoop.email}?subject=Opportunité investisseur diaspora — AfriYield Exchange`,
-                label: isFr ? 'Connecter un investisseur' : 'Connect Investor',
-                color: 'bg-[#B5850A]/10 text-[#B5850A] border-[#B5850A]/20',
-              },
-              {
-                icon: '🔧',
-                href: `mailto:${selectedCoop.email}?subject=Fonds équipement — Éligibilité confirmée`,
-                label: isFr ? 'Confirmer fonds équipement' : 'Confirm Equipment Fund',
-                color: 'bg-blue-50 text-blue-700 border-blue-200',
-              },
-              {
-                icon: '🌍',
-                href: `mailto:${selectedCoop.email}?subject=Programme export — Prochaines étapes`,
-                label: isFr ? 'Initier programme export' : 'Initiate Export Program',
-                color: 'bg-red-50 text-red-700 border-red-200',
-              },
-              {
-                icon: '🌾',
-                href: `mailto:${selectedCoop.email}?subject=Production hors-saison — Opportunité`,
-                label: isFr ? 'Production hors-saison' : 'Off-Season Production',
-                color: 'bg-orange-50 text-orange-700 border-orange-200',
-              },
-            ].map((action) =>
+              email
+                ? {
+                    icon: '📚',
+                    href: `mailto:${email}?subject=Formation disponible — Sahel AgriConnect`,
+                    label: isFr ? 'Proposer une formation' : 'Propose Training',
+                    color: 'bg-purple-50 text-purple-700 border-purple-200',
+                  }
+                : null,
+              email
+                ? {
+                    icon: '💰',
+                    href: `mailto:${email}?subject=Opportunité investisseur diaspora — AfriYield Exchange`,
+                    label: isFr ? 'Connecter un investisseur' : 'Connect Investor',
+                    color: 'bg-[#B5850A]/10 text-[#B5850A] border-[#B5850A]/20',
+                  }
+                : null,
+              email
+                ? {
+                    icon: '🔧',
+                    href: `mailto:${email}?subject=Fonds équipement — Éligibilité confirmée`,
+                    label: isFr ? 'Confirmer fonds équipement' : 'Confirm Equipment Fund',
+                    color: 'bg-blue-50 text-blue-700 border-blue-200',
+                  }
+                : null,
+              email
+                ? {
+                    icon: '🌍',
+                    href: `mailto:${email}?subject=Programme export — Prochaines étapes`,
+                    label: isFr ? 'Initier programme export' : 'Initiate Export Program',
+                    color: 'bg-red-50 text-red-700 border-red-200',
+                  }
+                : null,
+              email
+                ? {
+                    icon: '🌾',
+                    href: `mailto:${email}?subject=Production hors-saison — Opportunité`,
+                    label: isFr ? 'Production hors-saison' : 'Off-Season Production',
+                    color: 'bg-orange-50 text-orange-700 border-orange-200',
+                  }
+                : null,
+            ]
+              .filter(Boolean)
+              .map((action) =>
               action.href ? (
                 <a
                   key={action.label}
@@ -567,7 +809,9 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
   const filtered =
     statusFilter === 'all'
       ? cooperativesForView
-      : cooperativesForView.filter((c) => (c.status || 'pending') === statusFilter);
+      : statusFilter === 'active'
+        ? cooperativesForView.filter((c) => c.status === 'active' && c.paymentReceived === true)
+        : cooperativesForView.filter((c) => (c.status || 'pending') === statusFilter);
 
   return (
     <div className="p-4 space-y-5">
@@ -584,6 +828,142 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
         </div>
       </div>
 
+      {/* Growth cooperatives — admin membership verification */}
+      <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-amber-100 bg-amber-50/60 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-brand-forest">
+              {isFr ? 'Coopératives Growth' : 'Growth Cooperatives'}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {isFr
+                ? 'Vérifiez le nombre de membres déclarés vs vérifiés après paiement'
+                : 'Verify declared vs platform-verified members after payment'}
+            </p>
+          </div>
+          <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full">
+            {growthForView.length}
+          </span>
+        </div>
+        {growthForView.length === 0 ? (
+          <p className="text-sm text-gray-500 px-5 py-8 text-center">
+            {isFr ? 'Aucune coopérative Growth pour le moment.' : 'No Growth cooperatives yet.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  {[
+                    isFr ? 'Coopérative' : 'Cooperative',
+                    isFr ? 'Pays / Région' : 'Country / Region',
+                    isFr ? 'Leader' : 'Leader',
+                    isFr ? 'Déclarés' : 'Declared',
+                    isFr ? 'Vérifiés' : 'Verified',
+                    'ICS',
+                    isFr ? 'Paiement' : 'Payment',
+                    isFr ? 'Statut' : 'Status',
+                    isFr ? 'Actions' : 'Actions',
+                  ].map((h) => (
+                    <th key={h} className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {growthForView.map((c, i) => {
+                  const vs = c.verificationStatus || 'unverified';
+                  const statusLabel =
+                    vs === 'verified'
+                      ? isFr
+                        ? 'Vérifiée'
+                        : 'Verified'
+                      : vs === 'flagged'
+                        ? isFr
+                          ? 'Signalée'
+                          : 'Flagged'
+                        : isFr
+                          ? 'En attente'
+                          : 'Pending';
+                  return (
+                    <tr key={c._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                      <td className="px-3 py-3 font-semibold text-brand-forest">{c.cooperativeName || '—'}</td>
+                      <td className="px-3 py-3 text-xs text-gray-600">
+                        {c.country || '—'}
+                        <br />
+                        {c.regionCity || '—'}
+                      </td>
+                      <td className="px-3 py-3 text-xs text-gray-600">{c.leaderName || '—'}</td>
+                      <td className="px-3 py-3 font-mono text-xs">{c.declaredMemberCount ?? c.memberCount ?? 0}</td>
+                      <td className="px-3 py-3 font-mono text-xs font-bold text-[#1a3c2e]">
+                        {c.verifiedMemberCount ?? 0}
+                      </td>
+                      <td className="px-3 py-3">{renderIcsCell(c._id)}</td>
+                      <td className="px-3 py-3 text-xs text-gray-500">
+                        {c.paymentDate ? new Date(c.paymentDate).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                            vs === 'verified'
+                              ? 'bg-green-100 text-green-700'
+                              : vs === 'flagged'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          <button
+                            type="button"
+                            disabled={growthBusy === c._id || vs === 'verified'}
+                            onClick={() => setVerification(c._id, 'verify')}
+                            className="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-green-600 text-white disabled:opacity-40"
+                          >
+                            {isFr ? 'Vérifier' : 'Verify'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={growthBusy === c._id || vs === 'flagged'}
+                            onClick={() => setVerification(c._id, 'flag')}
+                            className="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-red-600 text-white disabled:opacity-40"
+                          >
+                            {isFr ? 'Signaler' : 'Flag'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={dossierBusyId === c._id}
+                            onClick={(e) => downloadDossier(c._id, e)}
+                            className="text-[12px] font-bold px-2 py-1.5 rounded-lg bg-gray-100 text-[#1a3c2e] hover:bg-gray-200 disabled:opacity-40"
+                            title="Generate Certification Dossier"
+                          >
+                            {dossierBusyId === c._id ? '…' : '📄'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+        <p className="text-[11px] text-gray-500">
+          {isFr ? 'Langue dossier PDF :' : 'PDF dossier language:'}
+        </p>
+        {renderDossierLangToggle()}
+      </div>
+      {dossierError && viewMode === 'list' ? (
+        <p className="text-xs text-red-600 mb-2">{dossierError}</p>
+      ) : null}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           {
@@ -594,7 +974,9 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
           },
           {
             label: isFr ? 'Actives' : 'Active',
-            value: cooperativesForView.filter((c) => c.status === 'active').length,
+            value: cooperativesForView.filter(
+              (c) => c.status === 'active' && c.paymentReceived === true
+            ).length,
             bg: 'bg-green-50',
             color: 'text-green-700',
           },
@@ -605,8 +987,8 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
             color: 'text-yellow-700',
           },
           {
-            label: isFr ? '⏳ Paiement en attente' : '⏳ Awaiting Payment',
-            value: cooperativesForView.filter((c) => c.status === 'pending_payment' || c.paymentReceived === false).length,
+            label: isFr ? '⏳ En attente de paiement' : '⏳ Awaiting Payment',
+            value: cooperativesForView.filter((c) => c.status === 'pending_payment').length,
             bg: 'bg-amber-50',
             color: 'text-amber-700',
           },
@@ -703,6 +1085,15 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                     >
                       {coop.status || 'pending'}
                     </span>
+                    <button
+                      type="button"
+                      disabled={dossierBusyId === coop._id}
+                      onClick={(e) => downloadDossier(coop._id, e)}
+                      className="px-2 py-1 rounded-lg text-xs font-bold bg-gray-100 text-[#1a3c2e] hover:bg-gray-200 disabled:opacity-50"
+                      title="Generate Certification Dossier"
+                    >
+                      {dossierBusyId === coop._id ? '…' : '📄'}
+                    </button>
                     {coop.status === 'pending_payment' && (
                       <button
                         type="button"
@@ -716,7 +1107,7 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                <div className="grid grid-cols-4 gap-2 mb-3 text-center">
                   <div className="bg-gray-50 rounded-lg p-2">
                     <p className="text-lg font-bold text-brand-forest font-mono">
                       {coop.memberCount || coopFarmers.length || 0}
@@ -726,6 +1117,10 @@ export default function CooperativesTab({ token, isFr, globalCountryFilter = '' 
                   <div className="bg-gray-50 rounded-lg p-2">
                     <p className="text-sm font-bold text-amber-600">{cert}</p>
                     <p className="text-xs text-gray-400">{isFr ? 'Certification' : 'Certification'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center justify-center">
+                    {renderIcsCell(coop._id)}
+                    <p className="text-xs text-gray-400 mt-1">ICS</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2">
                     <p className="text-lg font-bold text-brand-forest font-mono">

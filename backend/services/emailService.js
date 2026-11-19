@@ -18,6 +18,10 @@ function getResend() {
 }
 
 const FROM_ADDRESS = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+/** Investor-facing AfriYield emails only — display name AfriYield Exchange */
+const AFRIYIELD_FROM =
+  process.env.AFRIYIELD_FROM_EMAIL ||
+  'AfriYield Exchange <noreply@sahelagriconnect.com>';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@woneapp.com';
 
 // ── INTERNAL ADMIN NOTIFICATIONS ──────────────────────────────────────
@@ -310,7 +314,7 @@ export async function confirmInvestorRegistration(investor) {
   const resend = getResend();
   if (!resend) return;
   await resend.emails.send({
-    from: FROM_ADDRESS,
+    from: AFRIYIELD_FROM,
     to: investor.email,
     subject: 'AfriYield Exchange — Bienvenue dans notre réseau d\'investisseurs 🌍',
     html: `
@@ -324,44 +328,15 @@ export async function confirmInvestorRegistration(investor) {
           <p style="color:#555;line-height:1.7;">Nous avons bien reçu votre inscription en tant qu'investisseur AfriYield Exchange. Votre intérêt pour <strong>${investor.investmentTrack}</strong> dans le secteur <strong>${investor.commodityInterest}</strong> correspond parfaitement aux opportunités disponibles sur notre plateforme.</p>
           <div style="background:#f0f9f4;border:1px solid #1a3c2e;border-radius:8px;padding:20px;margin:24px 0;">
             <p style="margin:0 0 16px;font-weight:bold;color:#1a3c2e;font-size:16px;">📋 Vos prochaines étapes :</p>
-            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
-              <tr>
-                <td width="36" valign="top" style="padding:0 12px 14px 0;">
-                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">1</div>
-                </td>
-                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
-                  <strong>Dans les 24 heures</strong> — Un membre de notre équipe vous contactera personnellement pour discuter de vos objectifs
-                </td>
-              </tr>
-              <tr>
-                <td width="36" valign="top" style="padding:0 12px 14px 0;">
-                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">2</div>
-                </td>
-                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
-                  <strong>Appel de découverte</strong> — 15 minutes pour comprendre vos préférences et vous présenter les opportunités correspondantes
-                </td>
-              </tr>
-              <tr>
-                <td width="36" valign="top" style="padding:0 12px 14px 0;">
-                  <div style="background:#1a3c2e;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">3</div>
-                </td>
-                <td valign="top" style="padding:0 0 14px 0;color:#555;font-size:14px;line-height:1.5;">
-                  <strong>Opportunités personnalisées</strong> — Vous recevrez 2 à 3 fiches d'opportunités adaptées à votre track et budget
-                </td>
-              </tr>
-              <tr>
-                <td width="36" valign="top" style="padding:0 12px 0 0;">
-                  <div style="background:#B5850A;color:#ffffff;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:bold;">4</div>
-                </td>
-                <td valign="top" style="padding:0;color:#555;font-size:14px;line-height:1.5;">
-                  <strong>Premier investissement</strong> — Déployez votre capital avec notre accompagnement complet
-                </td>
-              </tr>
-            </table>
+            <ol style="margin:0;padding-left:20px;color:#555;line-height:1.8;font-size:14px;">
+              <li><strong>Vérifiez votre email</strong> (lien envoyé séparément)</li>
+              <li><strong>Vérification d'identité</strong> (Didit KYC) dans le portail</li>
+              <li><strong>Abonnement $99/an</strong> pour activer l'accès investisseur</li>
+              <li><strong>Investissez</strong> une fois l'accès validé</li>
+            </ol>
           </div>
-          <p style="color:#555;">En attendant notre contact, vous pouvez parcourir les opportunités disponibles dès maintenant.</p>
           <div style="text-align:center;margin-top:24px;">
-            <a href="${process.env.FRONTEND_URL}/afri-yield/opportunities" style="background:#B5850A;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block;">Voir les opportunités →</a>
+            <a href="${process.env.FRONTEND_URL || 'https://sahelagriconnect.com'}/afri-yield/portal" style="background:#B5850A;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block;">Ouvrir le portail →</a>
           </div>
           <p style="color:#333;margin-top:32px;">Avec enthousiasme,<br><strong>L'équipe AfriYield Exchange</strong><br><span style="color:#555;font-size:14px;">Powered by Sahel AgriConnect</span></p>
         </div>
@@ -370,36 +345,73 @@ export async function confirmInvestorRegistration(investor) {
   });
 }
 
+/** Investor email verification link (registration / resend) */
+export async function sendInvestorEmailVerification(investor, verifyUrl) {
+  const resend = getResend();
+  if (!resend || !investor?.email || !verifyUrl) return;
+  await resend.emails.send({
+    from: AFRIYIELD_FROM,
+    to: investor.email,
+    subject: 'AfriYield — Vérifiez votre email / Verify your email',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+          <h1 style="color:#B5850A;margin:0;">AfriYield Exchange</h1>
+          <p style="color:white;margin:8px 0 0;">Email verification</p>
+        </div>
+        <div style="padding:32px;background:white;border:1px solid #e0e0e0;">
+          <p style="color:#333;">Bonjour <strong>${investor.fullName || ''}</strong>,</p>
+          <p style="color:#555;">Confirmez votre adresse email pour continuer l'accès AfriYield (KYC → abonnement → investissement).</p>
+          <p style="text-align:center;margin:28px 0;">
+            <a href="${verifyUrl}" style="display:inline-block;background:#B5850A;color:white;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:bold;">
+              Vérifier mon email
+            </a>
+          </p>
+          <p style="color:#888;font-size:12px;word-break:break-all;">${verifyUrl}</p>
+        </div>
+      </div>
+    `,
+  });
+}
+
 export async function confirmAfriYieldInvestmentPayment({
   investorEmail,
   investorName,
   opportunityName,
   amountUSD,
+  lang,
 }) {
   const resend = getResend();
   if (!resend || !investorEmail) return;
   const amt = Number(amountUSD) || 0;
   const portal =
-    process.env.FRONTEND_URL || 'https://afriyieldexchange.com';
+    process.env.FRONTEND_URL || 'https://sahelagriconnect.com';
+  const isFr = !String(lang || 'fr').toLowerCase().startsWith('en');
   await resend.emails.send({
-    from: FROM_ADDRESS,
+    from: AFRIYIELD_FROM,
     to: investorEmail,
-    subject: `AfriYield Exchange — Investment confirmed ($${amt.toLocaleString()} USD)`,
+    subject: isFr
+      ? `AfriYield Exchange — Investissement confirmé (${amt.toLocaleString()} $ USD)`
+      : `AfriYield Exchange — Investment confirmed ($${amt.toLocaleString()} USD)`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;">
-          <h1 style="color:#B5850A;margin:0;font-size:20px;">Investment confirmed</h1>
+          <h1 style="color:#B5850A;margin:0;font-size:20px;">${isFr ? 'Investissement confirmé' : 'Investment confirmed'}</h1>
         </div>
         <div style="padding:24px;background:#f9f9f9;border:1px solid #e0e0e0;">
-          <p style="color:#333;">Hello <strong>${investorName || 'Investor'}</strong>,</p>
-          <p style="color:#555;">Your payment via Stripe has been received and your investment is now recorded on AfriYield Exchange.</p>
+          <p style="color:#333;">${isFr ? 'Bonjour' : 'Hello'} <strong>${investorName || (isFr ? 'Investisseur' : 'Investor')}</strong>,</p>
+          <p style="color:#555;">${isFr
+            ? 'Votre paiement Stripe a été reçu et votre investissement est enregistré sur AfriYield Exchange.'
+            : 'Your payment via Stripe has been received and your investment is now recorded on AfriYield Exchange.'}</p>
           <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-            <tr><td style="padding:8px 0;font-weight:bold;color:#333;width:40%;">Opportunity</td><td style="padding:8px 0;color:#555;">${opportunityName || '—'}</td></tr>
-            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">Amount</td><td style="padding:8px 0;color:#1a3c2e;font-weight:bold;">$${amt.toLocaleString()} USD</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;width:40%;">${isFr ? 'Opportunité' : 'Opportunity'}</td><td style="padding:8px 0;color:#555;">${opportunityName || '—'}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:bold;color:#333;">${isFr ? 'Montant' : 'Amount'}</td><td style="padding:8px 0;color:#1a3c2e;font-weight:bold;">$${amt.toLocaleString()} USD</td></tr>
           </table>
-          <p style="color:#555;font-size:14px;">Projected returns are not guaranteed. You can track your investment in your investor dashboard.</p>
+          <p style="color:#555;font-size:14px;">${isFr
+            ? 'Les rendements projetés ne sont pas garantis. Suivez votre investissement dans votre tableau de bord.'
+            : 'Projected returns are not guaranteed. You can track your investment in your investor dashboard.'}</p>
           <div style="margin-top:20px;text-align:center;">
-            <a href="${portal}/investor/dashboard?email=${encodeURIComponent(investorEmail)}" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">View dashboard →</a>
+            <a href="${portal}/afri-yield/portal" style="background:#B5850A;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">${isFr ? 'Voir le tableau de bord →' : 'View dashboard →'}</a>
           </div>
         </div>
       </div>
@@ -474,6 +486,36 @@ export async function confirmCooperativeRegistration(cooperative) {
         </div>
       </div>
     `
+  });
+}
+
+/** Starter-plan email verification link for cooperative leaders */
+export async function sendCooperativeEmailVerification(cooperative, verifyUrl) {
+  const resend = getResend();
+  if (!resend || !cooperative?.email || !verifyUrl) return;
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: cooperative.email,
+    subject: 'Sahel AgriConnect — Vérifiez votre email / Verify your email',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3c2e;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+          <h1 style="color:white;margin:0;">Sahel AgriConnect</h1>
+          <p style="color:#B5850A;margin:4px 0 0;">Vérification email</p>
+        </div>
+        <div style="padding:32px;background:white;border:1px solid #e0e0e0;">
+          <p style="color:#333;font-size:16px;">Bonjour <strong>${cooperative.leaderName || ''}</strong>,</p>
+          <p style="color:#555;">Confirmez l'adresse email de <strong>${cooperative.cooperativeName || 'votre coopérative'}</strong> pour activer toutes les notifications.</p>
+          <p style="margin:28px 0;text-align:center;">
+            <a href="${verifyUrl}" style="display:inline-block;background:#1a3c2e;color:white;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:bold;">
+              Vérifier mon email
+            </a>
+          </p>
+          <p style="color:#888;font-size:12px;">Or open this link:<br/><a href="${verifyUrl}" style="color:#1a3c2e;word-break:break-all;">${verifyUrl}</a></p>
+          <p style="color:#333;margin-top:32px;">Cordialement,<br><strong>L'équipe Sahel AgriConnect</strong></p>
+        </div>
+      </div>
+    `,
   });
 }
 

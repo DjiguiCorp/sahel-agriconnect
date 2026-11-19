@@ -1,15 +1,66 @@
 import express from 'express';
 import Investor from '../models/Investor.js';
+import InvestorKYC from '../models/InvestorKYC.js';
 import InvestorNotification from '../models/InvestorNotification.js';
 import PendingNotification from '../models/PendingNotification.js';
+import PremiumSubscription from '../models/PremiumSubscription.js';
 import { authenticateInvestor, authenticateToken } from '../middleware/auth.js';
-import { confirmInvestorRegistration, notifyAdminNewInvestor } from '../services/emailService.js';
+import {
+  confirmInvestorRegistration,
+  notifyAdminNewInvestor,
+  sendInvestorEmailVerification,
+} from '../services/emailService.js';
 import { queueNotification, messageTemplates } from '../services/notificationService.js';
 import jwt from 'jsonwebtoken';
 import DeviceSession from '../models/DeviceSession.js';
 import { normalizeInvestorResidence } from '../constants/investorResidenceCountries.js';
+import {
+  resolveInvestorLang,
+  investorNotificationCopy,
+} from '../utils/investorNotificationCopy.js';
 
 const router = express.Router();
+const FRONTEND = (process.env.FRONTEND_URL || 'https://sahelagriconnect.com').replace(/\/$/, '');
+
+async function isSubscriptionActive(email) {
+  const emailNorm = String(email || '').toLowerCase().trim();
+  if (!emailNorm) return false;
+  const sub = await PremiumSubscription.findOne({
+    investorEmail: emailNorm,
+    status: 'active',
+  })
+    .sort({ endDate: -1 })
+    .lean();
+  if (!sub) return false;
+  if (sub.endDate && new Date(sub.endDate) < new Date()) return false;
+  return true;
+}
+
+function buildOnboardingPayload({ emailVerified, diditStatus, tradingApproved, subscriptionActive }) {
+  let step = 'email_verification';
+  let currentStep = 1;
+  if (!emailVerified) {
+    step = 'email_verification';
+    currentStep = 1;
+  } else if (diditStatus !== 'approved') {
+    step = 'kyc';
+    currentStep = 2;
+  } else if (!subscriptionActive) {
+    step = 'payment';
+    currentStep = 3;
+  } else {
+    step = 'complete';
+    currentStep = 4;
+  }
+  return {
+    step,
+    emailVerified: Boolean(emailVerified),
+    diditStatus: diditStatus ?? null,
+    tradingApproved: Boolean(tradingApproved),
+    subscriptionActive: Boolean(subscriptionActive),
+    currentStep,
+  };
+}
 
 function mapInvestmentTrack(input) {
   const s = String(input || '');
@@ -40,8 +91,30 @@ router.post('/login', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Investor not found' });
     }
 
+    const [kyc, subscriptionActive] = await Promise.all([
+      InvestorKYC.findOne({ investorEmail: investor.email })
+        .select('diditStatus tradingApproved diditSessionId diditVerifiedAt')
+        .lean(),
+      isSubscriptionActive(investor.email),
+    ]);
+    let diditStatus = null;
+    if (kyc && (kyc.diditSessionId || kyc.diditVerifiedAt || kyc.diditStatus)) {
+      diditStatus = kyc.diditStatus || 'pending';
+    }
+    const tradingApproved =
+      !investor.tradingRevoked &&
+      Boolean(investor.tradingApproved || kyc?.tradingApproved);
+
     const token = jwt.sign(
-      { role: 'investor', email: investor.email, name: investor.fullName },
+      {
+        role: 'investor',
+        email: investor.email,
+        name: investor.fullName,
+        emailVerified: Boolean(investor.emailVerified),
+        diditStatus,
+        subscriptionActive: Boolean(subscriptionActive),
+        tradingApproved,
+      },
       process.env.JWT_SECRET,
       { expiresIn: '90d' }
     );
@@ -56,7 +129,15 @@ router.post('/login', async (req, res) => {
       success: true,
       token,
       sessionSeed,
-      investor: { email: investor.email, fullName: investor.fullName, status: investor.status },
+      investor: {
+        email: investor.email,
+        fullName: investor.fullName,
+        status: investor.status,
+        emailVerified: Boolean(investor.emailVerified),
+        diditStatus,
+        subscriptionActive: Boolean(subscriptionActive),
+        tradingApproved,
+      },
     });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message || 'Failed' });
@@ -75,6 +156,10 @@ router.post('/register', async (req, res) => {
       message,
     } = req.body;
     const heardFrom = req.body.heardFrom ?? req.body.heardAbout ?? '';
+    const preferredLanguage = resolveInvestorLang({
+      lang: req.body.lang || req.body.language || req.body.preferredLanguage,
+      countryOfResidence,
+    });
 
     const residence = normalizeInvestorResidence(countryOfResidence);
     if (!residence) {
@@ -95,24 +180,40 @@ router.post('/register', async (req, res) => {
       investmentRange,
       heardFrom,
       message: message || '',
+      preferredLanguage,
+      emailVerified: false,
     });
 
     notifyAdminNewInvestor(investor).catch(console.error);
     confirmInvestorRegistration(investor).catch(console.error);
+
+    try {
+      const verifyToken = jwt.sign(
+        { purpose: 'investor_email_verify', email: investor.email, investorId: String(investor._id) },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+      const verifyUrl = `${FRONTEND}/afri-yield/verify-email?token=${encodeURIComponent(verifyToken)}`;
+      sendInvestorEmailVerification(investor, verifyUrl).catch(console.error);
+    } catch (verifyErr) {
+      console.error('[investors] verify email token error:', verifyErr.message);
+    }
+
     queueNotification({
       name: investor.fullName,
       phone: investor.phone,
       email: investor.email,
-      message: messageTemplates.investorWelcome(investor.fullName),
+      message: messageTemplates.investorWelcome(investor.fullName, preferredLanguage),
       source: 'investor_registration',
     }).catch(console.error);
 
+    const welcome = investorNotificationCopy('welcome', preferredLanguage);
     InvestorNotification.create({
       investorEmail: investor.email,
       type: 'welcome',
-      title: 'Welcome to AfriYield Exchange',
-      message:
-        'Your investor account is active. Browse opportunities and build your African agricultural portfolio.',
+      title: welcome.title,
+      message: welcome.message,
+      lang: preferredLanguage,
       link: '/afri-yield/portal',
     }).catch(console.error);
 
@@ -126,6 +227,87 @@ router.post('/register', async (req, res) => {
     }
     console.error(err);
     res.status(400).json({ success: false, error: err.message || 'Registration failed' });
+  }
+});
+
+// GET /api/investors/verify-email?token=
+router.get('/verify-email', async (req, res) => {
+  try {
+    const token = String(req.query.token || '').trim();
+    if (!token) return res.status(400).json({ success: false, error: 'token required' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.purpose !== 'investor_email_verify' || !decoded.email) {
+      return res.status(400).json({ success: false, error: 'Invalid verification token' });
+    }
+    const email = String(decoded.email).toLowerCase().trim();
+    const investor = await Investor.findOneAndUpdate(
+      { email },
+      { emailVerified: true, verifiedAt: new Date() },
+      { new: true }
+    );
+    if (!investor) return res.status(404).json({ success: false, error: 'Investor not found' });
+    return res.json({ success: true, emailVerified: true, email: investor.email });
+  } catch (e) {
+    return res.status(400).json({ success: false, error: e.message || 'Invalid or expired token' });
+  }
+});
+
+// POST /api/investors/resend-verification
+router.post('/resend-verification', authenticateInvestor, async (req, res) => {
+  try {
+    const email = String(req.investorEmail || '').toLowerCase().trim();
+    const investor = await Investor.findOne({ email });
+    if (!investor) return res.status(404).json({ success: false, error: 'Investor not found' });
+    if (investor.emailVerified) {
+      return res.json({ success: true, alreadyVerified: true });
+    }
+    const verifyToken = jwt.sign(
+      { purpose: 'investor_email_verify', email: investor.email, investorId: String(investor._id) },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    const verifyUrl = `${FRONTEND}/afri-yield/verify-email?token=${encodeURIComponent(verifyToken)}`;
+    await sendInvestorEmailVerification(investor, verifyUrl);
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
+  }
+});
+
+// GET /api/investors/onboarding-status
+router.get('/onboarding-status', authenticateInvestor, async (req, res) => {
+  try {
+    const email = String(req.investorEmail || '').toLowerCase().trim();
+    const [investor, kyc, subscriptionActive] = await Promise.all([
+      Investor.findOne({ email })
+        .select('emailVerified tradingApproved tradingRevoked')
+        .lean(),
+      InvestorKYC.findOne({ investorEmail: email })
+        .select('diditStatus tradingApproved diditSessionId diditVerifiedAt')
+        .lean(),
+      isSubscriptionActive(email),
+    ]);
+
+    const emailVerified = Boolean(investor?.emailVerified);
+    let diditStatus = null;
+    if (kyc && (kyc.diditSessionId || kyc.diditVerifiedAt || kyc.diditStatus)) {
+      diditStatus = kyc.diditStatus || 'pending';
+    }
+    const tradingApproved =
+      !investor?.tradingRevoked &&
+      Boolean(investor?.tradingApproved || kyc?.tradingApproved);
+
+    return res.json({
+      success: true,
+      ...buildOnboardingPayload({
+        emailVerified,
+        diditStatus,
+        tradingApproved,
+        subscriptionActive,
+      }),
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
   }
 });
 
@@ -167,6 +349,56 @@ router.post('/investment-intent', async (req, res) => {
     }).catch(console.error);
 
     return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || 'Failed' });
+  }
+});
+
+/**
+ * GET /api/investors/kyc-status
+ * Auth: investor JWT — Didit identity + trading gate for the portal.
+ */
+router.get('/kyc-status', authenticateInvestor, async (req, res) => {
+  try {
+    const email = String(req.investorEmail || '').toLowerCase().trim();
+    const [investor, kyc] = await Promise.all([
+      Investor.findOne({ email }).select('tradingApproved tradingRevoked').lean(),
+      InvestorKYC.findOne({ investorEmail: email })
+        .select(
+          'diditStatus tradingApproved diditVerifiedAt diditSessionId status ' +
+            'kycRejectionReason kycReviewNotes kycReviewedAt'
+        )
+        .lean(),
+    ]);
+
+    // No KYC record, or Didit never started → diditStatus null (show "required" banner)
+    if (!kyc || (!kyc.diditSessionId && !kyc.diditVerifiedAt)) {
+      return res.json({
+        success: true,
+        diditStatus: null,
+        tradingApproved: false,
+        kycComplete: false,
+        diditVerifiedAt: null,
+        kycRejectionReason: null,
+        legacyStatus: kyc?.status || null,
+      });
+    }
+
+    const diditStatus = kyc.diditStatus || 'pending';
+    const tradingApproved =
+      !investor?.tradingRevoked &&
+      Boolean(investor?.tradingApproved || kyc.tradingApproved);
+
+    return res.json({
+      success: true,
+      diditStatus,
+      tradingApproved,
+      kycComplete: diditStatus === 'approved' && tradingApproved === true,
+      diditVerifiedAt: kyc.diditVerifiedAt || null,
+      kycRejectionReason: kyc.kycRejectionReason || null,
+      kycReviewNotes: kyc.kycReviewNotes || null,
+      legacyStatus: kyc.status || null,
+    });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message || 'Failed' });
   }

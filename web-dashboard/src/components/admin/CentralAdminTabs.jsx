@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
+import { CROP_CATALOG, cropLabel } from '../../lib/crops';
 
 /** Exported for Overview cooperative member section */
 export function mergeCooperativeSources(adminList, platformList) {
@@ -316,7 +317,7 @@ export function PlanningTab({ token, isFr }) {
                 <select
                   value={form.farmerId}
                   onChange={(e) => setForm((f) => ({ ...f, farmerId: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">{isFr ? 'Sélectionner…' : 'Select…'}</option>
                   {farmers.map((x) => (
@@ -333,7 +334,7 @@ export function PlanningTab({ token, isFr }) {
                 <select
                   value={form.cooperativeId}
                   onChange={(e) => setForm((f) => ({ ...f, cooperativeId: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">{isFr ? 'Sélectionner...' : 'Select...'}</option>
                   {coopOptions.map((c) => (
@@ -351,7 +352,7 @@ export function PlanningTab({ token, isFr }) {
                   <select
                     value={form.season}
                     onChange={(e) => setForm((f) => ({ ...f, season: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="rainy">{isFr ? 'Saison des pluies' : 'Rainy Season'}</option>
                     <option value="dry">{isFr ? 'Saison sèche' : 'Dry Season'}</option>
@@ -365,7 +366,7 @@ export function PlanningTab({ token, isFr }) {
                     type="number"
                     value={form.year}
                     onChange={(e) => setForm((f) => ({ ...f, year: Number(e.target.value) }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               </div>
@@ -376,15 +377,13 @@ export function PlanningTab({ token, isFr }) {
                 <select
                   value={form.cropType}
                   onChange={(e) => setForm((f) => ({ ...f, cropType: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
-                  {['Shea Butter', 'Sesame', 'Cashew', 'Mango', 'Rice', 'Cotton', 'Millet', 'Sorghum'].map(
-                    (c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    )
-                  )}
+                  {CROP_CATALOG.map((c) => (
+                    <option key={c.en} value={c.en}>
+                      {cropLabel(c, isFr)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -396,7 +395,7 @@ export function PlanningTab({ token, isFr }) {
                     type="date"
                     value={form.plantingDate}
                     onChange={(e) => setForm((f) => ({ ...f, plantingDate: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -407,7 +406,7 @@ export function PlanningTab({ token, isFr }) {
                     type="date"
                     value={form.harvestDate}
                     onChange={(e) => setForm((f) => ({ ...f, harvestDate: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               </div>
@@ -419,7 +418,7 @@ export function PlanningTab({ token, isFr }) {
                   type="number"
                   value={form.targetQuantityKg}
                   onChange={(e) => setForm((f) => ({ ...f, targetQuantityKg: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 />
               </div>
               <label className="flex items-center gap-2 text-sm">
@@ -436,7 +435,7 @@ export function PlanningTab({ token, isFr }) {
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={2}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest resize-none"
                 />
               </div>
             </div>
@@ -509,10 +508,11 @@ export function CertificationTab({ token, isFr }) {
         fetch(`${API_BASE_URL}/api/certifications`, { headers }).then((r) => r.json()),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=400`, { headers }).then((r) => r.json()),
       ]);
-      setCertifications(certs.certifications || certs || []);
-      setFarmers(Array.isArray(farm) ? farm : farm.farmers || []);
+      setCertifications(Array.isArray(certs?.certifications) ? certs.certifications : Array.isArray(certs) ? certs : []);
+      setFarmers(Array.isArray(farm) ? farm : Array.isArray(farm?.farmers) ? farm.farmers : []);
     } catch {
       setCertifications([]);
+      setFarmers([]);
     } finally {
       setLoading(false);
     }
@@ -529,10 +529,12 @@ export function CertificationTab({ token, isFr }) {
     { key: 'international', label: 'International (EU/USDA)', stars: '⭐⭐⭐' },
   ];
 
+  const safeCertifications = Array.isArray(certifications) ? certifications : [];
+
   const filtered = useMemo(() => {
-    if (certLevel === 'all') return certifications;
-    return certifications.filter((c) => (c.niveau || '').toLowerCase() === certLevel);
-  }, [certifications, certLevel]);
+    if (certLevel === 'all') return safeCertifications;
+    return safeCertifications.filter((c) => (c?.niveau || '').toLowerCase() === certLevel);
+  }, [safeCertifications, certLevel]);
 
   const saveCert = async () => {
     if (!form.farmerId) {
@@ -622,25 +624,25 @@ export function CertificationTab({ token, isFr }) {
         {[
           {
             label: isFr ? 'Total' : 'Total',
-            value: certifications.length,
+            value: safeCertifications.length,
             color: 'text-gray-700',
             bg: 'bg-gray-50',
           },
           {
             label: 'Local',
-            value: certifications.filter((c) => c.niveau === 'local').length,
+            value: safeCertifications.filter((c) => c?.niveau === 'local').length,
             color: 'text-green-700',
             bg: 'bg-green-50',
           },
           {
             label: 'Regional',
-            value: certifications.filter((c) => c.niveau === 'regional').length,
+            value: safeCertifications.filter((c) => c?.niveau === 'regional').length,
             color: 'text-blue-700',
             bg: 'bg-blue-50',
           },
           {
             label: 'International',
-            value: certifications.filter((c) => c.niveau === 'international').length,
+            value: safeCertifications.filter((c) => c?.niveau === 'international').length,
             color: 'text-amber-700',
             bg: 'bg-amber-50',
           },
@@ -766,21 +768,21 @@ export function CertificationTab({ token, isFr }) {
               </thead>
               <tbody>
                 {filtered.map((cert, i) => {
-                  const uiStat = STATUT_TO_UI[cert.statut] || 'pending';
+                  const uiStat = STATUT_TO_UI[cert?.statut] || 'pending';
                   return (
-                    <tr key={cert._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                      <td className="px-4 py-3 font-medium text-brand-forest">{cert.producteur}</td>
-                      <td className="px-4 py-3 text-gray-600">{cert.produit}</td>
+                    <tr key={cert?._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                      <td className="px-4 py-3 font-medium text-brand-forest">{cert?.producteur || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{cert?.produit || '—'}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs px-2 py-1 rounded-full bg-brand-forest/10 text-brand-forest font-medium">
-                          {cert.niveau}
+                          {cert?.niveau || '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <select
                           value={uiStat}
-                          onChange={(e) => updateStatus(cert._id, e.target.value)}
-                          className={`text-xs px-2 py-1 rounded-full border-0 cursor-pointer font-medium ${statusColor(cert.statut)}`}
+                          onChange={(e) => updateStatus(cert?._id, e.target.value)}
+                          className={`text-xs px-2 py-1 rounded-full border-0 cursor-pointer font-medium ${statusColor(cert?.statut)}`}
                         >
                           <option value="pending">{isFr ? 'En attente' : 'Pending'}</option>
                           <option value="in-progress">{isFr ? 'En cours' : 'In Progress'}</option>
@@ -818,7 +820,7 @@ export function CertificationTab({ token, isFr }) {
                 <select
                   value={form.farmerId}
                   onChange={(e) => setForm((f) => ({ ...f, farmerId: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">—</option>
                   {farmers.map((x) => (
@@ -836,7 +838,7 @@ export function CertificationTab({ token, isFr }) {
                   <select
                     value={form.certificationLevel}
                     onChange={(e) => setForm((f) => ({ ...f, certificationLevel: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="Local">Local</option>
                     <option value="Regional">Regional (ECOWAS)</option>
@@ -850,7 +852,7 @@ export function CertificationTab({ token, isFr }) {
                   <select
                     value={form.product}
                     onChange={(e) => setForm((f) => ({ ...f, product: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     {['Shea Butter', 'Sesame', 'Cashew', 'Mango', 'Rice', 'Cotton'].map((p) => (
                       <option key={p} value={p}>
@@ -869,7 +871,7 @@ export function CertificationTab({ token, isFr }) {
                     type="date"
                     value={form.inspectionDate}
                     onChange={(e) => setForm((f) => ({ ...f, inspectionDate: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -880,7 +882,7 @@ export function CertificationTab({ token, isFr }) {
                     type="text"
                     value={form.complianceScore}
                     onChange={(e) => setForm((f) => ({ ...f, complianceScore: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                     placeholder="ex: 500 kg"
                   />
                 </div>
@@ -891,7 +893,7 @@ export function CertificationTab({ token, isFr }) {
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={2}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest resize-none"
                 />
               </div>
             </div>
@@ -970,7 +972,7 @@ export function LogisticsTab({ token, isFr }) {
         fetch(API_ENDPOINTS.LOGISTICS.BASE, { headers }).then((r) => r.json()),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=300`, { headers }).then((r) => r.json()),
       ]);
-      setLogistics(d.logistics || []);
+      setLogistics(Array.isArray(d?.logistics) ? d.logistics : []);
       const fl = Array.isArray(f) ? f : f.farmers || [];
       setFarmers(fl);
     } catch {
@@ -1064,25 +1066,27 @@ export function LogisticsTab({ token, isFr }) {
 
   const modeIcon = (m) => ({ road: '🚛', rail: '🚂', air: '✈️', sea: '🚢' }[m] || '🚛');
 
-  const rowUiStatus = (log) => mapLogisticsStatutToUi(log.statut);
+  const rowUiStatus = (log) => mapLogisticsStatutToUi(log?.statut);
+
+  const safeLogistics = Array.isArray(logistics) ? logistics : [];
 
   const stats = [
-    { label: isFr ? 'Total' : 'Total', value: logistics.length, color: 'text-gray-700', bg: 'bg-gray-50' },
+    { label: isFr ? 'Total' : 'Total', value: safeLogistics.length, color: 'text-gray-700', bg: 'bg-gray-50' },
     {
       label: isFr ? 'Planifiés' : 'Scheduled',
-      value: logistics.filter((l) => ['pending', 'scheduled'].includes(l.statut)).length,
+      value: safeLogistics.filter((l) => ['pending', 'scheduled'].includes(l?.statut)).length,
       color: 'text-blue-700',
       bg: 'bg-blue-50',
     },
     {
       label: isFr ? 'En transit' : 'In Transit',
-      value: logistics.filter((l) => l.statut === 'in_transit').length,
+      value: safeLogistics.filter((l) => l?.statut === 'in_transit').length,
       color: 'text-yellow-700',
       bg: 'bg-yellow-50',
     },
     {
       label: isFr ? 'Terminés' : 'Completed',
-      value: logistics.filter((l) => l.statut === 'completed').length,
+      value: safeLogistics.filter((l) => l?.statut === 'completed').length,
       color: 'text-green-700',
       bg: 'bg-green-50',
     },
@@ -1120,7 +1124,7 @@ export function LogisticsTab({ token, isFr }) {
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="text-center py-8 text-gray-400">{isFr ? 'Chargement...' : 'Loading...'}</div>
-        ) : logistics.length === 0 ? (
+        ) : safeLogistics.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-5xl mb-3">🚛</p>
             <p className="text-gray-500 font-medium mb-1">
@@ -1158,7 +1162,7 @@ export function LogisticsTab({ token, isFr }) {
                 </tr>
               </thead>
               <tbody>
-                {logistics.map((log, i) => {
+                {safeLogistics.map((log, i) => {
                   const t = log.transport;
                   const ui = rowUiStatus(log);
                   const veh = String(t?.vehicule || 'road').toLowerCase();
@@ -1222,7 +1226,7 @@ export function LogisticsTab({ token, isFr }) {
                 <select
                   value={form.farmerId}
                   onChange={(e) => setForm((f) => ({ ...f, farmerId: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">—</option>
                   {farmers.map((x) => (
@@ -1240,7 +1244,7 @@ export function LogisticsTab({ token, isFr }) {
                   <input
                     value={form.cooperativeName}
                     onChange={(e) => setForm((f) => ({ ...f, cooperativeName: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -1250,7 +1254,7 @@ export function LogisticsTab({ token, isFr }) {
                   <select
                     value={form.commodity}
                     onChange={(e) => setForm((f) => ({ ...f, commodity: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     {['Shea Butter', 'Sesame', 'Cashew', 'Mango', 'Rice', 'Cotton'].map((c) => (
                       <option key={c} value={c}>
@@ -1269,7 +1273,7 @@ export function LogisticsTab({ token, isFr }) {
                     type="number"
                     value={form.quantityKg}
                     onChange={(e) => setForm((f) => ({ ...f, quantityKg: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -1279,7 +1283,7 @@ export function LogisticsTab({ token, isFr }) {
                   <select
                     value={form.transportMode}
                     onChange={(e) => setForm((f) => ({ ...f, transportMode: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="road">🚛 Road</option>
                     <option value="rail">🚂 Rail</option>
@@ -1296,7 +1300,7 @@ export function LogisticsTab({ token, isFr }) {
                   <input
                     value={form.originCity}
                     onChange={(e) => setForm((f) => ({ ...f, originCity: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -1306,7 +1310,7 @@ export function LogisticsTab({ token, isFr }) {
                   <input
                     value={form.originCountry}
                     onChange={(e) => setForm((f) => ({ ...f, originCountry: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               </div>
@@ -1318,7 +1322,7 @@ export function LogisticsTab({ token, isFr }) {
                   <input
                     value={form.destinationCity}
                     onChange={(e) => setForm((f) => ({ ...f, destinationCity: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -1328,7 +1332,7 @@ export function LogisticsTab({ token, isFr }) {
                   <input
                     value={form.destinationCountry}
                     onChange={(e) => setForm((f) => ({ ...f, destinationCountry: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               </div>
@@ -1341,7 +1345,7 @@ export function LogisticsTab({ token, isFr }) {
                     type="date"
                     value={form.departureDate}
                     onChange={(e) => setForm((f) => ({ ...f, departureDate: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -1352,7 +1356,7 @@ export function LogisticsTab({ token, isFr }) {
                     type="date"
                     value={form.estimatedArrival}
                     onChange={(e) => setForm((f) => ({ ...f, estimatedArrival: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               </div>
@@ -1365,20 +1369,20 @@ export function LogisticsTab({ token, isFr }) {
                     placeholder={isFr ? 'Nom du chauffeur' : 'Driver name'}
                     value={form.driverName}
                     onChange={(e) => setForm((f) => ({ ...f, driverName: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                   <input
                     placeholder={isFr ? 'Téléphone' : 'Phone'}
                     value={form.driverPhone}
                     onChange={(e) => setForm((f) => ({ ...f, driverPhone: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <input
                   placeholder={isFr ? 'Réf. véhicule' : 'Vehicle ref'}
                   value={form.vehicleRef}
                   onChange={(e) => setForm((f) => ({ ...f, vehicleRef: e.target.value }))}
-                  className="w-full mt-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 />
               </div>
               <div>
@@ -1387,7 +1391,7 @@ export function LogisticsTab({ token, isFr }) {
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={2}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest resize-none"
                 />
               </div>
             </div>

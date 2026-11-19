@@ -60,7 +60,7 @@ export default function GovernmentOfficialKycFields({ kyc, setKyc, isFr }) {
               value={kyc[f.key] || ''}
               onChange={set(f.key)}
               placeholder={f.placeholder}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 text-sm outline-none focus:ring-2 focus:ring-[#1a3c2e]"
             />
           </label>
         ))}

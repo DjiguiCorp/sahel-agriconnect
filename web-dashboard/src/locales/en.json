@@ -1115,7 +1115,7 @@
         "col2": "Fee",
         "col3": "When",
         "row1": ["Investment facilitation", "5% of capital deployed", "One-time at investment"],
-        "row2": ["Premium subscription", "$29.99/month or $299/year", "Optional, recurring"],
+        "row2": ["AfriYield Exchange access", "$99 / year", "Annual"],
         "row3": ["Advisory call — first", "FREE", "First session only"],
         "row4": ["Advisory call — follow-up", "$99/session", "Per session"],
         "row5": ["Cooperative membership", "$199/year", "Annual"],
@@ -1364,7 +1364,7 @@
       "alertOff": "Get alerts for this",
       "premiumTitle": "Want to know before everyone else?",
       "premiumBody": "Premium members get price alerts on their phone when African commodity prices move. They also get monthly reports written in plain language — no financial jargon.",
-      "premiumPrice": "$29.99/month or $299/year — cancel any time",
+      "premiumPrice": "$99 / year — full annual access",
       "premiumCta": "Learn more about Premium"
     },
     "news": {
@@ -1373,7 +1373,7 @@
       "readMore": "Read more",
       "readingTime": "min read",
       "premiumLabel": "Premium members only",
-      "premiumUnlock": "This is for Premium members. Join for $29.99/month to read the full story.",
+      "premiumUnlock": "This is for AfriYield members. Join for $99 / year to read the full story.",
       "unlock": "Unlock",
       "tags": {
         "market": "Market news",
@@ -1421,26 +1421,26 @@
       "callInclude": "Includes a written summary and personalized recommendations"
     },
     "premium": {
-      "badge": "PREMIUM",
-      "title": "Join AfriYield Premium",
-      "body": "Premium gives you the tools serious African agriculture investors use. No complicated charts — just clear information about where to put your money and when to act.",
+      "badge": "AFRIYIELD",
+      "title": "AfriYield Exchange — $99 / year",
+      "body": "Accès annuel complet · Full annual access. Clear information about where to put your money and when to act — no complicated charts.",
       "features": [
-        "Get notified when shea or sesame prices move",
-        "WhatsApp access directly to our team",
-        "Monthly report in plain language — no jargon",
-        "See new opportunities 24 hours before everyone else",
-        "Know what is happening country by country"
+        "KYC verification included",
+        "Access to all Track A and B opportunities",
+        "Monthly market reports",
+        "Escrow protection on all deals",
+        "Full 12-month agricultural cycle coverage"
       ],
-      "price": "$29.99/month or $299/year",
-      "priceMonthly": "$29.99/month",
-      "priceAnnual": "$299/year",
-      "saveWithAnnual": "Save 17% with annual — best value",
-      "nofees": "Cancel any time. No hidden fees.",
-      "annualBadge": "BEST VALUE",
-      "cta": "Join Premium",
+      "price": "$99 / year",
+      "priceMonthly": "$99 / year",
+      "priceAnnual": "$99 / year",
+      "saveWithAnnual": "Annual subscription only",
+      "nofees": "Annual billing only. No hidden fees.",
+      "annualBadge": "ANNUAL",
+      "cta": "Join AfriYield",
       "later": "Maybe later",
       "currentFree": "Current plan: Free",
-      "currentPremium": "Current plan: Premium"
+      "currentPremium": "Current plan: AfriYield ($99 / year)"
     },
     "advisory": {
       "title": "Talk to a real person about your investment",
@@ -1463,7 +1463,7 @@
     "disclaimer2": "Investments carry risk including potential loss of capital.",
     "disclaimer3": "Projected returns are based on historical cooperative performance and do not constitute a guarantee.",
     "disclaimer4": "Consult a qualified financial advisor before investing.",
-    "disclaimer5": "Payment processing occurs exclusively on afriyieldexchange.com",
+    "disclaimer5": "Payment processing occurs exclusively on sahelagriconnect.com",
     "paymentProcessingTitle": "Payment Processing",
     "paymentProcessingBody": "Your investment will be processed through the secure AfriYield Exchange portal. You will receive a formal investment agreement before any funds move.",
     "projectedReturnsNote": "~10-20% (projected, not guaranteed)"

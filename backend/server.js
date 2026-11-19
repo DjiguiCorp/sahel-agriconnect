@@ -11,6 +11,7 @@ import { Server } from 'socket.io';
 import farmerRoutes from './routes/farmers.js';
 import processorRoutes from './routes/processors.js';
 import cooperativeRoutes from './routes/cooperatives.js';
+import cooperativeMembershipRouter from './routes/cooperativeMembership.js';
 import certificationRoutes from './routes/certifications.js';
 import authRoutes from './routes/auth.js';
 import centerRoutes from './routes/centers.js';
@@ -29,10 +30,13 @@ import serviceBookingsRouter from './routes/serviceBookings.js';
 import licensesRouter from './routes/licenses.js';
 import thinktankRouter from './routes/thinktank.js';
 import soilRouter from './routes/soil.js';
+import diseaseRouter from './routes/disease.js';
+import configRouter from './routes/config.js';
 import expertsRouter from './routes/experts.js';
 import diasporaRouter from './routes/diaspora.js';
 import Admin from './models/Admin.js';
 import marketplaceRouter from './routes/marketplace.js';
+import mobileMoneyPaymentRoutes from './routes/mobileMoneyPayments.js';
 import waitlistRouter from './routes/waitlist.js';
 import investmentsRouter from './routes/investments.js';
 import escrowRouter from './routes/escrow.js';
@@ -41,15 +45,24 @@ import governmentRouter from './routes/government.js';
 import ngoRouter from './routes/ngo.js';
 import coopInvitationsRouter from './routes/cooperativeInvitations.js';
 import supplychainRouter from './routes/supplychain.js';
+import harvestLogRoutes from './routes/harvestLogs.js';
+import icsScoresRouter from './routes/icsScores.js';
+import certificationDossierRouter from './routes/certificationDossier.js';
 import notificationsRouter, { processQueue } from './routes/notifications.js';
 import verificationRouter from './routes/verification.js';
 import investorNotificationsRouter from './routes/investorNotifications.js';
 import deletionRequestsRouter from './routes/deletionRequests.js';
 import paymentsRouter from './routes/payments.js';
 import kycRoutes from './routes/kyc.js';
+import diditRouter from './routes/didit.js';
 import adminRouter from './routes/admin.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger.js';
+import {
+  seedMissingCropPrices,
+  startCommodityPriceSync,
+} from './services/commodityPriceSyncService.js';
+import { backfillTradingApproval } from './services/investorApprovalService.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -167,6 +180,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/farmers', farmerRoutes);
 app.use('/api/processors', processorRoutes);
 app.use('/api/cooperatives', cooperativeRoutes);
+app.use('/api/cooperative-membership', cooperativeMembershipRouter);
 app.use('/api/certifications', certificationRoutes);
 app.use('/api/centers', centerRoutes);
 app.use('/api/perks', perkRoutes);
@@ -184,15 +198,19 @@ app.use('/api/service-bookings', serviceBookingsRouter);
 app.use('/api/licenses', licensesRouter);
 app.use('/api/thinktank', thinktankRouter);
 app.use('/api/soil', soilRouter);
+app.use('/api/disease', diseaseRouter);
+app.use('/api/config', configRouter);
 app.use('/api/experts', expertsRouter);
 app.use('/api/diaspora', diasporaRouter);
 app.use('/api/marketplace', marketplaceRouter);
+app.use('/api/mobile-money', mobileMoneyPaymentRoutes);
 app.use('/api/waitlist', waitlistRouter);
 
 // Payments — Stripe (subscriptions, cooperative memberships, AfriYield investments)
 // Phase 2 stubs: Orange Money, MTN MoMo (see routes/payments.js — require env vars)
 app.use('/api/payments', paymentsRouter);
 app.use('/api/kyc', kycRoutes);
+app.use('/api/didit', diditRouter);
 app.use('/api/admin', adminRouter);
 
 app.use('/api/investments', investmentsRouter);
@@ -202,6 +220,9 @@ app.use('/api/government', governmentRouter);
 app.use('/api/ngo', ngoRouter);
 app.use('/api/coop-invitations', coopInvitationsRouter);
 app.use('/api/supplychain', supplychainRouter);
+app.use('/api/harvest-logs', harvestLogRoutes);
+app.use('/api/ics-scores', icsScoresRouter);
+app.use('/api/certification-dossier', certificationDossierRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/verify', verificationRouter);
 app.use('/api/investor-notifications', investorNotificationsRouter);
@@ -456,6 +477,25 @@ const startServer = async () => {
       console.log(`🚀 Serveur démarré sur le port ${PORT}`);
       console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);
       console.log(`🌐 API disponible sur http://localhost:${PORT}/api`);
+
+      // Commodity prices — seed missing rows, then background sync; repeat every 24h
+      setTimeout(() => {
+        seedMissingCropPrices()
+          .then((r) => console.log(`📈 CropPrice seed: seeded=${r.seeded}`))
+          .catch((e) => console.warn('📈 CropPrice seed failed:', e.message));
+        startCommodityPriceSync({ force: false });
+      }, 5000);
+
+      // AfriYield: auto-approve trading for existing KYC + subscription investors
+      setTimeout(() => {
+        backfillTradingApproval().catch((e) =>
+          console.warn('[investorApproval] backfill failed:', e.message)
+        );
+      }, 8000);
+
+      setInterval(() => {
+        startCommodityPriceSync({ force: false });
+      }, 24 * 60 * 60 * 1000);
     });
 
     // Self-ping keepalive — prevents Render free tier from sleeping

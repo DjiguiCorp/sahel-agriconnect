@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { isStripeCheckoutAvailable } from '../lib/stripeCheckout';
@@ -8,23 +8,13 @@ import { useRegisteredUser } from '../hooks/useRegisteredUser';
 import LocationSelector from '../components/LocationSelector';
 import OtherInput from '../components/OtherInput';
 import AppReturnBanner from '../components/AppReturnBanner';
+import { CROP_CATALOG, cropLabel, normalizeCropList } from '../lib/crops';
 
 const BENEFIT_KEYS = ['recruitment', 'equipment', 'certification', 'investor', 'export'];
 const BENEFIT_ICONS = [Users, Tractor, BadgeCheck, BriefcaseBusiness, Globe];
 const CERT_KEYS = ['none', 'local', 'regional', 'international'];
 const CERT_VALUES = ['None', 'Local', 'Regional', 'International'];
-const CROP_KEYS = ['shea', 'sesame', 'cashew', 'mango', 'rice', 'cotton', 'millet', 'sorghum', 'other'];
-const CROP_VALUES = [
-  'Shea Butter',
-  'Sesame',
-  'Cashew',
-  'Mango',
-  'Rice',
-  'Cotton',
-  'Millet',
-  'Sorghum',
-  'Other',
-];
+const FALLBACK_CROPS = [...CROP_CATALOG, { en: 'Other', fr: 'Autre' }];
 const INTEREST_KEYS = ['equipment', 'certification', 'diaspora', 'export'];
 const INTEREST_VALUES = ['Equipment Fund', 'Certification', 'Diaspora Investment', 'Export Program'];
 
@@ -40,6 +30,7 @@ const ERR_CLS = 'text-sm text-red-400 bg-red-500/10 border border-red-500/20 rou
 export default function CooperativeRegistration() {
   const { t, i18n } = useTranslation();
   const isFr = i18n.language === 'fr';
+  const navigate = useNavigate();
   const { registerCooperative } = useRegisteredUser();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -68,6 +59,18 @@ export default function CooperativeRegistration() {
     paymentPath: null,
   });
   const [benefitsOpen, setBenefitsOpen] = useState(false);
+  const [cropValues, setCropValues] = useState(FALLBACK_CROPS);
+
+  useEffect(() => {
+    fetch(`${API}/api/config/crops`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.crops) && d.crops.length) {
+          setCropValues([...normalizeCropList(d.crops), { en: 'Other', fr: 'Autre' }]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const memberCountNum = Number(form.memberCount || 0);
   const isGrowthTier = memberCountNum > 50;
@@ -79,22 +82,18 @@ export default function CooperativeRegistration() {
 
   const showStripeSuccess =
     state.ok && state.paymentPath === 'stripe';
-  const showManualSuccess = state.ok && !showStripeSuccess;
+  const showManualSuccess = state.ok && state.paymentPath === 'manual';
   const showFreeSuccess = state.ok && state.paymentPath === 'free';
 
   useEffect(() => {
     const payment = searchParams.get('payment');
     if (payment === 'success') {
-      setState({
-        loading: false,
-        ok: true,
-        err: '',
-        paymentPath: stripeCheckout ? 'stripe' : 'manual',
-      });
       if (form.email && form.leaderName) {
         registerCooperative(form.email, form.leaderName);
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Stripe success → go straight to cooperative portal
+      navigate('/cooperative-portal', { replace: true });
+      return;
     } else if (payment === 'cancelled') {
       setState((s) => ({
         ...s,
@@ -105,7 +104,7 @@ export default function CooperativeRegistration() {
       setStep(4);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [searchParams, form.email, form.leaderName, registerCooperative, isFr, stripeCheckout]);
+  }, [searchParams, form.email, form.leaderName, registerCooperative, isFr, navigate]);
 
   useEffect(() => {
     if (!state.ok) {
@@ -190,12 +189,16 @@ export default function CooperativeRegistration() {
         }
       }
 
-      // Starter (≤50): free registration — no Stripe
+      // Starter (≤50): free — redirect to portal. Growth manual: keep success screen.
+      if (!growth) {
+        navigate('/cooperative-portal', { replace: true });
+        return;
+      }
       setState({
         loading: false,
         ok: true,
         err: '',
-        paymentPath: growth ? 'manual' : 'free',
+        paymentPath: 'manual',
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -657,14 +660,15 @@ export default function CooperativeRegistration() {
                     <p className={`${LABEL_CLS} mb-3`}>
                       {t('cooperativeReg.form.primaryCrops')}
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {CROP_KEYS.map((k, i) => {
-                        const on = form.primaryCrops.includes(CROP_VALUES[i]);
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {cropValues.map((crop) => {
+                        const en = typeof crop === 'string' ? crop : crop.en;
+                        const on = form.primaryCrops.includes(en);
                         return (
                           <button
-                            key={k}
+                            key={en}
                             type="button"
-                            onClick={() => toggleArrayItem('primaryCrops', CROP_VALUES[i])}
+                            onClick={() => toggleArrayItem('primaryCrops', en)}
                             className="text-sm rounded-xl px-3 py-2.5 text-center font-medium transition"
                             style={
                               on
@@ -676,7 +680,7 @@ export default function CooperativeRegistration() {
                                   }
                             }
                           >
-                            {t(`cooperativeReg.form.crops.${k}`)}
+                            {cropLabel(crop, isFr)}
                           </button>
                         );
                       })}

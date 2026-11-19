@@ -4,6 +4,8 @@ import { Resend } from 'resend';
 import VerificationCode from '../models/VerificationCode.js';
 import Farmer from '../models/Farmer.js';
 import Investor from '../models/Investor.js';
+import InvestorKYC from '../models/InvestorKYC.js';
+import PremiumSubscription from '../models/PremiumSubscription.js';
 import CooperativePlatformRegistration from '../models/CooperativePlatformRegistration.js';
 import GovernmentAdmin from '../models/GovernmentAdmin.js';
 import Processor from '../models/Processor.js';
@@ -342,80 +344,95 @@ export async function confirmMagicCode({
     );
   }
 
-  record.used = true;
-  await record.save();
-
   const recEmail = record.email || emailNorm;
   const recPhone = record.phone || phoneNorm;
 
-  if (purposeNorm === 'farmer_verify') {
-    const farmer = await findFarmerByContact(recEmail, recPhone);
-    if (recEmail) {
-      await Farmer.findOneAndUpdate(
-        { email: recEmail },
-        { emailVerified: true, verifiedAt: new Date() },
+  // Only invalidate the magic/OTP code AFTER successful JWT / verification outcome
+  const markUsed = async () => {
+    record.used = true;
+    await record.save();
+  };
+
+  try {
+    if (purposeNorm === 'farmer_verify') {
+      const farmer = await findFarmerByContact(recEmail, recPhone);
+      if (recEmail) {
+        await Farmer.findOneAndUpdate(
+          { email: recEmail },
+          { emailVerified: true, verifiedAt: new Date() },
+        );
+      }
+      if (!farmer) {
+        await markUsed();
+        return {
+          success: true,
+          verified: true,
+          isNewUser: true,
+          role: 'farmer',
+          pendingRegistrationId: record._id.toString(),
+          email: recEmail,
+        };
+      }
+      const token = jwt.sign(
+        {
+          role: 'farmer',
+          id: farmer._id.toString(),
+          email: farmer.email || recEmail,
+          nom: farmer.nom,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '90d' },
       );
-    }
-    if (!farmer) {
+      const sessionSeed = await DeviceSession.issue(
+        farmer._id.toString(),
+        'farmer',
+        deviceHint,
+      );
+      await markUsed();
       return {
         success: true,
         verified: true,
-        isNewUser: true,
+        isNewUser: false,
         role: 'farmer',
-        pendingRegistrationId: record._id.toString(),
+        token,
+        sessionSeed,
+        user: farmerSummary(farmer),
+        accountStatus: farmer.statut === 'Actif' ? 'active' : 'pending_vetting',
       };
     }
-    const token = jwt.sign(
-      {
-        role: 'farmer',
-        id: farmer._id.toString(),
-        email: farmer.email || recEmail,
-        nom: farmer.nom,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '90d' },
-    );
-    const sessionSeed = await DeviceSession.issue(
-      farmer._id.toString(),
-      'farmer',
-      deviceHint,
-    );
-    return {
-      success: true,
-      verified: true,
-      isNewUser: false,
-      role: 'farmer',
-      token,
-      sessionSeed,
-      user: farmerSummary(farmer),
-      accountStatus: farmer.statut === 'Actif' ? 'active' : 'pending_vetting',
-    };
-  }
 
-  if (purposeNorm === 'login') {
-    await assertAccountExistsForLogin({
-      role: roleNorm,
-      email: recEmail,
-      phone: recPhone,
-    });
-    const result = await issueRoleLoginToken(
-      roleNorm,
-      recEmail,
-      recPhone,
-      deviceHint,
-    );
-    const appRole = roleNorm === 'cooperative' ? 'cooperative' : roleNorm;
-    return { ...result, role: appRole };
-  }
+    if (purposeNorm === 'login') {
+      await assertAccountExistsForLogin({
+        role: roleNorm,
+        email: recEmail,
+        phone: recPhone,
+      });
+      const result = await issueRoleLoginToken(
+        roleNorm,
+        recEmail,
+        recPhone,
+        deviceHint,
+      );
+      const appRole = roleNorm === 'cooperative' ? 'cooperative' : roleNorm;
+      await markUsed();
+      return { ...result, role: appRole };
+    }
 
-  if (purposeNorm === 'coop_verify' && recEmail) {
-    await CooperativePlatformRegistration.findOneAndUpdate(
-      { email: recEmail },
-      { emailVerified: true, verifiedAt: new Date() },
-    );
-  }
+    if (purposeNorm === 'coop_verify' && recEmail) {
+      await CooperativePlatformRegistration.findOneAndUpdate(
+        { email: recEmail },
+        { emailVerified: true, verifiedAt: new Date() },
+      );
+      await markUsed();
+      return { success: true, verified: true, role: 'cooperative', email: recEmail };
+    }
 
-  return { success: true, verified: true };
+    await markUsed();
+    return { success: true, verified: true };
+  } catch (err) {
+    // Leave code unused so the user can retry the same magic link
+    throw err;
+  }
 }
 
 export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
@@ -476,8 +493,35 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
         { status: 404, code: 'not_registered' },
       );
     }
+    const [kyc, sub] = await Promise.all([
+      InvestorKYC.findOne({ investorEmail: investor.email })
+        .select('diditStatus tradingApproved diditSessionId diditVerifiedAt')
+        .lean(),
+      PremiumSubscription.findOne({
+        investorEmail: String(investor.email).toLowerCase().trim(),
+        status: 'active',
+      })
+        .sort({ endDate: -1 })
+        .lean(),
+    ]);
+    let diditStatus = null;
+    if (kyc && (kyc.diditSessionId || kyc.diditVerifiedAt || kyc.diditStatus)) {
+      diditStatus = kyc.diditStatus || 'pending';
+    }
+    const subscriptionActive = Boolean(
+      sub && (!sub.endDate || new Date(sub.endDate) >= new Date())
+    );
+
     const token = jwt.sign(
-      { role: 'investor', email: investor.email, name: investor.fullName },
+      {
+        role: 'investor',
+        email: investor.email,
+        name: investor.fullName,
+        emailVerified: Boolean(investor.emailVerified),
+        diditStatus,
+        subscriptionActive,
+        tradingApproved: Boolean(kyc?.tradingApproved),
+      },
       process.env.JWT_SECRET,
       { expiresIn: '90d' },
     );
@@ -492,7 +536,15 @@ export async function issueRoleLoginToken(role, email, phone, deviceHint = '') {
       token,
       sessionSeed,
       accountStatus: 'active',
-      user: { email: investor.email, name: investor.fullName, status: investor.status },
+      user: {
+        email: investor.email,
+        name: investor.fullName,
+        status: investor.status,
+        emailVerified: Boolean(investor.emailVerified),
+        diditStatus,
+        subscriptionActive,
+        tradingApproved: Boolean(kyc?.tradingApproved),
+      },
     };
   }
 

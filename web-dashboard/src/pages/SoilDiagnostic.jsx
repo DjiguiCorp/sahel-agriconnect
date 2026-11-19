@@ -137,6 +137,7 @@ export default function SoilDiagnostic() {
           region,
           season,
           lastCrop,
+          lang: isFr ? 'fr' : 'en',
         }),
       });
       const data = await res.json().catch(() => ({}));

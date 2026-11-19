@@ -113,6 +113,7 @@ export default function ThinkTank() {
           cropType: cropType || 'Non précisé',
           region: region.trim() || 'Non précisée',
           cooperativeMember,
+          lang: isFr ? 'fr' : 'en',
         }),
       });
       const data = await res.json().catch(() => ({}));

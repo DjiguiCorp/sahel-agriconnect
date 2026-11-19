@@ -129,6 +129,536 @@ function csvEscape(v) {
   return s;
 }
 
+const REJECTION_REASONS = [
+  'Document quality insufficient',
+  'Document type not accepted',
+  'Identity mismatch',
+  'Sanctions/PEP flag',
+  'Other',
+];
+
+const TYPE_BADGE = {
+  African: 'bg-green-500/15 text-green-300',
+  Diaspora: 'bg-blue-500/15 text-blue-300',
+  Institutional: 'bg-amber-500/15 text-amber-300',
+};
+
+const DIDIT_STATUS_CLS = {
+  pending: 'bg-blue-500/15 text-blue-300',
+  approved: 'bg-green-500/15 text-green-300',
+  declined: 'bg-red-500/15 text-red-300',
+  expired: 'bg-orange-500/15 text-orange-300',
+};
+
+function formatDocType(t) {
+  if (!t) return '—';
+  return String(t).replace(/_/g, ' ');
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  try {
+    return new Date(d).toLocaleString();
+  } catch {
+    return '—';
+  }
+}
+
+/** Full Didit KYC compliance review queue + modal + audit log */
+function DiditVerificationsPanel({ isFr }) {
+  const [rows, setRows] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [reviewId, setReviewId] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError('');
+    Promise.all([
+      fetch(`${API_BASE_URL}/api/admin/investors/didit-kyc`, { headers: authHeaders() }).then((r) =>
+        r.json()
+      ),
+      fetch(`${API_BASE_URL}/api/admin/investors/kyc-audit-log`, { headers: authHeaders() }).then(
+        (r) => r.json()
+      ),
+    ])
+      .then(([d, a]) => {
+        if (d.success) setRows(d.kycs || []);
+        else setError(d.error || 'Failed to load');
+        if (a.success) setAuditLogs(a.logs || []);
+      })
+      .catch((e) => setError(e.message || 'Failed to load'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openReview = async (row) => {
+    const id = row.investorId || row.investorEmail;
+    setReviewId(id);
+    setDetail(null);
+    setNotes(row.kycReviewNotes || '');
+    setRejectionReason('');
+    setShowRejectForm(false);
+    setDetailLoading(true);
+    setError('');
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(id)}/kyc-detail`,
+        { headers: authHeaders() }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Load failed');
+      setDetail(data);
+    } catch (e) {
+      setError(e.message || 'Load failed');
+      setReviewId(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeReview = () => {
+    setReviewId(null);
+    setDetail(null);
+    setShowRejectForm(false);
+    setNotes('');
+    setRejectionReason('');
+  };
+
+  const submitReview = async (action) => {
+    if (!reviewId) return;
+    if (action === 'reject' && !rejectionReason) {
+      setError(isFr ? 'Choisissez un motif de rejet.' : 'Select a rejection reason.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(reviewId)}/kyc-review`,
+        {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            action,
+            notes,
+            rejectionReason: action === 'reject' ? rejectionReason : undefined,
+          }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Review failed');
+
+      setRows((prev) =>
+        prev.map((r) => {
+          const match =
+            r.investorId === reviewId ||
+            r.investorEmail === reviewId ||
+            r.investorEmail === detail?.profile?.email;
+          if (!match) return r;
+          return {
+            ...r,
+            tradingApproved: Boolean(data.tradingApproved),
+            diditStatus: data.diditStatus,
+            kycRejectionReason: data.kycRejectionReason,
+            kycReviewNotes: data.kycReviewNotes,
+            kycReviewedAt: data.kycReviewedAt,
+          };
+        })
+      );
+      closeReview();
+      // Refresh audit log
+      fetch(`${API_BASE_URL}/api/admin/investors/kyc-audit-log`, { headers: authHeaders() })
+        .then((r) => r.json())
+        .then((a) => {
+          if (a.success) setAuditLogs(a.logs || []);
+        })
+        .catch(() => {});
+    } catch (e) {
+      setError(e.message || 'Review failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-6 text-gray-400 text-sm">
+        {isFr ? 'Chargement Didit KYC…' : 'Loading Didit KYC…'}
+      </div>
+    );
+  }
+
+  const extracted = detail?.extracted || {};
+  const docWarning =
+    extracted.documentType &&
+    extracted.documentTypeAcceptable === false;
+
+  return (
+    <div className="space-y-6 mb-6">
+      <div
+        className="space-y-3 rounded-xl p-4 md:p-5 text-gray-100 [&_th]:text-gray-400 [&_td]:text-gray-100 [&_p]:text-gray-400"
+        style={{ background: '#0d1f17' }}
+      >
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="text-white font-bold text-sm">
+              {isFr ? 'File de revue KYC (Didit)' : 'KYC review queue (Didit)'}
+            </h3>
+            <p className="text-gray-400 text-xs mt-0.5">
+              {isFr
+                ? 'Examinez chaque dossier Didit, validez le type de document, puis approuvez ou rejetez le trading.'
+                : 'Review each Didit file, validate document type, then approve or reject trading access.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={load}
+            className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 hover:text-white"
+          >
+            {isFr ? 'Actualiser' : 'Refresh'}
+          </button>
+        </div>
+
+        {error ? <p className="!text-red-400 text-xs">{error}</p> : null}
+
+        {rows.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-6">
+            {isFr ? 'Aucune vérification Didit pour le moment.' : 'No Didit verifications yet.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-white/10">
+            <table className="min-w-full text-sm text-gray-100">
+              <thead className="bg-white/5 text-left text-gray-400 text-xs uppercase">
+                <tr>
+                  <th className="px-3 py-2 font-semibold text-gray-400">
+                    {isFr ? 'Investisseur' : 'Investor'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">
+                    {isFr ? 'Type' : 'Type'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">Didit</th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">
+                    {isFr ? 'Document' : 'Document'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">
+                    {isFr ? 'Soumis' : 'Submitted'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold text-gray-400">Trading</th>
+                  <th className="px-3 py-2 font-semibold text-gray-400" />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.investorEmail} className="border-t border-white/10">
+                    <td className="px-3 py-2.5">
+                      <p className="!text-gray-100 font-medium m-0">{row.investorName || '—'}</p>
+                      <p className="!text-gray-400 text-xs m-0 mt-0.5">{row.investorEmail}</p>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-gray-300">
+                          {row.countryOfResidence || '—'}
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold w-fit ${
+                            TYPE_BADGE[row.investorType] || 'bg-white/10 text-gray-300'
+                          }`}
+                        >
+                          {row.investorType || '—'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                          DIDIT_STATUS_CLS[row.diditStatus] || 'bg-white/10 text-gray-300'
+                        }`}
+                      >
+                        {row.diditStatus || '—'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-gray-300 text-xs capitalize">
+                      {formatDocType(row.documentType)}
+                      {row.documentTypeAcceptable === false ? (
+                        <span className="block text-amber-300 text-[10px] mt-0.5">
+                          {isFr ? 'À vérifier' : 'Needs review'}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-2.5 text-gray-400 text-xs">
+                      {formatDate(row.submissionDate)}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                          row.tradingApproved
+                            ? 'bg-green-500/15 text-green-300'
+                            : 'bg-white/10 text-gray-400'
+                        }`}
+                      >
+                        {row.tradingApproved
+                          ? isFr
+                            ? 'Approuvé'
+                            : 'Approved'
+                          : isFr
+                            ? 'En attente'
+                            : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => openReview(row)}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#B5850A] text-black hover:opacity-90"
+                      >
+                        {isFr ? 'Réviser' : 'Review'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Audit log */}
+      <div
+        className="rounded-xl p-4 md:p-5 text-gray-100 [&_th]:text-gray-400 [&_td]:text-gray-100 [&_p]:text-gray-400"
+        style={{ background: '#0d1f17' }}
+      >
+        <h3 className="text-white font-bold text-sm mb-1">
+          {isFr ? 'Journal d\'audit KYC' : 'KYC audit log'}
+        </h3>
+        <p className="text-gray-400 text-xs mb-3">
+          {isFr ? '20 dernières actions de revue.' : 'Last 20 review actions.'}
+        </p>
+        {auditLogs.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-4">
+            {isFr ? 'Aucune action pour le moment.' : 'No actions yet.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-white/10">
+            <table className="min-w-full text-sm">
+              <thead className="bg-white/5 text-left text-gray-400 text-xs uppercase">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Admin</th>
+                  <th className="px-3 py-2 font-semibold">
+                    {isFr ? 'Investisseur' : 'Investor'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold">Action</th>
+                  <th className="px-3 py-2 font-semibold">
+                    {isFr ? 'Date' : 'When'}
+                  </th>
+                  <th className="px-3 py-2 font-semibold">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs.map((log) => (
+                  <tr key={log._id} className="border-t border-white/10">
+                    <td className="px-3 py-2 text-gray-300 text-xs">{log.adminEmail}</td>
+                    <td className="px-3 py-2">
+                      <p className="!text-gray-100 text-xs m-0 font-medium">
+                        {log.investorName || '—'}
+                      </p>
+                      <p className="!text-gray-500 text-[10px] m-0">{log.investorEmail}</p>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                          log.action === 'approved'
+                            ? 'bg-green-500/15 text-green-300'
+                            : log.action === 'rejected'
+                              ? 'bg-red-500/15 text-red-300'
+                              : 'bg-amber-500/15 text-amber-300'
+                        }`}
+                      >
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-400 text-xs">
+                      {formatDate(log.timestamp)}
+                    </td>
+                    <td className="px-3 py-2 text-gray-400 text-xs max-w-[220px] truncate">
+                      {log.notes || '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Review modal */}
+      {(reviewId || detailLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+          <div
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-white/15 p-5 space-y-4"
+            style={{ background: '#0d1f17' }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-white font-bold text-base">
+                  {isFr ? 'Revue KYC' : 'KYC Review'}
+                </h3>
+                <p className="text-gray-400 text-xs mt-0.5">
+                  {detail?.profile?.email || '…'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeReview}
+                className="text-gray-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {detailLoading || !detail ? (
+              <p className="text-gray-400 text-sm py-8 text-center">
+                {isFr ? 'Chargement…' : 'Loading…'}
+              </p>
+            ) : (
+              <>
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-1 text-sm">
+                  <p className="!text-white font-semibold m-0">{detail.profile?.name}</p>
+                  <p className="!text-gray-400 text-xs m-0">{detail.profile?.email}</p>
+                  <p className="!text-gray-300 text-xs m-0">
+                    {detail.profile?.country} · {detail.profile?.investorType} ·{' '}
+                    {(detail.profile?.preferredLanguage || 'fr').toUpperCase()}
+                  </p>
+                  <p className="!text-gray-400 text-xs m-0">
+                    Didit: {detail.kyc?.diditStatus || '—'} ·{' '}
+                    {isFr ? 'Vérifié' : 'Verified'}:{' '}
+                    {formatDate(detail.kyc?.diditVerifiedAt)}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2 text-sm">
+                  <p className="!text-white font-semibold text-xs uppercase tracking-wide m-0">
+                    {isFr ? 'Données Didit extraites' : 'Extracted Didit fields'}
+                  </p>
+                  {[
+                    [isFr ? 'Nom complet' : 'Full name', extracted.fullName || '—'],
+                    [isFr ? 'Type de document' : 'Document type', formatDocType(extracted.documentType)],
+                    [isFr ? 'N° document' : 'Document no.', extracted.documentNumberMasked || '—'],
+                    [isFr ? 'Nationalité' : 'Nationality', extracted.nationality || '—'],
+                    [isFr ? 'Date de naissance' : 'Date of birth', extracted.dateOfBirth || '—'],
+                    [isFr ? 'Expiration' : 'Expiry', extracted.expiryDate || '—'],
+                    [
+                      isFr ? 'Score de confiance' : 'Confidence',
+                      extracted.confidence != null ? String(extracted.confidence) : '—',
+                    ],
+                  ].map(([label, val]) => (
+                    <div key={label} className="flex justify-between gap-3 text-xs">
+                      <span className="text-gray-400">{label}</span>
+                      <span className="text-gray-100 text-right capitalize">{val}</span>
+                    </div>
+                  ))}
+                  {docWarning ? (
+                    <div className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200 text-xs">
+                      {isFr
+                        ? 'Type de document susceptible de ne pas répondre aux exigences AfriYield.'
+                        : 'Document type may not meet AfriYield requirements.'}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">
+                    {isFr ? 'Notes admin' : 'Admin notes'}
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-lg bg-black/30 border border-white/15 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/60 resize-none"
+                    placeholder={isFr ? 'Commentaires internes…' : 'Internal comments…'}
+                  />
+                </div>
+
+                {showRejectForm ? (
+                  <div className="space-y-2">
+                    <label className="block text-xs text-gray-400">
+                      {isFr ? 'Motif de rejet' : 'Rejection reason'}
+                    </label>
+                    <select
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      className="w-full rounded-lg bg-black/30 border border-white/15 px-3 py-2 text-sm text-white focus:outline-none"
+                    >
+                      <option value="">
+                        {isFr ? '— Choisir —' : '— Select —'}
+                      </option>
+                      {REJECTION_REASONS.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => submitReview('reject')}
+                        className="flex-1 rounded-lg bg-red-600 text-white text-sm font-bold py-2.5 disabled:opacity-60"
+                      >
+                        {submitting
+                          ? '…'
+                          : isFr
+                            ? 'Confirmer le rejet'
+                            : 'Confirm reject'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectForm(false)}
+                        className="rounded-lg bg-white/10 text-gray-300 text-sm px-4"
+                      >
+                        {isFr ? 'Annuler' : 'Cancel'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => submitReview('approve')}
+                      className="flex-1 rounded-lg bg-green-600 text-white text-sm font-bold py-2.5 disabled:opacity-60"
+                    >
+                      {submitting ? '…' : isFr ? 'Approuver' : 'Approve'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => setShowRejectForm(true)}
+                      className="flex-1 rounded-lg bg-red-600/90 text-white text-sm font-bold py-2.5 disabled:opacity-60"
+                    >
+                      {isFr ? 'Rejeter' : 'Reject'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function KYCReviewPanel({ isFr }) {
   const [kycs, setKycs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -249,15 +779,18 @@ function KYCReviewPanel({ isFr }) {
 
   if (loading) {
     return (
-      <div className="text-center py-8 text-white/40">
+      <div className="text-center py-8 text-gray-400">
         {isFr ? 'Chargement des KYC...' : 'Loading KYC reviews...'}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 rounded-xl p-4 md:p-6" style={{ background: '#0d1f17' }}>
-      <p className="text-white/50 text-sm">
+    <div
+      className="space-y-4 rounded-xl p-4 md:p-6 text-gray-100 [&_th]:text-gray-400 [&_td]:text-gray-100 [&_p]:text-gray-400"
+      style={{ background: '#0d1f17' }}
+    >
+      <p className="text-gray-400 text-sm">
         {isFr
           ? 'Trois files de revue : Africains (après paiement), Diaspora (24h), Autres (48-72h).'
           : 'Three review queues: African (post-payment), Diaspora (24h), Other (48-72h).'}
@@ -277,13 +810,13 @@ function KYCReviewPanel({ isFr }) {
               }
             }}
           >
-            <p className="text-2xl font-bold text-white">
+            <p className="!text-white text-2xl font-bold">
               {kycs.filter((k) => k.countryCategory === cat).length}
             </p>
             <p className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-1 ${categoryColors[cat]}`}>
               {categoryLabels[cat]}
             </p>
-            <p className="text-white/40 text-xs mt-2">{sectionHints[cat]}</p>
+            <p className="text-gray-400 text-xs mt-2">{sectionHints[cat]}</p>
           </div>
         ))}
       </div>
@@ -297,7 +830,7 @@ function KYCReviewPanel({ isFr }) {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               filter === f
                 ? 'bg-amber-500 text-black'
-                : 'bg-white/10 text-white/60 hover:text-white'
+                : 'bg-white/10 text-gray-300 hover:text-white'
             }`}
           >
             {f === 'all'
@@ -308,7 +841,7 @@ function KYCReviewPanel({ isFr }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-8 text-white/40 text-sm">
+        <div className="text-center py-8 text-gray-400 text-sm">
           {isFr ? 'Aucun KYC en attente' : 'No pending KYC reviews'}
         </div>
       ) : (
@@ -504,6 +1037,7 @@ export default function AfriYieldManagement() {
   const [loading, setLoading] = useState(true);
   const [opportunities, setOpportunities] = useState([]);
   const [investors, setInvestors] = useState([]);
+  const [tradingActionEmail, setTradingActionEmail] = useState('');
   const [paymentStatusByInvestorId, setPaymentStatusByInvestorId] = useState({});
   const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
   const [meetingRequests, setMeetingRequests] = useState([]);
@@ -562,6 +1096,82 @@ export default function AfriYieldManagement() {
     const data = await r.json();
     if (data.success && Array.isArray(data.investors)) setInvestors(data.investors);
     else if (Array.isArray(data)) setInvestors(data);
+  }, []);
+
+  const revokeTradingAccess = useCallback(
+    async (inv) => {
+      const email = String(inv.email || '').trim().toLowerCase();
+      if (!email) return;
+      const name = inv.fullName || email;
+      if (
+        !window.confirm(
+          `Revoke trading access for ${name}? They will be notified by email.`
+        )
+      ) {
+        return;
+      }
+      setTradingActionEmail(email);
+      try {
+        const r = await fetch(
+          `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(email)}/revoke-trading`,
+          { method: 'POST', headers: authHeaders() }
+        );
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || data.success === false) {
+          throw new Error(data.error || 'Revoke failed');
+        }
+        setInvestors((prev) =>
+          prev.map((row) =>
+            String(row.email || '').toLowerCase() === email
+              ? {
+                  ...row,
+                  tradingApproved: false,
+                  tradingRevoked: true,
+                  tradingRevokedAt: new Date().toISOString(),
+                }
+              : row
+          )
+        );
+      } catch (e) {
+        window.alert(e.message || 'Could not revoke trading access');
+      } finally {
+        setTradingActionEmail('');
+      }
+    },
+    []
+  );
+
+  const restoreTradingAccess = useCallback(async (inv) => {
+    const email = String(inv.email || '').trim().toLowerCase();
+    if (!email) return;
+    setTradingActionEmail(email);
+    try {
+      const r = await fetch(
+        `${API_BASE_URL}/api/admin/investors/${encodeURIComponent(email)}/restore-trading`,
+        { method: 'POST', headers: authHeaders() }
+      );
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || data.success === false) {
+        throw new Error(data.error || 'Restore failed');
+      }
+      setInvestors((prev) =>
+        prev.map((row) =>
+          String(row.email || '').toLowerCase() === email
+            ? {
+                ...row,
+                tradingApproved: true,
+                tradingRevoked: false,
+                tradingRevokedAt: undefined,
+                tradingApprovedAt: new Date().toISOString(),
+              }
+            : row
+        )
+      );
+    } catch (e) {
+      window.alert(e.message || 'Could not restore trading access');
+    } finally {
+      setTradingActionEmail('');
+    }
   }, []);
 
   const resolvePaymentStatuses = useCallback(async (invList) => {
@@ -989,7 +1599,7 @@ export default function AfriYieldManagement() {
   }
 
   return (
-    <div className="text-gray-900 [&_th]:text-gray-900 [&_td]:text-gray-900 [&_h2]:text-gray-900 [&_p]:text-gray-700">
+    <div className="text-gray-900">
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-primary-green mb-2">AfriYield Exchange</h2>
         <p className="text-gray-600">Manage investment opportunities, investors, and meeting requests.</p>
@@ -1115,6 +1725,7 @@ export default function AfriYieldManagement() {
                   <th className="px-3 py-2 font-semibold">Investment Range</th>
                   <th className="px-3 py-2 font-semibold">Date Registered</th>
                   <th className="px-3 py-2 font-semibold">Payment Status</th>
+                  <th className="px-3 py-2 font-semibold">Trading</th>
                   <th className="px-3 py-2 font-semibold">Status</th>
                   <th className="px-3 py-2 font-semibold">Actions</th>
                 </tr>
@@ -1157,6 +1768,61 @@ export default function AfriYieldManagement() {
                     </td>
                     <td className="px-3 py-2">
                       {(() => {
+                        const emailKey = String(inv.email || '').toLowerCase();
+                        const busy = tradingActionEmail === emailKey;
+                        if (inv.tradingApproved) {
+                          return (
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className="inline-flex rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800">
+                                Trading Active
+                              </span>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => revokeTradingAccess(inv)}
+                                className="text-xs font-medium text-red-700 hover:underline disabled:opacity-50"
+                              >
+                                {busy ? '…' : 'Revoke Access'}
+                              </button>
+                            </div>
+                          );
+                        }
+                        if (inv.tradingRevoked) {
+                          return (
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-800">
+                                Access Revoked
+                              </span>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => restoreTradingAccess(inv)}
+                                className="text-xs font-medium text-green-700 hover:underline disabled:opacity-50"
+                              >
+                                {busy ? '…' : 'Restore Access'}
+                              </button>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                              Pending
+                            </span>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => restoreTradingAccess(inv)}
+                              className="text-xs font-medium text-blue-700 hover:underline disabled:opacity-50"
+                            >
+                              {busy ? '…' : 'Approve Manually'}
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-3 py-2">
+                      {(() => {
                         const b = investorStatusBadge(inv.status);
                         return (
                           <div className="flex items-center gap-2">
@@ -1167,7 +1833,7 @@ export default function AfriYieldManagement() {
                             <select
                               value={INVESTOR_STATUSES.includes(inv.status) ? inv.status : (inv.status || 'New')}
                               onChange={(e) => updateInvestorStatus(inv._id, e.target.value)}
-                              className="rounded border border-gray-300 px-2 py-1 text-xs bg-white"
+                              className="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
                               aria-label={`Status for ${inv.fullName}`}
                             >
                               {INVESTOR_STATUSES.map((s) => (
@@ -1232,7 +1898,14 @@ export default function AfriYieldManagement() {
       )}
 
       {sub === 'kyc-reviews' && (
-        <KYCReviewPanel isFr={typeof localStorage !== 'undefined' && localStorage.getItem('i18nextLng') === 'fr'} />
+        <div className="space-y-2">
+          <DiditVerificationsPanel
+            isFr={typeof localStorage !== 'undefined' && localStorage.getItem('i18nextLng') === 'fr'}
+          />
+          <KYCReviewPanel
+            isFr={typeof localStorage !== 'undefined' && localStorage.getItem('i18nextLng') === 'fr'}
+          />
+        </div>
       )}
 
       {sub === 'meetings' && (
@@ -1445,7 +2118,7 @@ export default function AfriYieldManagement() {
                 <span className="font-medium text-gray-700">Center Name *</span>
                 <input
                   required
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.centerName}
                   onChange={(e) => setForm((p) => ({ ...p, centerName: e.target.value }))}
                 />
@@ -1454,7 +2127,7 @@ export default function AfriYieldManagement() {
                 <span className="font-medium text-gray-700">Location (city and country) *</span>
                 <input
                   required
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.location}
                   onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))}
                 />
@@ -1462,7 +2135,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Country *</span>
                 <select
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                   value={form.country}
                   onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
                 >
@@ -1477,7 +2150,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Commodity *</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={form.commodity}
                     onChange={(e) => setForm((p) => ({ ...p, commodity: e.target.value }))}
                   >
@@ -1489,7 +2162,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Track *</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={form.track}
                     onChange={(e) => setForm((p) => ({ ...p, track: e.target.value }))}
                   >
@@ -1502,7 +2175,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Certification Status</span>
                 <select
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                   value={form.certificationStatus}
                   onChange={(e) => setForm((p) => ({ ...p, certificationStatus: e.target.value }))}
                 >
@@ -1517,7 +2190,7 @@ export default function AfriYieldManagement() {
                   type="number"
                   required
                   min={0}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.amountSought}
                   onChange={(e) => setForm((p) => ({ ...p, amountSought: e.target.value }))}
                 />
@@ -1527,7 +2200,7 @@ export default function AfriYieldManagement() {
                 <textarea
                   required
                   rows={3}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.description}
                   onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 />
@@ -1537,7 +2210,7 @@ export default function AfriYieldManagement() {
                 <input
                   type="number"
                   min={0}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.memberFarmers}
                   onChange={(e) => setForm((p) => ({ ...p, memberFarmers: e.target.value }))}
                 />
@@ -1545,7 +2218,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Contact Name</span>
                 <input
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.contactName}
                   onChange={(e) => setForm((p) => ({ ...p, contactName: e.target.value }))}
                 />
@@ -1554,7 +2227,7 @@ export default function AfriYieldManagement() {
                 <span className="font-medium text-gray-700">Contact Email</span>
                 <input
                   type="email"
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.contactEmail}
                   onChange={(e) => setForm((p) => ({ ...p, contactEmail: e.target.value }))}
                 />
@@ -1562,7 +2235,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Contact Phone</span>
                 <input
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.contactPhone}
                   onChange={(e) => setForm((p) => ({ ...p, contactPhone: e.target.value }))}
                 />
@@ -1570,7 +2243,7 @@ export default function AfriYieldManagement() {
               <label className="block">
                 <span className="font-medium text-gray-700">Existing Buyers</span>
                 <input
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. Japan, France"
                   value={form.existingBuyers}
                   onChange={(e) => setForm((p) => ({ ...p, existingBuyers: e.target.value }))}
@@ -1588,7 +2261,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Status</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={form.status}
                     onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
                   >
@@ -1631,7 +2304,7 @@ export default function AfriYieldManagement() {
                 <input
                   required
                   list="investor-emails"
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={invForm.investorEmail}
                   onChange={(e) => setInvForm((p) => ({ ...p, investorEmail: e.target.value }))}
                 />
@@ -1646,7 +2319,7 @@ export default function AfriYieldManagement() {
                 <span className="font-medium text-gray-700">Opportunity *</span>
                 <select
                   required
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                   value={invForm.opportunityId}
                   onChange={(e) => setInvForm((p) => ({ ...p, opportunityId: e.target.value }))}
                 >
@@ -1667,7 +2340,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Track *</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={invForm.track}
                     onChange={(e) => setInvForm((p) => ({ ...p, track: e.target.value }))}
                   >
@@ -1681,7 +2354,7 @@ export default function AfriYieldManagement() {
                     required
                     type="number"
                     min="1"
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={invForm.amountDeployed}
                     onChange={(e) => setInvForm((p) => ({ ...p, amountDeployed: e.target.value }))}
                   />
@@ -1695,7 +2368,7 @@ export default function AfriYieldManagement() {
                     type="number"
                     min="0"
                     step="0.1"
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={invForm.expectedROIPercent}
                     onChange={(e) => setInvForm((p) => ({ ...p, expectedROIPercent: e.target.value }))}
                   />
@@ -1704,7 +2377,7 @@ export default function AfriYieldManagement() {
                   <span className="font-medium text-gray-700">Deployment date</span>
                   <input
                     type="date"
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={invForm.deploymentDate}
                     onChange={(e) => setInvForm((p) => ({ ...p, deploymentDate: e.target.value }))}
                   />
@@ -1800,7 +2473,7 @@ export default function AfriYieldManagement() {
                   <span className="font-medium text-gray-700">Commodity *</span>
                   <input
                     required
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={batchForm.commodity}
                     onChange={(e) => setBatchForm((p) => ({ ...p, commodity: e.target.value }))}
                   />
@@ -1808,7 +2481,7 @@ export default function AfriYieldManagement() {
                 <label className="block">
                   <span className="font-medium text-gray-700">Status</span>
                   <select
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white"
                     value={batchForm.status}
                     onChange={(e) => setBatchForm((p) => ({ ...p, status: e.target.value }))}
                   >
@@ -1824,59 +2497,59 @@ export default function AfriYieldManagement() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Farmer name</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerName} onChange={(e) => setBatchForm((p) => ({ ...p, farmerName: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.farmerName} onChange={(e) => setBatchForm((p) => ({ ...p, farmerName: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Farmer country</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, farmerCountry: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.farmerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, farmerCountry: e.target.value }))} />
                 </label>
                 <label className="block sm:col-span-2">
                   <span className="font-medium text-gray-700">Farmer region</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.farmerRegion} onChange={(e) => setBatchForm((p) => ({ ...p, farmerRegion: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.farmerRegion} onChange={(e) => setBatchForm((p) => ({ ...p, farmerRegion: e.target.value }))} />
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Cooperative name</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.cooperativeName} onChange={(e) => setBatchForm((p) => ({ ...p, cooperativeName: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.cooperativeName} onChange={(e) => setBatchForm((p) => ({ ...p, cooperativeName: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Processor name</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.processorName} onChange={(e) => setBatchForm((p) => ({ ...p, processorName: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.processorName} onChange={(e) => setBatchForm((p) => ({ ...p, processorName: e.target.value }))} />
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Harvest date</span>
-                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.harvestDate} onChange={(e) => setBatchForm((p) => ({ ...p, harvestDate: e.target.value }))} />
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.harvestDate} onChange={(e) => setBatchForm((p) => ({ ...p, harvestDate: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Processing date</span>
-                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.processingDate} onChange={(e) => setBatchForm((p) => ({ ...p, processingDate: e.target.value }))} />
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.processingDate} onChange={(e) => setBatchForm((p) => ({ ...p, processingDate: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Export date</span>
-                  <input type="date" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.exportDate} onChange={(e) => setBatchForm((p) => ({ ...p, exportDate: e.target.value }))} />
+                  <input type="date" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.exportDate} onChange={(e) => setBatchForm((p) => ({ ...p, exportDate: e.target.value }))} />
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Quantity harvested (kg)</span>
-                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.quantityHarvestedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityHarvestedKg: e.target.value }))} />
+                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.quantityHarvestedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityHarvestedKg: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Quantity processed (kg)</span>
-                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.quantityProcessedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityProcessedKg: e.target.value }))} />
+                  <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.quantityProcessedKg} onChange={(e) => setBatchForm((p) => ({ ...p, quantityProcessedKg: e.target.value }))} />
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Certification status</span>
-                  <select className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white" value={batchForm.certificationStatus} onChange={(e) => setBatchForm((p) => ({ ...p, certificationStatus: e.target.value }))}>
+                  <select className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white" value={batchForm.certificationStatus} onChange={(e) => setBatchForm((p) => ({ ...p, certificationStatus: e.target.value }))}>
                     <option value="None">None</option>
                     <option value="Local">Local</option>
                     <option value="Regional">Regional</option>
@@ -1886,7 +2559,7 @@ export default function AfriYieldManagement() {
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Quality grade</span>
-                  <select className="mt-1 w-full rounded border border-gray-300 px-3 py-2 bg-white" value={batchForm.qualityGrade} onChange={(e) => setBatchForm((p) => ({ ...p, qualityGrade: e.target.value }))}>
+                  <select className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 bg-white" value={batchForm.qualityGrade} onChange={(e) => setBatchForm((p) => ({ ...p, qualityGrade: e.target.value }))}>
                     <option value="A">A</option>
                     <option value="B">B</option>
                     <option value="C">C</option>
@@ -1898,27 +2571,27 @@ export default function AfriYieldManagement() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className="font-medium text-gray-700">Buyer name</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.buyerName} onChange={(e) => setBatchForm((p) => ({ ...p, buyerName: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.buyerName} onChange={(e) => setBatchForm((p) => ({ ...p, buyerName: e.target.value }))} />
                 </label>
                 <label className="block">
                   <span className="font-medium text-gray-700">Buyer country</span>
-                  <input className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.buyerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, buyerCountry: e.target.value }))} />
+                  <input className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.buyerCountry} onChange={(e) => setBatchForm((p) => ({ ...p, buyerCountry: e.target.value }))} />
                 </label>
               </div>
 
               <label className="block">
                 <span className="font-medium text-gray-700">Export value (USD)</span>
-                <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.exportValueUSD} onChange={(e) => setBatchForm((p) => ({ ...p, exportValueUSD: e.target.value }))} />
+                <input type="number" min="0" className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.exportValueUSD} onChange={(e) => setBatchForm((p) => ({ ...p, exportValueUSD: e.target.value }))} />
               </label>
 
               <label className="block">
                 <span className="font-medium text-gray-700">Documents (one per line URL/path)</span>
-                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.documents} onChange={(e) => setBatchForm((p) => ({ ...p, documents: e.target.value }))} />
+                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.documents} onChange={(e) => setBatchForm((p) => ({ ...p, documents: e.target.value }))} />
               </label>
 
               <label className="block">
                 <span className="font-medium text-gray-700">Admin notes</span>
-                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 px-3 py-2" value={batchForm.adminNotes} onChange={(e) => setBatchForm((p) => ({ ...p, adminNotes: e.target.value }))} />
+                <textarea rows={3} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400" value={batchForm.adminNotes} onChange={(e) => setBatchForm((p) => ({ ...p, adminNotes: e.target.value }))} />
               </label>
 
               <div className="flex justify-end gap-2 pt-2">

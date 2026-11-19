@@ -23,7 +23,13 @@ import AfriYieldManagement from '../components/admin/AfriYieldManagement';
 import CountryLicensesManagement from '../components/admin/CountryLicensesManagement';
 import GovernanceTab from '../components/admin/GovernanceTab';
 import FarmerNeedsTab from '../components/admin/FarmerNeedsTab';
+import MarketPricesTab from '../components/admin/MarketPricesTab';
+import PendingMobilePayments, {
+  AdminPaymentsPanel,
+  usePendingMobilePaymentCount,
+} from '../components/admin/PendingMobilePayments';
 import Modal from '../components/Modal';
+import { ApiSection } from '../components/ErrorBoundary';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import ExpertRequestsManagement from '../components/admin/ExpertRequestsManagement';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -50,11 +56,14 @@ import {
   ClipboardList,
   Trash2,
   Wheat,
+  LineChart,
+  Wallet,
 } from 'lucide-react';
 import { authHeaders, handleAdminApiUnauthorized } from '../utils/adminSession';
 
 const BASE_TABS = [
   { id: 'overview', labelKey: 'adminDashboard.tabs.overview', shortKey: 'adminDashboard.tabsShort.overview', Icon: ShieldAlert },
+  { id: 'payments', labelKey: 'adminDashboard.tabs.payments', shortKey: 'adminDashboard.tabsShort.payments', Icon: Wallet },
   { id: 'notifications', labelKey: 'adminDashboard.tabs.notifications', shortKey: 'adminDashboard.tabsShort.notifications', Icon: BadgeCheck },
   { id: 'deletions', labelKey: 'adminDashboard.tabs.deletions', shortKey: 'adminDashboard.tabsShort.deletions', Icon: Trash2 },
   { id: 'deleteUsers', labelKey: 'adminDashboard.tabs.deleteUsers', shortKey: 'adminDashboard.tabsShort.deleteUsers', Icon: Trash2 },
@@ -71,6 +80,7 @@ const BASE_TABS = [
   { id: 'seasonal', labelKey: 'adminDashboard.tabs.seasonal', shortKey: 'adminDashboard.tabsShort.seasonal', Icon: Calendar },
   { id: 'certification', labelKey: 'adminDashboard.tabs.certification', shortKey: 'adminDashboard.tabsShort.certification', Icon: Star },
   { id: 'logistics', labelKey: 'adminDashboard.tabs.logistics', shortKey: 'adminDashboard.tabsShort.logistics', Icon: Truck },
+  { id: 'marketPrices', labelKey: 'adminDashboard.tabs.marketPrices', shortKey: 'adminDashboard.tabsShort.marketPrices', Icon: LineChart },
   { id: 'reports', labelKey: 'adminDashboard.tabs.reports', shortKey: 'adminDashboard.tabsShort.reports', Icon: BarChart3 },
   { id: 'afriyield', labelKey: 'adminDashboard.tabs.afriyield', shortKey: 'adminDashboard.tabsShort.afriyield', Icon: Coins, accent: 'gold' },
 ];
@@ -118,11 +128,12 @@ function parseMoneyRangePotential(s) {
   return Math.max(...nums);
 }
 
-function MetricCard({ title, value }) {
+function MetricCard({ title, value, subtitle }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <p className="text-sm font-semibold text-gray-600">{title}</p>
       <p className="mt-2 text-2xl font-extrabold text-brand-forest">{value}</p>
+      {subtitle ? <p className="mt-1 text-xs font-semibold text-amber-700">{subtitle}</p> : null}
     </div>
   );
 }
@@ -173,6 +184,7 @@ function OverviewControlTower({ onGoTab }) {
     investors: 0,
     investorPotential: 0,
     activeCoops: 0,
+    pendingPaymentCoops: 0,
     coopAnnual: 0,
     certifiedProducers: 0,
     certificationRevenue: 0,
@@ -221,6 +233,8 @@ function OverviewControlTower({ onGoTab }) {
         pipelineRes,
         farmersAllRes,
         coopActiveRes,
+        coopPendingPayRes,
+        paymentsLedgerRes,
         farmerRecentRes,
         investorRecentRes,
         coopRecentRes,
@@ -237,6 +251,10 @@ function OverviewControlTower({ onGoTab }) {
         fetch(`${API_BASE_URL}/api/investors/status-summary`, { headers }),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=500`, { headers }),
         fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations?status=active`, { headers }),
+        fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations?status=pending_payment`, {
+          headers,
+        }),
+        fetch(`${API_BASE_URL}/api/admin/payments/ledger`, { headers }),
         fetch(`${API_ENDPOINTS.FARMERS.BASE}?limit=2`, { headers }),
         fetch(`${API_BASE_URL}/api/investors`, { headers }),
         fetch(`${API_BASE_URL}/api/cooperatives/platform-registrations`, { headers }),
@@ -255,6 +273,8 @@ function OverviewControlTower({ onGoTab }) {
       const pipelineJson = await pipelineRes.json().catch(() => ({}));
       const farmersAllJson = await farmersAllRes.json().catch(() => ({}));
       const coopActiveJson = await coopActiveRes.json().catch(() => ({}));
+      const coopPendingPayJson = await coopPendingPayRes.json().catch(() => ({}));
+      const paymentsLedgerJson = await paymentsLedgerRes.json().catch(() => ({}));
 
       const farmerRecentJson = await farmerRecentRes.json().catch(() => ({}));
       const investorRecentJson = await investorRecentRes.json().catch(() => ({}));
@@ -273,7 +293,13 @@ function OverviewControlTower({ onGoTab }) {
       setPendingOpps(opps.filter((o) => o.status === 'pending').length);
       setNewExpert(Array.isArray(expertNewJson?.requests) ? expertNewJson.requests.length : 0);
       setNewQuotes(Array.isArray(quoteNewJson?.quoteRequests) ? quoteNewJson.quoteRequests.length : 0);
-      setPendingCoops(Array.isArray(coopPendingJson?.registrations) ? coopPendingJson.registrations.length : 0);
+      const pendingReview = Array.isArray(coopPendingJson?.registrations)
+        ? coopPendingJson.registrations.length
+        : 0;
+      const pendingPayList = Array.isArray(coopPendingPayJson?.registrations)
+        ? coopPendingPayJson.registrations
+        : [];
+      setPendingCoops(pendingReview + pendingPayList.length);
 
       const licenses = Array.isArray(licensesJson?.licenses) ? licensesJson.licenses : [];
       const activeLicenses = licenses.filter((l) => l.status === 'active');
@@ -285,15 +311,26 @@ function OverviewControlTower({ onGoTab }) {
       const farmersAll = Array.isArray(farmersAllJson?.farmers) ? farmersAllJson.farmers : [];
       const certifiedProducers = farmersAll.filter((f) => String(f.qualityLevel || '').toLowerCase() === 'international').length;
 
-      const activeCoops = Array.isArray(coopActiveJson?.registrations) ? coopActiveJson.registrations.length : 0;
+      // Only count cooperatives that are active AND have a confirmed payment flag.
+      // pending_payment must never inflate this or revenue.
+      const activeRegs = Array.isArray(coopActiveJson?.registrations)
+        ? coopActiveJson.registrations
+        : [];
+      const activePaidCoops = activeRegs.filter((c) => c.paymentReceived === true).length;
+
+      const ledgerSummary = paymentsLedgerJson?.success ? paymentsLedgerJson.summary : null;
+      const coopAnnual = Number(ledgerSummary?.coopAnnualRevenue) || 0;
+      const pendingPaymentCoops =
+        Number(ledgerSummary?.pendingPaymentCoops) || pendingPayList.length;
 
       setMetrics({
         activeLicenses: activeLicenses.length,
         mrr,
         investors: investors.length,
         investorPotential,
-        activeCoops,
-        coopAnnual: activeCoops * 199,
+        activeCoops: Number(ledgerSummary?.activePaidCoops) || activePaidCoops,
+        pendingPaymentCoops,
+        coopAnnual,
         certifiedProducers,
         certificationRevenue: certifiedProducers * 299,
       });
@@ -393,8 +430,12 @@ function OverviewControlTower({ onGoTab }) {
   if (loading) return <div className="text-center py-10">{t('common.loading')}</div>;
   if (err) return <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{err}</div>;
 
+  const adminToken = localStorage.getItem('adminToken') || '';
+
   return (
     <div className="space-y-8">
+      <PendingMobilePayments token={adminToken} isFr={isFr} />
+
       <div className="overflow-x-auto">
         <div className="flex gap-4 min-w-max pb-2">
           <UrgentCard
@@ -447,6 +488,13 @@ function OverviewControlTower({ onGoTab }) {
         <MetricCard
           title={`${t('adminDashboard.activeCooperatives')} • ${t('adminDashboard.annualRevenue')}`}
           value={`${metrics.activeCoops} • ${fmtMoney(metrics.coopAnnual)}`}
+          subtitle={
+            metrics.pendingPaymentCoops
+              ? `${metrics.pendingPaymentCoops} ${
+                  i18n.language === 'fr' ? 'en attente de paiement' : 'awaiting payment'
+                }`
+              : undefined
+          }
         />
         <MetricCard
           title={`${t('adminDashboard.certifiedProducers')} • ${t('adminDashboard.certificationRevenue')}`}
@@ -655,7 +703,7 @@ function OverviewControlTower({ onGoTab }) {
               required
               value={investorForm.fullName}
               onChange={(e) => setInvestorForm((p) => ({ ...p, fullName: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-primary-orange"
             />
           </label>
           <label className="block space-y-1">
@@ -665,7 +713,7 @@ function OverviewControlTower({ onGoTab }) {
               required
               value={investorForm.email}
               onChange={(e) => setInvestorForm((p) => ({ ...p, email: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-primary-orange"
             />
           </label>
           <label className="block space-y-1">
@@ -673,7 +721,7 @@ function OverviewControlTower({ onGoTab }) {
             <select
               value={investorForm.countryOfResidence}
               onChange={(e) => setInvestorForm((p) => ({ ...p, countryOfResidence: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange bg-white"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-primary-orange"
             >
               {INVESTOR_RESIDENCE_COUNTRIES.map((c) => (
                 <option key={c} value={c}>
@@ -687,7 +735,7 @@ function OverviewControlTower({ onGoTab }) {
             <input
               value={investorForm.investmentRange}
               onChange={(e) => setInvestorForm((p) => ({ ...p, investmentRange: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-orange"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-primary-orange"
               placeholder="$50k-$100k"
             />
           </label>
@@ -1152,17 +1200,23 @@ function AdminDeleteUserPanel({ token }) {
   const [selectedUsers, setSelectedUsers] = useState(new Set());
 
   const search = async () => {
+    const q = String(searchQuery || '').trim();
+    if (q && q.length < 2) {
+      setUsers([]);
+      return;
+    }
     setLoading(true);
     setUsers([]);
     setSelectedUsers(new Set());
     try {
       const params = new URLSearchParams({ type: selectedType });
-      if (searchQuery) params.set('search', searchQuery);
+      if (q) params.set('search', q);
       const r = await fetch(`${API_BASE_URL}/api/deletion-requests/admin/users?${params}`, { headers });
-      const d = await r.json();
-      if (d.success) setUsers(d.users || []);
+      const d = await r.json().catch(() => ({}));
+      if (d.success) setUsers(Array.isArray(d.users) ? d.users : []);
+      else setUsers([]);
     } catch {
-      /* ignore */
+      setUsers([]);
     }
     setLoading(false);
   };
@@ -1240,9 +1294,15 @@ function AdminDeleteUserPanel({ token }) {
   };
 
   const displayName = (u) =>
-    u.nom || u.name || u.fullName || u.cooperativeName || u.nomCooperative || u.organization || '—';
-  const displayEmail = (u) => u.email || u.emailContact || '—';
-  const displayStatus = (u) => u.status || u.statut || '—';
+    u?.nom ||
+    u?.name ||
+    u?.fullName ||
+    u?.cooperativeName ||
+    u?.nomCooperative ||
+    u?.organization ||
+    '—';
+  const displayEmail = (u) => u?.email || u?.emailContact || u?.contact || '—';
+  const displayStatus = (u) => u?.status || u?.statut || '—';
 
   const typeInfo = USER_TYPES.find((t) => t.key === selectedType);
 
@@ -1303,13 +1363,14 @@ function AdminDeleteUserPanel({ token }) {
                 ? `Rechercher un ${(typeInfo?.label || 'utilisateur').toLowerCase()} par nom, email...`
                 : `Search ${(typeInfo?.label || 'user').toLowerCase()} by name, email...`
             }
-            className="flex-1 py-3 text-sm outline-none bg-transparent"
+            className="flex-1 py-3 text-sm outline-none bg-white text-gray-900 placeholder:text-gray-400"
+            style={{ color: '#1a3a2a' }}
           />
         </div>
         <button
           type="button"
           onClick={search}
-          disabled={loading}
+          disabled={loading || (String(searchQuery || '').trim().length === 1)}
           className="px-5 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50"
           style={{ background: '#1a3c2e' }}
         >
@@ -1510,7 +1571,8 @@ function AdminDeleteUserPanel({ token }) {
                         ? "Ex: Demande de l'utilisateur, violation des CGU, compte frauduleux..."
                         : 'Ex: User request, ToS violation, fraudulent account...'
                     }
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                    style={{ color: '#1a3a2a' }}
                   />
                 </div>
 
@@ -1590,6 +1652,7 @@ const CentralAdminDashboard = () => {
   const isSuperAdmin = user?.role === 'super-admin';
   const { country: detectedCountry } = useGeolocation();
   const [globalCountryFilter, setGlobalCountryFilter] = useState('');
+  const pendingMobilePayCount = usePendingMobilePaymentCount(adminToken);
 
   useEffect(() => {
     const tab = sessionStorage.getItem('admin_initial_tab');
@@ -1635,11 +1698,27 @@ const CentralAdminDashboard = () => {
   }, [activeTab]);
 
   const tabs = useMemo(() => {
-    const out = BASE_TABS.map((tab) => ({
-      ...tab,
-      label: t(tab.labelKey),
-      shortLabel: t(tab.shortKey),
-    }));
+    const out = BASE_TABS.map((tab) => {
+      if (tab.id === 'marketPrices') {
+        return {
+          ...tab,
+          label: isFr ? 'Prix marché' : 'Market prices',
+          shortLabel: isFr ? 'Prix' : 'Prices',
+        };
+      }
+      if (tab.id === 'payments') {
+        return {
+          ...tab,
+          label: isFr ? 'Paiements' : 'Payments',
+          shortLabel: isFr ? 'Pay' : 'Pay',
+        };
+      }
+      return {
+        ...tab,
+        label: t(tab.labelKey),
+        shortLabel: t(tab.shortKey),
+      };
+    });
     if (isSuperAdmin) {
       out.push({
         id: 'countryLicenses',
@@ -1649,7 +1728,7 @@ const CentralAdminDashboard = () => {
       });
     }
     return out;
-  }, [isSuperAdmin, t]);
+  }, [isSuperAdmin, t, isFr]);
 
   const handleLogout = () => {
     logout();
@@ -1734,6 +1813,11 @@ const CentralAdminDashboard = () => {
                   {deletionRequestsPendingCount}
                 </span>
               ) : null}
+              {tab.id === 'payments' && pendingMobilePayCount > 0 ? (
+                <span className="shrink-0 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white animate-pulse">
+                  {pendingMobilePayCount}
+                </span>
+              ) : null}
             </button>
           ))}
         </nav>
@@ -1764,6 +1848,11 @@ const CentralAdminDashboard = () => {
                 {tab.id === 'expertRequests' && expertRequestsNewCount > 0 ? (
                   <span className="rounded-full bg-red-500 px-1.5 py-px text-[10px] font-bold leading-none text-white">
                     {expertRequestsNewCount}
+                  </span>
+                ) : null}
+                {tab.id === 'payments' && pendingMobilePayCount > 0 ? (
+                  <span className="rounded-full bg-amber-500 px-1.5 py-px text-[10px] font-bold leading-none text-white animate-pulse">
+                    {pendingMobilePayCount}
                   </span>
                 ) : null}
                 {tab.id === 'deletions' && deletionRequestsPendingCount > 0 ? (
@@ -1846,36 +1935,51 @@ const CentralAdminDashboard = () => {
               </button>
             ) : null}
           </div>
-          {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
-          {activeTab === 'notifications' && <NotificationsPanel />}
-          {activeTab === 'deletions' && (
-            <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />
-          )}
-          {activeTab === 'deleteUsers' && <AdminDeleteUserPanel token={adminToken} />}
-          {activeTab === 'farmers' && (
-            <RealTimeFarmers globalCountryFilter={globalCountryFilter} adminToken={adminToken} />
-          )}
-          {activeTab === 'farmerNeeds' && <FarmerNeedsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'cooperatives' && (
-            <CooperativesTab token={adminToken} isFr={isFr} globalCountryFilter={globalCountryFilter} />
-          )}
-          {activeTab === 'centers' && <CentersManagement globalCountryFilter={globalCountryFilter} />}
-          {activeTab === 'trainings' && <TrainingsManagement />}
-          {activeTab === 'governance' && <GovernanceTab isFr={isFr} />}
-          {activeTab === 'perks' && <BenefitsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'irrigation' && <IrrigationTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'optimization' && (
-            <OptimizationTab token={adminToken} isFr={isFr} />
-          )}
-          {activeTab === 'expertRequests' && (
-            <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} globalCountryFilter={globalCountryFilter} />
-          )}
-          {activeTab === 'seasonal' && <PlanningTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'reports' && <ReportsTab token={adminToken} isFr={isFr} />}
-          {activeTab === 'afriyield' && <AfriYieldManagement />}
-          {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}
+          <ApiSection
+            key={activeTab}
+            resetKey={activeTab}
+            isFr={isFr}
+            fallbackMessage={
+              isFr
+                ? 'Une erreur est survenue dans cette section.'
+                : 'An error occurred in this section.'
+            }
+          >
+            {activeTab === 'overview' && <OverviewControlTower onGoTab={setActiveTab} />}
+            {activeTab === 'payments' && (
+              <AdminPaymentsPanel token={adminToken} isFr={isFr} />
+            )}
+            {activeTab === 'notifications' && <NotificationsPanel />}
+            {activeTab === 'deletions' && (
+              <DeletionRequestsPanel onRequestsLoaded={handleDeletionRequestsLoaded} />
+            )}
+            {activeTab === 'deleteUsers' && <AdminDeleteUserPanel token={adminToken} />}
+            {activeTab === 'farmers' && (
+              <RealTimeFarmers globalCountryFilter={globalCountryFilter} adminToken={adminToken} />
+            )}
+            {activeTab === 'farmerNeeds' && <FarmerNeedsTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'cooperatives' && (
+              <CooperativesTab token={adminToken} isFr={isFr} globalCountryFilter={globalCountryFilter} />
+            )}
+            {activeTab === 'centers' && <CentersManagement globalCountryFilter={globalCountryFilter} />}
+            {activeTab === 'trainings' && <TrainingsManagement />}
+            {activeTab === 'governance' && <GovernanceTab isFr={isFr} />}
+            {activeTab === 'perks' && <BenefitsTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'irrigation' && <IrrigationTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'optimization' && (
+              <OptimizationTab token={adminToken} isFr={isFr} />
+            )}
+            {activeTab === 'expertRequests' && (
+              <ExpertRequestsManagement onCountsChanged={setExpertRequestsNewCount} globalCountryFilter={globalCountryFilter} />
+            )}
+            {activeTab === 'seasonal' && <PlanningTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'certification' && <CertificationTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'logistics' && <LogisticsTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'marketPrices' && <MarketPricesTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'reports' && <ReportsTab token={adminToken} isFr={isFr} />}
+            {activeTab === 'afriyield' && <AfriYieldManagement />}
+            {activeTab === 'countryLicenses' && isSuperAdmin ? <CountryLicensesPanel /> : null}
+          </ApiSection>
         </div>
       </main>
     </div>

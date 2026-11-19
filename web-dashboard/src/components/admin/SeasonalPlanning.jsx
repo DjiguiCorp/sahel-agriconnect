@@ -368,7 +368,7 @@ export default function SeasonalPlanning() {
               <label className="block text-sm">
                 <span className="text-gray-600">{isFr ? 'Coopérative (réf.)' : 'Cooperative (ref.)'}</span>
                 <select
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.cooperativeId}
                   onChange={(e) => setForm((p) => ({ ...p, cooperativeId: e.target.value }))}
                 >
@@ -384,7 +384,7 @@ export default function SeasonalPlanning() {
                 <span className="text-gray-600">{isFr ? 'Agriculteur *' : 'Farmer *'}</span>
                 <select
                   required
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.farmerId}
                   onChange={(e) => setForm((p) => ({ ...p, farmerId: e.target.value }))}
                 >
@@ -399,7 +399,7 @@ export default function SeasonalPlanning() {
               <label className="block text-sm">
                 <span className="text-gray-600">{isFr ? 'Saison du plan' : 'Plan season'}</span>
                 <select
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.season}
                   onChange={(e) => setForm((p) => ({ ...p, season: e.target.value }))}
                 >
@@ -411,7 +411,7 @@ export default function SeasonalPlanning() {
                 <span className="text-gray-600">{isFr ? 'Année' : 'Year'}</span>
                 <input
                   type="number"
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.year}
                   onChange={(e) => setForm((p) => ({ ...p, year: Number(e.target.value) }))}
                 />
@@ -419,7 +419,7 @@ export default function SeasonalPlanning() {
               <label className="block text-sm">
                 <span className="text-gray-600">{isFr ? 'Culture' : 'Crop'}</span>
                 <input
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.cropType}
                   onChange={(e) => setForm((p) => ({ ...p, cropType: e.target.value }))}
                 />
@@ -427,7 +427,7 @@ export default function SeasonalPlanning() {
               <label className="block text-sm">
                 <span className="text-gray-600">{isFr ? 'Superficie (ha)' : 'Area (ha)'}</span>
                 <input
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={form.superficieHa}
                   onChange={(e) => setForm((p) => ({ ...p, superficieHa: e.target.value }))}
                 />
@@ -437,7 +437,7 @@ export default function SeasonalPlanning() {
                   <span className="text-gray-600">{isFr ? 'Semis' : 'Planting'}</span>
                   <input
                     type="date"
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={form.plantingDate}
                     onChange={(e) => setForm((p) => ({ ...p, plantingDate: e.target.value }))}
                   />
@@ -446,7 +446,7 @@ export default function SeasonalPlanning() {
                   <span className="text-gray-600">{isFr ? 'Récolte' : 'Harvest'}</span>
                   <input
                     type="date"
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
                     value={form.harvestDate}
                     onChange={(e) => setForm((p) => ({ ...p, harvestDate: e.target.value }))}
                   />
@@ -463,7 +463,7 @@ export default function SeasonalPlanning() {
               <label className="block text-sm">
                 <span className="text-gray-600">Notes</span>
                 <textarea
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[80px]"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 min-h-[80px]"
                   value={form.notes}
                   onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                 />

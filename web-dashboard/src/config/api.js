@@ -101,8 +101,35 @@ export const API_ENDPOINTS = {
     BASE: `${API_BASE_URL}/api/service-bookings`,
     BY_ID: (id) => `${API_BASE_URL}/api/service-bookings/${id}`,
   },
-  // Détection de maladies
-  PLANT_DISEASE: `${API_BASE_URL}/api/detect-plant-disease`,
+  // Détection de maladies (Gemini Vision via backend)
+  PLANT_DISEASE: `${API_BASE_URL}/api/disease/analyze`,
+  CONFIG: {
+    CROPS: `${API_BASE_URL}/api/config/crops`,
+  },
+  MARKETPLACE: {
+    LISTINGS: `${API_BASE_URL}/api/marketplace/listings`,
+    PRICES: `${API_BASE_URL}/api/marketplace/prices`,
+    PRICES_SYNC: `${API_BASE_URL}/api/marketplace/prices/sync`,
+    PRICE_BY_COMMODITY: (commodity) =>
+      `${API_BASE_URL}/api/marketplace/prices/${encodeURIComponent(commodity)}`,
+  },
+  MOBILE_MONEY: {
+    INITIATE: `${API_BASE_URL}/api/mobile-money/initiate`,
+    PENDING: `${API_BASE_URL}/api/mobile-money/pending`,
+    MY_STATUS: `${API_BASE_URL}/api/mobile-money/my-status`,
+    CONFIRM: (code) => `${API_BASE_URL}/api/mobile-money/confirm/${encodeURIComponent(code)}`,
+    REJECT: (code) => `${API_BASE_URL}/api/mobile-money/reject/${encodeURIComponent(code)}`,
+  },
+  HARVEST_LOGS: {
+    BASE: `${API_BASE_URL}/api/harvest-logs`,
+    MY: `${API_BASE_URL}/api/harvest-logs/my`,
+    COOPERATIVE: (id) => `${API_BASE_URL}/api/harvest-logs/cooperative/${id}`,
+    VERIFY: (id) => `${API_BASE_URL}/api/harvest-logs/${id}/verify`,
+    PUBLIC: (batchId) => `${API_BASE_URL}/api/harvest-logs/public/${batchId}`,
+    QR: (batchId) => `${API_BASE_URL}/api/harvest-logs/${encodeURIComponent(batchId)}/qr`,
+    CERTIFICATE: (batchId) =>
+      `${API_BASE_URL}/api/harvest-logs/${encodeURIComponent(batchId)}/certificate`,
+  },
   // Health check
   HEALTH: `${API_BASE_URL}/api/health`,
   // Centres agricoles

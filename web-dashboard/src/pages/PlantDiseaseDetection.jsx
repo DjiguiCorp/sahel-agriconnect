@@ -68,7 +68,7 @@ export default function PlantDiseaseDetection() {
     setSaveState({ loading: false, msg: '', err: '' });
     setAiSolution({ loading: false, err: '', data: null });
     try {
-      const data = await analyzeDiseaseImage(file);
+      const data = await analyzeDiseaseImage(file, { lang: isFr ? 'fr' : 'en' });
       setResult(data);
       captureEvent(AnalyticsEvents.DISEASE_DETECTION_USED, { source: data.source });
       captureEvent(AnalyticsEvents.DISEASE_DETECTION_COMPLETED, {

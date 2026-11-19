@@ -765,7 +765,7 @@ export default function IrrigationTab({ token, isFr }) {
                   <select
                     value={form.cooperativeId}
                     onChange={onCoopSelect}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="">{isFr ? 'Sélectionner ou saisir manuellement' : 'Select or enter manually'}</option>
                     {cooperatives.map((c) => (
@@ -783,7 +783,7 @@ export default function IrrigationTab({ token, isFr }) {
                       placeholder={
                         isFr ? 'Nom de la coopérative (si non listée)' : 'Cooperative name (if not listed)'
                       }
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                     />
                   </div>
                 )}
@@ -794,7 +794,7 @@ export default function IrrigationTab({ token, isFr }) {
                   <input
                     value={form.country}
                     onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -804,7 +804,7 @@ export default function IrrigationTab({ token, isFr }) {
                   <input
                     value={form.region}
                     onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               </div>
@@ -817,7 +817,7 @@ export default function IrrigationTab({ token, isFr }) {
                   <select
                     value={form.currentIrrigationMethod}
                     onChange={(e) => setForm((f) => ({ ...f, currentIrrigationMethod: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="none">❌ {isFr ? 'Aucune' : 'None'}</option>
                     <option value="manual">🪣 {isFr ? 'Manuelle' : 'Manual'}</option>
@@ -835,7 +835,7 @@ export default function IrrigationTab({ token, isFr }) {
                   <select
                     value={form.waterSourceAvailable}
                     onChange={(e) => setForm((f) => ({ ...f, waterSourceAvailable: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="rain">{isFr ? 'Pluie uniquement' : 'Rain only'}</option>
                     <option value="river">{isFr ? 'Rivière / Fleuve' : 'River / Stream'}</option>
@@ -855,7 +855,7 @@ export default function IrrigationTab({ token, isFr }) {
                     type="number"
                     value={form.landAreaHa}
                     onChange={(e) => setForm((f) => ({ ...f, landAreaHa: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -866,7 +866,7 @@ export default function IrrigationTab({ token, isFr }) {
                     type="number"
                     value={form.farmerCount}
                     onChange={(e) => setForm((f) => ({ ...f, farmerCount: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
                 <div>
@@ -877,7 +877,7 @@ export default function IrrigationTab({ token, isFr }) {
                     type="number"
                     value={form.estimatedCostUSD}
                     onChange={(e) => setForm((f) => ({ ...f, estimatedCostUSD: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               </div>
@@ -890,7 +890,7 @@ export default function IrrigationTab({ token, isFr }) {
                   <select
                     value={form.urgencyLevel}
                     onChange={(e) => setForm((f) => ({ ...f, urgencyLevel: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="low">{isFr ? 'Faible — peut attendre' : 'Low — can wait'}</option>
                     <option value="medium">{isFr ? 'Moyen — cette saison' : 'Medium — this season'}</option>
@@ -905,7 +905,7 @@ export default function IrrigationTab({ token, isFr }) {
                   <select
                     value={form.requestType}
                     onChange={(e) => setForm((f) => ({ ...f, requestType: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   >
                     <option value="assessment">{isFr ? 'Évaluation des besoins' : 'Needs Assessment'}</option>
                     <option value="solar_pump">{isFr ? 'Acquisition pompe solaire' : 'Solar Pump Acquisition'}</option>
@@ -942,7 +942,7 @@ export default function IrrigationTab({ token, isFr }) {
                       ? 'Décrivez la situation actuelle, les pertes subies, les solutions déjà essayées...'
                       : 'Describe current situation, losses suffered, solutions already tried...'
                   }
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest resize-none"
                 />
               </div>
             </div>

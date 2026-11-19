@@ -264,7 +264,7 @@ export default function ReportsTab({ token, isFr }) {
                 <select
                   value={form.cooperativeId}
                   onChange={onCoopChange}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">{isFr ? 'Sélectionner...' : 'Select...'}</option>
                   {cooperatives.map((c) => (
@@ -282,7 +282,7 @@ export default function ReportsTab({ token, isFr }) {
                   type="month"
                   value={form.period}
                   onChange={(e) => setForm((f) => ({ ...f, period: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 />
               </div>
               <div>
@@ -292,7 +292,7 @@ export default function ReportsTab({ token, isFr }) {
                 <select
                   value={form.season}
                   onChange={(e) => setForm((f) => ({ ...f, season: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="rainy">{isFr ? 'Saison des pluies' : 'Rainy Season'}</option>
                   <option value="dry">{isFr ? 'Saison sèche' : 'Dry Season'}</option>
@@ -373,7 +373,7 @@ export default function ReportsTab({ token, isFr }) {
                     ? 'Décrivez les causes, le contexte, les actions déjà prises...'
                     : 'Describe causes, context, actions already taken...'
                 }
-                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest resize-none"
               />
             </div>
 
@@ -420,7 +420,7 @@ export default function ReportsTab({ token, isFr }) {
                 <select
                   value={form.cooperativeId}
                   onChange={onCoopChange}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 >
                   <option value="">{isFr ? 'Sélectionner...' : 'Select...'}</option>
                   {cooperatives.map((c) => (
@@ -438,7 +438,7 @@ export default function ReportsTab({ token, isFr }) {
                   type="month"
                   value={form.period}
                   onChange={(e) => setForm((f) => ({ ...f, period: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                 />
               </div>
             </div>
@@ -477,7 +477,7 @@ export default function ReportsTab({ token, isFr }) {
                     type={type}
                     value={form[key]}
                     onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest"
                   />
                 </div>
               ))}
@@ -495,7 +495,7 @@ export default function ReportsTab({ token, isFr }) {
                     ? 'Actions recommandées, besoins en équipement, formation nécessaire...'
                     : 'Recommended actions, equipment needs, training required...'
                 }
-                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-forest resize-none"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-600 focus:ring-2 focus:ring-brand-forest resize-none"
               />
             </div>
             {form.totalSalesRevenue && form.totalFarmers && Number(form.totalFarmers) > 0 && (

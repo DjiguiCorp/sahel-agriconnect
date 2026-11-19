@@ -88,6 +88,8 @@ class _RoleScreenState extends State<RoleScreen>
     super.dispose();
   }
 
+  /// Public role picker — Farmer, Cooperative, Transformation Center, Investor only.
+  /// Government/NGO portals remain routable for admin deep-links but are not listed.
   static const roles = [
     _Role(
       emoji: '🌾',
@@ -116,7 +118,7 @@ class _RoleScreenState extends State<RoleScreen>
       role: AuthRole.cooperative,
     ),
     _Role(
-      emoji: '⚙️',
+      emoji: '🏭',
       titleEn: 'Transformation Center',
       titleFr: 'Centre de transformation',
       descEn: 'Supply · Processing · Schedule',

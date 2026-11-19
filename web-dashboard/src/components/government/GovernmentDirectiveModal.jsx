@@ -74,7 +74,7 @@ export default function GovernmentDirectiveModal({
             <select
               value={form.directiveType}
               onChange={(e) => setForm((p) => ({ ...p, directiveType: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 text-sm bg-white"
             >
               {DIRECTIVE_TYPES.map((t) => (
                 <option key={t.key} value={t.key}>
@@ -90,7 +90,7 @@ export default function GovernmentDirectiveModal({
               required
               value={form.title}
               onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 text-sm"
             />
           </label>
 
@@ -99,7 +99,7 @@ export default function GovernmentDirectiveModal({
             <input
               value={form.titleFr}
               onChange={(e) => setForm((p) => ({ ...p, titleFr: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 text-sm"
             />
           </label>
 
@@ -110,7 +110,7 @@ export default function GovernmentDirectiveModal({
               rows={4}
               value={form.body}
               onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 text-sm resize-none"
             />
           </label>
 
@@ -127,7 +127,7 @@ export default function GovernmentDirectiveModal({
                   targetRegions: Array.from(e.target.selectedOptions, (o) => o.value),
                 }))
               }
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white min-h-[88px]"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 text-sm bg-white min-h-[88px]"
             >
               {regionOptions.map((r) => (
                 <option key={r} value={r}>
@@ -153,7 +153,7 @@ export default function GovernmentDirectiveModal({
                     assignedCooperativeIds: Array.from(e.target.selectedOptions, (o) => o.value),
                   }))
                 }
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white min-h-[88px]"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 text-sm bg-white min-h-[88px]"
               >
                 {cooperatives.map((c) => (
                   <option key={c._id} value={c._id}>

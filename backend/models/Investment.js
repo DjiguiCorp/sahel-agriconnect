@@ -19,6 +19,10 @@ const investmentSchema = new mongoose.Schema({
   track: { type: String, enum: ['Track A', 'Track B', 'Track C', 'Both'] },
   commodity: String,
   amountDeployed: { type: Number, required: true },
+  /** Investor paid (gross); netAmount = capital to cooperative after 5% fee */
+  grossAmount: { type: Number },
+  facilitationFee: { type: Number },
+  netAmount: { type: Number },
   currency: { type: String, default: 'USD' },
   deploymentDate: { type: Date, default: Date.now },
   expectedROIPercent: { type: Number, default: 8 },

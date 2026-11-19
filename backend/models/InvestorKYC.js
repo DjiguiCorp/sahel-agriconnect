@@ -85,6 +85,24 @@ const investorKYCSchema = new mongoose.Schema({
   paymentVerifiedAt: { type: Date },
   stripeSessionId: { type: String },
 
+  // ── Didit identity verification ─────────────────────────────
+  diditSessionId: { type: String },
+  diditStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'declined', 'expired'],
+    default: 'pending',
+  },
+  diditVerifiedAt: { type: Date },
+  diditRawPayload: { type: mongoose.Schema.Types.Mixed },
+  tradingApproved: { type: Boolean, default: false },
+  tradingApprovedAt: { type: Date },
+  tradingApprovedBy: { type: String, trim: true },
+  kycReviewNotes: { type: String, default: '' },
+  kycRejectionReason: { type: String, default: '' },
+  kycReviewedAt: { type: Date },
+  /** Didit vendor_data = Investor Mongo _id */
+  diditVendorData: { type: String, index: true },
+
   // Photo ID — required for all diaspora + other countries
   photoIdUploaded: { type: Boolean, default: false },
   photoIdUrl: { type: String },

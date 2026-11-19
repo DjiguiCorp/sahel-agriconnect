@@ -26,7 +26,8 @@ function purposeCopy(purpose, lang) {
 }
 
 export function buildMagicUrl({ code, email, purpose, role, lang }) {
-  const webBase = process.env.WEB_APP_URL || 'https://sahelagriconnect.com';
+  // Frontend /auth/magic confirms via POST /api/verify/confirm (invalidates only after JWT).
+  // Optionally point emails at BACKEND_URL/api/verify/magic which redirects with #token=.
   const params = new URLSearchParams({
     c: code,
     e: email,
@@ -35,6 +36,12 @@ export function buildMagicUrl({ code, email, purpose, role, lang }) {
   const langNorm = normalizeLang(lang);
   if (langNorm) params.set('lang', langNorm);
   if (role) params.set('r', String(role));
+
+  if (process.env.BACKEND_URL) {
+    const backendBase = String(process.env.BACKEND_URL).replace(/\/$/, '');
+    return `${backendBase}/api/verify/magic?${params.toString()}`;
+  }
+  const webBase = process.env.WEB_APP_URL || 'https://sahelagriconnect.com';
   return `${webBase}/auth/magic?${params.toString()}`;
 }
 

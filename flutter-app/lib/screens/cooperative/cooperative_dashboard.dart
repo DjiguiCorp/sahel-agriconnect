@@ -3,6 +3,7 @@ import '../../core/safe_insets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth_state.dart';
 import '../../core/glass.dart';
@@ -16,6 +17,67 @@ import '../../services/auth_service.dart';
 import '../../services/offline_queue.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/premium_upgrade_dialog.dart';
+
+String _coopTierFromData(Map<String, dynamic>? data) {
+  final coop = data?['cooperative'];
+  if (coop is Map && coop['tier'] != null) {
+    return coop['tier'].toString();
+  }
+  return data?['tier']?.toString() ?? 'starter';
+}
+
+bool _isGrowthTier(Map<String, dynamic>? data) =>
+    _coopTierFromData(data) == 'growth';
+
+Future<void> _openCoopUpgrade() async {
+  await launchUrl(
+    Uri.parse('https://sahelagriconnect.com/cooperative-upgrade'),
+    mode: LaunchMode.externalApplication,
+  );
+}
+
+Widget _growthLockedPanel(bool isFr) {
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text('🔒', style: TextStyle(fontSize: 40)),
+        const SizedBox(height: 12),
+        Text(
+          isFr
+              ? 'Disponible avec le plan Croissance'
+              : 'Available on Growth Plan',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          isFr
+              ? 'Les coopératives de ≤50 membres ne sont pas éligibles à la certification. Passez à 51+ membres pour débloquer.'
+              : 'Cooperatives with ≤50 members are not eligible for certification. Grow to 51+ members to unlock.',
+          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: _openCoopUpgrade,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFD97706),
+            foregroundColor: Colors.black,
+          ),
+          child: Text(
+            isFr ? 'Mettre à niveau — 199\$/an' : 'Upgrade — \$199/year',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
 const _bg = Color(0xFF0d1f1a);
 const _surface = Color(0xFF1a3530);
@@ -183,32 +245,77 @@ class _CooperativeDashboardState extends State<CooperativeDashboard> {
   void _addProduction(Map<String, dynamic> prod) =>
       setState(() => _productions.add(prod));
 
-  Widget _buildTabStack(bool isFr) => IndexedStack(
-        index: _tab,
-        children: [
-          _HomeTab(
-            data: _data,
-            members: _members,
-            productions: _productions,
-            loading: _loading,
-            isFr: isFr,
-            onTabChange: _goTab,
-          ),
-          _MembersTab(members: _members, isFr: isFr, onAdd: _addMember),
-          _ProductionTab(
-            productions: _productions,
-            isFr: isFr,
-            onAdd: _addProduction,
-          ),
-          _StatisticsTab(
-            data: _data,
-            members: _members,
-            productions: _productions,
-            isFr: isFr,
-          ),
-          _CoopAccountTab(isFr: isFr, onTabChange: _goTab),
-        ],
-      );
+  Widget _buildTabStack(bool isFr) {
+    final isGrowth = _isGrowthTier(_data);
+    return IndexedStack(
+      index: _tab,
+      children: [
+        _HomeTab(
+          data: _data,
+          members: _members,
+          productions: _productions,
+          loading: _loading,
+          isFr: isFr,
+          isGrowth: isGrowth,
+          onTabChange: _goTab,
+          onOpenGrowthFeature: (feature) {
+            setState(() {
+              if (feature == 'certification') {
+                _tab = 5;
+              } else if (feature == 'afriyield') {
+                _tab = 6;
+              } else {
+                _tab = 7;
+              }
+            });
+          },
+        ),
+        _MembersTab(members: _members, isFr: isFr, onAdd: _addMember),
+        _ProductionTab(
+          productions: _productions,
+          isFr: isFr,
+          onAdd: _addProduction,
+        ),
+        _StatisticsTab(
+          data: _data,
+          members: _members,
+          productions: _productions,
+          isFr: isFr,
+        ),
+        _CoopAccountTab(isFr: isFr, onTabChange: _goTab),
+        // Growth feature tabs (5–7)
+        isGrowth
+            ? _GrowthFeatureContent(
+                isFr: isFr,
+                title: isFr ? 'Certification' : 'Certification',
+                body: isFr
+                    ? 'Workflow de certification débloqué sur le plan Croissance.'
+                    : 'Certification workflow unlocked on the Growth plan.',
+              )
+            : _growthLockedPanel(isFr),
+        isGrowth
+            ? _GrowthFeatureContent(
+                isFr: isFr,
+                title: 'AfriYield Exchange',
+                body: isFr
+                    ? 'Listez vos productions et connectez-vous aux investisseurs diaspora.'
+                    : 'List produce and connect with diaspora investors.',
+                actionLabel: isFr ? 'Ouvrir AfriYield' : 'Open AfriYield',
+                actionUrl: 'https://sahelagriconnect.com/afri-yield/opportunities',
+              )
+            : _growthLockedPanel(isFr),
+        isGrowth
+            ? _GrowthFeatureContent(
+                isFr: isFr,
+                title: isFr ? 'Export diaspora' : 'Diaspora export',
+                body: isFr
+                    ? 'Outils d\'export vers USA et Europe — débloqués.'
+                    : 'Export tools for USA and Europe — unlocked.',
+              )
+            : _growthLockedPanel(isFr),
+      ],
+    );
+  }
 
   Widget _buildPhoneLayout(bool isFr) {
     return Center(
@@ -500,7 +607,9 @@ class _HomeTab extends StatelessWidget {
   final List<Map<String, dynamic>> productions;
   final bool loading;
   final bool isFr;
+  final bool isGrowth;
   final Function(int) onTabChange;
+  final void Function(String feature) onOpenGrowthFeature;
 
   const _HomeTab({
     required this.data,
@@ -508,7 +617,9 @@ class _HomeTab extends StatelessWidget {
     required this.productions,
     required this.loading,
     required this.isFr,
+    required this.isGrowth,
     required this.onTabChange,
+    required this.onOpenGrowthFeature,
   });
 
   @override
@@ -516,6 +627,97 @@ class _HomeTab extends StatelessWidget {
     return ListView(
       padding: SafeInsets.listBottom(context),
       children: [
+        if (!isGrowth)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Row(
+              children: [
+                const Text('🌱', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isFr ? 'Plan Démarrage — Gratuit' : 'Starter Plan — Free',
+                        style: const TextStyle(
+                          color: _text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        isFr
+                            ? 'Certification & export à partir de 51 membres (199\$/an)'
+                            : 'Certification & export from 51 members (\$199/year)',
+                        style: const TextStyle(color: _muted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: _openCoopUpgrade,
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFD97706),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  child: Text(
+                    isFr ? 'Upgrade' : 'Upgrade',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1D9E75).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFF1D9E75).withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Text('🚀', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isFr ? 'Plan Croissance — Actif' : 'Growth Plan — Active',
+                        style: const TextStyle(
+                          color: Color(0xFF4ADE80),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        isFr
+                            ? 'Certification, AfriYield et export débloqués'
+                            : 'Certification, AfriYield & export unlocked',
+                        style: const TextStyle(color: _muted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -583,10 +785,22 @@ class _HomeTab extends StatelessWidget {
               onTap: () => onTabChange(2),
             ),
             _QA(
-              emoji: '📊',
-              title: isFr ? 'Statistiques' : 'Statistics',
+              emoji: isGrowth ? '🏅' : '🔒',
+              title: isFr ? 'Certification' : 'Certification',
+              color: const Color(0xFFD97706),
+              onTap: () => onOpenGrowthFeature('certification'),
+            ),
+            _QA(
+              emoji: isGrowth ? '🌍' : '🔒',
+              title: 'AfriYield',
+              color: _gold,
+              onTap: () => onOpenGrowthFeature('afriyield'),
+            ),
+            _QA(
+              emoji: isGrowth ? '📦' : '🔒',
+              title: isFr ? 'Export' : 'Export',
               color: const Color(0xFF2196F3),
-              onTap: () => onTabChange(3),
+              onTap: () => onOpenGrowthFeature('export'),
             ),
             _QA(
               emoji: '⚙️',
@@ -2769,3 +2983,71 @@ Widget _empty(IconData icon, String title, String subtitle) => Container(
         ],
       ),
     );
+
+class _GrowthFeatureContent extends StatelessWidget {
+  final bool isFr;
+  final String title;
+  final String body;
+  final String? actionLabel;
+  final String? actionUrl;
+
+  const _GrowthFeatureContent({
+    required this.isFr,
+    required this.title,
+    required this.body,
+    this.actionLabel,
+    this.actionUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _accent.withValues(alpha: 0.35)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                body,
+                style: const TextStyle(color: _muted, fontSize: 13, height: 1.45),
+              ),
+              if (actionLabel != null && actionUrl != null) ...[
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => launchUrl(
+                    Uri.parse(actionUrl!),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _gold,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: Text(
+                    actionLabel!,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

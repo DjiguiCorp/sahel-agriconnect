@@ -3,20 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
 import LocationSelector from '../components/LocationSelector';
+import { CROP_CATALOG, cropLabel } from '../lib/crops';
 
 const API = API_BASE_URL.replace(/\/$/, '');
 const TOTAL_STEPS = 4;
-
-const CROP_LABELS = {
-  shea: 'Shea Butter',
-  sesame: 'Sesame',
-  cashew: 'Cashew',
-  millet: 'Millet',
-  cotton: 'Cotton',
-  rice: 'Rice',
-  sorghum: 'Sorghum',
-  other: 'Other',
-};
+const PRO_CROPS = [...CROP_CATALOG, { en: 'Other', fr: 'Autre' }];
 
 function buildObjectifsProduction(form) {
   const goals = [];
@@ -117,10 +108,7 @@ export default function ProducerProRegistration() {
   };
 
   const buildFarmerPayload = () => {
-    const cultures =
-      form.primaryCrops.length > 0
-        ? form.primaryCrops.map((c) => CROP_LABELS[c] || c)
-        : ['Other'];
+    const cultures = form.primaryCrops.length > 0 ? form.primaryCrops : ['Other'];
 
     return {
       nom: form.fullName.trim(),
@@ -201,17 +189,6 @@ export default function ProducerProRegistration() {
       setSubmitting(false);
     }
   };
-
-  const CROPS = [
-    ['shea', isFr ? 'Karité' : 'Shea Butter'],
-    ['sesame', 'Sesame'],
-    ['cashew', isFr ? 'Cajou' : 'Cashew'],
-    ['millet', isFr ? 'Mil' : 'Millet'],
-    ['cotton', isFr ? 'Coton' : 'Cotton'],
-    ['rice', isFr ? 'Riz' : 'Rice'],
-    ['sorghum', isFr ? 'Sorgho' : 'Sorghum'],
-    ['other', isFr ? 'Autre' : 'Other'],
-  ];
 
   const MARKETS = [
     ['europe', isFr ? 'Europe' : 'Europe'],
@@ -347,18 +324,18 @@ export default function ProducerProRegistration() {
                   {isFr ? 'Cultures principales' : 'Primary Crops'}
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {CROPS.map(([val, label]) => (
+                  {PRO_CROPS.map((crop) => (
                     <button
-                      key={val}
+                      key={crop.en}
                       type="button"
-                      onClick={() => toggleArr('primaryCrops', val)}
+                      onClick={() => toggleArr('primaryCrops', crop.en)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        form.primaryCrops.includes(val)
+                        form.primaryCrops.includes(crop.en)
                           ? 'bg-amber-500 text-black border-amber-500'
                           : 'bg-transparent text-white/60 border-white/20'
                       }`}
                     >
-                      {label}
+                      {cropLabel(crop, isFr)}
                     </button>
                   ))}
                 </div>

@@ -2,7 +2,10 @@ import { z } from 'zod';
 import { ALL_COUNTRIES } from '../data/africanCountries.js';
 import { formatPhoneE164 } from '../utils/phoneDial.js';
 
-export const cropOptions = ['Mil', 'Sorgho', 'Maïs', 'Arachide', 'Coton', 'Niébé', 'Riz', 'Autre'];
+import { CROP_CATALOG } from '../lib/crops.js';
+
+/** Fallback English values until GET /api/config/crops loads */
+export const cropOptions = [...CROP_CATALOG.map((c) => c.en), 'Other'];
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

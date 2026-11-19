@@ -33,6 +33,26 @@ const opportunitySchema = new mongoose.Schema({
     enum: ['Local', 'Regional (ECOWAS)', 'International (EU/USDA)', 'Pending'],
     default: 'Local',
   },
+  /** AfriYield listing certification (platform compliance) */
+  certificationLevel: {
+    type: String,
+    enum: ['none', 'basic', 'verified', 'premium'],
+    default: 'none',
+  },
+  certificationCheckedAt: { type: Date },
+  certificationMissingFields: [{ type: String }],
+  cooperativeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CooperativePlatformRegistration',
+    default: null,
+    index: true,
+  },
+  /** Placeholder listings — not open for real investment */
+  isDemoOpportunity: { type: Boolean, default: false, index: true },
+  riskDisclosure: {
+    en: { type: String, trim: true, default: '' },
+    fr: { type: String, trim: true, default: '' },
+  },
   afriyieldScore: { type: Number, min: 0, max: 100, default: 0 },
 
   // Financials

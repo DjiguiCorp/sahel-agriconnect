@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { WebSocketProvider } from './context/WebSocketContext';
@@ -39,6 +39,7 @@ const FarmerRegistrationPage = lazy(() => import('./pages/FarmerRegistrationPage
 const FarmerSignIn = lazy(() => import('./pages/FarmerSignIn'));
 const ImpactReport = lazy(() => import('./pages/ImpactReport'));
 const TraceabilityLookup = lazy(() => import('./pages/TraceabilityLookup'));
+const TracePage = lazy(() => import('./pages/TracePage'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
@@ -52,6 +53,7 @@ const CooperativePortal = lazy(() => import('./pages/CooperativePortal'));
 const JoinCooperative = lazy(() => import('./pages/JoinCooperative'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const InvestmentSuccess = lazy(() => import('./pages/InvestmentSuccess'));
+const DiditCallback = lazy(() => import('./pages/DiditCallback'));
 const ProcessorPortal = lazy(() => import('./pages/ProcessorPortal'));
 
 const PageLoader = () => (
@@ -62,6 +64,16 @@ const PageLoader = () => (
 
 function App() {
   useGeolocation();
+
+  // Allow a future deploy's stale-chunk handler to reload again
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('chunk_error_reload');
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -70,6 +82,8 @@ function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/auth/magic" element={<MagicLinkVerify />} />
+                <Route path="/verify/callback" element={<DiditCallback />} />
+                <Route path="/investor-portal" element={<Navigate to="/afri-yield/portal" replace />} />
                 <Route path="/invest/success" element={<InvestmentSuccess />} />
                 <Route path="/invest/cancel" element={<Navigate to="/afri-yield" replace />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
@@ -78,9 +92,7 @@ function App() {
                   path="/admin/central"
                   element={
                     <ProtectedRoute>
-                      <ApiSection>
-                        <CentralAdminDashboard />
-                      </ApiSection>
+                      <CentralAdminDashboard />
                     </ProtectedRoute>
                   }
                 />
@@ -141,7 +153,15 @@ function App() {
                   <Route path="help" element={<Navigate to="/help-center" replace />} />
                   <Route path="user-agreement" element={<UserAgreement />} />
                   <Route
-                    path="trace/:batchNumber?"
+                    path="trace/:batchId?"
+                    element={
+                      <ApiSection>
+                        <TracePage />
+                      </ApiSection>
+                    }
+                  />
+                  <Route
+                    path="trace-legacy/:batchNumber?"
                     element={
                       <ApiSection>
                         <TraceabilityLookup />

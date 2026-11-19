@@ -9,8 +9,27 @@ import {
   notifyAdminKYCSubmission,
 } from '../services/kycEmailService.js';
 import { authenticateToken } from '../middleware/auth.js';
+import InvestorNotification from '../models/InvestorNotification.js';
+import {
+  resolveInvestorLang,
+  investorNotificationCopy,
+} from '../utils/investorNotificationCopy.js';
+import { checkAndApproveTradingAccess } from '../services/investorApprovalService.js';
 
 const router = express.Router();
+
+async function langForInvestorEmail(email, fallbackLang) {
+  const inv = await Investor.findOne({
+    email: String(email || '').toLowerCase().trim(),
+  })
+    .select('preferredLanguage countryOfResidence')
+    .lean();
+  return resolveInvestorLang({
+    lang: fallbackLang,
+    preferredLanguage: inv?.preferredLanguage,
+    countryOfResidence: inv?.countryOfResidence,
+  });
+}
 
 const GOVERNMENT_ID_TYPES = ['passport', 'national_id'];
 const MAX_PHOTO_ID_CHARS = 4_500_000; // ~3MB base64
@@ -104,6 +123,12 @@ router.post('/submit', async (req, res) => {
       reviewHours = '48-72';
     }
 
+    const lang = await langForInvestorEmail(
+      investorEmail,
+      req.body?.lang || req.body?.language
+    );
+    const submittedCopy = investorNotificationCopy('kyc_submitted', lang);
+
     const kyc = await InvestorKYC.findOneAndUpdate(
       { investorEmail: investorEmail.toLowerCase() },
       {
@@ -137,7 +162,7 @@ router.post('/submit', async (req, res) => {
         $push: {
           notifications: {
             type: 'kyc_submitted',
-            message: `KYC submitted. Status: ${status}.`,
+            message: `${submittedCopy.message} (${status})`,
             sentAt: new Date(),
           },
         },
@@ -145,13 +170,34 @@ router.post('/submit', async (req, res) => {
       { upsert: true, new: true }
     );
 
+    InvestorNotification.create({
+      investorEmail: investorEmail.toLowerCase(),
+      type: 'kyc_submitted',
+      title: submittedCopy.title,
+      message: submittedCopy.message,
+      lang,
+      link: '/afri-yield/portal',
+    }).catch(console.error);
+
     // Update main Investor record
     await Investor.findOneAndUpdate(
       { email: investorEmail.toLowerCase() },
       {
         kycStatus: status,
         kycSubmittedAt: new Date(),
+        ...(req.body?.lang || req.body?.language
+          ? {
+              preferredLanguage: resolveInvestorLang({
+                lang: req.body.lang || req.body.language,
+              }),
+            }
+          : {}),
       }
+    );
+
+    // Auto-approve trading if subscription already active
+    checkAndApproveTradingAccess(investorEmail.toLowerCase()).catch((err) =>
+      console.error('[KYC] trading auto-approve failed:', err.message)
     );
 
     // Send emails
@@ -164,6 +210,7 @@ router.post('/submit', async (req, res) => {
         category,
         reviewHours,
         status,
+        lang,
       });
 
       // Notify admin team
@@ -326,6 +373,22 @@ router.post('/admin/review', authenticateToken, async (req, res) => {
       }
     }
 
+    const lang = await langForInvestorEmail(investorEmail);
+    const notifType =
+      decision === 'approved'
+        ? 'kyc_approved'
+        : decision === 'rejected'
+          ? 'kyc_rejected'
+          : 'kyc_additional_docs';
+    const reviewCopy = investorNotificationCopy(notifType, lang, {
+      args:
+        decision === 'rejected'
+          ? [rejectionReason]
+          : decision === 'additional_docs'
+            ? [additionalDocsRequested]
+            : [],
+    });
+
     const kyc = await InvestorKYC.findOneAndUpdate(
       { investorEmail: investorEmail.toLowerCase() },
       {
@@ -340,11 +403,7 @@ router.post('/admin/review', authenticateToken, async (req, res) => {
         $push: {
           notifications: {
             type: `kyc_${decision}`,
-            message: decision === 'approved'
-              ? 'Your KYC has been approved.'
-              : decision === 'rejected'
-                ? `KYC rejected: ${rejectionReason}`
-                : `Additional documents required: ${additionalDocsRequested}`,
+            message: reviewCopy.message,
             sentAt: new Date(),
           },
         },
@@ -358,6 +417,15 @@ router.post('/admin/review', authenticateToken, async (req, res) => {
       { kycStatus: decision, kycReviewedAt: new Date() }
     );
 
+    InvestorNotification.create({
+      investorEmail: investorEmail.toLowerCase(),
+      type: notifType,
+      title: reviewCopy.title,
+      message: reviewCopy.message,
+      lang,
+      link: '/afri-yield/portal',
+    }).catch(console.error);
+
     // Send notification to investor
     try {
       if (decision === 'approved') {
@@ -365,18 +433,21 @@ router.post('/admin/review', authenticateToken, async (req, res) => {
           email: investorEmail,
           name: kyc.investorName,
           category: kyc.countryCategory,
+          lang,
         });
       } else if (decision === 'rejected') {
         await sendKYCRejected({
           email: investorEmail,
           name: kyc.investorName,
           reason: rejectionReason,
+          lang,
         });
       } else if (decision === 'additional_docs') {
         await sendKYCAdditionalDocs({
           email: investorEmail,
           name: kyc.investorName,
           docsRequired: additionalDocsRequested,
+          lang,
         });
       }
     } catch (emailErr) {
@@ -399,6 +470,8 @@ router.post('/mark-payment-verified', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     const { investorEmail, stripeSessionId } = req.body;
+    const lang = await langForInvestorEmail(investorEmail);
+    const payCopy = investorNotificationCopy('payment_verified', lang);
     await InvestorKYC.findOneAndUpdate(
       { investorEmail: investorEmail.toLowerCase() },
       {
@@ -408,13 +481,21 @@ router.post('/mark-payment-verified', async (req, res) => {
         $push: {
           notifications: {
             type: 'payment_verified',
-            message: 'Payment confirmed. Full access granted.',
+            message: payCopy.message,
             sentAt: new Date(),
           },
         },
       },
       { upsert: true }
     );
+    InvestorNotification.create({
+      investorEmail: String(investorEmail).toLowerCase(),
+      type: 'payment_verified',
+      title: payCopy.title,
+      message: payCopy.message,
+      lang,
+      link: '/afri-yield/portal',
+    }).catch(console.error);
     return res.json({ success: true });
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
