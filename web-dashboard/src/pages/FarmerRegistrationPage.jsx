@@ -37,8 +37,9 @@ const LEGEND_CLS = 'text-sm font-medium text-white/70 mb-2';
 const INPUT_CLS =
   'w-full rounded-xl bg-black/30 border border-white/15 text-white placeholder-white/30 px-4 py-3 text-sm focus:outline-none focus:border-green-500/60';
 const RADIO_LABEL_CLS = 'inline-flex items-center gap-2 text-white/80';
-const ERR_CLS = 'text-red-400 text-sm mt-1';
-const ERR_BOX = 'p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm';
+const ERR_CLS = 'text-sm mt-1 font-sans text-[#F5C6C6]';
+const ERR_BOX =
+  'p-4 rounded-xl border font-sans text-sm leading-relaxed text-[#F8E8E8] bg-[#3D1F1F]/60 border-[#E57373]/45';
 const BTN_NEXT_CLS =
   'rounded-xl font-semibold py-3 flex items-center justify-center gap-2 hover:opacity-90 transition-opacity';
 const BTN_NEXT_STYLE = { background: '#4CAF50', color: 'black' };
@@ -148,9 +149,20 @@ export default function FarmerRegistrationPage() {
       const json = await r.json().catch(() => null);
       if (!r.ok) {
         const detailMsg = Array.isArray(json?.details)
-          ? json.details.join(' · ')
+          ? json.details
+              .map((d) =>
+                String(d)
+                  .replace(/"/g, '')
+                  .replace(/\bis not allowed\b/gi, isFr ? "n'est pas accepté" : 'is not accepted')
+                  .replace(/\bis required\b/gi, isFr ? 'est requis' : 'is required')
+              )
+              .join(' · ')
           : json?.details;
-        const msg = detailMsg || json?.error || json?.message || 'Request failed';
+        const msg =
+          detailMsg ||
+          json?.error ||
+          json?.message ||
+          (isFr ? 'Échec de l’enregistrement' : 'Registration failed');
         throw new Error(msg);
       }
 

@@ -14,6 +14,8 @@ export const validateFarmer = (req, res, next) => {
     autresElevage: Joi.string().allow('').optional(),
     culturesDisplay: Joi.array().items(Joi.string()).optional(),
     region: Joi.string().required(),
+    country: Joi.string().trim().min(2).max(100).optional().allow(''),
+    countryCode: Joi.string().trim().max(8).optional().allow(''),
     typeExploitation: Joi.string().valid('Familiale', 'Commerciale/Indépendante').required(),
     lienCooperative: Joi.string().valid('Oui', 'Non').default('Non'),
     nomCooperative: Joi.string().allow('').optional(),
@@ -32,18 +34,25 @@ export const validateFarmer = (req, res, next) => {
     accesStockage: Joi.string().valid('Oui', 'Non').required(),
     besoinCollecte: Joi.string().valid('Oui', 'Non', '').optional(),
     investissementCooperative: Joi.string().valid('Oui', 'Non').default('Non'),
+    /** Web inscription sends oui/non/partiel; stored under producerProMeta.irrigation too */
+    irrigation: Joi.string().valid('oui', 'non', 'partiel', 'Oui', 'Non', 'Partiel', '').optional().allow(''),
     qualityLevel: Joi.string().valid('local', 'regional', 'international', 'Non spécifié').optional(),
     diseaseDetection: Joi.object().optional(),
-    landDetection: Joi.object().optional()
+    landDetection: Joi.object().optional(),
+    producerProMeta: Joi.object().optional(),
   });
 
-  const { error } = schema.validate(req.body);
+  const { error, value } = schema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: false,
+  });
   if (error) {
     return res.status(400).json({ 
       error: 'Données invalides', 
       details: error.details.map(d => d.message) 
     });
   }
+  req.body = value;
   next();
 };
 

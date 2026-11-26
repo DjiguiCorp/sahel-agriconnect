@@ -57,6 +57,12 @@ const farmerSchema = new mongoose.Schema({
     type: String,
     default: 'ML'
   },
+  /** Web / mobile registration: oui | non | partiel */
+  irrigation: {
+    type: String,
+    trim: true,
+    default: '',
+  },
   typeExploitation: {
     type: String,
     enum: ['Familiale', 'Commerciale/Indépendante'],
