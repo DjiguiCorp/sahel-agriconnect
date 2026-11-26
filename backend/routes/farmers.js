@@ -461,6 +461,8 @@ router.post('/', validateFarmer, async (req, res) => {
     }
     const farmerData = {
       ...req.body,
+      country: String(req.body.country || '').trim(),
+      irrigation: String(req.body.irrigation || '').trim().toLowerCase(),
       localisation: `${req.body.latitude}, ${req.body.longitude}`
     };
 
